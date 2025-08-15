@@ -9,6 +9,7 @@ export const prepareCreateBusiness = (args: CreateBusinessWithVenueArgs): Create
     const cleanBusiness: CreateBusinessWithVenueArgs = {
         business: {
             name: throwIfError(coreValidations.validateBusinessName(args.business.name), 'name'),
+            description: throwIfError(coreValidations.validateDescription(args.business.description ?? ''), 'description'),
             email: throwIfError(coreValidations.validateEmail(args.business.email), 'email'),
             address: {
                 street: throwIfError(coreValidations.validateStreet(args.business.address.street), 'street'),
@@ -20,6 +21,7 @@ export const prepareCreateBusiness = (args: CreateBusinessWithVenueArgs): Create
         },
         venue: {
             name: throwIfError(venueValidations.validateName(args.venue.name), 'name'),
+            description: throwIfError(venueValidations.validateDescription(args.venue.description ?? ''), 'description'),
             email: throwIfError(coreValidations.validateEmail(args.venue.email), 'email'),
             address: {
                 street: throwIfError(coreValidations.validateStreet(args.venue.address.street), 'street'),
@@ -29,6 +31,8 @@ export const prepareCreateBusiness = (args: CreateBusinessWithVenueArgs): Create
                 country: throwIfError(coreValidations.validateCountry(args.venue.address.country), 'country'),
             },
             primaryCategory: args.venue.primaryCategory,
+            services: args.venue.services,
+            amenities: args.venue.amenities,
         }
     };
 

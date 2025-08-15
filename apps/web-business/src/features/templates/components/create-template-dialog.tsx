@@ -197,8 +197,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                 },
                 cancellationWindowHours: data.cancellationWindowHours
                     ? parseInt(data.cancellationWindowHours)
-                    : undefined,
-                isActive: true,
+                    : 0,
                 tags: data.tags.length > 0 ? data.tags : undefined,
                 color: data.color,
             };

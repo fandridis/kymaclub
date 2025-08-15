@@ -127,25 +127,6 @@ export const businessInvitationsFields = {
   ...softDeleteFields,
 };
 
-export const onboardingProgressFields = {
-  userId: v.id("users"),
-  businessId: v.optional(v.id("businesses")),
-  type: v.union(v.literal("business_owner"), v.literal("invited_user")),
-  currentStep: v.string(),
-  completedSteps: v.array(v.string()),
-  totalSteps: v.number(),
-  isCompleted: v.boolean(),
-  startedAt: v.number(),
-  completedAt: v.optional(v.number()),
-  metadata: v.optional(v.object({
-    invitationToken: v.optional(v.string()),
-    skipSteps: v.optional(v.array(v.string())),
-    customData: v.optional(v.string()), // JSON stringified
-  })),
-  ...auditFields,
-  ...softDeleteFields,
-};
-
 export const systemSettingsFields = {
   key: v.string(), // "credit_value", "standard_fee_rate", "max_promotional_discount", etc.
   value: v.union(v.string(), v.number(), v.boolean()),
@@ -736,15 +717,6 @@ export default defineSchema({
     .index("by_email", ["email"])
     .index("by_token", ["token"])
     .index("by_business_email", ["businessId", "email"]),
-
-  /**
-* Onboarding progress tracking
-*/
-  onboardingProgress: defineTable(onboardingProgressFields)
-    .index("by_user", ["userId"])
-    .index("by_business", ["businessId"])
-    .index("by_type", ["type"])
-    .index("by_completion", ["isCompleted"]),
 
   /** 
    * System settings for global configuration

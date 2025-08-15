@@ -24,6 +24,7 @@ import { AuthGuard } from './features/core/components/auth-guard';
 import { convexAuthStorage } from './utils/storage';
 import { RootNavigator } from './navigation';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import OnboardingWizard from './components/OnboardingWizard';
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
@@ -98,6 +99,15 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
         <ActivityIndicator size="large" color="#667eea" />
         <Text style={styles.loadingText}>Loading KymaClub...</Text>
       </View>
+    );
+  }
+
+  // Show onboarding if user is authenticated but hasn't completed onboarding
+  if (user && !user?.hasConsumerOnboarded) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <OnboardingWizard />
+      </GestureHandlerRootView>
     );
   }
 

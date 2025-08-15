@@ -21,12 +21,18 @@ export const Route = createFileRoute('/_app-layout')({
 })
 
 function RouteComponent() {
+    const { user } = getAuthState();
+
     useRedirectGuard(({ user }) => {
         if (user === null) {
             return '/sign-in';
         }
         return null;
     })
+
+    if (user === null) {
+        return null;
+    }
 
     return (
         <AppLayout>
