@@ -225,7 +225,7 @@ export function Navigation({
               onClick={() => setIsMobileMenuOpen(false)}
               className="text-gray-600 hover:bg-white/50 rounded-full h-10 w-10"
             >
-              <X className="h-5 w-5" />
+              <X className="h-8 w-8" />
               <span className="sr-only">Close menu</span>
             </Button>
           </div>
@@ -286,14 +286,11 @@ export function Navigation({
                 <span className="font-medium">
                   {currentLanguage === 'gr' ? 'Ελληνικά' : 'English'}
                 </span>
-                <span className="text-sm px-2 py-1 bg-white rounded-md font-medium">
-                  {currentLanguage === 'gr' ? 'GR' : 'EN'}
-                </span>
               </button>
             </div>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col gap-3 p-6 mt-auto border-t border-gray-100 bg-gradient-to-b from-white to-gray-50">
+            <div className="flex flex-col gap-3 p-6 border-t border-gray-100 bg-gradient-to-b from-white to-gray-50">
               <Button
                 onClick={handleJoinWaitlist}
                 className="w-full h-12 rounded-xl bg-gradient-to-r from-gray-100 to-gray-200 text-gray-900 border border-gray-300 hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
