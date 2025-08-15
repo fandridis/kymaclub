@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { useLanguage } from '../../contexts/LanguageContext';
-import logo from '../../../public/logo-icon.svg';
 
 interface NavigationProps {
   className?: string;
@@ -64,8 +63,8 @@ export function Navigation({
   // Glass effect classes based on scroll state and page theme
   const getGlassEffectClasses = () => {
     if (!isScrolled) return '';
-    
-    return isDarkPage 
+
+    return isDarkPage
       ? 'bg-black/50 backdrop-blur-md border-b border-white/20'
       : 'bg-white/80 backdrop-blur-md border-b border-gray-100';
   };
@@ -75,22 +74,22 @@ export function Navigation({
       <div className="mx-auto max-w-7xl flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-3">
-          <img src={logo} alt="KymaClub" className="h-12 w-auto" />
+          <img src="/logo-icon.svg" alt="KymaClub" className="h-12 w-auto" />
           <span className={`text-2xl tracking-tight ${isDarkPage ? 'text-white' : 'text-gray-900'}`}>
             KymaClub
           </span>
         </Link>
-        
+
         {/* Navigation Menu */}
         <nav className="hidden lg:flex items-center gap-8 text-sm">
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className={`hover:opacity-80 transition-colors ${isDarkPage ? 'text-white/80 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
           >
             {t('navigation.home')}
           </Link>
-          <Link 
-            to="/how-it-works" 
+          <Link
+            to="/how-it-works"
             className={`hover:opacity-80 transition-colors ${isDarkPage ? 'text-white/80 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
           >
             {t('navigation.howItWorks')}
@@ -101,13 +100,13 @@ export function Navigation({
           >
             Συνδρομή
           </a> */}
-             <Link 
-            to="/partners" 
+          <Link
+            to="/partners"
             className={`hover:opacity-80 transition-colors ${isDarkPage ? 'text-white/80 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
           >
             {t('navigation.partnerWithUs')}
           </Link>
-        
+
           {/* <a 
             href="#credits" 
             className={`hover:opacity-80 transition-colors ${isDarkPage ? 'text-white/80 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
@@ -120,13 +119,12 @@ export function Navigation({
           >
             FAQ
           </a> */}
-          <button 
+          <button
             onClick={handleLanguageToggle}
-            className={`text-xs border px-3 py-1 rounded-full hover:opacity-80 transition-colors ${
-              isDarkPage 
-                ? 'border-white/30 text-white hover:bg-white/10' 
+            className={`text-xs border px-3 py-1 rounded-full hover:opacity-80 transition-colors ${isDarkPage
+                ? 'border-white/30 text-white hover:bg-white/10'
                 : 'border-gray-300 text-gray-600 hover:bg-gray-100'
-            }`}
+              }`}
           >
             {currentLanguage === 'gr' ? 'EN' : 'GR'}
           </button>
@@ -134,23 +132,21 @@ export function Navigation({
 
         {/* CTA Buttons */}
         <div className="flex items-center gap-4">
-          <Button 
+          <Button
             onClick={handleJoinWaitlist}
-            className={`h-11 px-6 rounded-full transition-all duration-300 ${
-              isDarkPage 
-                ? 'bg-white/10 backdrop-blur-sm text-white border border-white/20 hover:bg-white/20' 
+            className={`h-11 px-6 rounded-full transition-all duration-300 ${isDarkPage
+                ? 'bg-white/10 backdrop-blur-sm text-white border border-white/20 hover:bg-white/20'
                 : 'bg-gray-100 text-gray-900 border border-gray-300 hover:bg-gray-200'
-            }`}
+              }`}
           >
             {t('navigation.joinWaitlist')}
           </Button>
-          <Button 
+          <Button
             onClick={handlePartnerClick}
-            className={`h-11 px-6 rounded-full transition-all duration-300 ${
-              isDarkPage 
-                ? 'bg-white text-black hover:bg-gray-100' 
+            className={`h-11 px-6 rounded-full transition-all duration-300 ${isDarkPage
+                ? 'bg-white text-black hover:bg-gray-100'
                 : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
+              }`}
           >
             {t('navigation.partnerWithUsButton')}
           </Button>
