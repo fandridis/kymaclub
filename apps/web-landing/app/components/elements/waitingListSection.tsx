@@ -68,7 +68,7 @@ export const WaitingListSection = () => {
           {/* Email Form */}
           <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-12 border border-white/10">
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="flex gap-4">
+              <div className="flex gap-4 flex-wrap">
                 <Input
                   type="email"
                   placeholder={t('waitingList.form.emailPlaceholder')}

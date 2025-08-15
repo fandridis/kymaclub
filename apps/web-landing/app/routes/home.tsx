@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router';
 
 export function meta({ }: Route.MetaArgs) {
   return [
-    { title: "Πώς λειτουργεί η συνδρομή | KymaClub" },
+    { title: "Σπίτι ευεξίας | KymaClub" },
     { name: "description", content: "Μία συνδρομή, εκατοντάδες εμπειρίες σε όλη την Ελλάδα." },
   ];
 }
