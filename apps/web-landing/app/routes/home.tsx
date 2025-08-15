@@ -41,7 +41,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
             className="w-full h-full object-cover"
           >
             <source
-              src="https://www.kymaclub.com/hero-video.mp4"
+              src="https://gefakit.com/hero-video.mp4"
               type="video/mp4"
             />
           </video>
