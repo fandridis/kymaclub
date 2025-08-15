@@ -1,0 +1,9 @@
+appId: com.kymaclub.app
+---
+# Launch the app shows the name of the app.
+- launchApp
+- assertVisible: "KymaClub" 
+
+# Pressing "Sign In" button will open a modal with a form and a "Email" labeled field.
+- tapOn: "Sign In"
+- assertVisible: "Email"

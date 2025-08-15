@@ -1,0 +1,47 @@
+{
+    "welcome": {
+        "title": "Καλώς ήρθατε",
+        "subtitle": "Επιλέξτε τη γλώσσα σας",
+        "message": "Γεια σου {{name}}!"
+    },
+    "navigation": {
+        "home": "Αρχική",
+        "profile": "Προφίλ",
+        "settings": "Ρυθμίσεις",
+        "notFound": "Ούτε και σε αυτή την περίπτωση",
+        "bookings": "Κρατήσεις",
+        "map": "Χάρτης",
+        "explore": "Εξερεύνηση",
+        "news": "Νέα",
+        "scan": "Σάρωση"
+    },
+    "common": {
+        "save": "Αποθήκευση",
+        "cancel": "Ακύρωση",
+        "delete": "Διαγραφή",
+        "edit": "Επεξεργασία",
+        "loading": "Φόρτωση...",
+        "error": "Σφάλμα",
+        "tryAgain": "Δοκιμάστε ξανά"
+    },
+    "explore": {
+        "businesses": "Επιχειρήσεις",
+        "classes": "Μαθήματα",
+        "nearYou": "Κοντά σας",
+        "filters": "Φίλτρα",
+        "showMap": "Εμφάνιση Χάρτη",
+        "showList": "Εμφάνιση Λίστας",
+        "distance": "{{distance}} μακριά",
+        "openNow": "Ανοιχτό τώρα",
+        "closedNow": "Κλειστό τώρα",
+        "rating": "{{rating}} αστέρια",
+        "reviews": "{{count}} κριτικές",
+        "startsAt": "Ξεκινά από {{price}}",
+        "duration": "{{minutes}} λεπτά",
+        "spotsLeft": "{{count}} θέσεις διαθέσιμες",
+        "soldOut": "Εξαντλήθηκε",
+        "noBusinesses": "Δεν βρέθηκαν επιχειρήσεις κοντά",
+        "noClasses": "Δεν βρέθηκαν μαθήματα",
+        "searchPlaceholder": "Αναζήτηση επιχειρήσεων ή μαθημάτων..."
+    }
+}

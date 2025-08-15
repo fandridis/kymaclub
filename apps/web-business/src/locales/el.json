@@ -1,0 +1,36 @@
+{
+    "common": {
+        "language": "Γλώσσα",
+        "languages": {
+            "en": "Αγγλικά (English)",
+            "el": "Ελληνικά (Greek)",
+            "lt": "Λιθουανικά (Lithuanian)"
+        },
+        "buttons": {
+            "yes": "Ναι",
+            "no": "Όχι",
+            "signIn": "Σύνδεση",
+            "backToSignIn": "Πίσω στη σύνδεση"
+        },
+        "terms": {
+            "agreementText": "Κάνοντας κλικ στο συνέχεια, συμφωνείτε με τους",
+            "termsOfService": "Όρους Χρήσης",
+            "and": "και",
+            "privacyPolicy": "Πολιτική Απορρήτου"
+        }
+    },
+    "routes": {
+        "signIn": {
+            "description": "Συμμετέχετε στην αλλαγή!",
+            "title": "Σύνδεση",
+            "subtitle": "Συνδεθείτε στο λογαριασμό σας για να συνεχίσετε",
+            "checkEmailTitle": "Ελέγξτε το email σας",
+            "checkEmailDescription": "Στείλαμε έναν κωδικό σύνδεσης στο",
+            "codeVerificationError": "Ο κωδικός δεν μπόρεσε να επαληθευτεί, δοκιμάστε ξανά"
+        },
+        "dashboard": {
+            "title": "Πίνακας ελέγχου",
+            "description": "Καλώς ήρθατε στην πίνακα ελέγχου"
+        }
+    }
+}

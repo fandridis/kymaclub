@@ -1,0 +1,4 @@
+appId: com.kymaclub.app
+---
+- launchApp
+- assertVisible: 'Welcome!'

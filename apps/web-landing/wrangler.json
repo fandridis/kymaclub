@@ -1,0 +1,18 @@
+	{
+		"$schema": "./node_modules/wrangler/config-schema.json",
+		"name": "kymaclub-web-landing",
+		"main": "./workers/app.ts",
+		"compatibility_date": "2025-04-01",
+		"compatibility_flags": [
+			"nodejs_compat"
+		],
+		"observability": {
+			"enabled": true
+		},
+		"upload_source_maps": true,
+		"vars": {
+			"VALUE_FROM_CLOUDFLARE": "Hello from Cloudflare",
+			"NOTION_PAGE_BUSINESS_WL_ID": "238750830f2680d7b55cebf28c00c0b8",
+			"NOTION_PAGE_CONSUMER_WL_ID": "24a750830f2680aabfe3c089f31cb02c"
+		}
+	}

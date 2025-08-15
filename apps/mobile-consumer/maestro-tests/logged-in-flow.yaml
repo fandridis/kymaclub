@@ -1,0 +1,13 @@
+appId: com.kymaclub.app
+---
+# Basic app launch test
+- launchApp
+- assertVisible: "News Screen" 
+- assertVisible: "Welcome"
+
+# Tap on Greek button
+- tapOn: "Ελληνικά"
+- assertVisible: "Καλώς ήρθατε"
+
+- tapOn: "English"
+- assertVisible: "Welcome"

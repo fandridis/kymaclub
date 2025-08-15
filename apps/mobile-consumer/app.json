@@ -1,0 +1,63 @@
+{
+  "expo": {
+    "name": "Kyma Club",
+    "slug": "kyma-club",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "scheme": "kymaclub",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kymaclub.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to show your position on the map."
+      },
+      "config": {
+        "googleMapsApiKey": "AIzaSyBnVtiwgGAlcoaWMZfUaaC6rG6dOCmH9ig"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.kymaclub.app",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBnVtiwgGAlcoaWMZfUaaC6rG6dOCmH9ig"
+        }
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-secure-store",
+      "expo-localization",
+      "react-native-edge-to-edge",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#ffffff",
+          "image": "./assets/splash-icon.png"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow KymaClub to use your location."
+        }
+      ],
+      "expo-audio"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "e762b8b2-9a97-4f03-942e-d5e8585b6f08"
+      }
+    },
+    "owner": "fandridis"
+  }
+}

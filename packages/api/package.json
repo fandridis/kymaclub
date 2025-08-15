@@ -1,0 +1,50 @@
+{
+  "name": "@repo/api",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "convex dev",
+    "predev": "convex dev --until-success && convex dev --once --run-sh \"node setup.mjs --once\" && convex dashboard",
+    "build": "tsc -b",
+    "lint": "tsc && eslint .  --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "test": "vitest",
+    "test:once": "vitest run",
+    "test:debug": "vitest --inspect-brk --no-file-parallelism",
+    "test:coverage": "vitest run --coverage --coverage.reporter=text"
+  },
+  "dependencies": {
+    "@auth/core": "^0.40.0",
+    "@convex-dev/auth": "^0.0.81",
+    "@repo/utils": "workspace:*",
+    "convex": "^1.23.0",
+    "convex-helpers": "^0.1.101",
+    "date-fns": "^4.1.0",
+    "nanoid": "^5.1.5",
+    "resend": "^4.6.0"
+  },
+  "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
+    "@types/node": "^22.13.10",
+    "convex-test": "^0.0.38",
+    "dotenv": "^16.4.7",
+    "typescript": "~5.7.2",
+    "typescript-eslint": "^8.24.1",
+    "vite": "^7.0.6",
+    "vitest": "^3.2.4"
+  },
+  "exports": {
+    "./bookings": "./convex/bookings/index.ts",
+    "./classes/instances": "./convex/classes/instances/index.ts",
+    "./classes/templates": "./convex/classes/templates/index.ts",
+    "./core": "./convex/core/index.ts",
+    "./convex/_generated/api": {
+      "import": "./convex/_generated/api.js",
+      "types": "./convex/_generated/api.d.ts"
+    },
+    "./convex/_generated/dataModel": {
+      "import": "./convex/_generated/dataModel.js",
+      "types": "./convex/_generated/dataModel.d.ts"
+    }
+  }
+}

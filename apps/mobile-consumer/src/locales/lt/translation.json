@@ -1,0 +1,47 @@
+{
+    "welcome": {
+        "title": "Sveiki",
+        "subtitle": "Pasirinkite savo kalbą",
+        "message": "Sveiki, {{name}}!"
+    },
+    "navigation": {
+        "home": "Pradžia",
+        "profile": "Profilis",
+        "settings": "Nustatymai",
+        "notFound": "Nieko nerasta",
+        "bookings": "Rezervacijos",
+        "map": "Žemėlapis",
+        "explore": "Tyrinėti",
+        "news": "Naujienos",
+        "scan": "Skenuoti"
+    },
+    "common": {
+        "save": "Išsaugoti",
+        "cancel": "Atšaukti",
+        "delete": "Ištrinti",
+        "edit": "Redaguoti",
+        "loading": "Kraunama...",
+        "error": "Klaida",
+        "tryAgain": "Bandyti dar kartą"
+    },
+    "explore": {
+        "businesses": "Verslas",
+        "classes": "Pamokos",
+        "nearYou": "Šalia jūsų",
+        "filters": "Filtrai",
+        "showMap": "Rodyti žemėlapį",
+        "showList": "Rodyti sąrašą",
+        "distance": "{{distance}} atstumas",
+        "openNow": "Atidaryta dabar",
+        "closedNow": "Uždaryta dabar",
+        "rating": "{{rating}} žvaigždutės",
+        "reviews": "{{count}} atžymų",
+        "startsAt": "Pradeda nuo {{price}}",
+        "duration": "{{minutes}} min",
+        "spotsLeft": "{{count}} vietų liko",
+        "soldOut": "Išparduota",
+        "noBusinesses": "Šalia nerastas verslas",
+        "noClasses": "Nerastos pamokos",
+        "searchPlaceholder": "Ieškoti verslo ar pamokų..."
+    }
+}

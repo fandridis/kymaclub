@@ -1,0 +1,567 @@
+"use client"
+
+import React, { useState, useEffect } from 'react';
+import { Clock, Users, BookOpen, Tag, X, User, Palette, Calendar, CreditCard } from 'lucide-react';
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@repo/api/convex/_generated/api";
+import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { format } from 'date-fns';
+
+import {
+    Drawer,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerFooter,
+} from "@/components/ui/drawer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { DateTimePicker } from "@/components/ui/datetime-picker";
+import { Switch } from "@/components/ui/switch";
+import type { Doc } from '@repo/api/convex/_generated/dataModel';
+import { getDurationOptions } from '@/features/calendar/utils/duration';
+import { useIsMobile } from '@/hooks/use-mobile';
+import ConfirmUpdateInstancesDialog from './confirm-update-multiple-instances-dialog';
+import { dbTimestampToBusinessDate, businessDateToDbTimestamp } from '@/lib/timezone-utils';
+
+const COLOR_OPTIONS = [
+    { value: '#3B82F6', label: 'Blue' },
+    { value: '#10B981', label: 'Green' },
+    { value: '#F59E0B', label: 'Yellow' },
+    { value: '#EF4444', label: 'Red' },
+    { value: '#8B5CF6', label: 'Purple' },
+    { value: '#F97316', label: 'Orange' },
+    { value: '#06B6D4', label: 'Cyan' },
+    { value: '#84CC16', label: 'Lime' },
+];
+
+const editInstanceSchema = z.object({
+    // Class Details
+    name: z.string().min(1, "Class name is required"),
+    instructor: z.string().min(1, "Instructor name is required"),
+    description: z.string().optional(),
+    tags: z.array(z.string()),
+    color: z.string().optional(),
+
+    // Timing
+    startTime: z.string().min(1, "Start time is required"),
+    duration: z.string().min(1, "Duration is required"),
+
+    // Booking Rules
+    capacity: z.string().min(1, "Capacity is required").refine((val) => parseInt(val) > 0, "Capacity must be greater than 0"),
+    baseCredits: z.string().min(1, "Base credits is required").refine((val) => parseInt(val) > 0, "Base credits must be greater than 0"),
+    bookingWindowMinHours: z.string().min(1, "Minimum booking hours is required").refine((val) => parseInt(val) >= 0, "Minimum booking hours must be 0 or greater"),
+    bookingWindowMaxHours: z.string().min(1, "Maximum booking hours is required").refine((val) => parseInt(val) > 0, "Maximum booking hours must be greater than 0"),
+    cancellationWindowHours: z.string().optional(),
+}).refine((data) => {
+    const minHours = parseInt(data.bookingWindowMinHours);
+    const maxHours = parseInt(data.bookingWindowMaxHours);
+    return maxHours > minHours;
+}, {
+    message: "Maximum booking hours must be greater than minimum",
+    path: ["bookingWindowMaxHours"],
+}).refine((data) => {
+    const duration = parseInt(data.duration);
+    return duration > 0;
+}, {
+    message: "Duration must be greater than 0 minutes",
+    path: ["duration"],
+});
+
+export type FormData = z.infer<typeof editInstanceSchema>;
+
+interface EditClassInstanceDialogProps {
+    open: boolean;
+    instance: Doc<"classInstances"> | null;
+    onClose: () => void;
+    businessTimezone: string;
+}
+
+export default function EditClassInstanceDialog({ open, instance, onClose, businessTimezone }: EditClassInstanceDialogProps) {
+    const [isSubmittingSingle, setIsSubmittingSingle] = useState(false);
+    const [isSubmittingMultiple, setIsSubmittingMultiple] = useState(false);
+    const [currentTag, setCurrentTag] = useState("");
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [pendingFormData, setPendingFormData] = useState<FormData | null>(null);
+    const [applyToAll, setApplyToAll] = useState(false);
+    const isMobile = useIsMobile();
+
+    const updateSingleInstance = useMutation(api.mutations.classInstances.updateSingleInstance);
+    const updateMultipleInstances = useMutation(api.mutations.classInstances.updateMultipleInstances);
+
+    // Fetch similar instances to show count in button and pass to confirmation dialog
+    const similarInstances = useQuery(
+        api.queries.classInstances.getSimilarClassInstances,
+        open && instance ? { instanceId: instance._id } : "skip"
+    );
+
+    const isLoadingSimilar = similarInstances === undefined;
+    const similarInstancesCount = similarInstances?.length ?? 0;
+    const hasSimilarInstances = similarInstancesCount > 0;
+
+    // Calculate button text and handler based on toggle state
+    const totalClasses = similarInstancesCount + 1;
+    const buttonText = applyToAll ? `Update ${totalClasses} classes` : "Update class";
+    const isSubmitting = isSubmittingSingle || isSubmittingMultiple;
+
+    const form = useForm<FormData>({
+        resolver: zodResolver(editInstanceSchema),
+        defaultValues: {
+            name: "",
+            instructor: "",
+            description: "",
+            tags: [],
+            color: COLOR_OPTIONS[0]?.value,
+            startTime: "",
+            duration: "60", // Default to 60 minutes
+            capacity: "15",
+            baseCredits: "10",
+            bookingWindowMinHours: "2",
+            bookingWindowMaxHours: "168",
+            cancellationWindowHours: "2",
+        },
+    });
+
+    // Populate form when instance data loads
+    useEffect(() => {
+        if (instance) {
+            // Calculate duration in minutes from startTime and endTime
+            const durationInMinutes = (instance.endTime - instance.startTime) / (1000 * 60);
+
+            // Convert UTC timestamps to business timezone for form display
+            const startTimeInBusinessTz = dbTimestampToBusinessDate(instance.startTime, businessTimezone);
+
+            form.reset({
+                name: instance.name || "",
+                instructor: instance.instructor || "",
+                description: instance.description || "",
+                tags: instance.tags || [],
+                color: instance.color || COLOR_OPTIONS[0]?.value,
+                startTime: format(startTimeInBusinessTz, "yyyy-MM-dd'T'HH:mm"),
+                duration: durationInMinutes.toString(),
+                capacity: instance.capacity?.toString() || "15",
+                baseCredits: instance.baseCredits?.toString() || "10",
+                bookingWindowMinHours: (instance.bookingWindow?.minHours || 2).toString(),
+                bookingWindowMaxHours: (instance.bookingWindow?.maxHours || 168).toString(),
+                cancellationWindowHours: instance.cancellationWindowHours?.toString() || "2",
+            });
+        }
+    }, [instance, form, businessTimezone]);
+
+    const resetForm = () => {
+        form.reset();
+        setCurrentTag("");
+        setIsSubmittingSingle(false);
+        setIsSubmittingMultiple(false);
+        setApplyToAll(false);
+    };
+
+    // Reset form when drawer closes
+    useEffect(() => {
+        if (!open) {
+            resetForm();
+        }
+    }, [open]);
+
+    const handleTagKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter" && currentTag.trim()) {
+            e.preventDefault();
+            const currentTags = form.getValues("tags");
+            if (!currentTags.includes(currentTag.trim())) {
+                form.setValue("tags", [...currentTags, currentTag.trim()]);
+            }
+            setCurrentTag("");
+        }
+    };
+
+    const removeTag = (tagToRemove: string) => {
+        const currentTags = form.getValues("tags");
+        form.setValue("tags", currentTags.filter((tag) => tag !== tagToRemove));
+    };
+
+    const handleUpdateSingle = async (data: FormData) => {
+        if (!instance) return;
+
+        setIsSubmittingSingle(true);
+
+        try {
+            // Convert business timezone input back to UTC for database storage
+            const startTime = businessDateToDbTimestamp(new Date(data.startTime), businessTimezone);
+            const durationMs = parseInt(data.duration) * 60 * 1000; // Convert minutes to milliseconds
+            const endTime = startTime + durationMs;
+
+            await updateSingleInstance({
+                instanceId: instance._id,
+                instance: {
+                    startTime,
+                    endTime,
+                    name: data.name.trim(),
+                    description: data.description?.trim(),
+                    instructor: data.instructor.trim(),
+                    capacity: parseInt(data.capacity),
+                    baseCredits: parseInt(data.baseCredits),
+                    bookingWindow: {
+                        minHours: parseInt(data.bookingWindowMinHours),
+                        maxHours: parseInt(data.bookingWindowMaxHours)
+                    },
+                    cancellationWindowHours: data.cancellationWindowHours ? parseInt(data.cancellationWindowHours) : undefined,
+                    tags: data.tags.length > 0 ? data.tags : undefined,
+                    color: data.color,
+                }
+            });
+
+            toast.success("Class updated successfully!");
+            onClose();
+        } catch (error) {
+            console.error('Error updating class:', error);
+            toast.error("Failed to update class.");
+        } finally {
+            setIsSubmittingSingle(false);
+        }
+    };
+
+    const handleUpdateMultiple = async (data: FormData) => {
+        if (!instance) return;
+
+        setIsSubmittingMultiple(true);
+
+        try {
+            // Convert business timezone input back to UTC for database storage
+            const startTime = businessDateToDbTimestamp(new Date(data.startTime), businessTimezone);
+            const durationMs = parseInt(data.duration) * 60 * 1000; // Convert minutes to milliseconds
+            const endTime = startTime + durationMs;
+
+            const result = await updateMultipleInstances({
+                instanceId: instance._id,
+                instance: {
+                    startTime,
+                    endTime,
+                    name: data.name.trim(),
+                    description: data.description?.trim(),
+                    instructor: data.instructor.trim(),
+                    capacity: parseInt(data.capacity),
+                    baseCredits: parseInt(data.baseCredits),
+                    bookingWindow: {
+                        minHours: parseInt(data.bookingWindowMinHours),
+                        maxHours: parseInt(data.bookingWindowMaxHours)
+                    },
+                    cancellationWindowHours: data.cancellationWindowHours ? parseInt(data.cancellationWindowHours) : undefined,
+                    tags: data.tags.length > 0 ? data.tags : undefined,
+                    color: data.color,
+                }
+            });
+            toast.success(`Updated ${result.totalUpdated} similar classes successfully!`);
+
+            onClose();
+        } catch (error) {
+            console.error('Error updating multiple classes:', error);
+            toast.error("Failed to update similar classes.");
+        } finally {
+            setIsSubmittingMultiple(false);
+        }
+    };
+
+    const handleMultipleUpdateClick = (data: FormData) => {
+        setPendingFormData(data);
+        setShowConfirmDialog(true);
+    };
+
+    const handleConfirmMultipleUpdate = () => {
+        if (pendingFormData) {
+            handleUpdateMultiple(pendingFormData);
+        }
+        setShowConfirmDialog(false);
+        setPendingFormData(null);
+    };
+
+    const handleUpdateClick = (data: FormData) => {
+        if (applyToAll && hasSimilarInstances) {
+            handleMultipleUpdateClick(data);
+        } else {
+            handleUpdateSingle(data);
+        }
+    };
+
+    if (!instance) return null;
+
+    const formData = form.watch();
+
+    return (
+        <>
+            <Drawer direction={isMobile ? "bottom" : "right"} open={open} onOpenChange={(isOpen) => {
+                if (!isOpen) {
+                    onClose();
+                }
+            }}>
+                <DrawerContent className={`flex flex-col h-screen`}>
+                    <DrawerHeader className="h-[64px] border-b">
+                        <DrawerTitle className="text-xl">Edit Class</DrawerTitle>
+                    </DrawerHeader>
+
+                    <div className="flex-1 overflow-y-auto">
+                        <ScrollArea className="h-full p-2">
+                            <Form {...form}>
+                                <div className="space-y-6 pb-6">
+                                    {/* Basic Information Section */}
+                                    <div className="mt-8 space-y-4">
+                                        <FormField control={form.control} name="startTime" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2">
+                                                    <Calendar className="h-4 w-4" />
+                                                    Start Time <span className="text-red-500">*</span>
+                                                </FormLabel>
+                                                <FormControl>
+                                                    <DateTimePicker
+                                                        value={field.value ? new Date(field.value) : undefined}
+                                                        onChange={(date) => field.onChange(date ? format(date, "yyyy-MM-dd'T'HH:mm") : "")}
+                                                        placeholder="Select date and time"
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+
+                                        <FormField control={form.control} name="duration" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2">
+                                                    <Clock className="h-4 w-4" />
+                                                    Duration <span className="text-red-500">*</span>
+                                                </FormLabel>
+                                                <FormControl>
+                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                        <SelectTrigger className="w-full">
+                                                            <SelectValue placeholder="Select duration" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {getDurationOptions().map((option) => (
+                                                                <SelectItem key={option.value} value={option.value}>
+                                                                    {option.label}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <FormField control={form.control} name="name" render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="flex items-center gap-2">
+                                                            <BookOpen className="h-4 w-4" />
+                                                            Class Name <span className="text-red-500">*</span>
+                                                        </FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="e.g., Beginner Yoga" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )} />
+
+                                                <FormField control={form.control} name="instructor" render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="flex items-center gap-2">
+                                                            <User className="h-4 w-4" />
+                                                            Instructor <span className="text-red-500">*</span>
+                                                        </FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="Instructor name" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )} />
+                                            </div>
+
+                                            <FormField control={form.control} name="description" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Description</FormLabel>
+                                                    <FormControl>
+                                                        <Textarea placeholder="Describe the class..." rows={3} {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+
+                                            <div className="space-y-2">
+                                                <Label className="flex items-center gap-2">
+                                                    <Tag className="h-4 w-4" />
+                                                    Tags
+                                                </Label>
+                                                <Input
+                                                    value={currentTag}
+                                                    onChange={(e) => setCurrentTag(e.target.value)}
+                                                    onKeyDown={handleTagKeyPress}
+                                                    placeholder="Type a tag and press Enter"
+                                                />
+                                                {formData.tags.length > 0 && (
+                                                    <div className="flex flex-wrap gap-2 pt-2">
+                                                        {formData.tags.map((tag, index) => (
+                                                            <span key={index} className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-md text-sm">
+                                                                {tag}
+                                                                <button type="button" onClick={() => removeTag(tag)} className="hover:bg-primary/20 rounded-full p-0.5">
+                                                                    <X className="h-3 w-3" />
+                                                                </button>
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Capacity & Credits Section */}
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FormField control={form.control} name="capacity" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="flex items-center gap-2">
+                                                        <Users className="h-4 w-4" />
+                                                        Capacity <span className="text-red-500">*</span>
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input type="number" min="1" placeholder="Max participants" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+
+                                            <FormField control={form.control} name="baseCredits" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="flex items-center gap-2">
+                                                        <CreditCard className="h-4 w-4" />
+                                                        Credits <span className="text-red-500">*</span>
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input type="number" min="1" placeholder="Credits to book" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <FormField control={form.control} name="bookingWindowMinHours" render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Min Hours <span className="text-red-500">*</span></FormLabel>
+                                                        <FormControl>
+                                                            <Input type="number" min="0" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )} />
+
+                                                <FormField control={form.control} name="bookingWindowMaxHours" render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Max Hours <span className="text-red-500">*</span></FormLabel>
+                                                        <FormControl>
+                                                            <Input type="number" min="1" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )} />
+                                            </div>
+
+                                            <FormField control={form.control} name="cancellationWindowHours" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Cancellation Window (Hours)</FormLabel>
+                                                    <FormControl>
+                                                        <Input type="number" min="0" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        </div>
+                                    </div>
+                                    <FormField control={form.control} name="color" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="flex items-center gap-2">
+                                                <Palette className="h-4 w-4" />
+                                                Color Theme
+                                            </FormLabel>
+                                            <div className="flex flex-wrap gap-3">
+                                                {COLOR_OPTIONS.map((color) => (
+                                                    <button
+                                                        key={color.value}
+                                                        type="button"
+                                                        onClick={() => field.onChange(color.value)}
+                                                        className={`w-8 h-8 rounded-full border-2 transition-all ${field.value === color.value
+                                                            ? 'border-gray-900 scale-110'
+                                                            : 'border-gray-300 hover:border-gray-400'
+                                                            }`}
+                                                        style={{ backgroundColor: color.value }}
+                                                        title={color.label}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </FormItem>
+                                    )} />
+
+                                </div>
+                            </Form>
+                        </ScrollArea>
+                    </div>
+
+                    <DrawerFooter className="flex-col gap-2 pt-4 border-t flex-shrink-0">
+                        {hasSimilarInstances && !isLoadingSimilar && (
+                            <div className="flex items-center space-x-2 px-1 mb-2">
+                                <Switch
+                                    id="apply-to-all-edit"
+                                    checked={applyToAll}
+                                    onCheckedChange={setApplyToAll}
+                                    disabled={isSubmitting}
+                                />
+                                <Label htmlFor="apply-to-all-edit" className="text-sm font-medium">
+                                    Apply to all future events
+                                </Label>
+                            </div>
+                        )}
+
+                        <Button
+                            onClick={form.handleSubmit(handleUpdateClick)}
+                            disabled={isSubmitting}
+                            className="w-full"
+                            variant="default"
+                        >
+                            {isSubmitting ? 'Updating...' : buttonText}
+                        </Button>
+
+                        <Button
+                            variant="ghost"
+                            onClick={onClose}
+                            disabled={isSubmitting}
+                            className="w-full"
+                        >
+                            Cancel
+                        </Button>
+                    </DrawerFooter>
+                </DrawerContent>
+            </Drawer>
+
+            <ConfirmUpdateInstancesDialog
+                open={showConfirmDialog}
+                onOpenChange={setShowConfirmDialog}
+                onConfirm={handleConfirmMultipleUpdate}
+                onCancel={() => setPendingFormData(null)}
+                isSubmitting={isSubmittingMultiple}
+                similarInstances={similarInstances || []}
+                businessTimezone={businessTimezone}
+            />
+        </>
+    );
+} 

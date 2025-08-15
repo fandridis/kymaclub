@@ -1,0 +1,47 @@
+{
+    "welcome": {
+        "title": "Welcome",
+        "subtitle": "Choose your language",
+        "message": "Hello {{name}}!"
+    },
+    "navigation": {
+        "home": "Home",
+        "profile": "Profile",
+        "settings": "Settings",
+        "notFound": "Not Found",
+        "bookings": "Bookings",
+        "map": "Map",
+        "explore": "Explore",
+        "news": "News",
+        "scan": "Scan"
+    },
+    "common": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "edit": "Edit",
+        "loading": "Loading...",
+        "error": "Error",
+        "tryAgain": "Try Again"
+    },
+    "explore": {
+        "businesses": "Businesses",
+        "classes": "Classes",
+        "nearYou": "Near You",
+        "filters": "Filters",
+        "showMap": "Show Map",
+        "showList": "Show List",
+        "distance": "{{distance}} away",
+        "openNow": "Open Now",
+        "closedNow": "Closed Now",
+        "rating": "{{rating}} stars",
+        "reviews": "{{count}} reviews",
+        "startsAt": "Starts at {{price}}",
+        "duration": "{{minutes}} min",
+        "spotsLeft": "{{count}} spots left",
+        "soldOut": "Sold Out",
+        "noBusinesses": "No businesses found nearby",
+        "noClasses": "No classes found",
+        "searchPlaceholder": "Search businesses or classes..."
+    }
+}

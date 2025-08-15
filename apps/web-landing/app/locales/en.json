@@ -1,0 +1,368 @@
+{
+  "navigation": {
+    "home": "Home",
+    "howItWorks": "How it works",
+    "partnerWithUs": "Partner with us",
+    "partnerWithUsButton": "Partnership",
+    "joinWaitlist": "Waitlist list"
+  },
+  "footer": {
+    "partnerWithUs": "Partner with us",
+    "careers": "Careers",
+    "aboutUs": "About us",
+    "followUs": "Follow us:",
+    "tagline": "Your wellness journey across Greece. Coming soon to shake things up 🌊",
+    "copyright": "© 2025 KymaClub. Made with 💜 for the wellness rebels."
+  },
+  "home": {
+    "title": "Wellness",
+    "subtitle": "on your own terms",
+    "joinWaitlist": "Join the waitlist",
+    "partnerWithUs": "Partner with us",
+    "thankYouMessage": "Thank you! We'll contact you soon for collaboration."
+  },
+  "howItWorks": {
+    "hero": {
+      "title": "One subscription. Infinite possibilities.",
+      "subtitle": "The wellness journey that changes the way you experience wellness in Greece."
+    },
+    "section": {
+      "title": "Find • Book • Enjoy"
+    },
+    "features": {
+      "subscription": {
+        "badge": "Choose subscription",
+        "title": "Credits that work the way you want.",
+        "description1": "Every month you get credits that you can use freely. Yoga today, massage tomorrow, fitness on the weekend.",
+        "description2": "You can cancel, update or add more credits at any time. Zero commitment issues! 🙌"
+      },
+      "discovery": {
+        "badge": "Live the variety",
+        "title": "Discover & book in seconds.",
+        "description1": "Browse through curated experiences from the best wellness partners. From boutique yoga studios to luxury spas.",
+        "description2": "Book a spot with one tap, see reviews from the community, and get ready for the best wellness experience ever!"
+      },
+      "experience": {
+        "badge": "Enjoy the experience",
+        "title": "Scan. Enter. Enjoy. That's it.",
+        "description1": "When you arrive at the location, simply scan the QR code. No paperwork, no 'I'm on the list' moments.",
+        "description2": "Contactless check-in that puts you in the vibe immediately. Welcome to the future of wellness in Greece! ✨"
+      }
+    }
+  },
+  "partners": {
+    "hero": {
+      "title": "Partner with us",
+      "subtitle": "Join the wellness revolution! Bring your studio to the most innovative platform in Greece and discover new opportunities for your business."
+    },
+    "benefits": {
+      "title": "Have a few empty spots? Put them on KymaClub",
+      "subtitle": "Want new exposure? We bring the audience. Want to try it? It's free!"
+    },
+    "features": {
+      "meeting": {
+        "title": "Let's chat",
+        "description": "Fill out the form and we'll contact you. No charge, we help you set up your profile on the platform."
+      },
+      "availability": {
+        "title": "Upload availability",
+        "description": "Put as many spots as you have available. This way, you don't have to worry about double bookings."
+      },
+      "payment": {
+        "title": "Get paid",
+        "description": "Customers find you through KymaClub. We only keep a percentage of each booking. 💸 No commitment, no monthly charge."
+      }
+    },
+    "form": {
+      "title": "Free meeting & onboarding",
+      "subtitle": "Share your space details with us and we'll contact you in the way that suits you — by email, phone or even for coffee! No cost, we help you set up your profile on our platform.",
+      "businessInfo": "Business Information",
+      "fields": {
+        "businessName": "Business name",
+        "businessNamePlaceholder": "e.g. Zen Yoga Studio",
+        "area": "Area",
+        "areaPlaceholder": "e.g. Nea Ionia",
+        "email": "Email",
+        "emailPlaceholder": "e.g. info@yogastudio.gr",
+        "phone": "Phone",
+        "phonePlaceholder": "e.g. 210 123 4567",
+        "website": "Website or any social media account",
+        "websitePlaceholder": "e.g. www.yogastudio.gr"
+      },
+      "submit": "Submit partnership application",
+      "submitting": "Submitting application...",
+      "success": "Perfect! Your application has been submitted. We'll contact you soon! 🚀",
+      "error": "Something went wrong. Please try again."
+    }
+  },
+  "aboutUs": {
+    "hero": {
+      "title1": "Meet the",
+      "title2": " People",
+      "title3": "Behind KymaClub",
+      "subtitle": "We're two code-loving, wellness-obsessed entrepreneurs (and a very good girl 🐕) who decided to make wellness in Greece more accessible, fun, and doable for all of us!"
+    },
+    "story": {
+      "title": "Our Story (So Far!)",
+      "paragraph1": "We started as two front-end developers trying to find time for yoga, padel or something else between sprints and deadlines. Spoiler alert: it wasn't going well!",
+      "paragraph2": "One Saturday morning, after another failed attempt to book an appointment at 5 different padel courts (because they all had different apps, different payment methods, and generally chaos), we said:",
+      "quote": "What if there was an app that made wellness easy for everyone?",
+      "paragraph3": "Fast forward two years, infinite cups of coffee, and countless late-night coding sessions later... here we are! KymaClub was born from our personal need to make wellness part of our daily routine, not something that requires a PhD to organize."
+    },
+    "team": {
+      "title": "The Dream Team",
+      "description": "Two people full of caffeine and big dreams, plus a golden retriever who is the unofficial Director of Happiness. Takes care of the office floors being always covered with golden retriever glitter (google it).",
+      "cto": {
+        "title": "The CTO",
+        "description": "Handles the magic of technology and numbers. Still writes code at 2 AM when inspired."
+      },
+      "ceo": {
+        "title": "The CEO",
+        "description": "Orchestrates everything! Design, partnerships, and keeps everyone calm. Writes code until 22:00 (sleeps early)."
+      }
+    },
+    "mission": {
+      "title1": "Our Mission: Making Wellness",
+      "title2": " Accessible.",
+      "subtitle": "We believe that wellness shouldn't be a luxury or rocket science. It should be something that fits your life, not something you need life reorganization for.",
+      "accessible": {
+        "title": "Accessible",
+        "description": "Your life is unpredictable; your wellness experience doesn't need to be. Credits that work the way you want, when you want."
+      },
+      "community": {
+        "title": "Community first",
+        "description": "We don't just build an app - we build a community of people who want to feel good, together and for themselves."
+      },
+      "technology": {
+        "title": "Technology for good",
+        "description": "We use our love for technology to solve real problems. Not disruption for the sake of disruption - meaningful innovation."
+      },
+      "vision": {
+        "title": "Our Vision",
+        "description": "In 5 years, we want every person in Greece to be able to say: 'Oh, wellness? Yes, I use KymaClub!' And mean it in the best way!"
+      }
+    },
+    "values": {
+      "title": "What Guides Us Every Day",
+      "subtitle": "These are the values that guide every decision, every feature, and every interaction at KymaClub 💜",
+      "authenticity": {
+        "badge": "Authenticity Above All",
+        "title": "Honest Conversation, Real Solutions",
+        "description": "We don't do fake it till you make it. We talk about real difficulties, real successes and real solutions. If something doesn't work, we say it. If something is fantastic, we celebrate it. Simple and clear.",
+        "quote": "Better brutally honest than politely useless."
+      },
+      "kindness": {
+        "badge": "Kindness in Everything",
+        "title": "Gentle Progress > Perfect Performance",
+        "description": "We're not here to make you feel guilty if you missed the yoga class. We're here to support you to try again tomorrow. Progress over perfection, always.",
+        "quote": "Wellness should feel like a warm hug, not a military boot camp."
+      },
+      "innovation": {
+        "badge": "Innovation with Purpose",
+        "title": "Tech That Actually Helps",
+        "description": "We don't build features because they're cool or trendy. We build solutions that solve actual problems we've personally experienced. Every line of code has a purpose.",
+        "quote": "If it doesn't make wellness easier, we don't build it."
+      }
+    },
+    "cta": {
+      "title": "Want to Be Part of Our Story?",
+      "subtitle": "Whether you're a wellness enthusiast looking for the next level experience, or a studio owner who wants to reach more people - come grow with us!",
+      "joinWaitlist": "Join the waitlist",
+      "becomePartner": "Become our partner",
+      "questions": "Have questions? Want to say Hi? We're here to meet new people!",
+      "contact": "Contact us - we read and respond to every message 💜"
+    }
+  },
+  "followUs": {
+    "title": "Follow our journey",
+    "subtitle": "Don't want to miss the hype! Become part of the community that will shape the future of wellness in Greece 🇬🇷✨"
+  },
+  "foundingMember": {
+    "title": "Become a Founding Member",
+    "subtitle": "Be among the first and unlock exclusive benefits that will make your friends jealous for real",
+    "benefits": {
+      "earlyAccess": {
+        "title": "Early Access",
+        "description": "First access to new studios & experiences"
+      },
+      "specialPricing": {
+        "title": "Special Pricing",
+        "description": "Lifetime founding member prices"
+      },
+      "vipTreatment": {
+        "title": "VIP Treatment",
+        "description": "Exclusive events & more perks"
+      }
+    },
+    "form": {
+      "emailPlaceholder": "Email for founding member status",
+      "submit": "Claim my founding member status! 👑",
+      "success": "Perfect! You're on the list for founding member privileges 👑"
+    },
+    "features": {
+      "limitedSpots": "✓ Limited spots",
+      "exclusiveBenefits": "✓ Exclusive benefits",
+      "lifetimePerks": "✓ Lifetime perks"
+    }
+  },
+  "waitingList": {
+    "title": "Join the",
+    "titleColored": "waitlist",
+    "subtitle": "Sign up for early access and get notified when we go live",
+    "form": {
+      "emailPlaceholder": "Email",
+      "namePlaceholder": "Name",
+      "submit": "Join the waitlist",
+      "submitting": "Adding to list...",
+      "success": "Perfect! You're on the list for founding member privileges 👑",
+      "error": "Something went wrong. Please try again."
+    },
+    "features": {
+      "noSpam": "✓ No spam",
+      "earlyMemberPerks": "✓ Early member perks"
+    }
+  },
+  "common": {
+    "language": "Language"
+  },
+  "careers": {
+    "hero": {
+      "title1": "Join the",
+      "title2": "KymaClub",
+      "title3": "Family",
+      "subtitle": "Looking for something more than just a job? Want to build the future of wellness in Greece? Let's meet - we're looking for amazing humans! 🚀",
+      "cta": "See Open Positions 👀"
+    },
+    "culture": {
+      "title": "Why You'll Love Working Here",
+      "subtitle": "We're not just a startup - we're a team that believes work can be fun, meaningful and wellness-focused! 💜",
+      "perks": {
+        "title": "Perks & Benefits",
+        "subtitle": "Why your wellness is important to us!",
+        "remote": {
+          "title": "Remote-First",
+          "description": "Work from wherever you feel productive"
+        },
+        "flexible": {
+          "title": "Flexible Hours",
+          "description": "No 9-5 rigidity - work when you're at your best"
+        },
+        "membership": {
+          "title": "KymaClub Membership",
+          "description": "Full access to the platform + wellness budget"
+        },
+        "learning": {
+          "title": "Learning Budget",
+          "description": "Courses, conferences, books - fuel your growth"
+        },
+        "coffee": {
+          "title": "Free Coffee & Snacks",
+          "description": "Start your day with free coffee"
+        }
+      }
+    },
+    "positions": {
+      "title": "Open Positions",
+      "subtitle": "Find the perfect position for you! All positions are open to different candidates and welcome applications from everyone 🌈",
+      "openApplication": "Don't find something that fits? Don't worry - send us your CV anyway!",
+      "openApplicationButton": "Open Application 💜"
+    },
+    "jobs": {
+      "productManager": {
+        "title": "Product Manager",
+        "department": "Product",
+        "location": "Athens",
+        "type": "Full-time",
+        "description": "Join the product team and help shape the future of wellness in Greece! We're looking for someone with vision and execution skills.",
+        "requirements": [
+          "2+ years experience in product management",
+          "Understanding of the wellness/fitness industry",
+          "Data-driven mindset",
+          "Excellent communication skills in Greek and English"
+        ]
+      },
+      "growthManager": {
+        "title": "Growth Manager",
+        "department": "Growth",
+        "location": "Athens",
+        "type": "Full-time",
+        "description": "Drive KymaClub's growth! We're looking for someone who combines analytical thinking with creativity to scale our platform.",
+        "requirements": [
+          "3+ years experience in growth/performance marketing",
+          "Experience with user acquisition and retention",
+          "Strong analytical skills and data-driven mindset",
+          "Understanding of product-led growth"
+        ]
+      },
+      "marketingSpecialist": {
+        "title": "Digital Marketing Specialist",
+        "department": "Marketing",
+        "location": "Athens",
+        "type": "Full-time",
+        "description": "Help us tell KymaClub's story! We're looking for someone who knows how to make wellness trendy.",
+        "requirements": [
+          "Experience in social media marketing",
+          "Content creation skills (video, graphics, copy)",
+          "Understanding of the Greek market",
+          "Creative thinking and trend awareness"
+        ]
+      },
+      "communityManager": {
+        "title": "Community Manager",
+        "department": "Community",
+        "location": "Remote",
+        "type": "Part-time / Full-time",
+        "description": "Become the face of the KymaClub community! Build relationships, organize events and make users feel part of something special.",
+        "requirements": [
+          "Experience with community building",
+          "Excellent communication skills",
+          "Event planning background",
+          "Passion for wellness and fitness"
+        ]
+      },
+      "softwareEngineerIntern": {
+        "title": "Software Engineer Intern",
+        "department": "Engineering",
+        "location": "Remote",
+        "type": "Internship",
+        "description": "Start your tech career with us! Learn from experienced developers while contributing to real features that impact users.",
+        "requirements": [
+          "Currently pursuing Computer Science or related degree",
+          "Basic knowledge of JavaScript/TypeScript and React",
+          "Eagerness to learn and grow",
+          "Passion for building user-friendly applications"
+        ]
+      }
+    },
+    "values": {
+      "waveEnergy": {
+        "title": "Wave Energy",
+        "description": "We bring fresh energy to everything we do. Innovation, creativity and positive vibes!"
+      },
+      "authenticConnections": {
+        "title": "Authentic Connections",
+        "description": "We believe in the power of authentic connection - with users, partners and among ourselves."
+      },
+      "growthMindset": {
+        "title": "Growth Mindset",
+        "description": "We learn, evolve and grow together. Mistakes are just data for the next level!"
+      },
+      "wellnessFirst": {
+        "title": "Wellness First",
+        "description": "It's not just our work - it's our way of life. Work-life balance is not optional."
+      }
+    },
+    "apply": {
+      "title": "Ready to Join the Team?",
+      "subtitle": "Let's meet! Send us your details and tell us why you'd be the ideal member for our team. Everything simple, everything via LinkedIn",
+      "linkedinButton": "Apply via LinkedIn"
+    },
+    "perks": {
+      "competitiveSalary": "Competitive salary"
+    },
+    "sections": {
+      "requirements": "What We're Looking For:",
+      "perks": "You'll Love:"
+    }
+  }
+}

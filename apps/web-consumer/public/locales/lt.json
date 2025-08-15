@@ -1,0 +1,37 @@
+{
+    "common": {
+        "language": "Kalba",
+        "languages": {
+            "en": "Anglų (English)",
+            "el": "Graikų (Greek)",
+            "lt": "Lietuvių (Lithuanian)"
+        },
+        "buttons": {
+            "yes": "Taip",
+            "no": "Ne",
+            "signIn": "Prisijungti",
+            "backToSignIn": "Grįžti prie prisijungimo"
+        },
+        "terms": {
+            "agreementText": "Spustelėdami tęsti, sutinkate su mūsų",
+            "termsOfService": "Paslaugų teikimo sąlygomis",
+            "and": "ir",
+            "privacyPolicy": "Privatumo politika"
+        }
+    },
+    "routes": {
+        "signIn": {
+            "description": "Prisijunk prie revoliucijos!",
+            "title": "Prisijungti",
+            "subtitle": "Prisijunkite prie savo paskyros, kad tęstumėte",
+            "checkEmailTitle": "Patikrinkite savo el. paštą",
+            "checkEmailDescription": "Išsiuntėme prisijungimo kodą į",
+            "codeVerificationError": "Kodo patikrinti nepavyko, bandykite dar kartą",
+            "orContinueWith": "Arba tęskite su"
+        },
+        "dashboard": {
+            "title": "Prietaisų skydelis",
+            "description": "Sveiki atvykę į prietaisų skydelį"
+        }
+    }
+}
