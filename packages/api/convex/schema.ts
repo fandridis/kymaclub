@@ -37,11 +37,8 @@ export const usersFields = {
 
   role: v.optional(v.union(v.literal("admin"), v.literal("user"))),
 
-  // Credit balances on user
+  // Simple credit balance for booking classes
   credits: v.optional(v.number()),
-  heldCredits: v.optional(v.number()),
-  lifetimeCredits: v.optional(v.number()),
-  creditsLastUpdated: v.optional(v.number()),
 
   ...softDeleteFields,
 };
@@ -438,10 +435,7 @@ export const customersFields = {
   phone: v.optional(v.string()),
 
   // Credit balance - single source of truth
-  credits: v.number(), // Available credits
-  heldCredits: v.optional(v.number()), // Credits held for pending bookings
-  lifetimeCredits: v.number(), // Total credits ever purchased
-  creditsLastUpdated: v.number(), // For debugging and reconciliation
+  credits: v.number(), // Available credits (cached from ledger)
 
   // Customer details
   membershipType: v.optional(v.string()),

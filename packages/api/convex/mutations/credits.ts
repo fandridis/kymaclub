@@ -3,6 +3,7 @@ import { mutation } from "../_generated/server";
 import { creditService } from "../../services/creditService";
 import { nanoid } from "nanoid";
 import { CREDIT_LEDGER_TYPES } from "../../utils/creditMappings";
+import { reconciliationService } from "../../services/reconciliationService";
 
 /**
  * Gift credits to a user from the system account.
@@ -52,18 +53,19 @@ export const giftCredits = mutation({
     });
 
     // Reconcile user's cached balance after gifting
-    const reconciliation = await creditService.reconcileUserCredits(ctx, {
+    const reconciliation = await reconciliationService.reconcileUser({
+      ctx,
       userId,
       updateCache: true,
     });
 
-    console.log(`💝 GIFT_CREDITS: Gifted ${amount} credits to user ${userId}. Balance: ${reconciliation.computedCredits}`);
+    console.log(`💝 GIFT_CREDITS: Gifted ${amount} credits to user ${userId}. Balance: ${reconciliation.actualCredits}`);
 
     return {
       success: true,
       transactionId: result.transactionId,
-      newBalance: reconciliation.computedCredits,
-      message: `Successfully gifted ${amount} credits to user. New balance: ${reconciliation.computedCredits}`,
+      newBalance: reconciliation.actualCredits,
+      message: `Successfully gifted ${amount} credits to user. New balance: ${reconciliation.actualCredits}`,
     };
   },
 });
@@ -80,16 +82,17 @@ export const reconcileUserCredits = mutation({
   handler: async (ctx, args) => {
     const updateCache = args.updateCache ?? true;
 
-    const result = await creditService.reconcileUserCredits(ctx, {
+    const result = await reconciliationService.reconcileUser({
+      ctx,
       userId: args.userId,
       updateCache,
     });
 
-    console.log(`🔄 RECONCILE: User ${args.userId} - Cached: ${result.cachedCredits}, Computed: ${result.computedCredits}, Delta: ${result.deltaCredits}`);
+    console.log(`🔄 RECONCILE: User ${args.userId} - Cached: ${result.cachedCredits}, Computed: ${result.actualCredits}, Delta: ${result.actualCredits - result.cachedCredits}`);
 
     return {
       ...result,
-      message: `Reconciliation ${result.updated ? 'completed' : 'checked'}: ${result.deltaCredits === 0 ? 'no discrepancy' : `corrected ${result.deltaCredits} credits`}`,
+      message: `Reconciliation ${result.wasUpdated ? 'completed' : 'checked'}: ${result.actualCredits - result.cachedCredits === 0 ? 'no discrepancy' : `corrected ${result.actualCredits - result.cachedCredits} credits`}`,
     };
   },
 });

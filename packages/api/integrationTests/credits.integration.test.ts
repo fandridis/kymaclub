@@ -1,7 +1,7 @@
 import { describe, test, expect } from "vitest";
 import { ConvexError } from "convex/values";
 import { initAuth, testT } from "./helpers";
-import { api } from "../convex/_generated/api";
+import { api, internal } from "../convex/_generated/api";
 import { Id } from "../convex/_generated/dataModel";
 
 describe("Credit System Integration Tests", () => {
@@ -73,17 +73,27 @@ describe("Credit System Integration Tests", () => {
             description: "Test credits"
         });
 
-        // Reconcile credits
-        const reconcileResult = await testT.mutation(api.mutations.credits.reconcileUserCredits, {
+        // Manually corrupt the cached balance to create a discrepancy
+        await testT.mutation(internal.testFunctions.updateUserCredits, {
+            userId,
+            credits: 5 // Set incorrect cached balance (should be 15)
+        });
+
+        // Reconcile credits - this should fix the discrepancy
+        const reconcileResult = await testT.mutation(api.mutations.reconciliations.reconcileUser, {
             userId,
             updateCache: true
         });
 
-        expect(reconcileResult.computedCredits).toBe(15);
-        expect(reconcileResult.cachedCredits).toBe(15);
-        expect(reconcileResult.deltaCredits).toBe(0);
-        expect(reconcileResult.updated).toBe(true);
-        expect(reconcileResult.message).toContain("no discrepancy");
+        console.log("reconcileResult", reconcileResult);
+
+        expect(reconcileResult.actualCredits).toBe(15);
+        expect(reconcileResult.cachedCredits).toBe(5); // Should show the incorrect cached value
+        expect(reconcileResult.wasUpdated).toBe(true); // Should indicate cache was updated
+
+        // Verify that the user's cached balance was actually updated
+        const userAfterReconciliation = await testT.query(internal.testFunctions.getUserById, { userId });
+        expect(userAfterReconciliation?.credits).toBe(15);
     });
 
     test("reconcileUserCredits: should handle reconciliation without cache update", async () => {
@@ -95,13 +105,13 @@ describe("Credit System Integration Tests", () => {
             description: "Test credits"
         });
 
-        const reconcileResult = await testT.mutation(api.mutations.credits.reconcileUserCredits, {
+        const reconcileResult = await testT.mutation(api.mutations.reconciliations.reconcileUser, {
             userId,
             updateCache: false
         });
 
-        expect(reconcileResult.computedCredits).toBe(8);
-        expect(reconcileResult.updated).toBe(false);
+        expect(reconcileResult.actualCredits).toBe(8);
+        expect(reconcileResult.wasUpdated).toBe(false);
     });
 
     test("credit transaction idempotency: should prevent duplicate transactions", async () => {
@@ -137,13 +147,12 @@ describe("Credit System Integration Tests", () => {
         });
 
         // Reconcile to ensure ledger is balanced
-        const reconcileResult = await testT.mutation(api.mutations.credits.reconcileUserCredits, {
+        const reconcileResult = await testT.mutation(api.mutations.reconciliations.reconcileUser, {
             userId,
             updateCache: true
         });
 
-        expect(reconcileResult.computedCredits).toBe(30);
-        expect(reconcileResult.deltaCredits).toBe(0);
+        expect(reconcileResult.actualCredits).toBe(30);
     });
 
     test("credit lifetime tracking: should track lifetime credits correctly", async () => {
@@ -162,12 +171,12 @@ describe("Credit System Integration Tests", () => {
             description: "Second lifetime test"
         });
 
-        const reconcileResult = await testT.mutation(api.mutations.credits.reconcileUserCredits, {
+        const reconcileResult = await testT.mutation(api.mutations.reconciliations.reconcileUser, {
             userId,
             updateCache: true
         });
 
-        expect(reconcileResult.computedCredits).toBe(25);
+        expect(reconcileResult.actualCredits).toBe(25);
         // Note: lifetime credits tracking depends on the specific credit type used in giftCredits
         // This test validates the reconciliation logic works correctly
     });
@@ -238,11 +247,11 @@ describe("Credit System Integration Tests", () => {
         });
 
         // Final reconciliation should show total credits
-        const reconcileResult = await testT.mutation(api.mutations.credits.reconcileUserCredits, {
+        const reconcileResult = await testT.mutation(api.mutations.reconciliations.reconcileUser, {
             userId,
             updateCache: true
         });
 
-        expect(reconcileResult.computedCredits).toBe(15); // 5 + 7 + 3
+        expect(reconcileResult.actualCredits).toBe(15); // 5 + 7 + 3
     });
 });

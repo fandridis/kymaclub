@@ -46,13 +46,13 @@ export type CreditEntity =
   | { systemEntity: "system" | "payment_processor" };
 
 /**
- * Credit Service - Handles all credit transactions through double-entry ledger
+ * Simplified Credit Service - Handles basic credit operations for fitness class bookings
  * 
- * This service is transaction-type agnostic and only cares about:
- * 1. Double-entry ledger mechanics (transactions must balance to zero)
- * 2. Idempotency (preventing duplicate transactions)
- * 3. Data integrity validation
- * 4. Atomic transaction creation
+ * This service handles:
+ * 1. Adding credits (purchases)
+ * 2. Spending credits (bookings)
+ * 3. Checking balances
+ * 4. Basic validation
  */
 export const creditService = {
   /**
@@ -197,86 +197,116 @@ export const creditService = {
   },
 
   /**
-   * Reconcile user's cached credit balance with ledger
-   * This should be called on login or periodically to ensure accuracy
+   * Simple method to add credits to a user (e.g., from purchase)
    */
-  reconcileUserCredits: async (
+  addCredits: async (
     ctx: MutationCtx,
-    args: { userId: Id<"users">; updateCache?: boolean }
-  ): Promise<{
-    cachedCredits: number;
-    computedCredits: number;
-    deltaCredits: number;
-    cachedLifetimeCredits: number;
-    computedLifetimeCredits: number;
-    deltaLifetimeCredits: number;
-    updated: boolean;
-  }> => {
-    const user = await ctx.db.get(args.userId);
-    creditRules.validateUserExists(user, args.userId);
-
-    // Compute actual balances from ledger
-    const { computedCredits, computedLifetimePurchased } = await creditService._computeUserCreditSums(ctx, args.userId);
-
-    const cachedCredits = user!.credits ?? 0;
-    const cachedLifetime = user!.lifetimeCredits ?? 0;
-    const deltaCredits = computedCredits - cachedCredits;
-    const deltaLifetimeCredits = computedLifetimePurchased - cachedLifetime;
-
-    let updated = false;
-    if (args.updateCache) {
-      await ctx.db.patch(args.userId, {
-        credits: computedCredits,
-        creditsLastUpdated: Date.now(),
-        lifetimeCredits: computedLifetimePurchased,
-      });
-      updated = true;
-    }
-
-    return {
-      cachedCredits,
-      computedCredits,
-      deltaCredits,
-      cachedLifetimeCredits: cachedLifetime,
-      computedLifetimeCredits: computedLifetimePurchased,
-      deltaLifetimeCredits,
-      updated,
-    };
+    args: { userId: Id<"users">; amount: number; description: string; idempotencyKey: string }
+  ): Promise<{ transactionId: string }> => {
+    return await creditService.createTransaction(ctx, {
+      idempotencyKey: args.idempotencyKey,
+      description: args.description,
+      entries: [
+        {
+          userId: args.userId,
+          type: "credit_purchase",
+          amount: args.amount,
+          businessId: undefined,
+          systemEntity: undefined,
+        },
+        {
+          userId: undefined,
+          type: "credit_purchase",
+          amount: -args.amount,
+          businessId: undefined,
+          systemEntity: "payment_processor",
+        }
+      ]
+    });
   },
 
   /**
-   * Internal helper to compute user credit sums from ledger
+   * Simple method to spend credits from a user (e.g., for booking)
    */
-  _computeUserCreditSums: async (
+  spendCredits: async (
     ctx: MutationCtx,
-    userId: Id<"users">
-  ): Promise<{ computedCredits: number; computedLifetimePurchased: number }> => {
-    const now = Date.now();
-    let computedCredits = 0;
-    let computedLifetimePurchased = 0;
+    args: { userId: Id<"users">; amount: number; description: string; idempotencyKey: string }
+  ): Promise<{ transactionId: string }> => {
+    // Check if user has enough credits
+    const hasBalance = await creditService.validateBalance(ctx, { userId: args.userId }, args.amount);
+    if (!hasBalance) {
+      throw new Error(`Insufficient credits. Required: ${args.amount}`);
+    }
 
+    return await creditService.createTransaction(ctx, {
+      idempotencyKey: args.idempotencyKey,
+      description: args.description,
+      entries: [
+        {
+          userId: args.userId,
+          type: "credit_spend",
+          amount: -args.amount,
+          businessId: undefined,
+          systemEntity: undefined,
+        },
+        {
+          userId: undefined,
+          type: "system_credit_cost",
+          amount: args.amount,
+          businessId: undefined,
+          systemEntity: "system",
+        }
+      ]
+    });
+  },
+
+  /**
+   * Get all ledger entries for a user (for debugging/reconciliation if needed)
+   */
+  getLedgerEntriesForUser: async (
+    ctx: QueryCtx | MutationCtx,
+    userId: Id<"users">
+  ): Promise<Array<{
+    userId: Id<"users">;
+    amount: number;
+    type: string;
+    effectiveAt: number;
+    expiresAt?: number;
+    deleted: boolean;
+  }>> => {
     const entries = await ctx.db
       .query("creditLedger")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
 
-    for (const entry of entries) {
-      // Skip soft-deleted or future-dated entries
-      if (entry.deleted || entry.effectiveAt > now) continue;
+    return entries.map(entry => ({
+      userId: entry.userId!,
+      amount: entry.amount,
+      type: entry.type,
+      effectiveAt: entry.effectiveAt,
+      expiresAt: entry.expiresAt,
+      deleted: entry.deleted ?? false
+    }));
+  },
 
-      // Only user-facing balance changes (customer account)
-      if (entry.account === "customer") {
-        computedCredits += entry.amount;
-      }
-
-      // Lifetime purchased credits only count actual purchases
-      if (entry.type === "credit_purchase" && entry.amount > 0) {
-        computedLifetimePurchased += entry.amount;
-      }
+  /**
+   * Get user balance and optionally reconcile cache
+   * This is the main method other services should use
+   */
+  getUserCredits: async (
+    ctx: QueryCtx | MutationCtx,
+    userId: Id<"users">,
+    reconcileCache = true
+  ): Promise<number> => {
+    // If we need to reconcile and have mutation context, do it
+    if (reconcileCache && 'db' in ctx && 'patch' in ctx.db) {
+      const { reconciliationService } = await import("./reconciliationService");
+      await reconciliationService.reconcileUser({ ctx, userId, updateCache: true });
     }
 
-    return { computedCredits, computedLifetimePurchased };
-  },
+    // Return the balance (either from cache or freshly reconciled)
+    return await creditService.getBalance(ctx, { userId });
+  }
 };
 
 

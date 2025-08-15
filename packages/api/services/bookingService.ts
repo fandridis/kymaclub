@@ -754,7 +754,6 @@ export const bookingService = {
             const newUserCredits = currentUserCredits + refundAmount;
             await ctx.db.patch(booking.userId, {
                 credits: newUserCredits,
-                creditsLastUpdated: now,
             });
 
             console.log(`✅ REFUND COMPLETED - User ${booking.userId} credits updated from ${currentUserCredits} to ${newUserCredits} (+${refundAmount})`);

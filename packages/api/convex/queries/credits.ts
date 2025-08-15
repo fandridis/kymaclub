@@ -35,15 +35,11 @@ export const getUserCachedBalance = query({
     }
 
     const cachedCredits = (user as any).credits ?? 0;
-    const lifetimeCredits = (user as any).lifetimeCredits ?? 0;
-    const lastUpdated = (user as any).creditsLastUpdated;
     
     return {
       userId: args.userId,
       balance: cachedCredits,
-      lifetimeCredits,
       balanceFormatted: `${cachedCredits} credits`,
-      lastUpdated,
       source: "cache",
     };
   },

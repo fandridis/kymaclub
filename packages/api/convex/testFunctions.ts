@@ -3,6 +3,7 @@ import { internalMutation, internalQuery, internalAction } from "./_generated/se
 import { creditService } from "../services/creditService";
 import { CREDIT_LEDGER_TYPES, CreditLedgerType } from "../utils/creditMappings";
 import { getAuthenticatedUserAndBusinessOrThrow } from "./utils";
+import { reconciliationService } from "../services/reconciliationService";
 
 export const createTestUser = internalMutation({
     args: {
@@ -385,8 +386,6 @@ export const testCreditSystem = internalMutation({
             email: "credittest@example.com",
             hasBusinessOnboarded: false,
             role: "user",
-            credits: 0,
-            lifetimeCredits: 0,
         });
 
         // Gift 10 credits from system
@@ -409,7 +408,8 @@ export const testCreditSystem = internalMutation({
         });
 
         // Reconcile after gift
-        const reconcileAfterGift = await creditService.reconcileUserCredits(ctx, {
+        const reconcileAfterGift = await reconciliationService.reconcileUser({
+            ctx,
             userId,
             updateCache: true,
         });
@@ -433,7 +433,8 @@ export const testCreditSystem = internalMutation({
         });
 
         // Final reconciliation
-        const finalReconcile = await creditService.reconcileUserCredits(ctx, {
+        const finalReconcile = await reconciliationService.reconcileUser({
+            ctx,
             userId,
             updateCache: true,
         });
@@ -446,12 +447,12 @@ export const testCreditSystem = internalMutation({
         return {
             success: true,
             userId,
-            balanceAfterGift: reconcileAfterGift.computedCredits,
-            balanceAfterSpend: finalReconcile.computedCredits,
+            balanceAfterGift: reconcileAfterGift.actualCredits,
+            balanceAfterSpend: finalReconcile.actualCredits,
             cachedBalance,
             ledgerBalance,
-            reconciliationDelta: finalReconcile.deltaCredits,
-            message: `Test completed: Gift 10 credits, spent 3, final balance ${finalReconcile.computedCredits}. Cache and ledger ${cachedBalance === ledgerBalance ? 'match' : 'differ'}`,
+            reconciliationDelta: finalReconcile.actualCredits - cachedBalance,
+            message: `Test completed: Gift 10 credits, spent 3, final balance ${finalReconcile.actualCredits}. Cache and ledger ${cachedBalance === ledgerBalance ? 'match' : 'differ'}`,
         };
     },
 });
@@ -496,9 +497,6 @@ export const updateUserCredits = internalMutation({
     args: {
         userId: v.id("users"),
         credits: v.optional(v.number()),
-        heldCredits: v.optional(v.number()),
-        lifetimeCredits: v.optional(v.number()),
-        creditsLastUpdated: v.optional(v.union(v.number(), v.null())),
     },
     returns: v.null(),
     handler: async (ctx, args) => {
@@ -506,15 +504,6 @@ export const updateUserCredits = internalMutation({
 
         if (args.credits !== undefined) {
             updates.credits = args.credits;
-        }
-        if (args.heldCredits !== undefined) {
-            updates.heldCredits = args.heldCredits;
-        }
-        if (args.lifetimeCredits !== undefined) {
-            updates.lifetimeCredits = args.lifetimeCredits;
-        }
-        if (args.creditsLastUpdated !== undefined) {
-            updates.creditsLastUpdated = args.creditsLastUpdated;
         }
 
         await ctx.db.patch(args.userId, updates);
@@ -535,11 +524,8 @@ export const testReconcileUser = internalMutation({
     returns: v.object({
         userId: v.id("users"),
         availableCredits: v.number(),
-        lifetimeCredits: v.number(),
-        expiredCredits: v.number(),
         wasUpdated: v.boolean(),
         deltaAvailableCredits: v.number(),
-        deltaLifetimeCredits: v.number(),
         inconsistencyCount: v.number(),
     }),
     handler: async (ctx, args) => {
@@ -547,42 +533,17 @@ export const testReconcileUser = internalMutation({
 
         const result = await reconciliationService.reconcileUser({
             ctx,
-            args: { userId: args.userId, options: args.options },
-            performedBy: args.userId
+            userId: args.userId,
+            updateCache: true
         });
 
         return {
             userId: result.userId,
-            availableCredits: result.computedBalance.availableCredits,
-            lifetimeCredits: result.computedBalance.lifetimeCredits,
-            expiredCredits: result.computedBalance.expiredCredits,
+            availableCredits: result.actualCredits,
             wasUpdated: result.wasUpdated,
-            deltaAvailableCredits: result.deltas.availableCredits,
-            deltaLifetimeCredits: result.deltas.lifetimeCredits,
-            inconsistencyCount: result.inconsistencies.length,
+            deltaAvailableCredits: result.actualCredits - result.cachedCredits,
+            inconsistencyCount: 0,
         };
-    },
-});
-
-export const testGetUserBalance = internalMutation({
-    args: {
-        userId: v.id("users"),
-        reconcile: v.optional(v.boolean()),
-    },
-    returns: v.object({
-        availableCredits: v.number(),
-        heldCredits: v.number(),
-        lifetimeCredits: v.number(),
-        lastUpdated: v.union(v.number(), v.null()),
-    }),
-    handler: async (ctx, args) => {
-        const { reconciliationService } = await import("../services/reconciliationService");
-
-        return await reconciliationService.getUserBalance({
-            ctx,
-            userId: args.userId,
-            reconcile: args.reconcile ?? false
-        });
     },
 });
 
@@ -619,8 +580,6 @@ export const testReconcileCreditScenario = internalMutation({
             // Step 2: Set incorrect cached balance (50 credits)
             await ctx.db.patch(args.userId, {
                 credits: 50,
-                lifetimeCredits: 50,
-                creditsLastUpdated: Date.now() - 60000
             });
 
             // Step 3: Get initial cached balance
@@ -630,8 +589,8 @@ export const testReconcileCreditScenario = internalMutation({
             // Step 4: Reconcile
             const reconcileResult = await reconciliationService.reconcileUser({
                 ctx,
-                args: { userId: args.userId },
-                performedBy: args.userId
+                userId: args.userId,
+                updateCache: true
             });
 
             // Step 5: Get final balance
