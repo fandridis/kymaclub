@@ -104,7 +104,7 @@ function Onboarding() {
         return null;
     })
 
-    const createBusinessWithVenue = useMutation(api.core.mutations.createBusinessWithVenue);
+    const createBusinessWithVenue = useMutation(api.mutations.core.createBusinessWithVenue);
 
     const form = useForm({
         resolver: zodResolver(onboardingSchema),
@@ -175,8 +175,8 @@ function Onboarding() {
                     email: data.email.trim(),
                     phone: data.phone?.trim() || undefined,
                     description: data.description?.trim() || undefined,
-                    timezone: 'Europe/Athens', // Default for Greek businesses
-                    currency: 'EUR',
+                    //  timezone: 'Europe/Athens', // Default for Greek businesses
+                    // currency: 'EUR',
                     address: {
                         street: data.address.street.trim(),
                         city: data.address.city,

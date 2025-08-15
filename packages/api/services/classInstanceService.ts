@@ -15,8 +15,6 @@ export const classInstanceService = {
      * Create a new class instance from a template
      */
     create: async ({ ctx, args, user }: { ctx: MutationCtx, args: CreateClassInstanceArgs, user: Doc<"users"> }): Promise<{ createdInstanceId: Id<"classInstances"> }> => {
-        console.log("🗓️  --- SERVICE: classInstanceService.create ---");
-
         coreRules.userMustBeAssociatedWithBusiness(user);
         const business = await ctx.db.get(user.businessId!);
         if (!business) {
@@ -63,8 +61,6 @@ export const classInstanceService = {
      * Create multiple class instances from a template following a frequency pattern
      */
     createMultiple: async ({ ctx, args, user }: { ctx: MutationCtx, args: CreateMultipleClassInstancesArgs, user: Doc<"users"> }): Promise<{ createdInstanceIds: Array<Id<"classInstances">>; totalCreated: number }> => {
-        console.log("🗓️  --- SERVICE: classInstanceService.createMultiple ---");
-
         coreRules.userMustBeAssociatedWithBusiness(user);
         const business = await ctx.db.get(user.businessId!);
         if (!business) {
@@ -133,8 +129,6 @@ export const classInstanceService = {
      * Update a single class instance
      */
     updateSingle: async ({ ctx, args, user }: { ctx: MutationCtx, args: UpdateSingleInstanceArgs, user: Doc<"users"> }): Promise<{ updatedInstanceId: Id<"classInstances"> }> => {
-        console.log("🗓️  --- SERVICE: classInstanceService.updateSingle ---");
-
         const existingInstance = await ctx.db.get(args.instanceId);
         if (!existingInstance) {
             throw new ConvexError({
@@ -177,8 +171,6 @@ export const classInstanceService = {
      * Update a set of similar future class instances
      */
     updateMultiple: async ({ ctx, args, user }: { ctx: MutationCtx, args: UpdateMultipleInstancesArgs, user: Doc<"users"> }): Promise<{ updatedInstanceIds: Array<Id<"classInstances">>; totalUpdated: number }> => {
-        console.log("🗓️  --- SERVICE: classInstanceService.updateMultiple ---");
-
         const originalInstance = await ctx.db.get(args.instanceId);
         if (!originalInstance) {
             throw new ConvexError({
@@ -238,8 +230,6 @@ export const classInstanceService = {
      * Soft delete a single class instance
      */
     deleteSingle: async ({ ctx, args, user }: { ctx: MutationCtx, args: DeleteSingleInstanceArgs, user: Doc<"users"> }): Promise<{ deletedInstanceId: Id<"classInstances"> }> => {
-        console.log("🗓️  --- SERVICE: classInstanceService.deleteSingle ---");
-
         const existingInstance = await ctx.db.get(args.instanceId);
         if (!existingInstance) {
             throw new ConvexError({
@@ -272,8 +262,6 @@ export const classInstanceService = {
      * Soft delete similar future class instances
      */
     deleteSimilarFuture: async ({ ctx, args, user }: { ctx: MutationCtx, args: DeleteSimilarFutureInstancesArgs, user: Doc<"users"> }): Promise<{ deletedInstanceIds: Array<Id<"classInstances">>; totalDeleted: number }> => {
-        console.log("🗓️  --- SERVICE: classInstanceService.deleteSimilarFuture ---");
-
         const existingInstance = await ctx.db.get(args.instanceId);
         if (!existingInstance) {
             throw new ConvexError({
@@ -318,8 +306,6 @@ export const classInstanceService = {
      * Get class instances for a date range
      */
     getInstances: async ({ ctx, args, user }: { ctx: QueryCtx, args: { startDate: number, endDate: number }, user: Doc<"users"> }): Promise<Doc<"classInstances">[]> => {
-        console.log("🗓️  --- SERVICE: classInstanceService.getInstances ---");
-
         coreRules.userMustBeAssociatedWithBusiness(user);
 
         const instances = await ctx.db
@@ -339,8 +325,6 @@ export const classInstanceService = {
      * Get similar (future) class instances for an instance
      */
     getSimilarInstances: async ({ ctx, args, user }: { ctx: QueryCtx, args: { instanceId: Id<"classInstances"> }, user: Doc<"users"> }): Promise<Doc<"classInstances">[]> => {
-        console.log("🗓️  --- SERVICE: classInstanceService.getSimilarInstances ---");
-
         const originalInstance = await ctx.db.get(args.instanceId);
         if (!originalInstance) {
             throw new ConvexError({
@@ -403,8 +387,6 @@ export const classInstanceService = {
      * Get class instance by ID
      */
     getInstanceById: async ({ ctx, args, user }: { ctx: QueryCtx, args: { instanceId: Id<"classInstances"> }, user: Doc<"users"> }): Promise<Doc<"classInstances">> => {
-        console.log("🗓️  --- SERVICE: classInstanceService.getInstanceById ---");
-
         const instance = await ctx.db.get(args.instanceId);
         if (!instance || instance.deleted) {
             throw new ConvexError({

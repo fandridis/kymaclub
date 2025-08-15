@@ -15,9 +15,6 @@ export const venueService = {
      * Create a new venue
      */
     create: async ({ ctx, args, user }: { ctx: MutationCtx, args: CreateVenueArgs, user: Doc<"users"> }): Promise<{ createdVenueId: Id<"venues"> }> => {
-        console.log("🏢 --- SERVICE: venueService.create ---");
-        console.log("🏢 Creating venue:", user._id);
-
         userMustBeAssociatedWithBusiness(user);
 
         const cleanVenue = prepareCreateVenue(args);
@@ -40,8 +37,6 @@ export const venueService = {
      * Update an existing venue
      */
     update: async ({ ctx, args, user }: { ctx: MutationCtx, args: UpdateVenueArgs, user: Doc<"users"> }): Promise<{ updatedVenueId: Id<"venues"> }> => {
-        console.log("🏢 --- SERVICE: venueService.update ---");
-        console.log("🏢 Updating venue:", args.venueId);
 
         const existingVenue = await ctx.db.get(args.venueId);
         if (!existingVenue) {
@@ -71,8 +66,6 @@ export const venueService = {
      * Soft delete a venue (mark as deleted)
      */
     delete: async ({ ctx, args, user }: { ctx: MutationCtx, args: DeleteVenueArgs, user: Doc<"users"> }): Promise<{ deletedVenueId: Id<"venues"> }> => {
-        console.log("🏢 --- SERVICE: venueService.delete ---");
-        console.log("🏢 Soft deleting venue:", args.venueId);
 
         const existingVenue = await ctx.db.get(args.venueId);
         if (!existingVenue) {
@@ -117,8 +110,6 @@ export const venueService = {
      * Permanently delete a venue from database
      */
     hardDelete: async ({ ctx, args, user }: { ctx: MutationCtx, args: DeleteVenueArgs, user: Doc<"users"> }): Promise<{ success: boolean }> => {
-        console.log("🏢 --- SERVICE: venueService.hardDelete ---");
-        console.log("🏢 Hard deleting venue:", args.venueId);
 
         const existingVenue = await ctx.db.get(args.venueId);
         if (!existingVenue) {
@@ -179,7 +170,6 @@ export const venueService = {
      * Get venue by ID
      */
     getVenueById: async ({ ctx, args, user }: { ctx: QueryCtx, args: { venueId: Id<"venues"> }, user: Doc<"users"> }): Promise<Doc<"venues">> => {
-        console.log("🏢 --- SERVICE: venueService.getVenueById ---");
 
         const venue = await ctx.db.get(args.venueId);
         if (!venue) {
@@ -210,7 +200,6 @@ export const venueService = {
         isDone: boolean,
         continueCursor: string
     }> => {
-        console.log("🏢 --- SERVICE: venueService.getVenuesByCityPaginated ---");
 
         // Fetch all venues in the city
         const allVenues = await ctx.db
@@ -269,7 +258,6 @@ export const venueService = {
             daysAhead?: number
         }
     }): Promise<Doc<"classInstances">[]> => {
-        console.log("🏢 --- SERVICE: venueService.getUpcomingClassesForVenue ---");
 
         // Verify venue exists
         const venue = await ctx.db.get(args.venueId);

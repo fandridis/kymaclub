@@ -22,6 +22,7 @@ import type * as mutations_classTemplates from "../mutations/classTemplates.js";
 import type * as mutations_core from "../mutations/core.js";
 import type * as mutations_credits from "../mutations/credits.js";
 import type * as mutations_discounts from "../mutations/discounts.js";
+import type * as mutations_reconciliations from "../mutations/reconciliations.js";
 import type * as mutations_uploads from "../mutations/uploads.js";
 import type * as mutations_venues from "../mutations/venues.js";
 import type * as queries_bookings from "../queries/bookings.js";
@@ -56,6 +57,7 @@ declare const fullApi: ApiFromModules<{
   "mutations/core": typeof mutations_core;
   "mutations/credits": typeof mutations_credits;
   "mutations/discounts": typeof mutations_discounts;
+  "mutations/reconciliations": typeof mutations_reconciliations;
   "mutations/uploads": typeof mutations_uploads;
   "mutations/venues": typeof mutations_venues;
   "queries/bookings": typeof queries_bookings;

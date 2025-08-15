@@ -28,12 +28,12 @@ triggers.register("venues", async (ctx, change) => {
         return;
     }
 
-    console.log('=============== TRIGGERED VENUE UPDATE ===============');
-    console.log("🔥🔥🔥 TRIGGER 🔥🔥🔥")
+    console.log("🔥 🔥 🔥 🔥 🔥 🔥 VENUES TRIGGER 🔥 🔥 🔥 🔥 🔥 🔥")
+    console.log("ID", id);
+    console.log("OPERATION", operation);
+    console.log("🔥 🔥 🔥 🔥 🔥 🔥 END OF TRIGGER 🔥 🔥 🔥 🔥 🔥 🔥")
 
-    console.log('ID', id);
-    console.log('OPERATION', operation);
-    console.log('======================================================');
+
 
     if (operation === "update") {
         if (classInstanceRules.venueChangesRequireInstanceUpdate({ existingVenue: oldDoc, updatedVenue: newDoc })) {
@@ -67,6 +67,14 @@ triggers.register("venues", async (ctx, change) => {
  ***************************************************************/
 triggers.register("classTemplates", async (ctx, change) => {
     const { id, oldDoc, newDoc, operation } = change;
+
+
+    console.log("🔥 🔥 🔥 🔥 🔥 🔥 TEMPLATE TRIGGER 🔥 🔥 🔥 🔥 🔥 🔥")
+    console.log("ID", id);
+    console.log("OPERATION", operation);
+    console.log("🔥 🔥 🔥 🔥 🔥 🔥 END OF TRIGGER 🔥 🔥 🔥 🔥 🔥 🔥")
+
+
 
     if (!oldDoc || !newDoc) {
         return;
@@ -103,12 +111,13 @@ triggers.register("classTemplates", async (ctx, change) => {
 triggers.register("users", async (ctx, change) => {
     const { id, oldDoc, newDoc, operation } = change;
 
-    console.log('=============== TRIGGERED USER UPDATE ===============');
-    console.log('ID', id);
-    console.log('OLD DOC', oldDoc);
-    console.log('NEW DOC', newDoc);
-    console.log('OPERATION', operation);
-    console.log('======================================================');
+
+    console.log("🔥 🔥 🔥 🔥 🔥 🔥 USER TRIGGER 🔥 🔥 🔥 🔥 🔥 🔥")
+    console.log("ID", id);
+    console.log("OPERATION", operation);
+    console.log("🔥 🔥 🔥 🔥 🔥 🔥 END OF TRIGGER 🔥 🔥 🔥 🔥 🔥 🔥")
+
+
 
     if (!oldDoc || !newDoc) {
         return;

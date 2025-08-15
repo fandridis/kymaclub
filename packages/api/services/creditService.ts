@@ -133,7 +133,6 @@ export const creditService = {
         }
       );
 
-      console.log(`💳 CREDIT_SERVICE: Transaction ${transactionId} completed with ${entries.length} entries`);
       return { transactionId };
 
     } catch (error) {
@@ -150,7 +149,6 @@ export const creditService = {
         });
       }
 
-      console.error(`💳 CREDIT_SERVICE: Transaction ${transactionId} failed:`, error);
       throw error;
     }
   },

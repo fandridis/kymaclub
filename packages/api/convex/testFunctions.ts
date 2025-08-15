@@ -1,7 +1,7 @@
 import { v } from "convex/values"
 import { internalMutation, internalQuery, internalAction } from "./_generated/server";
 import { creditService } from "../services/creditService";
-import { CREDIT_LEDGER_TYPES } from "../utils/creditMappings";
+import { CREDIT_LEDGER_TYPES, CreditLedgerType } from "../utils/creditMappings";
 import { getAuthenticatedUserAndBusinessOrThrow } from "./utils";
 
 export const createTestUser = internalMutation({
@@ -453,5 +453,207 @@ export const testCreditSystem = internalMutation({
             reconciliationDelta: finalReconcile.deltaCredits,
             message: `Test completed: Gift 10 credits, spent 3, final balance ${finalReconcile.computedCredits}. Cache and ledger ${cachedBalance === ledgerBalance ? 'match' : 'differ'}`,
         };
+    },
+});
+
+// Additional test helpers for reconciliation testing
+export const createCreditLedgerEntry = internalMutation({
+    args: {
+        userId: v.id("users"),
+        amount: v.number(),
+        type: v.string(),
+        effectiveAt: v.number(),
+        creditValue: v.optional(v.number()),
+        expiresAt: v.optional(v.number()),
+        description: v.string(),
+        deleted: v.optional(v.boolean()),
+        relatedBookingId: v.optional(v.id("bookings")),
+        relatedClassInstanceId: v.optional(v.id("classInstances")),
+    },
+    returns: v.id("creditLedger"),
+    handler: async (ctx, args) => {
+        const entryId = await ctx.db.insert("creditLedger", {
+            transactionId: `test_${args.userId}_${Date.now()}`,
+            account: "customer",
+            userId: args.userId,
+            amount: args.amount,
+            type: args.type as CreditLedgerType,
+            effectiveAt: args.effectiveAt,
+            creditValue: args.creditValue,
+            expiresAt: args.expiresAt,
+            description: args.description,
+            idempotencyKey: `test_${args.userId}_${Date.now()}_${Math.random()}`,
+            deleted: args.deleted ?? false,
+            relatedBookingId: args.relatedBookingId,
+            relatedClassInstanceId: args.relatedClassInstanceId,
+            createdAt: Date.now(),
+        });
+        return entryId;
+    },
+});
+
+export const updateUserCredits = internalMutation({
+    args: {
+        userId: v.id("users"),
+        credits: v.optional(v.number()),
+        heldCredits: v.optional(v.number()),
+        lifetimeCredits: v.optional(v.number()),
+        creditsLastUpdated: v.optional(v.union(v.number(), v.null())),
+    },
+    returns: v.null(),
+    handler: async (ctx, args) => {
+        const updates: any = {};
+
+        if (args.credits !== undefined) {
+            updates.credits = args.credits;
+        }
+        if (args.heldCredits !== undefined) {
+            updates.heldCredits = args.heldCredits;
+        }
+        if (args.lifetimeCredits !== undefined) {
+            updates.lifetimeCredits = args.lifetimeCredits;
+        }
+        if (args.creditsLastUpdated !== undefined) {
+            updates.creditsLastUpdated = args.creditsLastUpdated;
+        }
+
+        await ctx.db.patch(args.userId, updates);
+        return null;
+    },
+});
+
+// Test functions for reconciliation service
+export const testReconcileUser = internalMutation({
+    args: {
+        userId: v.id("users"),
+        options: v.optional(v.object({
+            forceUpdate: v.optional(v.boolean()),
+            includeAnalysis: v.optional(v.boolean()),
+            dryRun: v.optional(v.boolean()),
+        })),
+    },
+    returns: v.object({
+        userId: v.id("users"),
+        availableCredits: v.number(),
+        lifetimeCredits: v.number(),
+        expiredCredits: v.number(),
+        wasUpdated: v.boolean(),
+        deltaAvailableCredits: v.number(),
+        deltaLifetimeCredits: v.number(),
+        inconsistencyCount: v.number(),
+    }),
+    handler: async (ctx, args) => {
+        const { reconciliationService } = await import("../services/reconciliationService");
+
+        const result = await reconciliationService.reconcileUser({
+            ctx,
+            args: { userId: args.userId, options: args.options },
+            performedBy: args.userId
+        });
+
+        return {
+            userId: result.userId,
+            availableCredits: result.computedBalance.availableCredits,
+            lifetimeCredits: result.computedBalance.lifetimeCredits,
+            expiredCredits: result.computedBalance.expiredCredits,
+            wasUpdated: result.wasUpdated,
+            deltaAvailableCredits: result.deltas.availableCredits,
+            deltaLifetimeCredits: result.deltas.lifetimeCredits,
+            inconsistencyCount: result.inconsistencies.length,
+        };
+    },
+});
+
+export const testGetUserBalance = internalMutation({
+    args: {
+        userId: v.id("users"),
+        reconcile: v.optional(v.boolean()),
+    },
+    returns: v.object({
+        availableCredits: v.number(),
+        heldCredits: v.number(),
+        lifetimeCredits: v.number(),
+        lastUpdated: v.union(v.number(), v.null()),
+    }),
+    handler: async (ctx, args) => {
+        const { reconciliationService } = await import("../services/reconciliationService");
+
+        return await reconciliationService.getUserBalance({
+            ctx,
+            userId: args.userId,
+            reconcile: args.reconcile ?? false
+        });
+    },
+});
+
+export const testReconcileCreditScenario = internalMutation({
+    args: {
+        userId: v.id("users"),
+    },
+    returns: v.object({
+        success: v.boolean(),
+        initialBalance: v.number(),
+        finalBalance: v.number(),
+        wasReconciled: v.boolean(),
+        message: v.string(),
+    }),
+    handler: async (ctx, args) => {
+        const { reconciliationService } = await import("../services/reconciliationService");
+
+        try {
+            // Step 1: Create ledger entry (100 credits)
+            await ctx.db.insert("creditLedger", {
+                transactionId: `test_${args.userId}_${Date.now()}`,
+                account: "customer",
+                userId: args.userId,
+                amount: 100,
+                type: CREDIT_LEDGER_TYPES.CREDIT_PURCHASE,
+                effectiveAt: Date.now() - 1000,
+                creditValue: 2.0,
+                description: "Test credit purchase",
+                idempotencyKey: `test_${Date.now()}`,
+                deleted: false,
+                createdAt: Date.now(),
+            });
+
+            // Step 2: Set incorrect cached balance (50 credits)
+            await ctx.db.patch(args.userId, {
+                credits: 50,
+                lifetimeCredits: 50,
+                creditsLastUpdated: Date.now() - 60000
+            });
+
+            // Step 3: Get initial cached balance
+            const userBefore = await ctx.db.get(args.userId);
+            const initialBalance = userBefore?.credits ?? 0;
+
+            // Step 4: Reconcile
+            const reconcileResult = await reconciliationService.reconcileUser({
+                ctx,
+                args: { userId: args.userId },
+                performedBy: args.userId
+            });
+
+            // Step 5: Get final balance
+            const userAfter = await ctx.db.get(args.userId);
+            const finalBalance = userAfter?.credits ?? 0;
+
+            return {
+                success: true,
+                initialBalance,
+                finalBalance,
+                wasReconciled: reconcileResult.wasUpdated,
+                message: `Reconciled ${initialBalance} -> ${finalBalance} credits`
+            };
+
+        } catch (error) {
+            return {
+                success: false,
+                initialBalance: 0,
+                finalBalance: 0,
+                wasReconciled: false,
+                message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+            };
+        }
     },
 });
