@@ -10,6 +10,16 @@
 			"enabled": true
 		},
 		"upload_source_maps": true,
+		"routes": [
+			{
+				"pattern": "kymaclub.com/*",
+				"custom_domain": true
+			},
+			{
+				"pattern": "www.kymaclub.com/*",
+				"custom_domain": true
+			}
+		],
 		"vars": {
 			"VALUE_FROM_CLOUDFLARE": "Hello from Cloudflare",
 			"NOTION_PAGE_BUSINESS_WL_ID": "238750830f2680d7b55cebf28c00c0b8",
