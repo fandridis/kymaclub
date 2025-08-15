@@ -19,8 +19,8 @@ export default function Home({ loaderData }: Route.ComponentProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  const handlePartnerClick = () => {
-    navigate('/partners');
+  const handleHowItWorksClick = () => {
+    navigate('/how-it-works');
   };
 
   const handleJoinWaitlist = () => {
@@ -56,7 +56,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
               <span className="text-white/40">{t('home.subtitle')}</span>
             </h1>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-8 pt-12">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 pt-12">
               <Button
                 onClick={handleJoinWaitlist}
                 className="bg-white text-black hover:bg-gray-100 h-16 px-12 rounded-full text-lg transition-all duration-300"
@@ -64,11 +64,11 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                 {t('home.joinWaitlist')}
               </Button>
               <Button
-                onClick={handlePartnerClick}
+                onClick={handleHowItWorksClick}
                 variant="outline"
                 className="bg-transparent text-white border-2 border-white hover:bg-white hover:text-black h-16 px-12 rounded-full text-lg transition-all duration-300"
               >
-                {t('home.partnerWithUs')}
+                {t('navigation.howItWorks')}
               </Button>
             </div>
           </div>
