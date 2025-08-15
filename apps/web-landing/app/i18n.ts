@@ -20,7 +20,8 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    fallbackLng: "en",
+    lng: "gr", // Set default language to Greek
+    fallbackLng: "gr", // Keep Greek as fallback
     debug: false,
 
     interpolation: {
@@ -30,6 +31,9 @@ i18n
     detection: {
       order: ["localStorage", "navigator", "htmlTag"],
       caches: ["localStorage"],
+      lookupLocalStorage: "i18nextLng",
+      lookupFromPathIndex: 0,
+      lookupFromSubdomainIndex: 0,
     },
   });
 

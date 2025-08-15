@@ -33,21 +33,21 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
   const changeLanguage = (language: string) => {
     i18n.changeLanguage(language);
     setCurrentLanguage(language);
-    
+
     // Update HTML lang attribute
     document.documentElement.lang = language;
-    
+
     // Store in localStorage
-    localStorage.setItem('i18nextLng', language);
+    localStorage.setItem('kymaclub-i18nextLng', language);
   };
 
   useEffect(() => {
     // Set initial language
-    const savedLanguage = localStorage.getItem('i18nextLng') || i18n.language || 'en';
+    const savedLanguage = localStorage.getItem('kymaclub-i18nextLng') || i18n.language || 'en';
     if (savedLanguage !== currentLanguage) {
       changeLanguage(savedLanguage);
     }
-    
+
     // Update HTML lang attribute on mount
     document.documentElement.lang = currentLanguage;
   }, []);

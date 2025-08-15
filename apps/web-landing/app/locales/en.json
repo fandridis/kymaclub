@@ -23,7 +23,8 @@
   },
   "howItWorks": {
     "hero": {
-      "title": "One subscription. Infinite possibilities.",
+      "title": "One subscription.",
+      "titleColored": "Infinite possibilities.",
       "subtitle": "The wellness journey that changes the way you experience wellness in Greece."
     },
     "section": {
