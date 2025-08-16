@@ -1,7 +1,7 @@
 import type { MutationCtx, QueryCtx } from "../convex/_generated/server";
 import type { Id } from "../convex/_generated/dataModel";
 import { ConvexError } from "convex/values";
-import { creditTransactionsFields } from "../convex/schema";
+import { CreditTransactionType, CreditTransactionReason } from "../types/credit";
 
 /**
  * Credit Service
@@ -12,31 +12,6 @@ import { creditTransactionsFields } from "../convex/schema";
  * 3. Get user balance (from user.credits field)
  * 4. Transaction history and business analytics
  */
-
-export type CreditTransactionType = "purchase" | "gift" | "spend" | "refund";
-
-export type CreditTransactionReason = 
-  | "user_buy"
-  | "welcome_bonus" 
-  | "referral_bonus"
-  | "admin_gift"
-  | "campaign_bonus"
-  | "booking"
-  | "user_cancellation"
-  | "business_cancellation"
-  | "payment_issue"
-  | "general_refund";
-
-export type CreditTransaction = {
-  userId: Id<"users">;
-  amount: number;
-  type: CreditTransactionType;
-  reason?: CreditTransactionReason;
-  businessId?: Id<"businesses">;
-  classInstanceId?: Id<"classInstances">;
-  description: string;
-  externalRef?: string;
-};
 
 export const creditService = {
   /**

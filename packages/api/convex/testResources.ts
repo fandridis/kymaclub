@@ -67,6 +67,50 @@ export const classTemplate = {
         maxHours: 168
     },
     cancellationWindowHours: 24,
+    discountRules: [
+        {
+            id: "early_bird_001",
+            name: "2-Day Early Bird",
+            condition: {
+                type: "hours_before_min",
+                hours: 48, // 48 hours = 2 days
+            },
+            discount: {
+                type: "fixed_amount",
+                value: 2, // 2 credits off
+            },
+            createdAt: Date.now(),
+            createdBy: "user1" as any,
+        },
+        {
+            id: "early_bird_002",
+            name: "12h Early Bird",
+            condition: {
+                type: "hours_before_min",
+                hours: 12, // 12 hours
+            },
+            discount: {
+                type: "fixed_amount",
+                value: 1, // 1 credit off
+            },
+            createdAt: Date.now(),
+            createdBy: "user1" as any,
+        },
+        {
+            id: "last_minute_001",
+            name: "Last Minute Rush",
+            condition: {
+                type: "hours_before_max",
+                hours: 2, // 2 hours
+            },
+            discount: {
+                type: "fixed_amount",
+                value: 3, // 3 credits off
+            },
+            createdAt: Date.now(),
+            createdBy: "user1" as any,
+        },
+    ],
     createdAt: Date.now(),
     deleted: false,
 } satisfies Omit<Doc<"classTemplates">, "_id" | "_creationTime" | "businessId" | "venueId" | "createdBy">;
@@ -84,6 +128,7 @@ export const classInstance = {
     baseCredits: 10,
     bookedCount: 0,
     waitlistCount: 0,
+    discountRules: undefined, // No default instance discounts - tests will set this explicitly when needed
     templateSnapshot: {
         name: "Yoga Class",
         instructor: "John Doe",
@@ -102,6 +147,8 @@ export const classInstance = {
     },
     createdAt: Date.now(),
 } satisfies Omit<Doc<"classInstances">, "_id" | "_creationTime" | "businessId" | "templateId" | "venueId" | "createdBy">;
+
+
 
 
 export const createTestUser = (overrides?: Partial<Doc<"users">>): Doc<"users"> => ({
@@ -142,6 +189,8 @@ export const createTestVenue = (overrides?: Partial<Doc<"venues">>): Doc<"venues
         ...overrides
     } as Doc<"venues">;
 }
+
+
 
 export const testResources = {
     docs: {

@@ -18,6 +18,22 @@ const auditFields = {
   updatedBy: v.optional(v.id("users")),
 };
 
+export const discountRuleFields = {
+  id: v.string(),
+  name: v.string(),
+  condition: v.object({
+    type: v.union(v.literal("hours_before_min"), v.literal("hours_before_max"), v.literal("always")),
+    hours: v.optional(v.number()),
+  }),
+  discount: v.object({
+    type: v.literal("fixed_amount"),
+    value: v.number(),
+  }),
+  createdAt: v.number(),
+  createdBy: v.id("users"),
+  updatedAt: v.optional(v.number()),
+  updatedBy: v.optional(v.id("users")),
+};
 
 /***************************************************************
  * Main tables
@@ -135,47 +151,6 @@ export const systemSettingsFields = {
   ...softDeleteFields,
 };
 
-export const discountTemplatesFields = {
-  name: v.string(),
-  type: v.union(v.literal("percentage"), v.literal("fixed_amount")),
-  description: v.optional(v.string()),
-  rate: v.number(), // 0.20 for 20% off
-
-  // Eligibility restrictions only
-  maxBusinesses: v.optional(v.number()),
-  requiresApproval: v.boolean(),
-  isActive: v.boolean(),
-
-  // How many businesses currently using this template
-  currentUsage: v.optional(v.number()),
-
-  ...auditFields,
-  ...softDeleteFields,
-};
-
-export const businessDiscountsFields = {
-  businessId: v.id("businesses"),
-  discountTemplateId: v.id("discountTemplates"),
-
-  // Simple overrides
-  customRate: v.optional(v.number()), // Override template rate
-  expiresAt: v.optional(v.number()), // null = permanent
-
-  // Application details
-  appliedAt: v.number(),
-  appliedBy: v.id("users"),
-
-  // Audit trail
-  lastModifiedAt: v.optional(v.number()),
-  lastModifiedBy: v.optional(v.id("users")),
-
-  // Status
-  isActive: v.boolean(),
-  notes: v.optional(v.string()),
-
-  ...auditFields,
-  ...softDeleteFields,
-};
 
 export const instructorsFields = {
   businessId: v.id("businesses"),
@@ -287,35 +262,8 @@ export const classTemplatesFields = {
   })),
   cancellationWindowHours: v.number(),
 
-  // Smart discount rules (multiple rules, best price wins)
-  discountRules: v.optional(v.array(v.object({
-    id: v.string(),              // "early_bird_001", "last_minute_001"
-    name: v.string(),            // "Early Bird Special", "Last Minute Deal"
-
-    // When this rule applies
-    condition: v.object({
-      type: v.union(
-        v.literal("hours_before_min"), // At least X hours before (early bird)
-        v.literal("hours_before_max"), // At most X hours before (last minute)
-        v.literal("always")            // Always applies (general discount)
-      ),
-      hours: v.optional(v.number())    // 12 for early bird, 4 for last minute
-    }),
-
-    // How the discount is calculated
-    discount: v.object({
-      type: v.union(
-        v.literal("fixed_amount"),   // baseCredits - X
-        v.literal("percentage"),     // baseCredits * (1 - X)
-        v.literal("fixed_price")     // set final price to X
-      ),
-      value: v.number()              // 2 (credits), 0.40 (40%), or 2 (final price)
-    }),
-
-    isActive: v.boolean(),
-    createdAt: v.number(),
-    createdBy: v.id("users")
-  }))),
+  // Flexible discount rules - businesses can define custom early-bird and last-minute discounts
+  discountRules: v.optional(v.array(v.object(discountRuleFields))),
 
   // Template metadata
   isActive: v.boolean(),
@@ -357,19 +305,8 @@ export const classInstancesFields = {
   tags: v.optional(v.array(v.string())),
   color: v.optional(v.string()),
 
-  // Manual discount override (takes precedence over template rules)
-  manualDiscount: v.optional(v.object({
-    type: v.union(
-      v.literal("fixed_amount"),
-      v.literal("percentage"),
-      v.literal("fixed_price")
-    ),
-    value: v.number(),
-    reason: v.optional(v.string()),    // "Low attendance", "Manager special"
-    appliedBy: v.id("users"),
-    appliedAt: v.number(),
-    isActive: v.boolean()              // Can temporarily disable
-  })),
+  // Instance-specific discount rules (overrides template rules)
+  discountRules: v.optional(v.array(v.object(discountRuleFields))),
 
   // Status and booking tracking
   status: v.union(
@@ -461,21 +398,12 @@ export const bookingsFields = {
       v.literal("template_rule"),     // Automatic template rule
       v.literal("manual_override")    // Manual instance override
     ),
-    type: v.union(
-      v.literal("fixed_amount"),
-      v.literal("percentage"),
-      v.literal("fixed_price")
-    ),
-    value: v.number(),                // The discount value used
+    discountType: v.union(v.literal("percentage"), v.literal("fixed_amount")),
+    discountValue: v.number(),        // The discount value used
     creditsSaved: v.number(),         // originalPrice - finalPrice
-
-    // For template rules
-    ruleId: v.optional(v.string()),   // Which template rule was applied
-    ruleName: v.optional(v.string()), // "Early Bird Special"
-
-    // For manual overrides
-    reason: v.optional(v.string()),   // Manager's reason
-    appliedBy: v.optional(v.id("users"))
+    ruleName: v.string(),             // Name of the discount rule
+    reason: v.optional(v.string()),   // Reason for the discount
+    appliedBy: v.optional(v.id("users")), // Who applied the discount
   })),
 
   // Simple timestamps
@@ -560,7 +488,6 @@ export const creditTransactionsFields = {
   ...softDeleteFields,
 };
 
-
 /***************************************************************
  * Database schema
  ***************************************************************/
@@ -592,21 +519,6 @@ export default defineSchema({
    */
   systemSettings: defineTable(systemSettingsFields).index("by_key", ["key"]),
 
-  /** 
-   * Discount templates
-   */
-  discountTemplates: defineTable(discountTemplatesFields)
-    .index("by_active", ["isActive"])
-    .index("by_name", ["name"]),
-
-  /** 
-   * Junction table: which businesses have which discounts
-   */
-  businessDiscounts: defineTable(businessDiscountsFields)
-    .index("by_business", ["businessId"])
-    .index("by_template", ["discountTemplateId"])
-    .index("by_business_active", ["businessId", "isActive"])
-    .index("by_expires", ["expiresAt"]),
 
   /** 
    * Venues/Locations where classes are held
@@ -657,6 +569,8 @@ export default defineSchema({
     .index("by_business_and_active", ["businessId", "isActive"])
     .index("by_business", ["businessId"])
     .index("by_effective_range", ["effectiveFrom", "effectiveUntil"]),
+
+
 
   /**
    * Simple Credit Transactions - One record per credit operation
