@@ -51,6 +51,77 @@ export async function createTestVenue(t: TestConvexForDataModel<GenericDataModel
     });
 }
 
+export async function createTestClassTemplate(
+    t: TestConvexForDataModel<GenericDataModel>,
+    userId: Id<"users">,
+    businessId: Id<"businesses">,
+    venueId: Id<"venues">,
+    template: {
+        name?: string;
+        description?: string;
+        instructor?: Id<"users">;
+        duration?: number;
+        capacity?: number;
+        baseCredits?: number;
+        tags?: string[];
+        color?: string;
+    } = {}
+) {
+    return await t.mutation(internal.testFunctions.createTestClassTemplate, {
+        userId,
+        businessId,
+        template: {
+            name: template.name || "Test Class",
+            description: template.description || "A test class template",
+            businessId,
+            venueId,
+            instructor: template.instructor || userId,
+            duration: template.duration || 60,
+            capacity: template.capacity || 20,
+            baseCredits: template.baseCredits || 1,
+            tags: template.tags || ["test", "fitness"],
+            color: template.color || "#3B82F6",
+        }
+    });
+}
+
+export async function createTestClassInstance(
+    t: TestConvexForDataModel<GenericDataModel>,
+    templateId: Id<"classTemplates">,
+    startTime: number,
+    endTime: number,
+    timezone: string = "UTC"
+) {
+    return await t.mutation(internal.testFunctions.createTestClassInstance, {
+        templateId,
+        startTime,
+        endTime,
+        timezone,
+    });
+}
+
+export async function setupClassForBooking(asUser: TestConvexForDataModel<GenericDataModel>, businessId: Id<"businesses">, userId: Id<"users">) {
+    // Create venue
+    const venueId = await createTestVenue(asUser, "Test Yoga Studio");
+
+    // Create class template
+    const templateId = await createTestClassTemplate(asUser, userId, businessId, venueId, {
+        name: "Morning Yoga",
+        description: "A peaceful morning yoga class",
+        duration: 60,
+        capacity: 20,
+        baseCredits: 10,
+    });
+
+    // Create class instance (2 hours from now)
+    const startTime = Date.now() + (14 * 60 * 60 * 1000);
+    const endTime = startTime + (60 * 60 * 1000);
+
+    const instanceId = await createTestClassInstance(asUser, templateId, startTime, endTime, "UTC");
+
+    return { venueId, templateId, instanceId, startTime, endTime };
+}
+
 export async function initAuth() {
     const userId = await createTestUser();
     const businessId = await createTestBusiness(userId);

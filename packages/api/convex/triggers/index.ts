@@ -25,12 +25,7 @@ triggers.register("venues", async (ctx, change) => {
         return;
     }
 
-    console.log("🔥 🔥 🔥 🔥 🔥 🔥 VENUES TRIGGER 🔥 🔥 🔥 🔥 🔥 🔥")
-    console.log("ID", id);
-    console.log("OPERATION", operation);
-    console.log("🔥 🔥 🔥 🔥 🔥 🔥 END OF TRIGGER 🔥 🔥 🔥 🔥 🔥 🔥")
-
-
+    console.log("🔥 🔥 🔥 🔥 🔥 🔥 VENUES TRIGGER  🔥 🔥 🔥 🔥 🔥 🔥")
 
     if (operation === "update") {
         if (classInstanceRules.venueChangesRequireInstanceUpdate({ existingVenue: oldDoc, updatedVenue: newDoc })) {
@@ -66,12 +61,7 @@ triggers.register("classTemplates", async (ctx, change) => {
     const { id, oldDoc, newDoc, operation } = change;
 
 
-    console.log("🔥 🔥 🔥 🔥 🔥 🔥 TEMPLATE TRIGGER 🔥 🔥 🔥 🔥 🔥 🔥")
-    console.log("ID", id);
-    console.log("OPERATION", operation);
-    console.log("🔥 🔥 🔥 🔥 🔥 🔥 END OF TRIGGER 🔥 🔥 🔥 🔥 🔥 🔥")
-
-
+    console.log("🔥 🔥 🔥 🔥 🔥 🔥 CLASS TEMPLATE TRIGGER  🔥 🔥 🔥 🔥 🔥 🔥")
 
     if (!oldDoc || !newDoc) {
         return;
@@ -85,17 +75,12 @@ triggers.register("classTemplates", async (ctx, change) => {
                 .filter(q => q.eq(q.field("status"), "scheduled"))
                 .collect();
 
-            console.log('INSTANCES TO UPDATE', instancesToUpdate);
             const instanceUpdates = classInstanceOperations.prepareInstanceUpdatesFromTemplateChanges(
                 instancesToUpdate,
                 newDoc
             );
 
-            console.log('INSTANCE UPDATES', instanceUpdates);
-
             for (const update of instanceUpdates) {
-                console.log('PATCHING INSTANCE', update.instanceId);
-                console.log('CHANGES', update.changes);
                 await ctx.db.patch(update.instanceId, update.changes);
             }
         }
@@ -110,11 +95,6 @@ triggers.register("users", async (ctx, change) => {
 
 
     console.log("🔥 🔥 🔥 🔥 🔥 🔥 USER TRIGGER 🔥 🔥 🔥 🔥 🔥 🔥")
-    console.log("ID", id);
-    console.log("OPERATION", operation);
-    console.log("🔥 🔥 🔥 🔥 🔥 🔥 END OF TRIGGER 🔥 🔥 🔥 🔥 🔥 🔥")
-
-
 
     if (!oldDoc || !newDoc) {
         return;

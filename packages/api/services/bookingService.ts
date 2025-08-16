@@ -496,7 +496,6 @@ export const bookingService = {
             .first();
 
         if (existing) {
-            console.log(`🔄 DUPLICATE BOOKING DETECTED - Existing booking found: ${existing._id}, returning idempotently`);
             // If called again, treat idempotently and do not double-charge
             return { bookingId: existing._id, transactionId: existing.creditTransactionId || `${existing._id}` };
         }
@@ -621,11 +620,8 @@ export const bookingService = {
     }): Promise<{ success: boolean }> => {
         const now = Date.now();
 
-        console.log(`🔴 CANCEL BOOKING STARTED - BookingId: ${args.bookingId}, UserId: ${user._id}, Reason: ${args.reason || 'Not provided'}`);
-
         const booking = await ctx.db.get(args.bookingId);
         if (!booking) {
-            console.log(`❌ CANCEL BOOKING FAILED - Booking not found: ${args.bookingId}`);
             throw new ConvexError({
                 message: "Booking not found",
                 field: "bookingId",
@@ -641,10 +637,7 @@ export const bookingService = {
             });
         }
 
-        console.log(`📋 BOOKING DETAILS - Status: ${booking.status}, OriginalPrice: ${booking.originalPrice}, FinalPrice: ${booking.finalPrice}, CreditsUsed: ${booking.creditsUsed}, TransactionId: ${booking.creditTransactionId}`);
-
         if (booking.status !== "pending") {
-            console.log(`❌ CANCEL BOOKING FAILED - Invalid status: ${booking.status} (expected: pending)`);
             throw new ConvexError({
                 message: `Cannot cancel booking with status: ${booking.status}`,
                 field: "status",
@@ -655,7 +648,6 @@ export const bookingService = {
         // Get class instance to check cancellation window
         const instance = await ctx.db.get(booking.classInstanceId);
         if (!instance) {
-            console.log(`❌ CANCEL BOOKING FAILED - Class instance not found: ${booking.classInstanceId}`);
             throw new ConvexError({
                 message: "Class instance not found",
                 field: "classInstanceId",
@@ -663,12 +655,10 @@ export const bookingService = {
             });
         }
 
-        console.log(`🏫 CLASS INSTANCE DETAILS - StartTime: ${new Date(instance.startTime).toISOString()}, Status: ${instance.status}, BookedCount: ${instance.bookedCount}`);
 
         // Get template for cancellation rules
         const template = await ctx.db.get(instance.templateId);
         if (!template) {
-            console.log(`❌ CANCEL BOOKING FAILED - Class template not found: ${instance.templateId}`);
             throw new ConvexError({
                 message: "Class template not found",
                 field: "templateId",
@@ -676,12 +666,9 @@ export const bookingService = {
             });
         }
 
-        console.log(`📋 TEMPLATE DETAILS - Name: ${template.name}, CancellationWindowHours: ${template.cancellationWindowHours}`);
-
         // Get user's current credit balance for logging
         const bookedUser = await ctx.db.get(booking.userId);
         const currentUserCredits = bookedUser?.credits ?? 0;
-        console.log(`👤 USER CREDITS BEFORE CANCELLATION - UserId: ${booking.userId}, CurrentCredits: ${currentUserCredits}`);
 
         // Check if cancellation is allowed (simplified - can be enhanced later)
         const cancellationWindowHours = instance.cancellationWindowHours ?? template.cancellationWindowHours ?? 0;
@@ -690,18 +677,7 @@ export const bookingService = {
         const timeUntilClass = instance.startTime - now;
         const hoursUntilClass = timeUntilClass / (1000 * 60 * 60);
 
-        console.log(`⏰ CANCELLATION WINDOW CHECK - WindowHours: ${cancellationWindowHours}, HoursUntilClass: ${hoursUntilClass.toFixed(2)}, CancellationCutoff: ${new Date(cancellationCutoff).toISOString()}, CurrentTime: ${new Date(now).toISOString()}`);
-
         const isLateCancellation = now > cancellationCutoff;
-        if (isLateCancellation) {
-            console.log(`⚠️ LATE CANCELLATION - Past cutoff (${new Date(cancellationCutoff).toISOString()}). Proceeding with 50% refund policy.`);
-        } else {
-            console.log(`✅ CANCELLATION WINDOW VALID - Proceeding with full refund policy`);
-        }
-
-        console.log(`✅ CANCELLATION WINDOW VALID - Proceeding with cancellation`);
-
-        console.log(`🔄 UPDATING BOOKING STATUS - Setting status to 'cancelled'`);
 
         // Update booking status
         await ctx.db.patch(args.bookingId, {
@@ -710,8 +686,6 @@ export const bookingService = {
             updatedAt: now,
             updatedBy: user._id,
         });
-
-        console.log(`📊 UPDATING CLASS INSTANCE - Decreasing bookedCount from ${instance.bookedCount} to ${Math.max(0, instance.bookedCount - 1)}`);
 
         // Decrease booked count
         await ctx.db.patch(booking.classInstanceId, {
@@ -724,17 +698,13 @@ export const bookingService = {
         // 💰 REFUND CALCULATION AND PROCESSING
         const refundMultiplier = isLateCancellation ? 0.5 : 1;
         const refundAmount = booking.creditsUsed * refundMultiplier; // 50% refund if late, full refund otherwise
-        const businessRefundImpact = booking.finalPrice * refundMultiplier; // Amount business loses
-
-        console.log(`💰 REFUND CALCULATION - RefundAmount: ${refundAmount} credits (${refundMultiplier * 100}% of original), BusinessImpact: ${businessRefundImpact} credits, OriginalPayment: ${booking.finalPrice} credits`);
 
         if (refundAmount > 0) {
-            console.log(`🔄 PROCESSING REFUND - Adding ${refundAmount} credits back to user ${booking.userId}`);
 
             // Process refund through credit service for proper transaction tracking
             const refundReason = isLateCancellation ? "user_cancellation" : "user_cancellation";
             const refundDescription = `Refund for cancelled booking: ${template.name} (${refundMultiplier * 100}% refund)`;
-            
+
             const { newBalance } = await creditService.addCredits(ctx, {
                 userId: booking.userId,
                 amount: refundAmount,
@@ -748,7 +718,6 @@ export const bookingService = {
                 bookingId: booking._id,
             });
 
-            console.log(`✅ REFUND COMPLETED - User ${booking.userId} credits updated from ${currentUserCredits} to ${newBalance} (+${refundAmount})`);
         } else {
             console.log(`ℹ️ NO REFUND NEEDED - RefundAmount: ${refundAmount}`);
         }

@@ -186,17 +186,7 @@ export const creditService = {
       limit?: number;
       type?: CreditTransactionType;
     }
-  ): Promise<Array<{
-    id: Id<"creditTransactions">;
-    amount: number;
-    type: CreditTransactionType;
-    reason?: CreditTransactionReason;
-    businessId?: Id<"businesses">;
-    classInstanceId?: Id<"classInstances">;
-    description: string;
-    externalRef?: string;
-    createdAt: number;
-  }>> => {
+  ) => {
     const { userId, limit = 50, type } = args;
 
     let query = ctx.db
@@ -213,17 +203,7 @@ export const creditService = {
       .order("desc")
       .take(limit);
 
-    return transactions.map(tx => ({
-      id: tx._id,
-      amount: tx.amount,
-      type: tx.type,
-      reason: tx.reason,
-      businessId: tx.businessId,
-      classInstanceId: tx.classInstanceId,
-      description: tx.description,
-      externalRef: tx.externalRef,
-      createdAt: tx.createdAt
-    }));
+    return transactions;
   },
 
   /**

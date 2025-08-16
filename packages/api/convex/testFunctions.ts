@@ -184,7 +184,7 @@ export const createTestClassTemplate = internalMutation({
                 minHours: 2,
                 maxHours: 168
             },
-            cancellationWindowHours: 24,
+            cancellationWindowHours: 10,
             deleted: false,
             createdAt: Date.now(),
             createdBy: args.userId,
@@ -223,29 +223,6 @@ export const recordCreditPurchase = internalMutation({
             reason: "user_buy",
             description: args.description || "Credit purchase",
             externalRef: args.externalReference,
-        });
-        return { transactionId: result.transactionId };
-    },
-});
-
-export const recordBookingLedgerEntries = internalMutation({
-    args: {
-        fromUserId: v.id("users"),
-        toBusinessId: v.id("businesses"),
-        amount: v.number(),
-        description: v.string(),
-        relatedBookingId: v.optional(v.id("bookings")),
-        relatedClassInstanceId: v.optional(v.id("classInstances")),
-    },
-    returns: v.object({ transactionId: v.id("creditTransactions") }),
-    handler: async (ctx, args) => {
-        const result = await creditService.spendCredits(ctx, {
-            userId: args.fromUserId,
-            amount: args.amount,
-            description: args.description,
-            businessId: args.toBusinessId,
-            classInstanceId: args.relatedClassInstanceId,
-            externalRef: args.relatedBookingId?.toString(),
         });
         return { transactionId: result.transactionId };
     },
@@ -322,6 +299,104 @@ export const createTestBooking = internalMutation({
             createdBy: args.userId,
         });
         return bookingId;
+    },
+});
+
+export const createTestClassInstance = internalMutation({
+    args: {
+        templateId: v.id("classTemplates"),
+        startTime: v.number(),
+        endTime: v.number(),
+        timezone: v.optional(v.string()),
+    },
+    returns: v.id("classInstances"),
+    handler: async (ctx, args) => {
+        const { user, business } = await getAuthenticatedUserAndBusinessOrThrow(ctx);
+        const template = await ctx.db.get(args.templateId);
+        if (!template) {
+            throw new Error("Template not found");
+        }
+
+        const instanceId = await ctx.db.insert("classInstances", {
+            businessId: business._id,
+            templateId: args.templateId,
+            venueId: template.venueId,
+            startTime: args.startTime,
+            endTime: args.endTime,
+            timezone: args.timezone || "UTC",
+            timePattern: new Date(args.startTime).toTimeString().slice(0, 5) + "-" + new Date(args.endTime).toTimeString().slice(0, 5),
+            dayOfWeek: new Date(args.startTime).getDay(),
+            status: "scheduled",
+            bookedCount: 0,
+            templateSnapshot: {
+                name: template.name,
+                description: template.description,
+                instructor: template.instructor,
+                imageStorageIds: template.imageStorageIds,
+                deleted: template.deleted,
+            },
+            venueSnapshot: {
+                name: "Test Venue", // This would normally come from the venue
+                address: {
+                    street: "123 Test St",
+                    city: "Test City",
+                    zipCode: "12345",
+                    country: "USA"
+                },
+                imageStorageIds: [],
+                deleted: false,
+            },
+            createdAt: Date.now(),
+            createdBy: user._id,
+        });
+        return instanceId;
+    },
+});
+
+export const giftCreditsToUser = internalMutation({
+    args: {
+        userId: v.id("users"),
+        amount: v.number(),
+        description: v.optional(v.string()),
+    },
+    returns: v.object({
+        transactionId: v.id("creditTransactions"),
+        newBalance: v.number()
+    }),
+    handler: async (ctx, args) => {
+        const result = await creditService.addCredits(ctx, {
+            userId: args.userId,
+            amount: args.amount,
+            type: "gift",
+            reason: "admin_gift",
+            description: args.description || `Gift of ${args.amount} credits`,
+        });
+        return result;
+    },
+});
+
+export const getBookingById = internalQuery({
+    args: {
+        bookingId: v.id("bookings"),
+    },
+    returns: v.union(v.any(), v.null()),
+    handler: async (ctx, args) => {
+        const booking = await ctx.db.get(args.bookingId);
+        return booking;
+    },
+});
+
+export const getCreditTransactionsByBooking = internalQuery({
+    args: {
+        bookingId: v.id("bookings"),
+    },
+    returns: v.array(v.any()),
+    handler: async (ctx, args) => {
+        const transactions = await ctx.db
+            .query("creditTransactions")
+            .withIndex("by_booking", q => q.eq("bookingId", args.bookingId))
+            .collect();
+        return transactions;
     },
 });
 

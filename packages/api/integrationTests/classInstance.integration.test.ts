@@ -1,6 +1,5 @@
 import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
-import { internal } from "../convex/_generated/api";
 import { initAuth, testT } from "./helpers";
 
 describe('Class Instances Integration Tests', () => {
