@@ -1,4 +1,4 @@
-import type { Doc } from "../convex/_generated/dataModel";
+import type { Doc, Id } from "../convex/_generated/dataModel";
 
 /**
  * Flexible Discount System Overview:
@@ -45,7 +45,7 @@ export type AppliedDiscount = {
   creditsSaved: number;
   ruleName: string;
   reason?: string;
-  appliedBy?: string;
+  appliedBy?: Id<"users">;
 };
 
 export type DiscountCalculationResult = {

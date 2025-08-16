@@ -3,8 +3,8 @@ import type { Doc, Id } from "../convex/_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../convex/_generated/server";
 import { ERROR_CODES } from "../utils/errorCodes";
 import { ConvexError } from "convex/values";
-import { calculateBestDiscount } from "../utils/discount";
 import { creditService } from "./creditService";
+import { calculateBestDiscount } from "../utils/classDiscount";
 
 /***************************************************************
  * Enhanced Booking Type with Related Data
@@ -502,7 +502,7 @@ export const bookingService = {
         }
 
         // Calculate best available discount
-        const discountResult = calculateBestDiscount(instance, template, now);
+        const discountResult = calculateBestDiscount(instance, template, { bookingTime: now });
         const { originalPrice, finalPrice, appliedDiscount } = discountResult;
 
         if (!Number.isFinite(originalPrice) || originalPrice <= 0) {

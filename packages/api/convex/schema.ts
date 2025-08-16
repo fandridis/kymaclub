@@ -396,7 +396,7 @@ export const bookingsFields = {
   appliedDiscount: v.optional(v.object({
     source: v.union(
       v.literal("template_rule"),     // Automatic template rule
-      v.literal("manual_override")    // Manual instance override
+      v.literal("instance_rule")    // Manual instance override
     ),
     discountType: v.union(v.literal("percentage"), v.literal("fixed_amount")),
     discountValue: v.number(),        // The discount value used
