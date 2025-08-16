@@ -27,10 +27,13 @@ export const creditService = {
       description: string;
       externalRef?: string;
       businessId?: Id<"businesses">;
+      venueId?: Id<"venues">;
+      classTemplateId?: Id<"classTemplates">;
       classInstanceId?: Id<"classInstances">;
+      bookingId?: Id<"bookings">;
     }
   ): Promise<{ newBalance: number; transactionId: Id<"creditTransactions"> }> => {
-    const { userId, amount, type, reason, description, externalRef, businessId, classInstanceId } = args;
+    const { userId, amount, type, reason, description, externalRef, businessId, venueId, classTemplateId, classInstanceId, bookingId } = args;
 
     // Validate amount is positive
     if (amount <= 0) {
@@ -66,7 +69,10 @@ export const creditService = {
       type,
       reason,
       businessId,
+      venueId,
+      classTemplateId,
       classInstanceId,
+      bookingId,
       description,
       externalRef,
       createdAt: Date.now(),
@@ -86,11 +92,14 @@ export const creditService = {
       amount: number;
       description: string;
       businessId: Id<"businesses">;
+      venueId?: Id<"venues">;
+      classTemplateId?: Id<"classTemplates">;
       classInstanceId?: Id<"classInstances">;
+      bookingId?: Id<"bookings">;
       externalRef?: string;
     }
   ): Promise<{ newBalance: number; transactionId: Id<"creditTransactions"> }> => {
-    const { userId, amount, description, businessId, classInstanceId, externalRef } = args;
+    const { userId, amount, description, businessId, venueId, classTemplateId, classInstanceId, bookingId, externalRef } = args;
 
     // Validate amount is positive
     if (amount <= 0) {
@@ -135,7 +144,10 @@ export const creditService = {
       type: "spend",
       reason: "booking",
       businessId,
+      venueId,
+      classTemplateId,
       classInstanceId,
+      bookingId,
       description,
       externalRef,
       createdAt: Date.now(),

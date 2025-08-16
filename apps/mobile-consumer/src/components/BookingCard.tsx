@@ -78,7 +78,7 @@ export const BookingCard = memo<BookingCardProps>(({ booking, onCancel, onViewCl
           style={[styles.actionButton, styles.viewButton]}
           onPress={(e) => {
             e.stopPropagation();
-            onViewClass?.(booking);
+            onViewClass?.(booking.classInstance);
           }}
           disabled={isCanceling}
         >

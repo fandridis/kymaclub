@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
     createTimeBasedDiscount,
     discountPatterns
-} from "./discount";
+} from "./classDiscount";
 
 describe('Discount Operations', () => {
     describe('createTimeBasedDiscount', () => {

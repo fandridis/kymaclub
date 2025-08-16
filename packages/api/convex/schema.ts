@@ -18,7 +18,7 @@ const auditFields = {
   updatedBy: v.optional(v.id("users")),
 };
 
-export const discountRuleFields = {
+export const classDiscountRuleFields = {
   id: v.string(),
   name: v.string(),
   condition: v.object({
@@ -263,7 +263,7 @@ export const classTemplatesFields = {
   cancellationWindowHours: v.number(),
 
   // Flexible discount rules - businesses can define custom early-bird and last-minute discounts
-  discountRules: v.optional(v.array(v.object(discountRuleFields))),
+  discountRules: v.optional(v.array(v.object(classDiscountRuleFields))),
 
   // Template metadata
   isActive: v.boolean(),
@@ -306,7 +306,7 @@ export const classInstancesFields = {
   color: v.optional(v.string()),
 
   // Instance-specific discount rules (overrides template rules)
-  discountRules: v.optional(v.array(v.object(discountRuleFields))),
+  discountRules: v.optional(v.array(v.object(classDiscountRuleFields))),
 
   // Status and booking tracking
   status: v.union(
@@ -480,9 +480,12 @@ export const creditTransactionsFields = {
   classTemplateId: v.optional(v.id("classTemplates")),
   classInstanceId: v.optional(v.id("classInstances")),
 
+  // Internal references
+  bookingId: v.optional(v.id("bookings")),
+
   // Audit and reference tracking
   description: v.string(),
-  externalRef: v.optional(v.string()), // payment ID, booking ID, etc.
+  externalRef: v.optional(v.string()), // payment ID, stripe ID, paypal ID, etc.
 
   ...auditFields,
   ...softDeleteFields,
@@ -582,6 +585,7 @@ export default defineSchema({
     .index("by_venue", ["venueId"])
     .index("by_class_template", ["classTemplateId"])
     .index("by_class_instance", ["classInstanceId"])
+    .index("by_booking", ["bookingId"])
     .index("by_user_type", ["userId", "type"])
     .index("by_business_type", ["businessId", "type"]),
 });

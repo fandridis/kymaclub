@@ -35,12 +35,15 @@ export const cancelBooking = mutation({
     reason: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
+    const user = await getAuthenticatedUserOrThrow(ctx);
     console.log("📍 MUTATION: cancelBooking - Starting request");
     console.log("✅ MUTATION: Cancel booking validation passed");
 
     // Would delegate to cancelBookingService
     console.log("🔄 MUTATION: Delegating to cancel booking service");
+    const result = await bookingService.cancelBooking({ ctx, args, user });
 
-    return { success: true };
+    console.log("🔄 MUTATION: Cancel booking service returned: ", result);
+    return result;
   },
 });

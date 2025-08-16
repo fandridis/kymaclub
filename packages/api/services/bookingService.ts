@@ -529,14 +529,16 @@ export const bookingService = {
             createdBy: user._id,
         });
 
-        // Spend credits using simple credit service
+        // Spend credits using credit service
         const { newBalance, transactionId } = await creditService.spendCredits(ctx, {
             userId: user._id,
             amount: finalPrice,
             description: args.description ?? `Booking for ${template.name}`,
             businessId: instance.businessId,
+            venueId: instance.venueId,
+            classTemplateId: instance.templateId,
             classInstanceId: args.classInstanceId,
-            externalRef: bookingId.toString(),
+            bookingId: bookingId,
         });
 
         // Update booking with credit transaction ID
@@ -631,6 +633,14 @@ export const bookingService = {
             });
         }
 
+        if (booking.userId !== user._id) {
+            throw new ConvexError({
+                message: "You are not authorized to cancel this booking",
+                field: "userId",
+                code: ERROR_CODES.UNAUTHORIZED,
+            });
+        }
+
         console.log(`📋 BOOKING DETAILS - Status: ${booking.status}, OriginalPrice: ${booking.originalPrice}, FinalPrice: ${booking.finalPrice}, CreditsUsed: ${booking.creditsUsed}, TransactionId: ${booking.creditTransactionId}`);
 
         if (booking.status !== "pending") {
@@ -710,8 +720,6 @@ export const bookingService = {
             updatedBy: user._id,
         });
 
-        // TODO: Add credit refund logic here using credit system
-        // This would create reverse entries in the credit ledger
 
         // 💰 REFUND CALCULATION AND PROCESSING
         const refundMultiplier = isLateCancellation ? 0.5 : 1;
@@ -720,16 +728,27 @@ export const bookingService = {
 
         console.log(`💰 REFUND CALCULATION - RefundAmount: ${refundAmount} credits (${refundMultiplier * 100}% of original), BusinessImpact: ${businessRefundImpact} credits, OriginalPayment: ${booking.finalPrice} credits`);
 
-        if (refundAmount > 0 && bookedUser) {
+        if (refundAmount > 0) {
             console.log(`🔄 PROCESSING REFUND - Adding ${refundAmount} credits back to user ${booking.userId}`);
 
-            // Update user credits (simplified - should use credit ledger in production)
-            const newUserCredits = currentUserCredits + refundAmount;
-            await ctx.db.patch(booking.userId, {
-                credits: newUserCredits,
+            // Process refund through credit service for proper transaction tracking
+            const refundReason = isLateCancellation ? "user_cancellation" : "user_cancellation";
+            const refundDescription = `Refund for cancelled booking: ${template.name} (${refundMultiplier * 100}% refund)`;
+            
+            const { newBalance } = await creditService.addCredits(ctx, {
+                userId: booking.userId,
+                amount: refundAmount,
+                type: "refund",
+                reason: refundReason,
+                description: refundDescription,
+                businessId: booking.businessId,
+                venueId: instance.venueId,
+                classTemplateId: instance.templateId,
+                classInstanceId: booking.classInstanceId,
+                bookingId: booking._id,
             });
 
-            console.log(`✅ REFUND COMPLETED - User ${booking.userId} credits updated from ${currentUserCredits} to ${newUserCredits} (+${refundAmount})`);
+            console.log(`✅ REFUND COMPLETED - User ${booking.userId} credits updated from ${currentUserCredits} to ${newBalance} (+${refundAmount})`);
         } else {
             console.log(`ℹ️ NO REFUND NEEDED - RefundAmount: ${refundAmount}`);
         }
