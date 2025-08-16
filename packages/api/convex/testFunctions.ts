@@ -1,9 +1,7 @@
 import { v } from "convex/values"
 import { internalMutation, internalQuery, internalAction } from "./_generated/server";
-import { creditService } from "../services/creditService";
-import { CREDIT_LEDGER_TYPES, CreditLedgerType } from "../utils/creditMappings";
 import { getAuthenticatedUserAndBusinessOrThrow } from "./utils";
-import { reconciliationService } from "../services/reconciliationService";
+import { creditService } from "../services/creditService";
 
 export const createTestUser = internalMutation({
     args: {
@@ -211,34 +209,22 @@ export const createTestStorageFile = internalAction({
 // Credit system test helpers
 export const recordCreditPurchase = internalMutation({
     args: {
-        idempotencyKey: v.string(),
         userId: v.id("users"),
         amount: v.number(),
         description: v.optional(v.string()),
         externalReference: v.optional(v.string()),
-        creditValue: v.optional(v.number()),
-        expiresAt: v.optional(v.number()),
     },
-    returns: v.object({ transactionId: v.string() }),
+    returns: v.object({ transactionId: v.id("creditTransactions") }),
     handler: async (ctx, args) => {
-        return await creditService.createTransaction(ctx, {
-            idempotencyKey: args.idempotencyKey,
+        const result = await creditService.addCredits(ctx, {
+            userId: args.userId,
+            amount: args.amount,
+            type: "purchase",
+            reason: "user_buy",
             description: args.description || "Credit purchase",
-            entries: [
-                {
-                    userId: args.userId,
-                    amount: args.amount,
-                    type: 'credit_purchase',
-                    creditValue: args.creditValue,
-                    expiresAt: args.expiresAt,
-                },
-                {
-                    systemEntity: "system",
-                    amount: -args.amount,
-                    type: CREDIT_LEDGER_TYPES.SYSTEM_CREDIT_COST,
-                }
-            ]
+            externalRef: args.externalReference,
         });
+        return { transactionId: result.transactionId };
     },
 });
 
@@ -251,56 +237,31 @@ export const recordBookingLedgerEntries = internalMutation({
         relatedBookingId: v.optional(v.id("bookings")),
         relatedClassInstanceId: v.optional(v.id("classInstances")),
     },
-    returns: v.object({ transactionId: v.string() }),
+    returns: v.object({ transactionId: v.id("creditTransactions") }),
     handler: async (ctx, args) => {
-        return await creditService.createTransaction(ctx, {
-            idempotencyKey: `booking_${args.fromUserId}_${args.toBusinessId}_${Date.now()}`,
+        const result = await creditService.spendCredits(ctx, {
+            userId: args.fromUserId,
+            amount: args.amount,
             description: args.description,
-            entries: [
-                {
-                    userId: args.fromUserId,
-                    amount: -args.amount,
-                    type: CREDIT_LEDGER_TYPES.CREDIT_SPEND,
-                    relatedBookingId: args.relatedBookingId,
-                    relatedClassInstanceId: args.relatedClassInstanceId,
-                },
-                {
-                    businessId: args.toBusinessId,
-                    amount: args.amount,
-                    type: CREDIT_LEDGER_TYPES.REVENUE_EARN,
-                    relatedBookingId: args.relatedBookingId,
-                    relatedClassInstanceId: args.relatedClassInstanceId,
-                }
-            ]
+            businessId: args.toBusinessId,
+            classInstanceId: args.relatedClassInstanceId,
+            externalRef: args.relatedBookingId?.toString(),
         });
+        return { transactionId: result.transactionId };
     },
 });
 
-export const getCreditLedgerByTransaction = internalQuery({
-    args: {
-        transactionId: v.string(),
-    },
-    returns: v.array(v.any()),
-    handler: async (ctx, args) => {
-        const entries = await ctx.db
-            .query("creditLedger")
-            .withIndex("by_transactionId", q => q.eq("transactionId", args.transactionId))
-            .collect();
-        return entries;
-    },
-});
-
-export const getCreditLedgerByUser = internalQuery({
+export const getCreditTransactionsByUser = internalQuery({
     args: {
         userId: v.id("users"),
     },
     returns: v.array(v.any()),
     handler: async (ctx, args) => {
-        const entries = await ctx.db
-            .query("creditLedger")
+        const transactions = await ctx.db
+            .query("creditTransactions")
             .withIndex("by_user", q => q.eq("userId", args.userId))
             .collect();
-        return entries;
+        return transactions;
     },
 });
 
@@ -365,7 +326,7 @@ export const createTestBooking = internalMutation({
 });
 
 /**
- * Test credit system end-to-end with reconciliation
+ * Test simplified credit system end-to-end
  */
 export const testCreditSystem = internalMutation({
     args: v.object({}),
@@ -374,9 +335,7 @@ export const testCreditSystem = internalMutation({
         userId: v.id("users"),
         balanceAfterGift: v.number(),
         balanceAfterSpend: v.number(),
-        cachedBalance: v.number(),
-        ledgerBalance: v.number(),
-        reconciliationDelta: v.number(),
+        finalBalance: v.number(),
         message: v.string(),
     }),
     handler: async (ctx) => {
@@ -388,108 +347,56 @@ export const testCreditSystem = internalMutation({
             role: "user",
         });
 
-        // Gift 10 credits from system
-        await creditService.createTransaction(ctx, {
-            idempotencyKey: `test_gift_${userId}_${Date.now()}`,
+        // Gift 10 credits
+        const giftResult = await creditService.addCredits(ctx, {
+            userId,
+            amount: 10,
+            type: "gift",
+            reason: "admin_gift",
             description: "Test credit gift",
-            entries: [
-                {
-                    systemEntity: "system",
-                    amount: -10,
-                    type: CREDIT_LEDGER_TYPES.SYSTEM_CREDIT_COST,
-                },
-                {
-                    userId,
-                    amount: 10,
-                    type: CREDIT_LEDGER_TYPES.CREDIT_BONUS,
-                    creditValue: 2.0,
-                }
-            ]
         });
 
-        // Reconcile after gift
-        const reconcileAfterGift = await reconciliationService.reconcileUser({
-            ctx,
-            userId,
-            updateCache: true,
+        // Create a test business
+        const businessId = await ctx.db.insert("businesses", {
+            name: "Test Business",
+            email: "test@business.com",
+            isActive: true,
+            address: {
+                street: "123 Test St",
+                city: "Test City",
+                zipCode: "12345",
+                country: "US"
+            },
+            timezone: "UTC",
+            currency: "USD",
+            onboardingCompleted: true,
+            feeStructure: {
+                payoutFrequency: "monthly",
+                minimumPayout: 50
+            },
+            createdAt: Date.now(),
+            createdBy: userId,
         });
 
         // Spend 3 credits (simulate booking)
-        await creditService.createTransaction(ctx, {
-            idempotencyKey: `test_spend_${userId}_${Date.now()}`,
-            description: "Test credit spend",
-            entries: [
-                {
-                    userId,
-                    amount: -3,
-                    type: CREDIT_LEDGER_TYPES.CREDIT_SPEND,
-                },
-                {
-                    systemEntity: "system",
-                    amount: 3,
-                    type: CREDIT_LEDGER_TYPES.SYSTEM_REFUND_COST,
-                }
-            ]
-        });
-
-        // Final reconciliation
-        const finalReconcile = await reconciliationService.reconcileUser({
-            ctx,
+        const spendResult = await creditService.spendCredits(ctx, {
             userId,
-            updateCache: true,
+            amount: 3,
+            description: "Test credit spend",
+            businessId,
         });
 
-        // Get final balances
-        const ledgerBalance = await creditService.getBalance(ctx, { userId });
-        const user = await ctx.db.get(userId);
-        const cachedBalance = (user as any).credits ?? 0;
+        // Get final balance
+        const finalBalance = await creditService.getBalance(ctx, userId);
 
         return {
             success: true,
             userId,
-            balanceAfterGift: reconcileAfterGift.actualCredits,
-            balanceAfterSpend: finalReconcile.actualCredits,
-            cachedBalance,
-            ledgerBalance,
-            reconciliationDelta: finalReconcile.actualCredits - cachedBalance,
-            message: `Test completed: Gift 10 credits, spent 3, final balance ${finalReconcile.actualCredits}. Cache and ledger ${cachedBalance === ledgerBalance ? 'match' : 'differ'}`,
+            balanceAfterGift: giftResult.newBalance,
+            balanceAfterSpend: spendResult.newBalance,
+            finalBalance,
+            message: `Test completed: Gift 10 credits, spent 3, final balance ${finalBalance}. Expected: 7`,
         };
-    },
-});
-
-// Additional test helpers for reconciliation testing
-export const createCreditLedgerEntry = internalMutation({
-    args: {
-        userId: v.id("users"),
-        amount: v.number(),
-        type: v.string(),
-        effectiveAt: v.number(),
-        creditValue: v.optional(v.number()),
-        expiresAt: v.optional(v.number()),
-        description: v.string(),
-        deleted: v.optional(v.boolean()),
-        relatedBookingId: v.optional(v.id("bookings")),
-        relatedClassInstanceId: v.optional(v.id("classInstances")),
-    },
-    returns: v.id("creditLedger"),
-    handler: async (ctx, args) => {
-        const entryId = await ctx.db.insert("creditLedger", {
-            transactionId: `test_${args.userId}_${Date.now()}`,
-            account: "customer",
-            userId: args.userId,
-            amount: args.amount,
-            type: args.type as CreditLedgerType,
-            effectiveAt: args.effectiveAt,
-            creditValue: args.creditValue,
-            expiresAt: args.expiresAt,
-            description: args.description,
-            idempotencyKey: `test_${args.userId}_${Date.now()}_${Math.random()}`,
-            deleted: args.deleted ?? false,
-            relatedBookingId: args.relatedBookingId,
-            relatedClassInstanceId: args.relatedClassInstanceId,
-            createdAt: Date.now(),
-        });
-        return entryId;
     },
 });
 
@@ -501,118 +408,10 @@ export const updateUserCredits = internalMutation({
     returns: v.null(),
     handler: async (ctx, args) => {
         const updates: any = {};
-
         if (args.credits !== undefined) {
             updates.credits = args.credits;
         }
-
         await ctx.db.patch(args.userId, updates);
         return null;
-    },
-});
-
-// Test functions for reconciliation service
-export const testReconcileUser = internalMutation({
-    args: {
-        userId: v.id("users"),
-        options: v.optional(v.object({
-            forceUpdate: v.optional(v.boolean()),
-            includeAnalysis: v.optional(v.boolean()),
-            dryRun: v.optional(v.boolean()),
-        })),
-    },
-    returns: v.object({
-        userId: v.id("users"),
-        availableCredits: v.number(),
-        wasUpdated: v.boolean(),
-        deltaAvailableCredits: v.number(),
-        inconsistencyCount: v.number(),
-    }),
-    handler: async (ctx, args) => {
-        const { reconciliationService } = await import("../services/reconciliationService");
-
-        const result = await reconciliationService.reconcileUser({
-            ctx,
-            userId: args.userId,
-            updateCache: true
-        });
-
-        return {
-            userId: result.userId,
-            availableCredits: result.actualCredits,
-            wasUpdated: result.wasUpdated,
-            deltaAvailableCredits: result.actualCredits - result.cachedCredits,
-            inconsistencyCount: 0,
-        };
-    },
-});
-
-export const testReconcileCreditScenario = internalMutation({
-    args: {
-        userId: v.id("users"),
-    },
-    returns: v.object({
-        success: v.boolean(),
-        initialBalance: v.number(),
-        finalBalance: v.number(),
-        wasReconciled: v.boolean(),
-        message: v.string(),
-    }),
-    handler: async (ctx, args) => {
-        const { reconciliationService } = await import("../services/reconciliationService");
-
-        try {
-            // Step 1: Create ledger entry (100 credits)
-            await ctx.db.insert("creditLedger", {
-                transactionId: `test_${args.userId}_${Date.now()}`,
-                account: "customer",
-                userId: args.userId,
-                amount: 100,
-                type: CREDIT_LEDGER_TYPES.CREDIT_PURCHASE,
-                effectiveAt: Date.now() - 1000,
-                creditValue: 2.0,
-                description: "Test credit purchase",
-                idempotencyKey: `test_${Date.now()}`,
-                deleted: false,
-                createdAt: Date.now(),
-            });
-
-            // Step 2: Set incorrect cached balance (50 credits)
-            await ctx.db.patch(args.userId, {
-                credits: 50,
-            });
-
-            // Step 3: Get initial cached balance
-            const userBefore = await ctx.db.get(args.userId);
-            const initialBalance = userBefore?.credits ?? 0;
-
-            // Step 4: Reconcile
-            const reconcileResult = await reconciliationService.reconcileUser({
-                ctx,
-                userId: args.userId,
-                updateCache: true
-            });
-
-            // Step 5: Get final balance
-            const userAfter = await ctx.db.get(args.userId);
-            const finalBalance = userAfter?.credits ?? 0;
-
-            return {
-                success: true,
-                initialBalance,
-                finalBalance,
-                wasReconciled: reconcileResult.wasUpdated,
-                message: `Reconciled ${initialBalance} -> ${finalBalance} credits`
-            };
-
-        } catch (error) {
-            return {
-                success: false,
-                initialBalance: 0,
-                finalBalance: 0,
-                wasReconciled: false,
-                message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-            };
-        }
     },
 });

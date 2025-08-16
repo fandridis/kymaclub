@@ -4,9 +4,7 @@ import type { MutationCtx, QueryCtx } from "../convex/_generated/server";
 import { ERROR_CODES } from "../utils/errorCodes";
 import { ConvexError } from "convex/values";
 import { calculateBestDiscount } from "../utils/discount";
-import { makeIdempotencyKey } from "../utils/credits";
 import { creditService } from "./creditService";
-import { CREDIT_LEDGER_TYPES } from "../utils/creditMappings";
 
 /***************************************************************
  * Enhanced Booking Type with Related Data
@@ -515,28 +513,15 @@ export const bookingService = {
             });
         }
 
-        // Check user credits using credit service
-        const hasEnoughCredits = await creditService.validateBalance(ctx, { userId: user._id }, finalPrice);
-        if (!hasEnoughCredits) {
-            const currentBalance = await creditService.getBalance(ctx, { userId: user._id });
-            throw new ConvexError({
-                message: `Insufficient credits. Need ${finalPrice}, have ${currentBalance}`,
-                field: "credits",
-                code: ERROR_CODES.INSUFFICIENT_CREDITS,
-            });
-        }
-
-        const idempotencyKey = args.idempotencyKey ?? makeIdempotencyKey("bookClass", `${user._id}_${args.classInstanceId}_${now}`);
-
-        // Create booking row first (acts as the anchor for idempotent ledger writes)
+        // Create booking row first
         const bookingId = await ctx.db.insert("bookings", {
             businessId: instance.businessId,
             userId: user._id,
             classInstanceId: args.classInstanceId,
-            status: "pending",  // Simplified: starts as pending
+            status: "pending",
             originalPrice,
             finalPrice,
-            creditsUsed: finalPrice, // Same as finalPrice for consistency
+            creditsUsed: finalPrice,
             creditTransactionId: "", // Will be updated after credit transaction
             appliedDiscount: appliedDiscount || undefined,
             bookedAt: now,
@@ -544,31 +529,19 @@ export const bookingService = {
             createdBy: user._id,
         });
 
-        // Write credit transfer using credit service
-        const { transactionId } = await creditService.createTransaction(ctx, {
-            idempotencyKey,
+        // Spend credits using simple credit service
+        const { newBalance, transactionId } = await creditService.spendCredits(ctx, {
+            userId: user._id,
+            amount: finalPrice,
             description: args.description ?? `Booking for ${template.name}`,
-            entries: [
-                {
-                    userId: user._id,
-                    amount: -finalPrice,
-                    type: CREDIT_LEDGER_TYPES.CREDIT_SPEND,
-                    relatedBookingId: bookingId,
-                    relatedClassInstanceId: args.classInstanceId,
-                },
-                {
-                    businessId: instance.businessId,
-                    amount: finalPrice,
-                    type: CREDIT_LEDGER_TYPES.REVENUE_EARN,
-                    relatedBookingId: bookingId,
-                    relatedClassInstanceId: args.classInstanceId,
-                }
-            ]
+            businessId: instance.businessId,
+            classInstanceId: args.classInstanceId,
+            externalRef: bookingId.toString(),
         });
 
         // Update booking with credit transaction ID
         await ctx.db.patch(bookingId, {
-            creditTransactionId: transactionId,
+            creditTransactionId: transactionId.toString(),
             updatedAt: now,
             updatedBy: user._id,
         });

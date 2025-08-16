@@ -510,187 +510,65 @@ export const cancellationPoliciesFields = {
   ...softDeleteFields,
 };
 
-/***************************************************************
- * Credit System Tables
- ***************************************************************/
-
-export const creditLedgerFields = {
-  // Groups all legs of a single financial event
-  transactionId: v.string(), // All entries with same ID must sum to zero
-
-  /**
-   * Who this ledger entry belongs to
-   * Only one of these should be populated for a given row.
-   */
-  userId: v.optional(v.id("users")),
-  businessId: v.optional(v.id("businesses")),
-  systemEntity: v.optional(
-    v.union(
-      v.literal("system"), // for platform fees and balancing accounts
-      v.literal("payment_processor")
-    )
-  ),
-
-  /**
-   * Developer-friendly account type — derived from the entity fields
-   * Makes programmatic handling easier without losing strict columns.
-   */
-  account: v.union(
-    v.literal("customer"),
-    v.literal("business"),
-    v.literal("system"),
-    v.literal("payment_processor")
-  ),
-
-  // Signed amount (positive or negative)
-  amount: v.number(),
-
-  // Credit economics - track value and expiration per ledger entry
-  creditValue: v.optional(v.number()), // Value per credit (e.g., 2.0 for €2 per credit)
-  expiresAt: v.optional(v.number()),   // When these credits expire (timestamp)
-
-  // Detailed classification for reporting and filtering
-  type: v.union(
-    // Consumer actions
-    v.literal("credit_purchase"),      // Consumer buys credits
-    v.literal("credit_spend"),         // Consumer spends credits on a class
-    v.literal("credit_refund"),        // Consumer receives a refund
-    v.literal("credit_bonus"),         // Consumer receives free credits
-    v.literal("credit_expire"),        // Consumer's credits expire
-
-    // Business actions
-    v.literal("revenue_earn"),         // Business earns from a booking
-    v.literal("revenue_payout"),       // Business unpaid earnings are reduced on payout
-
-    // System actions
-    v.literal("system_credit_cost"),   // System covers the cost of credit operations
-    v.literal("system_refund_cost"),   // System loses earnings from a refund
-    v.literal("system_payout_cost")    // System covers the cost of a payout
-  ),
-
-  // Context and relationships
-  relatedBookingId: v.optional(v.id("bookings")),
-  relatedClassInstanceId: v.optional(v.id("classInstances")), // from schema one
-  relatedPayoutId: v.optional(v.id("businessPayouts")),
-
-  // Metadata for audit and reconciliation
-  description: v.string(),
-  idempotencyKey: v.string(),
-  effectiveAt: v.number(),
-  reconciledAt: v.optional(v.number()), // from schema one
-
-  // Simplified tracking - no audit fields needed for immutable ledger
-  createdAt: v.number(),
-  deleted: v.optional(v.boolean()),
-};
-
-
-/**
- * Credit Transactions - Idempotency claim records for robust, retry-safe writes
- */
 export const creditTransactionsFields = {
-  // Idempotency key used to dedupe retries (e.g., payment intent/charge ID)
-  idempotencyKey: v.string(),
+  // Who the transaction affects
+  userId: v.id("users"),
 
-  // Logical transaction identifier that groups all ledger legs
-  transactionId: v.string(),
-
-  // High-level state of the transaction lifecycle
-  status: v.union(
-    v.literal("pending"),
-    v.literal("completed"),
-    v.literal("failed")
-  ),
-
-  // Optional categorization (e.g., "purchase_credit", "booking_spend")
-  transactionActor: v.union(
-    v.literal("consumer"),
-    v.literal("business"),
-    v.literal("system"),
-    v.literal("payment_processor")
-  ),
-
-  transactionAction: v.union(
-    v.literal("credit_purchase"),     // Consumer buys credits
-    v.literal("credit_bonus"),        // Consumer receives free credits
-    v.literal("credit_spend"),        // Consumer spends credits on a class
-    v.literal("credit_expire"),       // Consumer's credits expire
-    v.literal("credit_refund"),       // Consumer receives a refund
-    v.literal("revenue_earn"),        // Business earns from a booking
-    v.literal("revenue_payout"),      // Business receives payout
-    v.literal("system_operation"),    // System operations (costs, balancing)
-  ),
-
-  // Who/what this transaction concerns (optional depending on kind)
-  userId: v.optional(v.id("users")),
-  businessId: v.optional(v.id("businesses")),
-
-  // Optional external references (payment processor, admin action, etc.)
-  externalReference: v.optional(v.string()),
-  description: v.optional(v.string()),
-
-  // Optional amount for quick introspection (ledger remains source of truth)
-  amount: v.optional(v.number()),
-
-  // Simplified tracking - no audit fields needed for transaction records
-  createdAt: v.number(),
-  updatedAt: v.optional(v.number()),
-  deleted: v.optional(v.boolean()),
-};
-
-/**
- * Business Payouts - Cash transfers to businesses.
- * Linked to the credit ledger for reconciliation & reporting.
- */
-export const businessPayoutsFields = {
-  businessId: v.id("businesses"),
-
-  /**
-   * The actual amount transferred to the business in currency
-   * (not credits; should match sum of related ledger entries).
-   */
+  // Signed amount (positive for add, negative for spend)
   amount: v.number(),
 
-  /**
-   * All transactionIds from the credit ledger that this payout covers.
-   * These should only be for `payout_debit` + balancing `system_payment_out`
-   * or related earnings entries.
-   */
-  coveredTransactionIds: v.array(v.string()),
-
-  /**
-   * For quick reporting without fetching from ledger.
-   */
-  totalTransactionCount: v.number(),
-
-  /**
-   * Accounting period this payout covers.
-   * Typically aligns with ledger effectiveAt values.
-   */
-  periodStart: v.number(),
-  periodEnd: v.number(),
-
-  // When the payout was (or will be) initiated
-  payoutDate: v.number(),
-
-  status: v.union(
-    v.literal("pending"),     // Approved, not yet sent
-    v.literal("processing"),  // In payment processor’s queue
-    v.literal("completed"),   // Confirmed sent
-    v.literal("failed")       // Payment attempt failed
+  // Transaction type - what happened to credits
+  type: v.union(
+    v.literal("purchase"),   // Credits added via payment
+    v.literal("gift"),       // Credits given for free
+    v.literal("spend"),      // Credits spent (bookings)
+    v.literal("refund"),     // Credits returned
+    
+    // Legacy types (for migration compatibility)
+    v.literal("booking"),              // Legacy spend type
+    v.literal("gift_admin"),           // Legacy gift_admin
+    v.literal("gift_welcome"),         // Legacy gift_welcome
+    v.literal("gift_referral"),        // Legacy gift_referral
+    v.literal("gift_campaign"),        // Legacy gift_campaign
+    v.literal("refund_cancellation"),  // Legacy refund types
+    v.literal("refund_class_cancelled"),
+    v.literal("refund_payment"),
+    v.literal("refund_general")
   ),
 
-  // If status is failed, why
-  failureReason: v.optional(v.string()),
+  // Reason - why/how it happened  
+  reason: v.optional(v.union(
+    // Purchase reasons
+    v.literal("user_buy"),           // User bought credits
+    
+    // Gift reasons
+    v.literal("welcome_bonus"),      // Welcome bonus
+    v.literal("referral_bonus"),     // Referral bonus  
+    v.literal("admin_gift"),         // Admin manual gift
+    v.literal("campaign_bonus"),     // Marketing campaign
+    
+    // Spend reasons
+    v.literal("booking"),            // Class booking
+    
+    // Refund reasons
+    v.literal("user_cancellation"),  // User cancelled booking
+    v.literal("business_cancellation"), // Business cancelled class
+    v.literal("payment_issue"),      // Payment problem/chargeback
+    v.literal("general_refund")      // Other refund
+  )),
 
-  /**
-   * Optional: store a direct payment processor reference for tracing
-   */
-  processorReference: v.optional(v.string()),
+  // Business context for earnings tracking
+  businessId: v.optional(v.id("businesses")),
+  classInstanceId: v.optional(v.id("classInstances")),
+
+  // Audit and reference tracking
+  description: v.string(),
+  externalRef: v.optional(v.string()), // payment ID, booking ID, etc.
 
   ...auditFields,
   ...softDeleteFields,
 };
+
 
 /***************************************************************
  * Database schema
@@ -770,14 +648,6 @@ export default defineSchema({
     .index("by_business_name_timepattern_dayofweek", ["businessId", "name", "timePattern", "dayOfWeek"]),
 
   /** 
-   * DEPRECATED: Customers table removed in favor of using users directly for credits.
-   */
-  // customers: defineTable(customersFields)
-  //   .index("by_business", ["businessId"])
-  //   .index("by_email", ["email"])
-  //   .index("by_business_email", ["businessId", "email"]),
-
-  /** 
    * Bookings - customer reservations for class instances (simplified)
    */
   bookings: defineTable(bookingsFields)
@@ -789,8 +659,6 @@ export default defineSchema({
     .index("by_credit_transaction", ["creditTransactionId"])
     .index("by_discount_source", ["appliedDiscount.source"]),
 
-  // REMOVED: pricingRules table - replaced with simpler discount system in templates and instances
-
   /**
  * Per-business cancellation policy configuration
  */
@@ -800,48 +668,14 @@ export default defineSchema({
     .index("by_effective_range", ["effectiveFrom", "effectiveUntil"]),
 
   /**
-   * Credit Transactions - claim idempotency and track lifecycle
+   * Simple Credit Transactions - One record per credit operation
    */
   creditTransactions: defineTable(creditTransactionsFields)
-    .index("by_idempotencyKey", ["idempotencyKey"])
-    .index("by_transactionId", ["transactionId"])
-    .index("by_status", ["status"])
     .index("by_user", ["userId"])
-    .index("by_business", ["businessId"]),
-
-  /**
-   * Credit Ledger - Double-Entry
-   */
-  creditLedger: defineTable(creditLedgerFields)
-    // Fetch all ledger entries that belong to a single logical transaction
-    .index("by_transactionId", ["transactionId"])
-    // Keep for traceability; not used for uniqueness with robust approach
-    .index("by_idempotencyKey", ["idempotencyKey"])
-    // Quickly get all entries for a specific user (balance calc, statements)
-    .index("by_user", ["userId"])
-    // Quickly get all entries for a specific business (balance calc, statements)
     .index("by_business", ["businessId"])
-    // Query all entries for a platform/system/payment processor account
-    .index("by_systemEntity", ["systemEntity"])
-    // Filter or report on a specific transaction type regardless of entity
     .index("by_type", ["type"])
-    // Fast access to a user’s transactions of a certain type
+    .index("by_class", ["classInstanceId"])
     .index("by_user_type", ["userId", "type"])
-    // Fast access to a business’s transactions of a certain type
-    .index("by_business_type", ["businessId", "type"])
-    // Fast access to a user’s transactions by effectiveAt
-    .index("by_user_effectiveAt", ["userId", "effectiveAt"]),
+    .index("by_business_type", ["businessId", "type"]),
 
-  /**
-   * Business Payouts - Cash transfers to businesses.
-   */
-  businessPayouts: defineTable(businessPayoutsFields)
-    // 1. Quickly fetch all payouts for a business (sorted by date in query)
-    .index("by_business_payoutDate", ["businessId", "payoutDate"])
-    // 2. Quickly find payouts in a given status (processing queue, failures)
-    .index("by_status", ["status", "payoutDate"])
-    // 3. If you ever need to search by external payment processor ID
-    .index("by_processorReference", ["processorReference"])
-    // 4. Optional: Search by period covered (useful if you rebuild reports)
-    .index("by_period", ["businessId", "periodStart", "periodEnd"])
 });

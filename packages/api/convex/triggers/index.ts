@@ -6,10 +6,7 @@ import { internal } from "../_generated/api";
 import { classInstanceRules } from "../../rules/classInstance";
 import { classInstanceOperations } from "../../operations/classInstance";
 import { venueRules } from "../../rules/venue";
-import { makeIdempotencyKey } from "../../utils/credits";
 import { creditService } from "../../services/creditService";
-import { CREDIT_LEDGER_TYPES } from "../../utils/creditMappings";
-import { creditExpirationUtils } from "../../utils/creditExpiration";
 
 const triggers = new Triggers<DataModel>();
 
@@ -124,23 +121,12 @@ triggers.register("users", async (ctx, change) => {
     }
 
     if (operation === "update" && !oldDoc.hasConsumerOnboarded && newDoc.hasConsumerOnboarded) {
-        await creditService.createTransaction(ctx, {
-            idempotencyKey: makeIdempotencyKey("new-consumer-welcome-bonus", id),
+        await creditService.addCredits(ctx, {
+            userId: id,
+            amount: 10,
+            type: "gift",
+            reason: "welcome_bonus",
             description: "Welcome bonus for new consumer",
-            entries: [
-                {
-                    userId: id,
-                    amount: 10,
-                    type: CREDIT_LEDGER_TYPES.CREDIT_BONUS,
-                    creditValue: 2.0, // €2 per credit
-                    expiresAt: Date.now() + (creditExpirationUtils.getDefaultExpirationDays('credit_bonus') * 24 * 60 * 60 * 1000),
-                },
-                {
-                    systemEntity: "system",
-                    amount: -10,
-                    type: CREDIT_LEDGER_TYPES.SYSTEM_CREDIT_COST,
-                }
-            ]
         });
     }
 }); 

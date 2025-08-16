@@ -1,13 +1,9 @@
 import { v } from "convex/values";
 import { mutation } from "../_generated/server";
 import { creditService } from "../../services/creditService";
-import { nanoid } from "nanoid";
-import { CREDIT_LEDGER_TYPES } from "../../utils/creditMappings";
-import { reconciliationService } from "../../services/reconciliationService";
 
 /**
- * Gift credits to a user from the system account.
- * This is for manual testing and administrative purposes.
+ * Gift credits to a user (admin function)
  */
 export const giftCredits = mutation({
   args: v.object({
@@ -18,81 +14,83 @@ export const giftCredits = mutation({
   handler: async (ctx, args) => {
     const { userId, amount, description = `Gift of ${amount} credits` } = args;
 
-    // Validate amount is positive
-    if (amount <= 0) {
-      throw new Error("Credit amount must be greater than 0");
-    }
-
-    // Validate user exists
-    const user = await ctx.db.get(userId);
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    // Create double-entry transaction: System -> User
-    const idempotencyKey = `gift_${userId}_${Date.now()}_${nanoid(8)}`;
-
-    const result = await creditService.createTransaction(ctx, {
-      idempotencyKey,
-      description,
-      entries: [
-        {
-          // Debit system account (negative amount)
-          systemEntity: "system",
-          amount: -amount,
-          type: CREDIT_LEDGER_TYPES.SYSTEM_CREDIT_COST,
-        },
-        {
-          // Credit user account (positive amount)
-          userId,
-          amount: amount,
-          type: CREDIT_LEDGER_TYPES.CREDIT_BONUS,
-          creditValue: 2.0, // €2 per credit default value
-        }
-      ]
-    });
-
-    // Reconcile user's cached balance after gifting
-    const reconciliation = await reconciliationService.reconcileUser({
-      ctx,
+    const result = await creditService.addCredits(ctx, {
       userId,
-      updateCache: true,
+      amount,
+      type: "gift",
+      reason: "admin_gift",
+      description,
     });
-
-    console.log(`💝 GIFT_CREDITS: Gifted ${amount} credits to user ${userId}. Balance: ${reconciliation.actualCredits}`);
 
     return {
       success: true,
       transactionId: result.transactionId,
-      newBalance: reconciliation.actualCredits,
-      message: `Successfully gifted ${amount} credits to user. New balance: ${reconciliation.actualCredits}`,
+      newBalance: result.newBalance,
+      message: `Successfully gifted ${amount} credits. New balance: ${result.newBalance}`,
     };
   },
 });
 
 /**
- * Reconcile a user's cached credit balance with the ledger.
- * Useful for fixing discrepancies or updating on login.
+ * Purchase credits (user function)
  */
-export const reconcileUserCredits = mutation({
+export const purchaseCredits = mutation({
   args: v.object({
     userId: v.id("users"),
-    updateCache: v.optional(v.boolean()),
+    amount: v.number(),
+    paymentRef: v.string(),
+    description: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
-    const updateCache = args.updateCache ?? true;
+    const { userId, amount, paymentRef, description = `Purchased ${amount} credits` } = args;
 
-    const result = await reconciliationService.reconcileUser({
-      ctx,
-      userId: args.userId,
-      updateCache,
+    const result = await creditService.addCredits(ctx, {
+      userId,
+      amount,
+      type: "purchase",
+      reason: "user_buy",
+      description,
+      externalRef: paymentRef,
     });
 
-    console.log(`🔄 RECONCILE: User ${args.userId} - Cached: ${result.cachedCredits}, Computed: ${result.actualCredits}, Delta: ${result.actualCredits - result.cachedCredits}`);
+    return {
+      success: true,
+      transactionId: result.transactionId,
+      newBalance: result.newBalance,
+      message: `Successfully purchased ${amount} credits. New balance: ${result.newBalance}`,
+    };
+  },
+});
+
+/**
+ * Refund credits to a user
+ */
+export const refundCredits = mutation({
+  args: v.object({
+    userId: v.id("users"),
+    amount: v.number(),
+    reason: v.string(),
+    businessId: v.optional(v.id("businesses")),
+    classInstanceId: v.optional(v.id("classInstances")),
+  }),
+  handler: async (ctx, args) => {
+    const { userId, amount, reason, businessId, classInstanceId } = args;
+
+    const result = await creditService.addCredits(ctx, {
+      userId,
+      amount,
+      type: "refund",
+      reason: "general_refund",
+      description: `Refund: ${reason}`,
+      businessId,
+      classInstanceId,
+    });
 
     return {
-      ...result,
-      message: `Reconciliation ${result.wasUpdated ? 'completed' : 'checked'}: ${result.actualCredits - result.cachedCredits === 0 ? 'no discrepancy' : `corrected ${result.actualCredits - result.cachedCredits} credits`}`,
+      success: true,
+      transactionId: result.transactionId,
+      newBalance: result.newBalance,
+      message: `Successfully refunded ${amount} credits. New balance: ${result.newBalance}`,
     };
   },
 });

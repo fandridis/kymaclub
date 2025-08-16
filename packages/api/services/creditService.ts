@@ -1,313 +1,417 @@
 import type { MutationCtx, QueryCtx } from "../convex/_generated/server";
 import type { Id } from "../convex/_generated/dataModel";
-import { Infer, v } from "convex/values";
-import { nanoid } from "nanoid";
-import { creditRules } from "../rules/credit";
-import { omit } from "convex-helpers";
-import { creditLedgerFields } from "../convex/schema";
-import { getTransactionMeta, type CreditLedgerType } from "../utils/creditMappings";
-import { creditExpirationUtils } from "../utils/creditExpiration";
-import { createLedgerEntry } from "../operations/credits";
+import { ConvexError } from "convex/values";
+import { creditTransactionsFields } from "../convex/schema";
 
 /**
- * Credit ledger entry for a transaction
- */
-export const creditLedgerEntryArgs = v.object({
-  ...omit(creditLedgerFields, [
-    'transactionId',      // Will be set by the service
-    'account',            // Will be derived from entity fields
-    'description',        // Will be set from transaction description
-    'idempotencyKey',     // Will be set by the service
-    'effectiveAt',        // Will be set by the service
-    'reconciledAt',       // Internal field
-    'createdAt',          // Set by service
-    'deleted',            // Soft delete field - set by service
-  ])
-});
-export type CreditLedgerEntry = Infer<typeof creditLedgerEntryArgs>;
-
-/**
- * Create transaction arguments
- */
-export const createTransactionArgs = v.object({
-  idempotencyKey: v.string(),
-  transactionId: v.optional(v.string()), // Auto-generated if not provided
-  description: v.string(),
-  entries: v.array(creditLedgerEntryArgs),
-});
-export type CreateTransactionArgs = Infer<typeof createTransactionArgs>;
-
-/**
- * Entity for balance queries
- */
-export type CreditEntity =
-  | { userId: Id<"users"> }
-  | { businessId: Id<"businesses"> }
-  | { systemEntity: "system" | "payment_processor" };
-
-/**
- * Simplified Credit Service - Handles basic credit operations for fitness class bookings
+ * Simple Credit Service - Replaces complex double-entry ledger system
  * 
- * This service handles:
- * 1. Adding credits (purchases)
- * 2. Spending credits (bookings)
- * 3. Checking balances
- * 4. Basic validation
+ * This service does three things:
+ * 1. Add credits to user (purchase, gift, refund)
+ * 2. Spend credits from user (booking)
+ * 3. Get user balance (from user.credits field)
+ * 
+ * No reconciliation needed - user.credits is always the source of truth.
  */
+
+export type CreditTransactionType = "purchase" | "gift" | "spend" | "refund";
+
+export type CreditTransactionReason = 
+  | "user_buy"
+  | "welcome_bonus" 
+  | "referral_bonus"
+  | "admin_gift"
+  | "campaign_bonus"
+  | "booking"
+  | "user_cancellation"
+  | "business_cancellation"
+  | "payment_issue"
+  | "general_refund";
+
+export type CreditTransaction = {
+  userId: Id<"users">;
+  amount: number;
+  type: CreditTransactionType;
+  reason?: CreditTransactionReason;
+  businessId?: Id<"businesses">;
+  classInstanceId?: Id<"classInstances">;
+  description: string;
+  externalRef?: string;
+};
+
 export const creditService = {
   /**
-   * Create a credit transaction with multiple ledger entries.
-   * This is the ONLY way to move credits in the system.
-   * 
-   * Enforces double-entry bookkeeping: all entries must sum to zero.
-   */
-  createTransaction: async (
-    ctx: MutationCtx,
-    args: CreateTransactionArgs
-  ): Promise<{ transactionId: string }> => {
-    const { idempotencyKey, description, entries } = args;
-    const transactionId = args.transactionId || `tx_${Date.now()}_${nanoid(8)}`;
-    const now = Date.now();
-
-    // Validate all business rules
-    creditRules.validateTransactionRules({ idempotencyKey, description, entries });
-
-    // Check for existing transaction with same idempotency key
-    const existingTransaction = await ctx.db
-      .query("creditTransactions")
-      .withIndex("by_idempotencyKey", (q) => q.eq("idempotencyKey", idempotencyKey))
-      .first();
-
-    // Apply transaction status rules
-    if (existingTransaction) {
-      if (existingTransaction.status === "completed") {
-        return { transactionId: existingTransaction.transactionId };
-      }
-      creditRules.canRetryFailedTransaction(existingTransaction.status);
-      // If pending, we'll continue and potentially override
-    }
-
-    try {
-      // Determine transaction action and actor from ledger entries
-      const { action, actor } = getTransactionMeta(
-        entries.map(entry => ({ type: entry.type as CreditLedgerType, account: entry.userId ? "customer" : entry.businessId ? "business" : "system" }))
-      );
-
-      // Create transaction record
-      await ctx.db.insert("creditTransactions", {
-        idempotencyKey,
-        transactionId,
-        status: "pending",
-        transactionActor: actor,
-        transactionAction: action,
-        description,
-        amount: 0, // Double-entry ensures this is always ~0
-        createdAt: now,
-        deleted: false,
-      });
-
-      // Create all ledger entries atomically using operations
-      for (const entry of entries) {
-        const ledgerEntry = createLedgerEntry(
-          entry,
-          transactionId,
-          description,
-          idempotencyKey,
-          now,
-          creditExpirationUtils.shouldExpireCredits,
-          creditExpirationUtils.calculateExpirationDate
-        );
-
-        await ctx.db.insert("creditLedger", ledgerEntry);
-      }
-
-      // Mark transaction as completed
-      await ctx.db.patch(
-        (await ctx.db
-          .query("creditTransactions")
-          .withIndex("by_idempotencyKey", (q) => q.eq("idempotencyKey", idempotencyKey))
-          .first())!._id,
-        {
-          status: "completed",
-          updatedAt: now,
-        }
-      );
-
-      return { transactionId };
-
-    } catch (error) {
-      // Mark transaction as failed if it exists
-      const failedTransaction = await ctx.db
-        .query("creditTransactions")
-        .withIndex("by_idempotencyKey", (q) => q.eq("idempotencyKey", idempotencyKey))
-        .first();
-
-      if (failedTransaction) {
-        await ctx.db.patch(failedTransaction._id, {
-          status: "failed",
-          updatedAt: now,
-        });
-      }
-
-      throw error;
-    }
-  },
-
-  /**
-   * Get current balance for an entity (derived from ledger)
-   */
-  getBalance: async (
-    ctx: QueryCtx,
-    entity: CreditEntity
-  ): Promise<number> => {
-    let entries;
-
-    if ("userId" in entity) {
-      entries = await ctx.db
-        .query("creditLedger")
-        .withIndex("by_user", (q) => q.eq("userId", entity.userId))
-        .collect();
-    } else if ("businessId" in entity) {
-      entries = await ctx.db
-        .query("creditLedger")
-        .withIndex("by_business", (q) => q.eq("businessId", entity.businessId))
-        .collect();
-    } else {
-      entries = await ctx.db
-        .query("creditLedger")
-        .withIndex("by_systemEntity", (q) => q.eq("systemEntity", entity.systemEntity))
-        .collect();
-    }
-
-    return entries
-      .filter(entry => !entry.deleted)
-      .reduce((total, entry) => total + entry.amount, 0);
-  },
-
-  /**
-   * Validate that an entity has sufficient balance
-   */
-  validateBalance: async (
-    ctx: QueryCtx,
-    entity: { userId: Id<"users"> } | { businessId: Id<"businesses"> },
-    requiredAmount: number
-  ): Promise<boolean> => {
-    const currentBalance = await creditService.getBalance(ctx, entity);
-    return currentBalance >= requiredAmount;
-  },
-
-  /**
-   * Simple method to add credits to a user (e.g., from purchase)
+   * Add credits to a user (purchase, gifts, refunds)
    */
   addCredits: async (
     ctx: MutationCtx,
-    args: { userId: Id<"users">; amount: number; description: string; idempotencyKey: string }
-  ): Promise<{ transactionId: string }> => {
-    return await creditService.createTransaction(ctx, {
-      idempotencyKey: args.idempotencyKey,
-      description: args.description,
-      entries: [
-        {
-          userId: args.userId,
-          type: "credit_purchase",
-          amount: args.amount,
-          businessId: undefined,
-          systemEntity: undefined,
-        },
-        {
-          userId: undefined,
-          type: "credit_purchase",
-          amount: -args.amount,
-          businessId: undefined,
-          systemEntity: "payment_processor",
-        }
-      ]
+    args: {
+      userId: Id<"users">;
+      amount: number;
+      type: "purchase" | "gift" | "refund";
+      reason?: CreditTransactionReason;
+      description: string;
+      externalRef?: string;
+      businessId?: Id<"businesses">;
+      classInstanceId?: Id<"classInstances">;
+    }
+  ): Promise<{ newBalance: number; transactionId: Id<"creditTransactions"> }> => {
+    const { userId, amount, type, reason, description, externalRef, businessId, classInstanceId } = args;
+
+    // Validate amount is positive
+    if (amount <= 0) {
+      throw new ConvexError({
+        message: "Credit amount must be greater than 0",
+        field: "amount",
+        code: "INVALID_AMOUNT"
+      });
+    }
+
+    // Get user
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      throw new ConvexError({
+        message: "User not found",
+        field: "userId",
+        code: "USER_NOT_FOUND"
+      });
+    }
+
+    // Update user balance
+    const currentCredits = user.credits || 0;
+    const newBalance = currentCredits + amount;
+
+    await ctx.db.patch(userId, {
+      credits: newBalance
     });
+
+    // Log transaction
+    const transactionId = await ctx.db.insert("creditTransactions", {
+      userId,
+      amount,
+      type,
+      reason,
+      businessId,
+      classInstanceId,
+      description,
+      externalRef,
+      createdAt: Date.now(),
+      createdBy: userId
+    });
+
+    return { newBalance, transactionId };
   },
 
   /**
-   * Simple method to spend credits from a user (e.g., for booking)
+   * Spend credits from a user (booking)
    */
   spendCredits: async (
     ctx: MutationCtx,
-    args: { userId: Id<"users">; amount: number; description: string; idempotencyKey: string }
-  ): Promise<{ transactionId: string }> => {
-    // Check if user has enough credits
-    const hasBalance = await creditService.validateBalance(ctx, { userId: args.userId }, args.amount);
-    if (!hasBalance) {
-      throw new Error(`Insufficient credits. Required: ${args.amount}`);
+    args: {
+      userId: Id<"users">;
+      amount: number;
+      description: string;
+      businessId: Id<"businesses">;
+      classInstanceId?: Id<"classInstances">;
+      externalRef?: string;
+    }
+  ): Promise<{ newBalance: number; transactionId: Id<"creditTransactions"> }> => {
+    const { userId, amount, description, businessId, classInstanceId, externalRef } = args;
+
+    // Validate amount is positive
+    if (amount <= 0) {
+      throw new ConvexError({
+        message: "Credit amount must be greater than 0",
+        field: "amount",
+        code: "INVALID_AMOUNT"
+      });
     }
 
-    return await creditService.createTransaction(ctx, {
-      idempotencyKey: args.idempotencyKey,
-      description: args.description,
-      entries: [
-        {
-          userId: args.userId,
-          type: "credit_spend",
-          amount: -args.amount,
-          businessId: undefined,
-          systemEntity: undefined,
-        },
-        {
-          userId: undefined,
-          type: "system_credit_cost",
-          amount: args.amount,
-          businessId: undefined,
-          systemEntity: "system",
-        }
-      ]
+    // Get user
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      throw new ConvexError({
+        message: "User not found",
+        field: "userId",
+        code: "USER_NOT_FOUND"
+      });
+    }
+
+    // Check sufficient balance
+    const currentCredits = user.credits || 0;
+    if (currentCredits < amount) {
+      throw new ConvexError({
+        message: `Insufficient credits. Required: ${amount}, Available: ${currentCredits}`,
+        field: "amount",
+        code: "INSUFFICIENT_CREDITS"
+      });
+    }
+
+    // Update user balance
+    const newBalance = currentCredits - amount;
+
+    await ctx.db.patch(userId, {
+      credits: newBalance
     });
+
+    // Log transaction (negative amount for spending)
+    const transactionId = await ctx.db.insert("creditTransactions", {
+      userId,
+      amount: -amount,
+      type: "spend",
+      reason: "booking",
+      businessId,
+      classInstanceId,
+      description,
+      externalRef,
+      createdAt: Date.now(),
+      createdBy: userId
+    });
+
+    return { newBalance, transactionId };
   },
 
   /**
-   * Get all ledger entries for a user (for debugging/reconciliation if needed)
+   * Get user's current credit balance
    */
-  getLedgerEntriesForUser: async (
+  getBalance: async (
     ctx: QueryCtx | MutationCtx,
     userId: Id<"users">
-  ): Promise<Array<{
-    userId: Id<"users">;
-    amount: number;
-    type: string;
-    effectiveAt: number;
-    expiresAt?: number;
-    deleted: boolean;
-  }>> => {
-    const entries = await ctx.db
-      .query("creditLedger")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+  ): Promise<number> => {
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      throw new ConvexError({
+        message: "User not found",
+        field: "userId",
+        code: "USER_NOT_FOUND"
+      });
+    }
 
-    return entries.map(entry => ({
-      userId: entry.userId!,
-      amount: entry.amount,
-      type: entry.type,
-      effectiveAt: entry.effectiveAt,
-      expiresAt: entry.expiresAt,
-      deleted: entry.deleted ?? false
+    return user.credits || 0;
+  },
+
+  /**
+   * Get user's transaction history
+   */
+  getTransactionHistory: async (
+    ctx: QueryCtx,
+    args: {
+      userId: Id<"users">;
+      limit?: number;
+      type?: CreditTransactionType;
+    }
+  ): Promise<Array<{
+    id: Id<"creditTransactions">;
+    amount: number;
+    type: string; // Accept any type string to handle legacy data
+    reason?: CreditTransactionReason;
+    businessId?: Id<"businesses">;
+    classInstanceId?: Id<"classInstances">;
+    description: string;
+    externalRef?: string;
+    createdAt: number;
+  }>> => {
+    const { userId, limit = 50, type } = args;
+
+    let query = ctx.db
+      .query("creditTransactions")
+      .withIndex("by_user", q => q.eq("userId", userId));
+
+    if (type) {
+      query = ctx.db
+        .query("creditTransactions")
+        .withIndex("by_user_type", q => q.eq("userId", userId).eq("type", type));
+    }
+
+    const transactions = await query
+      .order("desc")
+      .take(limit);
+
+    return transactions.map(tx => ({
+      id: tx._id,
+      amount: tx.amount,
+      type: tx.type,
+      reason: tx.reason,
+      businessId: tx.businessId,
+      classInstanceId: tx.classInstanceId,
+      description: tx.description,
+      externalRef: tx.externalRef,
+      createdAt: tx.createdAt
     }));
   },
 
   /**
-   * Get user balance and optionally reconcile cache
-   * This is the main method other services should use
+   * Get business earnings from credit transactions
    */
-  getUserCredits: async (
-    ctx: QueryCtx | MutationCtx,
-    userId: Id<"users">,
-    reconcileCache = true
-  ): Promise<number> => {
-    // If we need to reconcile and have mutation context, do it
-    if (reconcileCache && 'db' in ctx && 'patch' in ctx.db) {
-      const { reconciliationService } = await import("./reconciliationService");
-      await reconciliationService.reconcileUser({ ctx, userId, updateCache: true });
+  getBusinessEarnings: async (
+    ctx: QueryCtx,
+    args: {
+      businessId: Id<"businesses">;
+      startDate?: number;
+      endDate?: number;
+    }
+  ): Promise<{
+    totalEarnings: number;
+    totalRefunds: number;
+    netEarnings: number;
+    transactionCount: number;
+  }> => {
+    const { businessId, startDate, endDate } = args;
+
+    let bookings = ctx.db
+      .query("creditTransactions")
+      .withIndex("by_business_type", q => q.eq("businessId", businessId).eq("type", "spend"));
+
+    // Get all refund types for this business
+    let allTransactions = ctx.db
+      .query("creditTransactions")
+      .withIndex("by_business", q => q.eq("businessId", businessId));
+
+    if (startDate) {
+      bookings = bookings.filter(q => q.gte(q.field("createdAt"), startDate));
+      allTransactions = allTransactions.filter(q => q.gte(q.field("createdAt"), startDate));
     }
 
-    // Return the balance (either from cache or freshly reconciled)
-    return await creditService.getBalance(ctx, { userId });
+    if (endDate) {
+      bookings = bookings.filter(q => q.lte(q.field("createdAt"), endDate));
+      allTransactions = allTransactions.filter(q => q.lte(q.field("createdAt"), endDate));
+    }
+
+    const [bookingTxns, allTxns] = await Promise.all([
+      bookings.collect(),
+      allTransactions.collect()
+    ]);
+
+    const refundTxns = allTxns.filter(tx => tx.type === "refund");
+
+    const totalEarnings = bookingTxns.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+    const totalRefunds = refundTxns.reduce((sum, tx) => sum + tx.amount, 0);
+    const netEarnings = totalEarnings - totalRefunds;
+
+    return {
+      totalEarnings,
+      totalRefunds,
+      netEarnings,
+      transactionCount: bookingTxns.length + refundTxns.length
+    };
+  },
+
+  /**
+   * Analytics: Get credit breakdown by type and reason
+   */
+  getCreditAnalytics: async (
+    ctx: QueryCtx,
+    args: {
+      startDate?: number;
+      endDate?: number;
+    }
+  ): Promise<{
+    purchased: number;
+    giftWelcome: number;
+    giftReferral: number;
+    giftAdmin: number;
+    giftCampaign: number;
+    totalGifted: number;
+    totalAdded: number;
+    totalSpent: number;
+    totalRefunded: number;
+    refundsByReason: {
+      userCancellation: number;
+      businessCancellation: number;
+      paymentIssue: number;
+      general: number;
+    };
+  }> => {
+    let query = ctx.db.query("creditTransactions");
+
+    if (args.startDate) {
+      query = query.filter(q => q.gte(q.field("createdAt"), args.startDate!));
+    }
+
+    if (args.endDate) {
+      query = query.filter(q => q.lte(q.field("createdAt"), args.endDate!));
+    }
+
+    const transactions = await query.collect();
+
+    const purchased = transactions
+      .filter(tx => tx.type === "purchase")
+      .reduce((sum, tx) => sum + tx.amount, 0);
+
+    const giftWelcome = transactions
+      .filter(tx => 
+        (tx.type === "gift" && tx.reason === "welcome_bonus") ||
+        tx.type === "gift_welcome" // Legacy type
+      )
+      .reduce((sum, tx) => sum + tx.amount, 0);
+
+    const giftReferral = transactions
+      .filter(tx => 
+        (tx.type === "gift" && tx.reason === "referral_bonus") ||
+        tx.type === "gift_referral" // Legacy type
+      )
+      .reduce((sum, tx) => sum + tx.amount, 0);
+
+    const giftAdmin = transactions
+      .filter(tx => 
+        (tx.type === "gift" && (tx.reason === "admin_gift" || !tx.reason)) || // New format or legacy gifts without reason
+        tx.type === "gift_admin" // Legacy type
+      )
+      .reduce((sum, tx) => sum + tx.amount, 0);
+
+    const giftCampaign = transactions
+      .filter(tx => 
+        (tx.type === "gift" && tx.reason === "campaign_bonus") ||
+        tx.type === "gift_campaign" // Legacy type
+      )
+      .reduce((sum, tx) => sum + tx.amount, 0);
+
+    const totalSpent = transactions
+      .filter(tx => tx.type === "spend" || tx.type === "booking") // Include legacy booking type
+      .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+
+    const refundsByReason = {
+      userCancellation: transactions
+        .filter(tx => 
+          (tx.type === "refund" && tx.reason === "user_cancellation") ||
+          tx.type === "refund_cancellation" // Legacy type
+        )
+        .reduce((sum, tx) => sum + tx.amount, 0),
+      businessCancellation: transactions
+        .filter(tx => 
+          (tx.type === "refund" && tx.reason === "business_cancellation") ||
+          tx.type === "refund_class_cancelled" // Legacy type
+        )
+        .reduce((sum, tx) => sum + tx.amount, 0),
+      paymentIssue: transactions
+        .filter(tx => 
+          (tx.type === "refund" && tx.reason === "payment_issue") ||
+          tx.type === "refund_payment" // Legacy type
+        )
+        .reduce((sum, tx) => sum + tx.amount, 0),
+      general: transactions
+        .filter(tx => 
+          (tx.type === "refund" && (tx.reason === "general_refund" || !tx.reason)) || // New format or legacy refunds without reason
+          tx.type === "refund_general" // Legacy type
+        )
+        .reduce((sum, tx) => sum + tx.amount, 0),
+    };
+
+    const totalRefunded = Object.values(refundsByReason).reduce((sum, amount) => sum + amount, 0);
+    const totalGifted = giftWelcome + giftReferral + giftAdmin + giftCampaign;
+    const totalAdded = purchased + totalGifted + totalRefunded;
+
+    return {
+      purchased,
+      giftWelcome,
+      giftReferral,
+      giftAdmin,
+      giftCampaign,
+      totalGifted,
+      totalAdded,
+      totalSpent,
+      totalRefunded,
+      refundsByReason,
+    };
   }
 };
-
-
-
