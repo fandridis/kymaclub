@@ -1,9 +1,10 @@
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { ClockIcon, XIcon, EyeIcon } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { tz } from '@date-fns/tz';
 import { useTypedTranslation } from '../i18n/typed';
+import { getCancellationInfo, formatCancellationStatus } from '../utils/cancellationUtils';
 // Using any type to avoid import issues with BookingWithDetails
 interface BookingCardProps {
   booking: any;
@@ -26,6 +27,20 @@ export const BookingCard = memo<BookingCardProps>(({ booking, onCancel, onViewCl
 
   const startTimeStr = startTime ? format(startTime, 'HH:mm', { in: tz('Europe/Athens') }) : '';
   const duration = startTime && endTime ? Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60)) : 0;
+
+  // Calculate cancellation window information
+  const cancellationInfo = useMemo(() => {
+    if (!startTime || !booking.classTemplate?.cancellationWindowHours) {
+      return null;
+    }
+
+    return getCancellationInfo(
+      startTime.getTime(),
+      booking.classTemplate.cancellationWindowHours
+    );
+  }, [startTime, booking.classTemplate?.cancellationWindowHours]);
+
+  const cancellationStatusText = cancellationInfo ? formatCancellationStatus(cancellationInfo) : null;
 
   return (
     <TouchableOpacity
@@ -65,11 +80,17 @@ export const BookingCard = memo<BookingCardProps>(({ booking, onCancel, onViewCl
           </Text>
         </View>
 
-        <View style={styles.statusRow}>
-          <Text style={styles.statusText}>
-            {booking.status === 'pending' ? 'Confirmed' : booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-          </Text>
-        </View>
+        {/* Cancellation info */}
+        {cancellationStatusText && (
+          <View style={styles.cancellationRow}>
+            <Text style={[
+              styles.cancellationText,
+              cancellationInfo?.isWithinWindow ? styles.freeCancelText : styles.partialRefundText
+            ]}>
+              {cancellationStatusText}
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Right side - Action buttons */}
@@ -183,6 +204,19 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: '#22c55e',
+  },
+  cancellationRow: {
+    marginTop: 4,
+  },
+  cancellationText: {
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  freeCancelText: {
+    color: '#059669', // Green for free cancellation
+  },
+  partialRefundText: {
+    color: '#d97706', // Orange for partial refund
   },
   actionsSection: {
     width: 70,

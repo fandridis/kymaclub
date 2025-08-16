@@ -5,15 +5,8 @@ import { ERROR_CODES } from "../utils/errorCodes";
 import { ConvexError } from "convex/values";
 import { creditService } from "./creditService";
 import { calculateBestDiscount } from "../utils/classDiscount";
+import { BookingWithDetails } from "../types/booking";
 
-/***************************************************************
- * Enhanced Booking Type with Related Data
- ***************************************************************/
-export type BookingWithDetails = Doc<"bookings"> & {
-    classInstance?: Doc<"classInstances">;
-    classTemplate?: Doc<"classTemplates">;
-    venue?: Doc<"venues">;
-};
 
 /***************************************************************
  * Booking Service - All booking-related operations

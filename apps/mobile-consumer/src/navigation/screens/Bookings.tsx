@@ -8,9 +8,9 @@ import { FlashList } from '@shopify/flash-list';
 import { api } from '@repo/api/convex/_generated/api';
 import { BookingCard } from '../../components/BookingCard';
 import { useAuth, useAuthenticatedUser } from '../../stores/auth-store';
-import type { RootStackParamList } from '../index';
 import type { Doc, Id } from '@repo/api/convex/_generated/dataModel';
-// Import is not working for BookingWithDetails, so I'll use the type from BookingCard component
+import { getCancellationInfo, getCancellationMessage } from '../../utils/cancellationUtils';
+import { BookingWithDetails } from '@repo/api/types/booking';
 
 // Date formatting utilities (same as VenueDetailsScreen)
 const formatDateHeader = (date: Date): string => {
@@ -108,14 +108,26 @@ export function Bookings() {
         return { flattenedItems: items, headerIndices: headerIdx };
     }, [bookingsSections]);
 
-    const handleCancelBooking = (booking: Doc<"bookings">) => {
+    const handleCancelBooking = (booking: BookingWithDetails) => {
         const options = ['Cancel Booking', 'Keep Booking'];
         const destructiveButtonIndex = 0;
         const cancelButtonIndex = 1;
 
+        // Calculate cancellation info for detailed message
+        const className = booking.classInstance?.name ?? booking.classTemplate?.name ?? 'Class';
+        let message = 'This action cannot be undone. You may not get a full refund depending on the cancellation policy.';
+
+        if (booking.classInstance?.startTime && booking.classTemplate?.cancellationWindowHours) {
+            const cancellationInfo = getCancellationInfo(
+                booking.classInstance.startTime,
+                booking.classTemplate.cancellationWindowHours
+            );
+            message = getCancellationMessage(className, cancellationInfo);
+        }
+
         showActionSheetWithOptions({
-            title: `Cancel "${booking.classInstanceId}"?`,
-            message: 'This action cannot be undone. You may not get a full refund depending on the cancellation policy.',
+            title: 'Cancel Booking',
+            message,
             options,
             cancelButtonIndex,
             destructiveButtonIndex,

@@ -34,10 +34,7 @@
     "vitest": "^3.2.4"
   },
   "exports": {
-    "./bookings": "./convex/bookings/index.ts",
-    "./classes/instances": "./convex/classes/instances/index.ts",
-    "./classes/templates": "./convex/classes/templates/index.ts",
-    "./core": "./convex/core/index.ts",
+    "./types/booking": "./types/booking.ts",
     "./convex/_generated/api": {
       "import": "./convex/_generated/api.js",
       "types": "./convex/_generated/api.d.ts"
