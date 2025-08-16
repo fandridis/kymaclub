@@ -144,7 +144,20 @@ React Native mobile application for iOS and Android consumers.
 - **`src/components/qr-scanner/`**: QR code scanning functionality with modals and controls.
 - **`src/components/OnboardingWizard.tsx`**: User onboarding flow component. Exports: `OnboardingWizard`.
 - **`src/components/language-switcher.tsx`**: Language selection component. Exports: `LanguageSwitcher`.
+- **`src/components/BookingCard.tsx`**: Individual booking display with cancellation. Exports: `BookingCard`.
+- **`src/components/ClassCard.tsx`**: Class instance card with booking actions. Exports: `ClassCard`.
+- **`src/components/BusinessCard.tsx`**: Business discovery card with categories. Exports: `BusinessCard`.
+- **`src/components/MapView.tsx`**: Interactive map for business and class discovery. Exports: `MapView`.
+- **`src/components/ClassesList.tsx`**: Filterable class listing component. Exports: `ClassesList`.
+- **`src/components/FilterBar.tsx`**: Class and business filtering interface. Exports: `FilterBar`.
+- **`src/components/DateFilterBar.tsx`**: Date-based filtering for classes. Exports: `DateFilterBar`.
 - **`src/navigation/`**: React Navigation setup with screen routing.
+  - **`screens/Home.tsx`**: Main home screen with class discovery and bookings.
+  - **`screens/Bookings.tsx`**: Complete booking management with cancellation support. Exports: booking list, cancellation handlers.
+  - **`screens/ClassDetailsModal.tsx`**: Detailed class view with booking actions. Exports: class booking interface.
+  - **`screens/Map.tsx`**: Interactive map screen for business and venue discovery.
+  - **`screens/Settings.tsx`**: User settings and preferences management.
+  - **`screens/News.tsx`**: Updates and announcements feed.
 - **`src/features/core/`**: Core application features including authentication, location gating, and user registration.
   - **`components/auth-guard.tsx`**: Authentication protection component. Exports: `AuthGuard`.
   - **`components/auth-sync.tsx`**: Authentication state synchronization. Exports: `AuthSync`.
@@ -162,8 +175,8 @@ React Native mobile application for iOS and Android consumers.
   - **`components/ExploreHeader.tsx`**: Explore page header component. Exports: `ExploreHeader`.
   - **`components/ExploreScreen.tsx`**: Main explore interface. Exports: `ExploreScreen`.
   - **`hooks/useBusinesses.ts`**: Business data fetching hook. Exports: `useBusinesses`.
-- **`src/features/bookings/`**: Booking-related features (structure exists).
-- **`src/features/map/`**: Map and location features (structure exists).
+- **`src/features/bookings/`**: Complete booking management system with real-time updates.
+- **`src/features/map/`**: Map and location features with business discovery.
 - **`src/stores/auth-store.ts`**: Authentication state management. Exports: auth store utilities.
 - **`maestro-tests/`**: Maestro test automation for mobile flows.
 
@@ -231,6 +244,33 @@ Convex backend API providing real-time database and serverless functions.
 - **`mutations.ts`**: Booking operations and class reservations. Exports: `bookClassTest`.
 - **`domain/`**: Booking business logic and validation rules.
 
+**Services Layer (`packages/api/services/`):**
+- **`bookingService.ts`**: Complete booking management service with pagination and cancellation. Exports: `getCurrentUserBookings`, `cancelBooking`, `getBookingHistory`.
+- **`creditService.ts`**: Sophisticated credit management system. Exports: `addCredits`, `spendCredits`, `getUserBalance`, `getTransactionHistory`.
+- **`classTemplateService.ts`**: Class template management operations.
+- **`classInstanceService.ts`**: Individual class instance operations.
+- **`venueService.ts`**: Venue management and operations.
+- **`uploadService.ts`**: File upload and image management service.
+- **`coreService.ts`**: Core business operations and user management.
+- **`userService.ts`**: User profile and account management.
+
+**Operations Layer (`packages/api/operations/`):**
+- **`business.ts`**: Business entity operations and validations.
+- **`classTemplate.ts`**: Class template business logic and rules.
+- **`classInstance.ts`**: Class instance scheduling and management.
+- **`classDiscount.ts`**: Discount calculation and application logic.
+- **`venue.ts`**: Venue operations and category management.
+- **`pricing.ts`**: Dynamic pricing calculations and rules.
+
+**Type Definitions (`packages/api/types/`):**
+- **`booking.ts`**: Comprehensive booking types including `BookingWithDetails`. Exports: booking status enums, cancellation policies.
+- **`credit.ts`**: Credit system types. Exports: `CreditTransactionType`, `CreditTransactionReason`.
+- **`classDiscount.ts`**: Discount system type definitions.
+- **`cancellationPolicy.ts`**: Cancellation policy and refund calculations.
+- **`businessInvitation.ts`**: Team invitation system types.
+- **`systemSettings.ts`**: Global configuration management types.
+- **`instructor.ts`**: Instructor profile and specialties types.
+
 **Generated Files (`convex/_generated/`):**
 - **`api.d.ts`**: Auto-generated TypeScript API definitions.
 - **`dataModel.d.ts`**: Generated database schema types.
@@ -289,7 +329,16 @@ Shared utility functions and constants across the monorepo.
 
 ### Testing
 - **Backend**: Comprehensive Vitest unit and integration tests in `packages/api`
+  - **Integration Tests**: `packages/api/integrationTests/` with complete workflow testing
+    - **`booking.integration.test.ts`**: End-to-end booking workflows with cancellation and refunds
+    - **`credit.integration.test.ts`**: Credit system testing with transaction validation
+    - **`classInstance.integration.test.ts`**: Class scheduling and instance management tests
+    - **`classTemplate.integration.test.ts`**: Template creation and management tests
+    - **`venue.integration.test.ts`**: Venue operations and category management tests
+    - **`upload.integration.test.ts`**: File upload and image management testing
+    - **`helpers.ts`**: Test utilities and shared setup functions for integration testing
 - **Frontend**: Playwright E2E tests for critical user journeys in `apps/web-business/tests`
+- **Mobile**: Maestro test automation for mobile consumer app workflows in `apps/mobile-consumer/maestro-tests`
 - **Testing Strategy**: E2E focus (not component testing) - business logic tested in backend, UI tested end-to-end
 - When implementing features, verify functionality through manual testing and appropriate test level
 
@@ -697,6 +746,49 @@ All venue and template entities now support multiple images:
 - **Automatic Cleanup**: Images are automatically deleted from storage when removed from templates
 - **Access Control**: Image operations respect business-level permissions and user authentication
 - **Compression Pipeline**: Client-side compression before upload reduces bandwidth and storage costs
+
+## Latest Features and Enhancements (August 2025)
+
+### Complete Booking System Implementation
+A comprehensive booking management system has been implemented across the platform:
+
+#### Consumer Mobile App Booking Management:
+- **Complete Booking Interface**: `apps/mobile-consumer/src/navigation/screens/Bookings.tsx` provides full booking management
+- **Booking Cards**: Interactive booking cards with real-time cancellation windows and refund calculations
+- **Cancellation System**: Smart cancellation with automatic refund calculation based on cancellation policies
+- **Date Grouping**: Bookings grouped by date (Today, Tomorrow, specific dates) for better organization
+- **Real-time Updates**: Live booking status updates and cancellation window calculations
+
+#### Advanced Credit and Discount System:
+- **Credit Service**: `packages/api/services/creditService.ts` handles all credit operations (add, spend, balance, history)
+- **Booking Service**: `packages/api/services/bookingService.ts` manages booking lifecycle with pagination and cancellation
+- **Discount Integration**: Automatic best discount calculation during booking flow
+- **Refund Processing**: Intelligent refund calculation based on cancellation timing and policies
+
+#### Enhanced Class Discovery:
+- **Class Cards**: Rich class display cards with booking actions and availability information
+- **Business Cards**: Business discovery with proper category display and venue information
+- **Filter Systems**: Advanced filtering by date, location, class type, and business category
+- **Map Integration**: Interactive map for discovering classes and businesses by location
+
+### Comprehensive Testing Infrastructure
+- **Integration Testing**: Complete test coverage for booking, credit, and class management workflows
+- **Booking Tests**: End-to-end testing of booking creation, cancellation, and refund processes
+- **Credit Tests**: Transaction validation, balance reconciliation, and error handling
+- **Class Tests**: Template and instance management with scheduling validation
+
+### Mobile App Feature Completeness:
+- **Authentication Flow**: Complete sign-in, registration, and location gating system
+- **Booking Management**: Full booking lifecycle from discovery to cancellation
+- **Credit Display**: Real-time credit balance and transaction history
+- **QR Scanner**: Advanced QR code scanning for quick class check-ins
+- **Timezone Consistency**: All times displayed in Europe/Athens timezone for consistency
+
+### Service Layer Architecture:
+- **Modular Services**: Each domain (booking, credit, class, venue) has dedicated service modules
+- **Type Safety**: Comprehensive TypeScript types for all booking and credit operations
+- **Error Handling**: Structured error codes and user-friendly error messages
+- **Business Logic**: Pure business logic separated from database operations
 
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
