@@ -523,33 +523,22 @@ export const creditTransactionsFields = {
     v.literal("gift"),       // Credits given for free
     v.literal("spend"),      // Credits spent (bookings)
     v.literal("refund"),     // Credits returned
-    
-    // Legacy types (for migration compatibility)
-    v.literal("booking"),              // Legacy spend type
-    v.literal("gift_admin"),           // Legacy gift_admin
-    v.literal("gift_welcome"),         // Legacy gift_welcome
-    v.literal("gift_referral"),        // Legacy gift_referral
-    v.literal("gift_campaign"),        // Legacy gift_campaign
-    v.literal("refund_cancellation"),  // Legacy refund types
-    v.literal("refund_class_cancelled"),
-    v.literal("refund_payment"),
-    v.literal("refund_general")
   ),
 
   // Reason - why/how it happened  
   reason: v.optional(v.union(
     // Purchase reasons
     v.literal("user_buy"),           // User bought credits
-    
-    // Gift reasons
-    v.literal("welcome_bonus"),      // Welcome bonus
-    v.literal("referral_bonus"),     // Referral bonus  
-    v.literal("admin_gift"),         // Admin manual gift
-    v.literal("campaign_bonus"),     // Marketing campaign
-    
+
     // Spend reasons
     v.literal("booking"),            // Class booking
-    
+
+    // Gift reasons
+    v.literal("admin_gift"),         // Admin manual gift
+    v.literal("campaign_bonus"),     // Marketing campaign
+    v.literal("referral_bonus"),     // Referral bonus  
+    v.literal("welcome_bonus"),      // Welcome bonus
+
     // Refund reasons
     v.literal("user_cancellation"),  // User cancelled booking
     v.literal("business_cancellation"), // Business cancelled class
@@ -559,6 +548,8 @@ export const creditTransactionsFields = {
 
   // Business context for earnings tracking
   businessId: v.optional(v.id("businesses")),
+  venueId: v.optional(v.id("venues")),
+  classTemplateId: v.optional(v.id("classTemplates")),
   classInstanceId: v.optional(v.id("classInstances")),
 
   // Audit and reference tracking
@@ -674,8 +665,9 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_business", ["businessId"])
     .index("by_type", ["type"])
-    .index("by_class", ["classInstanceId"])
+    .index("by_venue", ["venueId"])
+    .index("by_class_template", ["classTemplateId"])
+    .index("by_class_instance", ["classInstanceId"])
     .index("by_user_type", ["userId", "type"])
     .index("by_business_type", ["businessId", "type"]),
-
 });

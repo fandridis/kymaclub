@@ -4,14 +4,13 @@ import { ConvexError } from "convex/values";
 import { creditTransactionsFields } from "../convex/schema";
 
 /**
- * Simple Credit Service - Replaces complex double-entry ledger system
+ * Credit Service
  * 
- * This service does three things:
+ * This service handles:
  * 1. Add credits to user (purchase, gift, refund)
  * 2. Spend credits from user (booking)
  * 3. Get user balance (from user.credits field)
- * 
- * No reconciliation needed - user.credits is always the source of truth.
+ * 4. Transaction history and business analytics
  */
 
 export type CreditTransactionType = "purchase" | "gift" | "spend" | "refund";
@@ -203,7 +202,7 @@ export const creditService = {
   ): Promise<Array<{
     id: Id<"creditTransactions">;
     amount: number;
-    type: string; // Accept any type string to handle legacy data
+    type: CreditTransactionType;
     reason?: CreditTransactionReason;
     businessId?: Id<"businesses">;
     classInstanceId?: Id<"classInstances">;
@@ -339,61 +338,37 @@ export const creditService = {
       .reduce((sum, tx) => sum + tx.amount, 0);
 
     const giftWelcome = transactions
-      .filter(tx => 
-        (tx.type === "gift" && tx.reason === "welcome_bonus") ||
-        tx.type === "gift_welcome" // Legacy type
-      )
+      .filter(tx => tx.type === "gift" && tx.reason === "welcome_bonus")
       .reduce((sum, tx) => sum + tx.amount, 0);
 
     const giftReferral = transactions
-      .filter(tx => 
-        (tx.type === "gift" && tx.reason === "referral_bonus") ||
-        tx.type === "gift_referral" // Legacy type
-      )
+      .filter(tx => tx.type === "gift" && tx.reason === "referral_bonus")
       .reduce((sum, tx) => sum + tx.amount, 0);
 
     const giftAdmin = transactions
-      .filter(tx => 
-        (tx.type === "gift" && (tx.reason === "admin_gift" || !tx.reason)) || // New format or legacy gifts without reason
-        tx.type === "gift_admin" // Legacy type
-      )
+      .filter(tx => tx.type === "gift" && (tx.reason === "admin_gift" || !tx.reason))
       .reduce((sum, tx) => sum + tx.amount, 0);
 
     const giftCampaign = transactions
-      .filter(tx => 
-        (tx.type === "gift" && tx.reason === "campaign_bonus") ||
-        tx.type === "gift_campaign" // Legacy type
-      )
+      .filter(tx => tx.type === "gift" && tx.reason === "campaign_bonus")
       .reduce((sum, tx) => sum + tx.amount, 0);
 
     const totalSpent = transactions
-      .filter(tx => tx.type === "spend" || tx.type === "booking") // Include legacy booking type
+      .filter(tx => tx.type === "spend")
       .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
 
     const refundsByReason = {
       userCancellation: transactions
-        .filter(tx => 
-          (tx.type === "refund" && tx.reason === "user_cancellation") ||
-          tx.type === "refund_cancellation" // Legacy type
-        )
+        .filter(tx => tx.type === "refund" && tx.reason === "user_cancellation")
         .reduce((sum, tx) => sum + tx.amount, 0),
       businessCancellation: transactions
-        .filter(tx => 
-          (tx.type === "refund" && tx.reason === "business_cancellation") ||
-          tx.type === "refund_class_cancelled" // Legacy type
-        )
+        .filter(tx => tx.type === "refund" && tx.reason === "business_cancellation")
         .reduce((sum, tx) => sum + tx.amount, 0),
       paymentIssue: transactions
-        .filter(tx => 
-          (tx.type === "refund" && tx.reason === "payment_issue") ||
-          tx.type === "refund_payment" // Legacy type
-        )
+        .filter(tx => tx.type === "refund" && tx.reason === "payment_issue")
         .reduce((sum, tx) => sum + tx.amount, 0),
       general: transactions
-        .filter(tx => 
-          (tx.type === "refund" && (tx.reason === "general_refund" || !tx.reason)) || // New format or legacy refunds without reason
-          tx.type === "refund_general" // Legacy type
-        )
+        .filter(tx => tx.type === "refund" && (tx.reason === "general_refund" || !tx.reason))
         .reduce((sum, tx) => sum + tx.amount, 0),
     };
 
