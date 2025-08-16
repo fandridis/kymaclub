@@ -126,7 +126,7 @@ export function Bookings() {
         }
 
         showActionSheetWithOptions({
-            title: 'Cancel Booking',
+            title: `Cancel "${className}"?`,
             message,
             options,
             cancelButtonIndex,

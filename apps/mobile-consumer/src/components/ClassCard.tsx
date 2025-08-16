@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { ClockIcon, UserIcon, CreditCardIcon } from 'lucide-react-native';
+import { ClockIcon, DiamondIcon, UserIcon } from 'lucide-react-native';
 import { useTypedTranslation } from '../i18n/typed';
 import type { ClassInstance } from '../hooks/use-class-instances';
 
@@ -20,10 +20,8 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
     hour12: false,
   });
   const duration = Math.round((classInstance.endTime - classInstance.startTime) / (1000 * 60));
-  const price = (classInstance.baseCredits ?? 1) * 10;
+  const price = classInstance.baseCredits
   const spotsLeft = Math.max(0, (classInstance.capacity ?? 0) - (classInstance.bookedCount ?? 0));
-  const typeLabel = classInstance.tags?.[0] ?? (classInstance.name ? classInstance.name.split(' ')[0] : 'Class');
-
   const isSoldOut = spotsLeft === 0;
 
   return (
@@ -53,8 +51,8 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
             {classInstance.name}
           </Text>
           <View style={styles.priceContainer}>
-            <CreditCardIcon size={12} color="#ff4747" />
-            <Text style={styles.priceText}>€{price}</Text>
+            <DiamondIcon size={16} color="#222" />
+            <Text style={styles.priceText}>{price}</Text>
           </View>
         </View>
 
@@ -69,7 +67,7 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
         </View>
 
         <View style={styles.spotsRow}>
-          <UserIcon size={12} color={isSoldOut ? '#ef4444' : '#22c55e'} />
+          <UserIcon size={12} color={isSoldOut ? '#ef4444' : '#16a34a'} />
           <Text style={[styles.spotsText, isSoldOut && styles.soldOutText]}>
             {isSoldOut
               ? t('explore.soldOut')
@@ -140,12 +138,12 @@ const styles = StyleSheet.create({
   priceContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 2,
   },
   priceText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#ff4747',
+    color: '#222',
   },
   businessRow: {
     flexDirection: 'row',
@@ -178,7 +176,7 @@ const styles = StyleSheet.create({
   spotsText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#22c55e',
+    color: '#16a34a',
   },
   soldOutText: {
     color: '#ef4444',

@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import { Image } from 'expo-image';
-import { Calendar1Icon, ClockIcon, CalendarOffIcon } from 'lucide-react-native';
+import { Calendar1Icon, ClockIcon, CalendarOffIcon, DiamondIcon } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import Carousel from 'react-native-reanimated-carousel';
@@ -66,7 +66,7 @@ export function ClassDetailsModal() {
     }, [imageUrlsQuery]);
 
     const onPress = () => {
-        const options = [`Book for ${price} credits`, 'Cancel'];
+        const options = [`Spend ${price} credits`, 'Cancel'];
         const cancelButtonIndex = 1;
 
         showActionSheetWithOptions({
@@ -366,11 +366,16 @@ export function ClassDetailsModal() {
                                 disabled={spotsLeft === 0 || isBooking}
                                 onPress={onPress}
                             >
-                                <Text style={[styles.bookButtonText, spotsLeft === 0 && styles.bookButtonTextDisabled]}>
-                                    {spotsLeft === 0 ? 'Fully Booked' : isBooking ? 'Booking…' : 'Book Class'}
-                                </Text>
+                                <View style={styles.bookButtonLeft}>
+                                    <Text style={[styles.bookButtonText, spotsLeft === 0 && styles.bookButtonTextDisabled]}>
+                                        {spotsLeft === 0 ? 'Fully Booked' : isBooking ? 'Booking…' : 'Book Class'}
+                                    </Text>
+                                </View>
                                 {spotsLeft > 0 && (
-                                    <Text style={styles.bookButtonSubtext}>{price} credits</Text>
+                                    <View style={styles.bookButtonPriceContainer}>
+                                        <DiamondIcon size={18} color="rgba(255, 255, 255, 0.9)" />
+                                        <Text style={styles.bookButtonSubtext}>{price}</Text>
+                                    </View>
                                 )}
                             </TouchableOpacity>
                         )}
@@ -651,9 +656,9 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     priceValue: {
-        fontSize: 22,
+        fontSize: 18,
         fontWeight: '700',
-        color: '#059669',
+        color: '#222',
     },
     spotsContainer: {
         flex: 1,
@@ -668,10 +673,10 @@ const styles = StyleSheet.create({
     spotsValue: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#111827',
+        color: "#222",
     },
     spotsLow: {
-        color: '#dc2626',
+        color: '#16a34a',
     },
     detailsSection: {
         paddingTop: 8,
@@ -728,7 +733,7 @@ const styles = StyleSheet.create({
         elevation: 0,
     },
     bookButton: {
-        backgroundColor: '#ff4747',
+        backgroundColor: '#222',
         borderRadius: 40,
         height: 56,
         paddingHorizontal: 28,
@@ -744,6 +749,16 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 8,
     },
+    bookButtonLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    bookButtonPriceContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
     bookButtonDisabled: {
         backgroundColor: '#d1d5db',
         shadowOpacity: 0,
@@ -758,12 +773,12 @@ const styles = StyleSheet.create({
         color: '#9ca3af',
     },
     bookButtonSubtext: {
-        fontSize: 16,
-        fontWeight: '500',
+        fontSize: 18,
+        fontWeight: '600',
         color: 'rgba(255, 255, 255, 0.9)',
     },
     alreadyAttendingContainer: {
-        backgroundColor: '#10b981', // Emerald green
+        backgroundColor: '#16a34a', // Emerald green
         borderRadius: 40,
         height: 56,
         paddingHorizontal: 28,

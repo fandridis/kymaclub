@@ -1,5 +1,7 @@
 # Starter Template with React Navigation
 
+Green: #16a34a
+
 This is a minimal starter template for React Native apps using Expo and React Navigation.
 
 It includes the following:

@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   freeCancelText: {
-    color: '#059669', // Green for free cancellation
+    color: '#16a34a', // Green for free cancellation
   },
   partialRefundText: {
     color: '#d97706', // Orange for partial refund

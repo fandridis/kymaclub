@@ -78,15 +78,14 @@ export function getCancellationMessage(
   className: string,
   cancellationInfo: CancellationInfo
 ): string {
-  const baseMessage = `Cancel "${className}"?`;
 
   if (cancellationInfo.isWithinWindow) {
     if (cancellationInfo.timeRemaining) {
-      return `${baseMessage}\n\nYou can cancel free of charge for the next ${cancellationInfo.timeRemaining}. After that, you'll receive a 50% refund. No-shows are not eligible for a refund.`;
+      return `You can cancel free of charge for the next ${cancellationInfo.timeRemaining}. After that, you'll receive a 50% refund. No-shows are not eligible for a refund.`;
     } else {
-      return `${baseMessage}\n\nYou will receive a full refund as you're cancelling within the cancellation window.`;
+      return `You will receive a full refund as you're cancelling within the cancellation window.`;
     }
   } else {
-    return `${baseMessage}\n\nAs you're cancelling within ${cancellationInfo.cancellationWindowHours} hours of the class, you'll receive a ${cancellationInfo.refundPercentage}% refund. No-shows are not eligible for a refund.`;
+    return `As you're cancelling within ${cancellationInfo.cancellationWindowHours} hours of the class, you'll receive a ${cancellationInfo.refundPercentage}% refund. No-shows are not eligible for a refund.`;
   }
 }
