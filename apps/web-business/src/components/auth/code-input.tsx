@@ -4,7 +4,7 @@ import {
     InputOTPSlot,
 } from "@/components/ui/input-otp";
 
-export function CodeInput({ length = 8 }: { length?: number }) {
+export function CodeInput({ length = 6 }: { length?: number }) {
     return (
         <div className="mb-4 w-full flex justify-center">
             <InputOTP maxLength={8} name="code" id="code" data-testid="otp-input">

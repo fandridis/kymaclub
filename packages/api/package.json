@@ -16,6 +16,7 @@
   "dependencies": {
     "@auth/core": "^0.40.0",
     "@convex-dev/auth": "^0.0.81",
+    "@convex-dev/resend": "^0.1.10",
     "@repo/utils": "workspace:*",
     "convex": "^1.23.0",
     "convex-helpers": "^0.1.101",

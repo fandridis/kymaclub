@@ -415,29 +415,6 @@ export const bookingsFields = {
   ...softDeleteFields,
 };
 
-export const cancellationPoliciesFields = {
-  // Business this policy applies to
-  businessId: v.id("businesses"),
-  // Full refund allowed until this many minutes before class start
-  fullRefundCutoffMins: v.number(),
-  // Partial refund allowed until this many minutes before class start
-  partialRefundCutoffMins: v.number(),
-  // Fraction refunded on late cancel (0.0–1.0)
-  partialRefundPercent: v.number(), // 0.0 - 1.0
-  // Whether business earns revenue on late cancellation per policy
-  payBusinessOnLateCancel: v.boolean(),
-  // Whether business earns revenue on no-shows per policy
-  payBusinessOnNoShow: v.boolean(),
-  // Effective date range for policy activation (ms since epoch)
-  effectiveFrom: v.optional(v.number()),
-  effectiveUntil: v.optional(v.number()),
-  // Whether this policy is currently active
-  isActive: v.boolean(),
-  // Standard audit fields and soft deletion flags
-  ...auditFields,
-  ...softDeleteFields,
-};
-
 export const creditTransactionsFields = {
   // Who the transaction affects
   userId: v.id("users"),
@@ -486,6 +463,117 @@ export const creditTransactionsFields = {
   // Audit and reference tracking
   description: v.string(),
   externalRef: v.optional(v.string()), // payment ID, stripe ID, paypal ID, etc.
+
+  ...auditFields,
+  ...softDeleteFields,
+};
+
+export const notificationsFields = {
+  businessId: v.id("businesses"), // Always present - even consumer notifications are "about" a business
+
+  // Who receives this notification
+  recipientType: v.union(v.literal("business"), v.literal("consumer")),
+  recipientUserId: v.optional(v.id("users")), // For consumer notifications
+
+  type: v.union(
+    // Business notifications
+    v.literal("booking_created"),
+    v.literal("booking_cancelled"),
+    v.literal("payment_received"),
+
+    // Consumer notifications  
+    v.literal("booking_confirmation"),
+    v.literal("booking_reminder"),
+    v.literal("class_cancelled"),
+    v.literal("booking_cancelled_by_business"),
+    v.literal("payment_receipt")
+  ),
+
+  // Content
+  title: v.string(),
+  message: v.string(),
+
+  // Context
+  relatedBookingId: v.optional(v.id("bookings")),
+  relatedClassInstanceId: v.optional(v.id("classInstances")),
+
+  // Status
+  seen: v.boolean(),
+  seenAt: v.optional(v.number()),
+
+  // Channels where this was sent
+  sentToEmail: v.boolean(),
+  sentToWeb: v.boolean(),
+  sentToPush: v.boolean(),
+
+  // Simple metadata
+  metadata: v.optional(v.object({
+    className: v.optional(v.string()),
+    userEmail: v.optional(v.string()),
+    userName: v.optional(v.string()),
+    amount: v.optional(v.number()),
+  })),
+
+  ...auditFields,
+  ...softDeleteFields,
+};
+
+// Business notification preferences - stored at business level
+export const businessNotificationSettingsFields = {
+  businessId: v.id("businesses"),
+
+  // Per-type channel preferences
+  notificationPreferences: v.object({
+    booking_created: v.object({
+      email: v.boolean(),
+      web: v.boolean(),
+    }),
+    booking_cancelled: v.object({
+      email: v.boolean(),
+      web: v.boolean(),
+    }),
+    payment_received: v.object({
+      email: v.boolean(),
+      web: v.boolean(),
+    }),
+  }),
+
+  ...auditFields,
+  ...softDeleteFields,
+};
+
+// User notification preferences - for when they're acting as consumers
+export const userNotificationSettingsFields = {
+  userId: v.id("users"),
+
+  // Per-type channel preferences
+  notificationPreferences: v.object({
+    booking_confirmation: v.object({
+      email: v.boolean(),
+      web: v.boolean(),
+      push: v.boolean(),
+    }),
+    booking_reminder: v.object({
+      email: v.boolean(),
+      web: v.boolean(),
+      push: v.boolean(),
+    }),
+    class_cancelled: v.object({
+      email: v.boolean(),
+      web: v.boolean(),
+      push: v.boolean(),
+    }),
+    booking_cancelled_by_business: v.object({
+      email: v.boolean(),
+      web: v.boolean(),
+      push: v.boolean(),
+    }),
+    payment_receipt: v.object({
+      email: v.boolean(),
+      web: v.boolean(),
+      push: v.boolean(),
+    }),
+  }),
 
   ...auditFields,
   ...softDeleteFields,
@@ -564,16 +652,6 @@ export default defineSchema({
     .index("by_business_status", ["businessId", "status"])
     .index("by_credit_transaction", ["creditTransactionId"])
     .index("by_discount_source", ["appliedDiscount.source"]),
-
-  /**
- * Per-business cancellation policy configuration
- */
-  cancellationPolicies: defineTable(cancellationPoliciesFields)
-    .index("by_business_and_active", ["businessId", "isActive"])
-    .index("by_business", ["businessId"])
-    .index("by_effective_range", ["effectiveFrom", "effectiveUntil"]),
-
-
 
   /**
    * Simple Credit Transactions - One record per credit operation
