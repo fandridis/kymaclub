@@ -130,3 +130,140 @@ export async function initAuth() {
     return { userId, businessId };
 }
 
+// Notification test helpers
+export async function createTestNotification(
+    t: TestConvexForDataModel<GenericDataModel>,
+    args: {
+        businessId: Id<"businesses">;
+        recipientType: "business" | "consumer";
+        recipientUserId?: Id<"users">;
+        type: "booking_created" | "booking_cancelled" | "class_cancelled" | "payment_received" | "booking_confirmation" | "booking_reminder" | "booking_cancelled_by_business" | "payment_receipt";
+        title: string;
+        message: string;
+        metadata?: {
+            className?: string;
+            userEmail?: string;
+            userName?: string;
+            amount?: number;
+        };
+        relatedBookingId?: Id<"bookings">;
+        relatedClassInstanceId?: Id<"classInstances">;
+    }
+) {
+    return await t.mutation(internal.testFunctions.createTestNotification, {
+        notification: {
+            businessId: args.businessId,
+            recipientType: args.recipientType,
+            recipientUserId: args.recipientUserId,
+            type: args.type,
+            title: args.title,
+            message: args.message,
+            metadata: args.metadata,
+            relatedBookingId: args.relatedBookingId,
+            relatedClassInstanceId: args.relatedClassInstanceId,
+            deliveryStatus: "sent",
+            seen: false,
+            createdAt: Date.now(),
+        }
+    });
+}
+
+export async function createTestUserNotificationSettings(
+    t: TestConvexForDataModel<GenericDataModel>,
+    userId: Id<"users">,
+    settings: {
+        globalOptOut?: boolean;
+    } = {}
+) {
+    return await t.mutation(internal.testFunctions.createTestUserNotificationSettings, {
+        userId,
+        settings: {
+            globalOptOut: settings.globalOptOut ?? false,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+        }
+    });
+}
+
+export async function createTestBusinessNotificationSettings(
+    t: TestConvexForDataModel<GenericDataModel>,
+    businessId: Id<"businesses">,
+    settings: {} = {}
+) {
+    return await t.mutation(internal.testFunctions.createTestBusinessNotificationSettings, {
+        businessId,
+        settings: {
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+        }
+    });
+}
+
+export async function waitForNotifications(
+    t: TestConvexForDataModel<GenericDataModel>,
+    businessId: Id<"businesses">,
+    expectedCount: number,
+    maxWaitMs: number = 1000
+): Promise<boolean> {
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < maxWaitMs) {
+        const notifications = await t.query(api.queries.notifications.getBusinessNotifications, {
+            paginationOpts: { numItems: 50, cursor: null }
+        });
+
+        if (notifications.page.length >= expectedCount) {
+            return true;
+        }
+
+        // Wait a bit before checking again
+        await new Promise(resolve => setTimeout(resolve, 50));
+    }
+
+    return false;
+}
+
+export async function setupCompleteBookingScenario(
+    asUser: TestConvexForDataModel<GenericDataModel>,
+    businessId: Id<"businesses">,
+    userId: Id<"users">,
+    options: {
+        className?: string;
+        venueName?: string;
+        credits?: number;
+        baseCredits?: number;
+        hoursFromNow?: number;
+    } = {}
+) {
+    const {
+        className = "Test Class",
+        venueName = "Test Venue",
+        credits = 50,
+        baseCredits = 15,
+        hoursFromNow = 24
+    } = options;
+
+    // Give user credits
+    await asUser.mutation(api.mutations.credits.giftCredits, {
+        userId: userId,
+        amount: credits
+    });
+
+    // Create venue and template
+    const venueId = await createTestVenue(asUser, venueName);
+    const templateId = await createTestClassTemplate(asUser, userId, businessId, venueId, {
+        name: className,
+        description: `A test ${className.toLowerCase()}`,
+        duration: 60,
+        capacity: 20,
+        baseCredits: baseCredits,
+    });
+
+    // Create class instance
+    const startTime = Date.now() + (hoursFromNow * 60 * 60 * 1000);
+    const endTime = startTime + (60 * 60 * 1000);
+    const instanceId = await createTestClassInstance(asUser, templateId, startTime, endTime, "UTC");
+
+    return { venueId, templateId, instanceId, startTime, endTime };
+}
+

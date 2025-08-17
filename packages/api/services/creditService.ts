@@ -62,6 +62,7 @@ export const creditService = {
       credits: newBalance
     });
 
+    console.log('====================== > reason: ', reason)
     // Log transaction
     const transactionId = await ctx.db.insert("creditTransactions", {
       userId,

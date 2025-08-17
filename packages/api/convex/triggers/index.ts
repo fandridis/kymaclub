@@ -118,11 +118,6 @@ triggers.register("users", async (ctx, change) => {
 triggers.register("bookings", async (ctx, change) => {
     const { id, oldDoc, newDoc, operation } = change;
 
-    // iif node env is test ignore this trigger
-    if (process.env.NODE_ENV === "test") {
-        return;
-    }
-
     // Handle new booking creation
     if (operation === "insert" && newDoc) {
         try {
@@ -176,17 +171,20 @@ triggers.register("bookings", async (ctx, change) => {
             });
 
             // Schedule email notification to business
-            await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
-                businessEmail: business.email,
-                businessName: business.name,
-                customerName: user.name || user.email || "Customer",
-                customerEmail: user.email,
-                className: template.name,
-                venueName: venue.name,
-                classTime: classTime,
-                bookingAmount: newDoc.finalPrice,
-                notificationType: "booking_created",
-            });
+            // iif node env is test ignore this trigger
+            if (process.env.NODE_ENV === "production") {
+                await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
+                    businessEmail: business.email,
+                    businessName: business.name,
+                    customerName: user.name || user.email || "Customer",
+                    customerEmail: user.email,
+                    className: template.name,
+                    venueName: venue.name,
+                    classTime: classTime,
+                    bookingAmount: newDoc.finalPrice,
+                    notificationType: "booking_created",
+                });
+            }
 
             console.log(`✅ Created booking notification for business ${newDoc.businessId}`);
 
@@ -244,17 +242,19 @@ triggers.register("bookings", async (ctx, change) => {
                 });
 
                 // Schedule email notification to business about cancellation
-                await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
-                    businessEmail: business.email,
-                    businessName: business.name,
-                    customerName: user.name || user.email || "Customer",
-                    customerEmail: user.email,
-                    className: template.name,
-                    venueName: venue.name,
-                    classTime: classTime,
-                    bookingAmount: newDoc.originalPrice,
-                    notificationType: "booking_cancelled",
-                });
+                if (process.env.NODE_ENV === "production") {
+                    await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
+                        businessEmail: business.email,
+                        businessName: business.name,
+                        customerName: user.name || user.email || "Customer",
+                        customerEmail: user.email,
+                        className: template.name,
+                        venueName: venue.name,
+                        classTime: classTime,
+                        bookingAmount: newDoc.originalPrice,
+                        notificationType: "booking_cancelled",
+                    });
+                }
 
                 console.log(`✅ Created cancellation notification for business ${newDoc.businessId}`);
 

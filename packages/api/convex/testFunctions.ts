@@ -277,26 +277,35 @@ export const deleteUser = internalMutation({
 
 export const createTestBooking = internalMutation({
     args: {
-        userId: v.id("users"),
-        businessId: v.id("businesses"),
-        classInstanceId: v.id("classInstances"),
-        creditsUsed: v.number(),
+        booking: v.object({
+            businessId: v.id("businesses"),
+            userId: v.id("users"),
+            classInstanceId: v.id("classInstances"),
+            status: v.optional(v.union(v.literal("pending"), v.literal("completed"), v.literal("cancelled"), v.literal("no_show"))),
+            originalPrice: v.optional(v.number()),
+            finalPrice: v.optional(v.number()),
+            creditsUsed: v.optional(v.number()),
+            creditTransactionId: v.optional(v.string()),
+            bookedAt: v.optional(v.number()),
+            createdAt: v.optional(v.number()),
+            createdBy: v.optional(v.id("users")),
+        })
     },
     returns: v.id("bookings"),
     handler: async (ctx, args) => {
         const now = Date.now();
         const bookingId = await ctx.db.insert("bookings", {
-            businessId: args.businessId,
-            userId: args.userId,
-            classInstanceId: args.classInstanceId,
-            status: "pending",
-            originalPrice: args.creditsUsed,
-            finalPrice: args.creditsUsed,
-            creditsUsed: args.creditsUsed,
-            creditTransactionId: "test_transaction_id",
-            bookedAt: now,
-            createdAt: now,
-            createdBy: args.userId,
+            businessId: args.booking.businessId,
+            userId: args.booking.userId,
+            classInstanceId: args.booking.classInstanceId,
+            status: args.booking.status || "pending",
+            originalPrice: args.booking.originalPrice || 10,
+            finalPrice: args.booking.finalPrice || 10,
+            creditsUsed: args.booking.creditsUsed || 10,
+            creditTransactionId: args.booking.creditTransactionId || "test_transaction_id",
+            bookedAt: args.booking.bookedAt || now,
+            createdAt: args.booking.createdAt || now,
+            createdBy: args.booking.createdBy || args.booking.userId,
         });
         return bookingId;
     },
@@ -490,3 +499,187 @@ export const updateUserCredits = internalMutation({
         return null;
     },
 });
+
+// Notification system test helpers
+export const createTestNotification = internalMutation({
+    args: {
+        notification: v.object({
+            businessId: v.id("businesses"),
+            recipientType: v.union(v.literal("business"), v.literal("consumer")),
+            recipientUserId: v.optional(v.id("users")),
+            type: v.union(
+                v.literal("booking_created"),
+                v.literal("booking_cancelled"),
+                v.literal("class_cancelled"),
+                v.literal("payment_received"),
+                v.literal("booking_confirmation"),
+                v.literal("booking_reminder"),
+                v.literal("booking_cancelled_by_business"),
+                v.literal("payment_receipt")
+            ),
+            title: v.string(),
+            message: v.string(),
+            metadata: v.optional(v.object({
+                className: v.optional(v.string()),
+                userEmail: v.optional(v.string()),
+                userName: v.optional(v.string()),
+                amount: v.optional(v.number()),
+            })),
+            relatedBookingId: v.optional(v.id("bookings")),
+            relatedClassInstanceId: v.optional(v.id("classInstances")),
+            deliveryStatus: v.optional(v.union(
+                v.literal("pending"),
+                v.literal("sent"),
+                v.literal("failed")
+            )),
+            seen: v.optional(v.boolean()),
+            createdAt: v.optional(v.number()),
+        })
+    },
+    returns: v.id("notifications"),
+    handler: async (ctx, args) => {
+        const { user } = await getAuthenticatedUserAndBusinessOrThrow(ctx);
+        const notificationId = await ctx.db.insert("notifications", {
+            businessId: args.notification.businessId,
+            recipientType: args.notification.recipientType,
+            recipientUserId: args.notification.recipientUserId,
+            type: args.notification.type,
+            title: args.notification.title,
+            message: args.notification.message,
+            metadata: args.notification.metadata,
+            relatedBookingId: args.notification.relatedBookingId,
+            relatedClassInstanceId: args.notification.relatedClassInstanceId,
+            deliveryStatus: args.notification.deliveryStatus || "sent",
+            seen: args.notification.seen || false,
+            seenAt: undefined,
+            failureReason: undefined,
+            retryCount: undefined,
+            sentToEmail: false,
+            sentToWeb: true,
+            sentToPush: false,
+            createdAt: args.notification.createdAt || Date.now(),
+            createdBy: user._id,
+        });
+        return notificationId;
+    },
+});
+
+export const createTestUserNotificationSettings = internalMutation({
+    args: {
+        userId: v.id("users"),
+        settings: v.object({
+            globalOptOut: v.optional(v.boolean()),
+            createdAt: v.optional(v.number()),
+            updatedAt: v.optional(v.number()),
+        })
+    },
+    returns: v.id("userNotificationSettings"),
+    handler: async (ctx, args) => {
+        const { user } = await getAuthenticatedUserAndBusinessOrThrow(ctx);
+        const settingsId = await ctx.db.insert("userNotificationSettings", {
+            userId: args.userId,
+            globalOptOut: args.settings.globalOptOut ?? false,
+            notificationPreferences: {
+                booking_confirmation: {
+                    email: true,
+                    web: true,
+                    push: true,
+                },
+                booking_reminder: {
+                    email: true,
+                    web: true,
+                    push: true,
+                },
+                class_cancelled: {
+                    email: true,
+                    web: true,
+                    push: true,
+                },
+                booking_cancelled_by_business: {
+                    email: true,
+                    web: true,
+                    push: true,
+                },
+                payment_receipt: {
+                    email: true,
+                    web: true,
+                    push: true,
+                }
+            },
+            createdAt: args.settings.createdAt || Date.now(),
+            createdBy: user._id,
+            updatedAt: args.settings.updatedAt || Date.now(),
+        });
+        return settingsId;
+    },
+});
+
+export const createTestBusinessNotificationSettings = internalMutation({
+    args: {
+        businessId: v.id("businesses"),
+        settings: v.object({
+            createdAt: v.optional(v.number()),
+            updatedAt: v.optional(v.number()),
+        })
+    },
+    returns: v.id("businessNotificationSettings"),
+    handler: async (ctx, args) => {
+        const { user } = await getAuthenticatedUserAndBusinessOrThrow(ctx);
+        const settingsId = await ctx.db.insert("businessNotificationSettings", {
+            businessId: args.businessId,
+            notificationPreferences: {
+                booking_created: {
+                    email: true,
+                    web: true,
+                },
+                booking_cancelled: {
+                    email: true,
+                    web: true,
+                },
+                payment_received: {
+                    email: true,
+                    web: true,
+                },
+            },
+            createdAt: args.settings.createdAt || Date.now(),
+            createdBy: user._id,
+            updatedAt: args.settings.updatedAt || Date.now(),
+        });
+        return settingsId;
+    },
+});
+
+export const updateUser = internalMutation({
+    args: {
+        userId: v.id("users"),
+        updates: v.object({
+            name: v.optional(v.string()),
+            email: v.optional(v.string()),
+            hasConsumerOnboarded: v.optional(v.boolean()),
+            hasBusinessOnboarded: v.optional(v.boolean()),
+            role: v.optional(v.union(v.literal("admin"), v.literal("user"))),
+            businessRole: v.optional(v.union(v.literal("owner"), v.literal("admin"), v.literal("user"))),
+            credits: v.optional(v.number()),
+        })
+    },
+    returns: v.null(),
+    handler: async (ctx, args) => {
+        const updates: any = {};
+        
+        if (args.updates.name !== undefined) updates.name = args.updates.name;
+        if (args.updates.email !== undefined) updates.email = args.updates.email;
+        if (args.updates.hasConsumerOnboarded !== undefined) updates.hasConsumerOnboarded = args.updates.hasConsumerOnboarded;
+        if (args.updates.hasBusinessOnboarded !== undefined) updates.hasBusinessOnboarded = args.updates.hasBusinessOnboarded;
+        if (args.updates.role !== undefined) updates.role = args.updates.role;
+        if (args.updates.businessRole !== undefined) updates.businessRole = args.updates.businessRole;
+        if (args.updates.credits !== undefined) updates.credits = args.updates.credits;
+        
+        if (Object.keys(updates).length > 0) {
+            updates.updatedAt = Date.now();
+            await ctx.db.patch(args.userId, updates);
+        }
+        
+        return null;
+    },
+});
+
