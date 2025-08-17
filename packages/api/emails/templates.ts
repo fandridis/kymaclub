@@ -5,19 +5,19 @@ import { generateOTP8 } from "@repo/utils/crypto-utils";
 // Email template system inspired by your flowing logo
 // emails/createEmailTemplate.ts
 export const createEmailTemplate = ({
-    title,
-    preheader,
-    content,
-    primaryColor = "#16a34a", // Green from your logo
-    accentColor = "#F97316",  // Orange accent
+  title,
+  preheader,
+  content,
+  primaryColor = "#16a34a", // Green from your logo
+  accentColor = "#F97316",  // Orange accent
 }: {
-    title?: string;
-    preheader?: string;
-    content?: string;
-    primaryColor?: string;
-    accentColor?: string;
+  title?: string;
+  preheader?: string;
+  content?: string;
+  primaryColor?: string;
+  accentColor?: string;
 }) => {
-    return `
+  return `
   <!DOCTYPE html>
   <html lang="en">
   <head>
@@ -193,11 +193,11 @@ export const createEmailTemplate = ({
   <body>
     <!-- Preheader text (hidden) -->
     ${preheader
-            ? `<span style="display:none; font-size:0; line-height:0; max-height:0; max-width:0; opacity:0; overflow:hidden; mso-hide:all;">
+      ? `<span style="display:none; font-size:0; line-height:0; max-height:0; max-width:0; opacity:0; overflow:hidden; mso-hide:all;">
             ${preheader}
           </span>`
-            : ""
-        }
+      : ""
+    }
   
     <div class="email-container">
       <!-- Header -->
@@ -233,10 +233,10 @@ export const createEmailTemplate = ({
 
 // Specific email templates
 const createOTPEmail = ({ token }: { token: string }) => {
-    return createEmailTemplate({
-        title: "Sign in to KymaClub",
-        preheader: `Your verification code is ${token}`,
-        content: `
+  return createEmailTemplate({
+    title: "Sign in to KymaClub",
+    preheader: `Your verification code is ${token}`,
+    content: `
       <h1 class="content-title">Welcome back!</h1>
       <p class="content-body">
         Use the verification code below to sign in to your KymaClub account. This code will expire in 15 minutes for your security.
@@ -255,14 +255,14 @@ const createOTPEmail = ({ token }: { token: string }) => {
         If you didn't request this code, you can safely ignore this email.
       </p>
     `
-    });
+  });
 };
 
 const createBookingConfirmationEmail = ({ className, venueName, venueLocation, startTime, instructorName }: { className: string, venueName: string, venueLocation: string, startTime: string, instructorName: string }) => {
-    return createEmailTemplate({
-        title: "Booking Confirmed - KymaClub",
-        preheader: `New booking! Your ${className} class is confirmed`,
-        content: `
+  return createEmailTemplate({
+    title: "Booking Confirmed - KymaClub",
+    preheader: `New booking! Your ${className} class is confirmed`,
+    content: `
       <h1 class="content-title">🎉 Booking Confirmed!</h1>
       <p class="content-body">
         Great news! Your class booking has been confirmed. We can't wait to see you there!
@@ -285,14 +285,14 @@ const createBookingConfirmationEmail = ({ className, venueName, venueLocation, s
         <strong>Remember:</strong> Please arrive 10-15 minutes early and bring a water bottle and towel if needed.
       </div>
         `
-    });
+  });
 };
 
 const createClassCancellationEmail = ({ className, venueName, startTime, refundAmount }: { className: string, venueName: string, startTime: string, refundAmount: number }) => {
-    return createEmailTemplate({
-        title: "Class Cancelled - KymaClub",
-        preheader: `Class cancelled: ${className} has been cancelled`,
-        content: `
+  return createEmailTemplate({
+    title: "Class Cancelled - KymaClub",
+    preheader: `Class cancelled: ${className} has been cancelled`,
+    content: `
       <h1 class="content-title">Class Cancellation Notice</h1>
       <p class="content-body">
         We're sorry to inform you that the following class has been cancelled by the studio:
@@ -318,13 +318,75 @@ const createClassCancellationEmail = ({ className, venueName, startTime, refundA
         We apologize for any inconvenience caused. Thank you for your understanding!
       </p>
     `
-    });
+  });
+};
+
+const createBusinessNotificationEmail = ({
+  businessName,
+  customerName,
+  customerEmail,
+  className,
+  venueName,
+  classTime,
+  bookingAmount,
+  notificationType
+}: {
+  businessName: string;
+  customerName: string;
+  customerEmail?: string;
+  className: string;
+  venueName: string;
+  classTime: string;
+  bookingAmount: number;
+  notificationType: "booking_created" | "booking_cancelled";
+}) => {
+  const isBooking = notificationType === "booking_created";
+  const title = isBooking ? "New Booking Received!" : "Booking Cancelled";
+  const emoji = isBooking ? "🎉" : "⚠️";
+  const color = isBooking ? "#16a34a" : "#F97316";
+
+  return createEmailTemplate({
+    title: `Business Notification - ${title}`,
+    preheader: `${customerName} ${isBooking ? 'booked' : 'cancelled'} ${className}`,
+    content: `
+      <h1 class="content-title">${emoji} ${title}</h1>
+      <p class="content-body">
+        ${isBooking
+        ? `Great news! You have a new booking from ${customerName}.`
+        : `${customerName} has cancelled their booking for ${className}.`
+      }
+      </p>
+      
+      <div class="details-box" style="border: 2px solid ${color}; border-radius: 12px; padding: 24px; margin: 24px 0; background: ${isBooking ? '#f0fdf4' : '#fef3e2'};">
+        <h3 style="margin: 0 0 16px 0; color: ${color};">${isBooking ? 'Booking' : 'Cancelled Booking'} Details</h3>
+        <p style="margin: 0 0 8px 0;"><strong>Customer:</strong> ${customerName}</p>
+        ${customerEmail ? `<p style="margin: 0 0 8px 0;"><strong>Email:</strong> ${customerEmail}</p>` : ''}
+        <p style="margin: 0 0 8px 0;"><strong>Class:</strong> ${className}</p>
+        <p style="margin: 0 0 8px 0;"><strong>Venue:</strong> ${venueName}</p>
+        <p style="margin: 0 0 8px 0;"><strong>Time:</strong> ${classTime}</p>
+        <p style="margin: 0;"><strong>Amount:</strong> ${bookingAmount} credits</p>
+      </div>
+      
+      <div style="text-align: center; margin: 32px 0;">
+        <a href="https://business.orcavo.com/dashboard" class="cta-button">View Dashboard</a>
+      </div>
+      
+      <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin: 24px 0; border-left: 4px solid ${color};">
+        <p style="margin: 0; font-size: 14px; color: #64748b;">
+          ${isBooking
+        ? `This booking has been automatically confirmed. You can view all your bookings and manage your classes in your business dashboard.`
+        : `The customer's credits have been automatically refunded according to your cancellation policy. No action needed from your side.`
+      }
+        </p>
+      </div>
+    `
+  });
 };
 
 // Export the template functions for use in other parts of your app
 export {
-    //createEmailTemplate,
-    createOTPEmail,
-    createBookingConfirmationEmail,
-    createClassCancellationEmail
+  createOTPEmail,
+  createBookingConfirmationEmail,
+  createClassCancellationEmail,
+  createBusinessNotificationEmail
 };

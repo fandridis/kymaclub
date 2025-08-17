@@ -1,150 +1,77 @@
-import { useState } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { ArrowRight, XCircle } from "lucide-react"
 import { Link } from "@tanstack/react-router"
 import { cn } from "@/lib/utils"
+import { useBusinessNotifications } from "../hooks/use-business-notifications"
+import { api } from "@repo/api/convex/_generated/api"
+import { useMutation } from "convex/react"
 
-// Initial mock data for recent activities, with an 'isSeen' property
-const initialRecentActivities = [
-    {
-        id: "act-1",
-        customerName: "Sarah M.",
-        action: "booked",
-        className: "Spin Class",
-        classTime: "Today 6PM",
-        timestamp: "2 min ago",
-        isSeen: false,
-    },
-    {
-        id: "act-2",
-        customerName: "Mike R.",
-        action: "booked",
-        className: "Vinyasa Yoga",
-        classTime: "Today 9AM",
-        timestamp: "45 min ago",
-        isSeen: false,
-    },
-    {
-        id: "act-3",
-        customerName: "Lisa K.",
-        action: "booked",
-        className: "Hot Yoga",
-        classTime: "Next Mon 7AM",
-        timestamp: "2 hours ago",
-        isSeen: false,
-    },
-    {
-        id: "act-4",
-        customerName: "Tom P.",
-        action: "cancelled",
-        className: "HIIT Training",
-        classTime: "Today 11AM",
-        timestamp: "3 hours ago",
-        isSeen: true, // Mark as seen for demonstration
-    },
-    {
-        id: "act-5",
-        customerName: "Emily S.",
-        action: "booked",
-        className: "Zumba",
-        classTime: "Tomorrow 10AM",
-        timestamp: "5 hours ago",
-        isSeen: false,
-    },
-    {
-        id: "act-6",
-        customerName: "David L.",
-        action: "booked",
-        className: "Vinyasa Yoga",
-        classTime: "Today 9AM",
-        timestamp: "6 hours ago",
-        isSeen: true,
-    },
-    {
-        id: "act-7",
-        customerName: "Olivia B.",
-        action: "booked",
-        className: "Spin Class",
-        classTime: "Today 6PM",
-        timestamp: "8 hours ago",
-        isSeen: false,
-    },
-    {
-        id: "act-8",
-        customerName: "David L.",
-        action: "booked",
-        className: "Vinyasa Yoga",
-        classTime: "Today 9AM",
-        timestamp: "6 hours ago",
-        isSeen: true,
-    },
-    {
-        id: "act-9",
-        customerName: "David L.",
-        action: "booked",
-        className: "Vinyasa Yoga",
-        classTime: "Today 9AM",
-        timestamp: "6 hours ago",
-        isSeen: true,
-    },
-    {
-        id: "act-10",
-        customerName: "David L.",
-        action: "booked",
-        className: "Vinyasa Yoga",
-        classTime: "Today 9AM",
-        timestamp: "6 hours ago",
-        isSeen: true,
-    },
-    {
-        id: "act-11",
-        customerName: "David L.",
-        action: "booked",
-        className: "Vinyasa Yoga",
-        classTime: "Today 9AM",
-        timestamp: "6 hours ago",
-        isSeen: true,
-    },
-    {
-        id: "act-12",
-        customerName: "David L.",
-        action: "booked",
-        className: "Vinyasa Yoga",
-        classTime: "Today 9AM",
-        timestamp: "6 hours ago",
-        isSeen: true,
-    },
-    {
-        id: "act-13",
-        customerName: "David L.",
-        action: "booked",
-        className: "Vinyasa Yoga",
-        classTime: "Today 9AM",
-        timestamp: "6 hours ago",
-        isSeen: true,
-    }
-    // ... up to 100 activities would be here in a real application
-].slice(0, 100) // Conceptual limit to the last 100 actions
 
 interface RecentActivityProps {
     className?: string;
 }
 
 export function RecentActivity({ className }: RecentActivityProps) {
-    const [recentActivities, setRecentActivities] = useState(initialRecentActivities)
+    // Real notifications from API
+    const { results: notifications, loadMore, status } = useBusinessNotifications(20);
+    const markNotificationSeen = useMutation(api.mutations.notifications.markNotificationSeen);
 
-    const handleClearActivity = () => {
-        setRecentActivities([])
+
+    console.log('notifications: ', notifications)
+
+    const markAsSeen = async (notificationId: string) => {
+        try {
+            await markNotificationSeen({ notificationId: notificationId as any });
+        } catch (error) {
+            console.error("Failed to mark notification as seen:", error);
+        }
     }
 
-    const markAsSeen = (id: string) => {
-        setRecentActivities((prevActivities) =>
-            prevActivities.map((activity) => (activity.id === id ? { ...activity, isSeen: true } : activity)),
-        )
+    // Helper function to format notification for display
+    const formatNotification = (notification: NonNullable<typeof notifications>[number]) => {
+        const getActionFromType = (type: string) => {
+            switch (type) {
+                case "booking_created":
+                    return "booked";
+                case "booking_cancelled":
+                    return "cancelled";
+                case "payment_received":
+                    return "paid for";
+                default:
+                    return "updated";
+            }
+        };
+
+        const getTimestamp = (createdAt: number) => {
+            const now = Date.now();
+            const diff = now - createdAt;
+            const minutes = Math.floor(diff / (1000 * 60));
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+            if (minutes < 1) return "Just now";
+            if (minutes < 60) return `${minutes} min ago`;
+            if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            return `${days} day${days > 1 ? 's' : ''} ago`;
+        };
+
+        return {
+            id: notification._id,
+            customerName: notification.metadata?.userName || "Customer",
+            action: getActionFromType(notification.type),
+            className: notification.metadata?.className || "Class",
+            classTime: "Time TBD", // Could be enhanced with class instance data
+            timestamp: getTimestamp(notification.createdAt),
+            isSeen: notification.seen,
+            isNotification: true,
+        };
     }
+
+    // Use real notifications if available, fallback to mock data
+    const displayActivities = notifications.map(formatNotification)
+
 
     return (
         <Card className={cn("h-[80vh] md:h-[60vh] flex flex-col gap-2", className)}>
@@ -158,27 +85,56 @@ export function RecentActivity({ className }: RecentActivityProps) {
             <CardContent className="mt-2 p-0 flex-1 overflow-y-auto">
                 <ScrollArea className="h-full px-3">
                     <div className="grid gap-0">
-                        {recentActivities.length > 0 ? (
-                            recentActivities.map((activity) => (
+                        {displayActivities.length > 0 ? (
+                            displayActivities.map((activity) => (
                                 <div
                                     key={activity.id}
-                                    className={`p-2 flex items-start gap-3 border-b border-muted cursor-pointer transition-colors hover:bg-muted/50`}
-                                    onClick={() => markAsSeen(activity.id)}
+                                    className={`p-2 flex items-start gap-3 border-b border-muted cursor-pointer transition-colors hover:bg-muted/50 ${!activity.isSeen ? "bg-blue-50/50" : ""
+                                        }`}
+                                    onClick={() => {
+                                        if ('isNotification' in activity && activity.isNotification) {
+                                            markAsSeen(activity.id);
+                                        }
+                                    }}
                                 >
                                     <div
-                                        className={`flex-shrink-0 w-2 h-2 rounded-full mt-1.5 ${activity.action === "booked" ? "bg-green-500" : "bg-red-500"}`}
+                                        className={`flex-shrink-0 w-2 h-2 rounded-full mt-1.5 ${activity.action === "booked" || activity.action === "paid for"
+                                            ? "bg-green-500"
+                                            : "bg-red-500"
+                                            }`}
                                     />
-                                    <div>
+                                    <div className="flex-1">
                                         <p className="text-sm font-medium">
                                             <span className="font-bold">{activity.customerName}</span> {activity.action}{" "}
-                                            <span className="font-semibold">{activity.className}</span> - {activity.classTime}
+                                            <span className="font-semibold">{activity.className}</span>
+                                            {activity.classTime !== "Time TBD" && ` - ${activity.classTime}`}
                                         </p>
                                         <p className="text-xs text-muted-foreground">{activity.timestamp}</p>
                                     </div>
+                                    {!activity.isSeen && (
+                                        <div className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-1.5" />
+                                    )}
                                 </div>
                             ))
                         ) : (
-                            <p className="text-muted-foreground italic text-center py-4">No recent activity.</p>
+                            <div className="text-center py-8">
+                                <p className="text-muted-foreground italic">No recent activity.</p>
+                                {status === "LoadingFirstPage" && (
+                                    <p className="text-xs text-muted-foreground mt-2">Loading notifications...</p>
+                                )}
+                            </div>
+                        )}
+                        {status === "CanLoadMore" && (
+                            <div className="p-4 text-center">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => loadMore(10)}
+                                    disabled={status !== 'CanLoadMore'}
+                                >
+                                    {status === 'CanLoadMore' ? "Loading..." : "Load more"}
+                                </Button>
+                            </div>
                         )}
                     </div>
                 </ScrollArea>

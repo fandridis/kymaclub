@@ -7,6 +7,7 @@ import { classInstanceRules } from "../../rules/classInstance";
 import { classInstanceOperations } from "../../operations/classInstance";
 import { venueRules } from "../../rules/venue";
 import { creditService } from "../../services/creditService";
+import { notificationService } from "../../services/notificationService";
 
 const triggers = new Triggers<DataModel>();
 
@@ -109,4 +110,158 @@ triggers.register("users", async (ctx, change) => {
             description: "Welcome bonus for new consumer",
         });
     }
-}); 
+});
+
+/***************************************************************
+ * BOOKING TRIGGERS
+ ***************************************************************/
+triggers.register("bookings", async (ctx, change) => {
+    const { id, oldDoc, newDoc, operation } = change;
+
+    // iif node env is test ignore this trigger
+    if (process.env.NODE_ENV === "test") {
+        return;
+    }
+
+    // Handle new booking creation
+    if (operation === "insert" && newDoc) {
+        try {
+            // Get related data for notification
+            const user = await ctx.db.get(newDoc.userId);
+            const classInstance = await ctx.db.get(newDoc.classInstanceId);
+            const template = classInstance ? await ctx.db.get(classInstance.templateId) : null;
+            const venue = classInstance ? await ctx.db.get(classInstance.venueId) : null;
+            const business = await ctx.db.get(newDoc.businessId);
+
+            if (!user || !classInstance || !template || !venue || !business) {
+                console.error("Missing related data for booking notification:", {
+                    userId: newDoc.userId,
+                    classInstanceId: newDoc.classInstanceId,
+                    templateId: classInstance?.templateId,
+                    venueId: classInstance?.venueId,
+                    businessId: newDoc.businessId
+                });
+                return;
+            }
+
+            // Format class time for display
+            const classDate = new Date(classInstance.startTime);
+            const classTime = classDate.toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+
+            // Create web notification for business
+            await notificationService.createNotification({
+                ctx,
+                args: {
+                    businessId: newDoc.businessId,
+                    recipientType: "business",
+                    type: "booking_created",
+                    title: "New Booking",
+                    message: `${user.name || user.email || "Customer"} booked ${template.name} at ${venue.name}`,
+                    relatedBookingId: id,
+                    relatedClassInstanceId: newDoc.classInstanceId,
+                    metadata: {
+                        className: template.name,
+                        userEmail: user.email,
+                        userName: user.name || user.email || "Customer",
+                        amount: newDoc.finalPrice,
+                    }
+                },
+                user: user // Using the booking user as the creator for audit trail
+            });
+
+            // Schedule email notification to business
+            await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
+                businessEmail: business.email,
+                businessName: business.name,
+                customerName: user.name || user.email || "Customer",
+                customerEmail: user.email,
+                className: template.name,
+                venueName: venue.name,
+                classTime: classTime,
+                bookingAmount: newDoc.finalPrice,
+                notificationType: "booking_created",
+            });
+
+            console.log(`✅ Created booking notification for business ${newDoc.businessId}`);
+
+        } catch (error) {
+            console.error("Failed to create booking notification:", error);
+            // Don't throw - we don't want to fail the booking if notification fails
+        }
+    }
+
+    // Handle booking cancellation
+    if (operation === "update" && oldDoc && newDoc) {
+        if (oldDoc.status === "pending" && newDoc.status === "cancelled") {
+            try {
+                // Get related data for notification
+                const user = await ctx.db.get(newDoc.userId);
+                const classInstance = await ctx.db.get(newDoc.classInstanceId);
+                const template = classInstance ? await ctx.db.get(classInstance.templateId) : null;
+                const venue = classInstance ? await ctx.db.get(classInstance.venueId) : null;
+                const business = await ctx.db.get(newDoc.businessId);
+
+                if (!user || !classInstance || !template || !venue || !business) {
+                    console.error("Missing related data for cancellation notification");
+                    return;
+                }
+
+                // Format class time for display
+                const classDate = new Date(classInstance.startTime);
+                const classTime = classDate.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit'
+                });
+
+                // Create web notification for business
+                await notificationService.createNotification({
+                    ctx,
+                    args: {
+                        businessId: newDoc.businessId,
+                        recipientType: "business",
+                        type: "booking_cancelled",
+                        title: "Booking Cancelled",
+                        message: `${user.name || user.email || "Customer"} cancelled ${template.name} at ${venue.name} (${classTime})`,
+                        relatedBookingId: id,
+                        relatedClassInstanceId: newDoc.classInstanceId,
+                        metadata: {
+                            className: template.name,
+                            userEmail: user.email,
+                            userName: user.name || user.email || "Customer",
+                            amount: newDoc.originalPrice,
+                        }
+                    },
+                    user: user
+                });
+
+                // Schedule email notification to business about cancellation
+                await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
+                    businessEmail: business.email,
+                    businessName: business.name,
+                    customerName: user.name || user.email || "Customer",
+                    customerEmail: user.email,
+                    className: template.name,
+                    venueName: venue.name,
+                    classTime: classTime,
+                    bookingAmount: newDoc.originalPrice,
+                    notificationType: "booking_cancelled",
+                });
+
+                console.log(`✅ Created cancellation notification for business ${newDoc.businessId}`);
+
+            } catch (error) {
+                console.error("Failed to create cancellation notification:", error);
+                // Don't throw - we don't want to fail the cancellation if notification fails
+            }
+        }
+    }
+});

@@ -1,0 +1,470 @@
+import type { MutationCtx, QueryCtx } from "../convex/_generated/server";
+import type { Doc, Id } from "../convex/_generated/dataModel";
+import { ConvexError } from "convex/values";
+import { ERROR_CODES } from "../utils/errorCodes";
+import { PaginationOptions, PaginationResult } from "convex/server";
+
+/***************************************************************
+ * Notification Service - All notification-related operations
+ ***************************************************************/
+export const notificationService = {
+    /**
+     * Create a new notification
+     */
+    createNotification: async ({ 
+        ctx, 
+        args, 
+        user 
+    }: { 
+        ctx: MutationCtx; 
+        args: {
+            businessId: Id<"businesses">;
+            recipientType: "business" | "consumer";
+            recipientUserId?: Id<"users">;
+            type: "booking_created" | "booking_cancelled" | "payment_received" | 
+                  "booking_confirmation" | "booking_reminder" | "class_cancelled" | 
+                  "booking_cancelled_by_business" | "payment_receipt";
+            title: string;
+            message: string;
+            relatedBookingId?: Id<"bookings">;
+            relatedClassInstanceId?: Id<"classInstances">;
+            metadata?: {
+                className?: string;
+                userEmail?: string;
+                userName?: string;
+                amount?: number;
+            };
+        }; 
+        user: Doc<"users">; 
+    }): Promise<{ createdNotificationId: Id<"notifications"> }> => {
+        const now = Date.now();
+
+        // Validate business exists
+        const business = await ctx.db.get(args.businessId);
+        if (!business) {
+            throw new ConvexError({
+                message: "Business not found",
+                field: "businessId",
+                code: ERROR_CODES.BUSINESS_NOT_FOUND
+            });
+        }
+
+        // Validate recipient user exists if provided
+        if (args.recipientUserId) {
+            const recipient = await ctx.db.get(args.recipientUserId);
+            if (!recipient) {
+                throw new ConvexError({
+                    message: "Recipient user not found",
+                    field: "recipientUserId",
+                    code: ERROR_CODES.USER_NOT_FOUND
+                });
+            }
+        }
+
+        // Create notification
+        const notificationId = await ctx.db.insert("notifications", {
+            businessId: args.businessId,
+            recipientType: args.recipientType,
+            recipientUserId: args.recipientUserId,
+            type: args.type,
+            title: args.title,
+            message: args.message,
+            relatedBookingId: args.relatedBookingId,
+            relatedClassInstanceId: args.relatedClassInstanceId,
+            seen: false,
+            deliveryStatus: "pending",
+            retryCount: 0,
+            sentToEmail: false,
+            sentToWeb: false,
+            sentToPush: false,
+            metadata: args.metadata,
+            createdAt: now,
+            createdBy: user._id,
+        });
+
+        return { createdNotificationId: notificationId };
+    },
+
+    /**
+     * Get notifications for a user (paginated)
+     */
+    getUserNotifications: async ({
+        ctx,
+        args,
+        user,
+    }: {
+        ctx: QueryCtx;
+        args: {
+            paginationOpts: PaginationOptions;
+            recipientType?: "business" | "consumer";
+            unreadOnly?: boolean;
+        };
+        user: Doc<"users">;
+    }): Promise<PaginationResult<Doc<"notifications">>> => {
+        const { recipientType, unreadOnly = false } = args;
+
+        let query = ctx.db
+            .query("notifications")
+            .withIndex("by_recipient_user", q => q.eq("recipientUserId", user._id));
+
+        // Apply filters
+        if (recipientType || unreadOnly) {
+            query = query.filter(q => {
+                let conditions = [q.neq(q.field("deleted"), true)];
+
+                if (recipientType) {
+                    conditions.push(q.eq(q.field("recipientType"), recipientType));
+                }
+
+                if (unreadOnly) {
+                    conditions.push(q.eq(q.field("seen"), false));
+                }
+
+                return q.and(...conditions);
+            });
+        } else {
+            query = query.filter(q => q.neq(q.field("deleted"), true));
+        }
+
+        const result = await query
+            .order("desc") // Most recent first
+            .paginate(args.paginationOpts);
+
+        return result;
+    },
+
+    /**
+     * Get business notifications (paginated)
+     */
+    getBusinessNotifications: async ({
+        ctx,
+        args,
+        user,
+    }: {
+        ctx: QueryCtx;
+        args: {
+            paginationOpts: PaginationOptions;
+            unreadOnly?: boolean;
+        };
+        user: Doc<"users">;
+    }): Promise<PaginationResult<Doc<"notifications">>> => {
+        // Validate user has business association
+        if (!user.businessId) {
+            throw new ConvexError({
+                message: "User not associated with any business",
+                field: "businessId",
+                code: ERROR_CODES.USER_NOT_ASSOCIATED_WITH_BUSINESS
+            });
+        }
+
+        const { unreadOnly = false } = args;
+
+        let query = ctx.db
+            .query("notifications")
+            .withIndex("by_business_type", q => 
+                q.eq("businessId", user.businessId!)
+                 .eq("type", "booking_created") // Start with business notifications
+            );
+
+        // Get all business notification types
+        const businessTypes = ["booking_created", "booking_cancelled", "payment_received"];
+        
+        const allNotifications: Doc<"notifications">[] = [];
+
+        // Query each business notification type
+        for (const notificationType of businessTypes) {
+            const typeQuery = ctx.db
+                .query("notifications")
+                .withIndex("by_business_type", q => 
+                    q.eq("businessId", user.businessId!)
+                     .eq("type", notificationType as any)
+                )
+                .filter(q => {
+                    let conditions = [
+                        q.neq(q.field("deleted"), true),
+                        q.eq(q.field("recipientType"), "business")
+                    ];
+
+                    if (unreadOnly) {
+                        conditions.push(q.eq(q.field("seen"), false));
+                    }
+
+                    return q.and(...conditions);
+                });
+
+            const typeResults = await typeQuery.collect();
+            allNotifications.push(...typeResults);
+        }
+
+        // Sort by creation time (most recent first)
+        allNotifications.sort((a, b) => b.createdAt - a.createdAt);
+
+        // Manual pagination
+        const { numItems, cursor } = args.paginationOpts;
+        const startIndex = cursor ? parseInt(cursor) : 0;
+        const endIndex = startIndex + numItems;
+
+        const page = allNotifications.slice(startIndex, endIndex);
+        const isDone = endIndex >= allNotifications.length;
+        const continueCursor = isDone ? "" : endIndex.toString();
+
+        return {
+            page,
+            isDone,
+            continueCursor,
+        };
+    },
+
+    /**
+     * Mark notification as seen
+     */
+    markNotificationSeen: async ({
+        ctx,
+        args,
+        user,
+    }: {
+        ctx: MutationCtx;
+        args: {
+            notificationId: Id<"notifications">;
+        };
+        user: Doc<"users">;
+    }): Promise<{ success: boolean }> => {
+        const now = Date.now();
+
+        const notification = await ctx.db.get(args.notificationId);
+        if (!notification) {
+            throw new ConvexError({
+                message: "Notification not found",
+                field: "notificationId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND
+            });
+        }
+
+        // Validate user can access this notification
+        if (notification.recipientUserId !== user._id && 
+            notification.businessId !== user.businessId) {
+            throw new ConvexError({
+                message: "You don't have permission to access this notification",
+                field: "notificationId",
+                code: ERROR_CODES.UNAUTHORIZED
+            });
+        }
+
+        // Update notification
+        await ctx.db.patch(args.notificationId, {
+            seen: true,
+            seenAt: now,
+            updatedAt: now,
+            updatedBy: user._id,
+        });
+
+        return { success: true };
+    },
+
+    /**
+     * Update notification delivery status
+     */
+    updateNotificationDeliveryStatus: async ({
+        ctx,
+        args,
+        user,
+    }: {
+        ctx: MutationCtx;
+        args: {
+            notificationId: Id<"notifications">;
+            deliveryStatus: "pending" | "sent" | "failed";
+            failureReason?: string;
+            sentToEmail?: boolean;
+            sentToWeb?: boolean;
+            sentToPush?: boolean;
+        };
+        user: Doc<"users">;
+    }): Promise<{ success: boolean }> => {
+        const now = Date.now();
+
+        const notification = await ctx.db.get(args.notificationId);
+        if (!notification) {
+            throw new ConvexError({
+                message: "Notification not found",
+                field: "notificationId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND
+            });
+        }
+
+        // Increment retry count if failed
+        const retryCount = args.deliveryStatus === "failed" 
+            ? (notification.retryCount || 0) + 1 
+            : notification.retryCount;
+
+        // Update notification
+        await ctx.db.patch(args.notificationId, {
+            deliveryStatus: args.deliveryStatus,
+            failureReason: args.failureReason,
+            retryCount,
+            sentToEmail: args.sentToEmail ?? notification.sentToEmail,
+            sentToWeb: args.sentToWeb ?? notification.sentToWeb,
+            sentToPush: args.sentToPush ?? notification.sentToPush,
+            updatedAt: now,
+            updatedBy: user._id,
+        });
+
+        return { success: true };
+    },
+
+    /**
+     * Get or create user notification settings
+     */
+    getUserNotificationSettings: async ({
+        ctx,
+        user,
+    }: {
+        ctx: QueryCtx;
+        user: Doc<"users">;
+    }): Promise<Doc<"userNotificationSettings"> | null> => {
+        const settings = await ctx.db
+            .query("userNotificationSettings")
+            .withIndex("by_user", q => q.eq("userId", user._id))
+            .filter(q => q.neq(q.field("deleted"), true))
+            .first();
+
+        return settings;
+    },
+
+    /**
+     * Create or update user notification settings
+     */
+    upsertUserNotificationSettings: async ({
+        ctx,
+        args,
+        user,
+    }: {
+        ctx: MutationCtx;
+        args: {
+            globalOptOut: boolean;
+            notificationPreferences: {
+                booking_confirmation: { email: boolean; web: boolean; push: boolean; };
+                booking_reminder: { email: boolean; web: boolean; push: boolean; };
+                class_cancelled: { email: boolean; web: boolean; push: boolean; };
+                booking_cancelled_by_business: { email: boolean; web: boolean; push: boolean; };
+                payment_receipt: { email: boolean; web: boolean; push: boolean; };
+            };
+        };
+        user: Doc<"users">;
+    }): Promise<{ settingsId: Id<"userNotificationSettings"> }> => {
+        const now = Date.now();
+
+        // Check if settings exist
+        const existingSettings = await ctx.db
+            .query("userNotificationSettings")
+            .withIndex("by_user", q => q.eq("userId", user._id))
+            .filter(q => q.neq(q.field("deleted"), true))
+            .first();
+
+        if (existingSettings) {
+            // Update existing settings
+            await ctx.db.patch(existingSettings._id, {
+                globalOptOut: args.globalOptOut,
+                notificationPreferences: args.notificationPreferences,
+                updatedAt: now,
+                updatedBy: user._id,
+            });
+
+            return { settingsId: existingSettings._id };
+        } else {
+            // Create new settings
+            const settingsId = await ctx.db.insert("userNotificationSettings", {
+                userId: user._id,
+                globalOptOut: args.globalOptOut,
+                notificationPreferences: args.notificationPreferences,
+                createdAt: now,
+                createdBy: user._id,
+            });
+
+            return { settingsId };
+        }
+    },
+
+    /**
+     * Get or create business notification settings
+     */
+    getBusinessNotificationSettings: async ({
+        ctx,
+        user,
+    }: {
+        ctx: QueryCtx;
+        user: Doc<"users">;
+    }): Promise<Doc<"businessNotificationSettings"> | null> => {
+        if (!user.businessId) {
+            throw new ConvexError({
+                message: "User not associated with any business",
+                field: "businessId",
+                code: ERROR_CODES.USER_NOT_ASSOCIATED_WITH_BUSINESS
+            });
+        }
+
+        const settings = await ctx.db
+            .query("businessNotificationSettings")
+            .withIndex("by_business", q => q.eq("businessId", user.businessId!))
+            .filter(q => q.neq(q.field("deleted"), true))
+            .first();
+
+        return settings;
+    },
+
+    /**
+     * Create or update business notification settings
+     */
+    upsertBusinessNotificationSettings: async ({
+        ctx,
+        args,
+        user,
+    }: {
+        ctx: MutationCtx;
+        args: {
+            notificationPreferences: {
+                booking_created: { email: boolean; web: boolean; };
+                booking_cancelled: { email: boolean; web: boolean; };
+                payment_received: { email: boolean; web: boolean; };
+            };
+        };
+        user: Doc<"users">;
+    }): Promise<{ settingsId: Id<"businessNotificationSettings"> }> => {
+        if (!user.businessId) {
+            throw new ConvexError({
+                message: "User not associated with any business",
+                field: "businessId",
+                code: ERROR_CODES.USER_NOT_ASSOCIATED_WITH_BUSINESS
+            });
+        }
+
+        const now = Date.now();
+
+        // Check if settings exist
+        const existingSettings = await ctx.db
+            .query("businessNotificationSettings")
+            .withIndex("by_business", q => q.eq("businessId", user.businessId!))
+            .filter(q => q.neq(q.field("deleted"), true))
+            .first();
+
+        if (existingSettings) {
+            // Update existing settings
+            await ctx.db.patch(existingSettings._id, {
+                notificationPreferences: args.notificationPreferences,
+                updatedAt: now,
+                updatedBy: user._id,
+            });
+
+            return { settingsId: existingSettings._id };
+        } else {
+            // Create new settings
+            const settingsId = await ctx.db.insert("businessNotificationSettings", {
+                businessId: user.businessId!,
+                notificationPreferences: args.notificationPreferences,
+                createdAt: now,
+                createdBy: user._id,
+            });
+
+            return { settingsId };
+        }
+    },
+};

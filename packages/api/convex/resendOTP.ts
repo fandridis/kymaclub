@@ -1,7 +1,7 @@
 import { Email } from "@convex-dev/auth/providers/Email";
 import { Resend as ResendAPI } from "resend";
 import { generateOTP6 } from "@repo/utils/crypto-utils";
-import { createBookingConfirmationEmail } from "../emails/templates";
+import { createOTPEmail } from "../emails/templates";
 
 export const ResendOTP = Email({
     id: "resend-otp",
@@ -13,14 +13,7 @@ export const ResendOTP = Email({
     },
     async sendVerificationRequest({ identifier: email, provider, token }) {
         const resend = new ResendAPI(provider.apiKey);
-        // const htmlContent = createOTPEmail({ token });
-        const htmlContent = createBookingConfirmationEmail({
-            className: "Test Class",
-            venueName: "Test Venue",
-            venueLocation: "Test Location",
-            startTime: "2025-01-01 10:00:00",
-            instructorName: "Test Instructor"
-        })
+        const htmlContent = createOTPEmail({ token });
 
         const { error } = await resend.emails.send({
             from: "Orcavo <hello@app.orcavo.com>",

@@ -40,6 +40,8 @@ export const prepareUpdateInstance = (args: UpdateSingleInstanceArgs['instance']
         });
     }
 
+    console.log('args:  ', i)
+
     return {
         ...i,
 

@@ -2,6 +2,7 @@ import { mutation } from "../_generated/server";
 import { Infer, v } from "convex/values";
 import { getAuthenticatedUserOrThrow } from "../utils";
 import { bookingService } from "../../services/bookingService";
+import { mutationWithTriggers } from "../triggers";
 
 
 // Mutation args validation
@@ -13,7 +14,7 @@ export const bookClassArgs = v.object({
 export type BookClassArgs = Infer<typeof bookClassArgs>;
 
 
-export const bookClass = mutation({
+export const bookClass = mutationWithTriggers({
   args: bookClassArgs,
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
@@ -24,7 +25,7 @@ export const bookClass = mutation({
   },
 });
 
-export const cancelBooking = mutation({
+export const cancelBooking = mutationWithTriggers({
   args: v.object({
     bookingId: v.id("bookings"),
     reason: v.optional(v.string()),

@@ -501,6 +501,11 @@ export const notificationsFields = {
   seen: v.boolean(),
   seenAt: v.optional(v.number()),
 
+  // Delivery tracking (MVP critical fields)
+  deliveryStatus: v.union(v.literal("pending"), v.literal("sent"), v.literal("failed")),
+  failureReason: v.optional(v.string()),
+  retryCount: v.optional(v.number()),
+
   // Channels where this was sent
   sentToEmail: v.boolean(),
   sentToWeb: v.boolean(),
@@ -545,6 +550,9 @@ export const businessNotificationSettingsFields = {
 // User notification preferences - for when they're acting as consumers
 export const userNotificationSettingsFields = {
   userId: v.id("users"),
+
+  // Global opt-out (MVP critical field)
+  globalOptOut: v.boolean(),
 
   // Per-type channel preferences
   notificationPreferences: v.object({
@@ -666,4 +674,29 @@ export default defineSchema({
     .index("by_booking", ["bookingId"])
     .index("by_user_type", ["userId", "type"])
     .index("by_business_type", ["businessId", "type"]),
+
+  /**
+   * Notifications - Messages sent to businesses and consumers
+   */
+  notifications: defineTable(notificationsFields)
+    .index("by_business", ["businessId"])
+    .index("by_recipient_user", ["recipientUserId"])
+    .index("by_recipient_type", ["recipientType"])
+    .index("by_business_type", ["businessId", "type"])
+    .index("by_delivery_status", ["deliveryStatus"])
+    .index("by_created_at", ["createdAt"])
+    .index("by_business_recipient_seen", ["businessId", "recipientUserId", "seen"]),
+
+  /**
+   * Business notification settings - How businesses want to receive notifications
+   */
+  businessNotificationSettings: defineTable(businessNotificationSettingsFields)
+    .index("by_business", ["businessId"]),
+
+  /**
+   * User notification settings - How users want to receive consumer notifications
+   */
+  userNotificationSettings: defineTable(userNotificationSettingsFields)
+    .index("by_user", ["userId"])
+    .index("by_global_opt_out", ["globalOptOut"]),
 });
