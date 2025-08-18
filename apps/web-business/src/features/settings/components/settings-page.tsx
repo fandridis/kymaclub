@@ -12,7 +12,7 @@ export function SettingsPage() {
             <TabsList className="mb-2 grid w-full grid-cols-3">
                 <TabsTrigger value="venues">Venues</TabsTrigger>
                 <TabsTrigger value="notifications">Notifications</TabsTrigger>
-                <TabsTrigger value="account">Account & Invoicing</TabsTrigger>
+                <TabsTrigger value="account">Account</TabsTrigger>
             </TabsList>
             <TabsContent value="venues">
                 <VenuesTab />

@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UpcomingClasses } from "./upcoming-classes";
-import { RecentActivity } from "./recent-activity";
 
 export default function DashboardPage() {
     return (
@@ -31,7 +30,6 @@ export default function DashboardPage() {
             </Card> */}
 
             {/* Side list */}
-            <RecentActivity className="col-span-1 sm:col-span-2 xl:col-span-2" />
 
             {/* Activity list */}
             <Card className="col-span-1 sm:col-span-2 xl:col-span-2">

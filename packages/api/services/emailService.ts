@@ -1,9 +1,12 @@
-import type { MutationCtx, ActionCtx } from "../convex/_generated/server";
-import type { Doc, Id } from "../convex/_generated/dataModel";
+import type { ActionCtx } from "../convex/_generated/server";
 import { ConvexError } from "convex/values";
 import { ERROR_CODES } from "../utils/errorCodes";
 import { components } from "../convex/_generated/api";
 import { Resend } from "@convex-dev/resend";
+import { createBusinessNotificationEmail } from "../emails/templates";
+import { createBookingConfirmationEmail } from "../emails/templates";
+import { createClassCancellationEmail } from "../emails/templates";
+import { createEmailTemplate } from "../emails/templates";
 
 /***************************************************************
  * Email Service - Production-ready email operations with Resend
@@ -37,9 +40,7 @@ export const emailService = {
         };
     }): Promise<{ emailId: string; success: boolean }> => {
         try {
-            const { createBusinessNotificationEmail } = await import("../emails/templates");
-
-            const subject = args.notificationType === "booking_created" 
+            const subject = args.notificationType === "booking_created"
                 ? `New Booking: ${args.className}`
                 : `Booking Cancelled: ${args.className}`;
 
@@ -94,8 +95,6 @@ export const emailService = {
         };
     }): Promise<{ emailId: string; success: boolean }> => {
         try {
-            const { createBookingConfirmationEmail } = await import("../emails/templates");
-
             const htmlContent = createBookingConfirmationEmail({
                 className: args.className,
                 venueName: args.venueName,
@@ -142,8 +141,6 @@ export const emailService = {
         };
     }): Promise<{ emailId: string; success: boolean }> => {
         try {
-            const { createClassCancellationEmail } = await import("../emails/templates");
-
             const htmlContent = createClassCancellationEmail({
                 className: args.className,
                 venueName: args.venueName,
@@ -229,8 +226,6 @@ export const emailService = {
         };
     }): Promise<{ emailId: string; success: boolean }> => {
         try {
-            const { createEmailTemplate } = await import("../emails/templates");
-
             const htmlContent = createEmailTemplate({
                 title: args.subject,
                 content: `

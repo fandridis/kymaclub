@@ -58,7 +58,6 @@ The primary web application for business owners and staff to manage their bookin
 
 - **`dashboard/`**: Business intelligence dashboard with analytics and onboarding.
   - **`components/dashboard-page.tsx`**: Main dashboard interface with analytics. Exports: `DashboardPage`.
-  - **`components/recent-activity.tsx`**: Real-time activity feed component. Exports: `RecentActivity`.
   - **`components/upcoming-classes.tsx`**: Upcoming classes preview widget. Exports: `UpcomingClasses`.
 
 - **`bookings/`**: Booking management and customer interaction features.
