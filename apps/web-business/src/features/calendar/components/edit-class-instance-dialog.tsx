@@ -37,17 +37,9 @@ import { getDurationOptions } from '@/features/calendar/utils/duration';
 import { useIsMobile } from '@/hooks/use-mobile';
 import ConfirmUpdateInstancesDialog from './confirm-update-multiple-instances-dialog';
 import { dbTimestampToBusinessDate, businessDateToDbTimestamp } from '@/lib/timezone-utils';
-
-const COLOR_OPTIONS = [
-    { value: '#3B82F6', label: 'Blue' },
-    { value: '#10B981', label: 'Green' },
-    { value: '#F59E0B', label: 'Yellow' },
-    { value: '#EF4444', label: 'Red' },
-    { value: '#8B5CF6', label: 'Purple' },
-    { value: '#F97316', label: 'Orange' },
-    { value: '#06B6D4', label: 'Cyan' },
-    { value: '#84CC16', label: 'Lime' },
-];
+import { TEMPLATE_COLORS, TEMPLATE_COLORS_ARRAY } from '@repo/utils/colors';
+import { cn } from '@/lib/utils';
+import { TEMPLATE_COLORS_MAP } from '@/utils/colors';
 
 const editInstanceSchema = z.object({
     // Class Details
@@ -125,7 +117,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
             instructor: "",
             description: "",
             tags: [],
-            color: COLOR_OPTIONS[0]?.value,
+            color: TEMPLATE_COLORS.Green,
             startTime: "",
             duration: "60", // Default to 60 minutes
             capacity: "15",
@@ -150,7 +142,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                 instructor: instance.instructor || "",
                 description: instance.description || "",
                 tags: instance.tags || [],
-                color: instance.color || COLOR_OPTIONS[0]?.value,
+                color: instance.color || TEMPLATE_COLORS.Green,
                 startTime: format(startTimeInBusinessTz, "yyyy-MM-dd'T'HH:mm"),
                 duration: durationInMinutes.toString(),
                 capacity: instance.capacity?.toString() || "15",
@@ -299,6 +291,8 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
     if (!instance) return null;
 
     const formData = form.watch();
+
+    console.log('colors', TEMPLATE_COLORS);
 
     return (
         <>
@@ -495,17 +489,17 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                                 Color Theme
                                             </FormLabel>
                                             <div className="flex flex-wrap gap-3">
-                                                {COLOR_OPTIONS.map((color) => (
+                                                {TEMPLATE_COLORS_ARRAY.map((color) => (
                                                     <button
-                                                        key={color.value}
+                                                        key={color}
                                                         type="button"
-                                                        onClick={() => field.onChange(color.value)}
-                                                        className={`w-8 h-8 rounded-full border-2 transition-all ${field.value === color.value
-                                                            ? 'border-gray-900 scale-110'
-                                                            : 'border-gray-300 hover:border-gray-400'
-                                                            }`}
-                                                        style={{ backgroundColor: color.value }}
-                                                        title={color.label}
+                                                        onClick={() => field.onChange(color)}
+                                                        className={cn(
+                                                            TEMPLATE_COLORS_MAP[color]?.default,
+                                                            "w-8 h-8 rounded-full transition-all",
+                                                            field.value === color && 'border-2 border-gray-900 scale-120'
+                                                        )}
+                                                        title={color}
                                                     />
                                                 ))}
                                             </div>

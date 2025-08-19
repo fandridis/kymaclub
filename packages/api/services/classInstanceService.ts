@@ -8,6 +8,7 @@ import { classTemplateRules } from "../rules/classTemplate";
 import { classInstanceOperations } from "../operations/classInstance";
 import { timeUtils } from "../utils/timeGeneration";
 import { CreateClassInstanceArgs, CreateMultipleClassInstancesArgs, DeleteSimilarFutureInstancesArgs, DeleteSingleInstanceArgs, UpdateMultipleInstancesArgs, UpdateSingleInstanceArgs } from "../convex/mutations/classInstances";
+import { BookingWithDetails } from "../types/booking";
 
 // Service object with all class instance operations
 export const classInstanceService = {
@@ -405,5 +406,98 @@ export const classInstanceService = {
         }
 
         return instance;
+    },
+
+    /**
+     * Get class instances with their bookings for business dashboard
+     * Returns all class instances from startDate onwards with their associated bookings
+     */
+    getClassInstancesWithBookings: async ({ 
+        ctx, 
+        args, 
+        user 
+    }: { 
+        ctx: QueryCtx, 
+        args: { startDate: number, limit?: number }, 
+        user: Doc<"users"> 
+    }): Promise<Array<{ classInstance: Doc<"classInstances">; bookings: BookingWithDetails[] }>> => {
+        coreRules.userMustBeAssociatedWithBusiness(user);
+        
+        const limit = args.limit ?? 500;
+        const businessId = user.businessId!; // TypeScript guard - we know it's not undefined after the rule check
+
+        // Get class instances from startDate onwards, sorted by start time
+        const classInstances = await ctx.db
+            .query("classInstances")
+            .withIndex("by_business_start_time", q =>
+                q.eq("businessId", businessId)
+                    .gte("startTime", args.startDate)
+            )
+            .filter(q => q.neq(q.field("deleted"), true))
+            .order("asc") // Sort by startTime ascending
+            .take(limit);
+
+        if (classInstances.length === 0) {
+            return [];
+        }
+
+        // Get all instance IDs for batch booking query
+        const classInstanceIds = classInstances.map(instance => instance._id);
+
+        // Get all active bookings for these class instances
+        const allBookings: Doc<"bookings">[] = [];
+        
+        for (const classInstanceId of classInstanceIds) {
+            const bookings = await ctx.db
+                .query("bookings")
+                .withIndex("by_class_instance", q => q.eq("classInstanceId", classInstanceId))
+                .filter(q => q.and(
+                    q.neq(q.field("deleted"), true),
+                    q.eq(q.field("businessId"), businessId),
+                    q.eq(q.field("status"), "pending") // Only active bookings
+                ))
+                .collect();
+            
+            allBookings.push(...bookings);
+        }
+
+        // Build the result array with enriched bookings
+        const result: Array<{ classInstance: Doc<"classInstances">; bookings: BookingWithDetails[] }> = [];
+
+        for (const classInstance of classInstances) {
+            // Find bookings for this class instance
+            const instanceBookings = allBookings.filter(
+                booking => booking.classInstanceId === classInstance._id
+            );
+
+            // Enrich bookings with related data
+            const enrichedBookings: BookingWithDetails[] = [];
+
+            for (const booking of instanceBookings) {
+                const enrichedBooking: BookingWithDetails = {
+                    ...booking,
+                    classInstance: classInstance
+                };
+
+                // Get class template
+                if (classInstance.templateId) {
+                    enrichedBooking.classTemplate = await ctx.db.get(classInstance.templateId) || undefined;
+                }
+
+                // Get venue
+                if (classInstance.venueId) {
+                    enrichedBooking.venue = await ctx.db.get(classInstance.venueId) || undefined;
+                }
+
+                enrichedBookings.push(enrichedBooking);
+            }
+
+            result.push({
+                classInstance,
+                bookings: enrichedBookings
+            });
+        }
+
+        return result;
     },
 };

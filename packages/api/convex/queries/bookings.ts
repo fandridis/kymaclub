@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { getAuthenticatedUserOrThrow } from "../utils";
 import { bookingService } from "../../services/bookingService";
 import { paginationOptsValidator } from "convex/server";
+import { classInstanceService } from "../../services/classInstanceService";
 
 /**
  * Get current user's booking for a specific class instance
@@ -83,3 +84,23 @@ export const getCurrentUserBookingHistory = query({
     return bookingService.getCurrentUserBookingHistory({ ctx, args, user });
   },
 });
+
+/**
+ * Get class instances with their bookings for the current business
+ * Used by business dashboard to display bookings grouped by class instance
+ */
+export const getClassInstancesWithBookings = query({
+  args: {
+    startDate: v.number(),
+    limit: v.optional(v.number()),
+  },
+  returns: v.array(v.object({
+    classInstance: v.any(), // Doc<"classInstances">
+    bookings: v.array(v.any()) // BookingWithDetails array
+  })),
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUserOrThrow(ctx);
+    return classInstanceService.getClassInstancesWithBookings({ ctx, args, user });
+  },
+});
+

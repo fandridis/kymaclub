@@ -50,4 +50,21 @@ export const getSimilarClassInstances = query({
         const user = await getAuthenticatedUserOrThrow(ctx);
         return await classInstanceService.getSimilarInstances({ ctx, args, user });
     }
-}); 
+});
+
+/***************************************************************
+ * Get Class Instances with Bookings
+ ***************************************************************/
+
+export const getClassInstancesWithBookingsArgs = v.object({
+    startDate: v.number(),
+    limit: v.optional(v.number()),
+});
+
+export const getClassInstancesWithBookings = query({
+    args: getClassInstancesWithBookingsArgs,
+    handler: async (ctx, args) => {
+        const user = await getAuthenticatedUserOrThrow(ctx);
+        return await classInstanceService.getClassInstancesWithBookings({ ctx, args, user });
+    }
+});

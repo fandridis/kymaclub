@@ -7,6 +7,12 @@ const bookingFieldObject = v.object(bookingsFields);
 export type Booking = Infer<typeof bookingFieldObject>;
 export type BookingStatus = Booking['status'];
 
+export type userSnapshot = {
+    name?: string;
+    email?: string;
+    phone?: string;
+};
+
 export type BookingWithDetails = Doc<"bookings"> & {
     classInstance?: Doc<"classInstances">;
     classTemplate?: Doc<"classTemplates">;

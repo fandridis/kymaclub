@@ -8,6 +8,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import React from "react";
 import type { ClassInstance } from "../hooks/use-class-instances";
+import { cn } from "@/lib/utils";
+import type { TemplateColorType } from "@repo/utils/colors";
+import { TEMPLATE_COLORS_MAP } from "@/utils/colors";
 
 interface CalendarEventProps {
     eventInfo: EventContentArg;
@@ -30,14 +33,14 @@ export const CalendarEventCard = ({ eventInfo, onEdit, onDelete }: CalendarEvent
 
     // if istance.name different than snapshot.name, choose that, otherwise use snapshot.name
     const name = classInstance.name !== classInstance.templateSnapshot.name ? classInstance.name : classInstance.templateSnapshot.name;
+    const textColor = TEMPLATE_COLORS_MAP[classInstance.color as TemplateColorType].text;
 
     return (
-        <div className="relative w-full h-full px-1 py-1 group">
+        <div className={cn("relative w-full h-full px-1 py-1 group overflow-x-hidden overflow-y-auto", textColor)}>
             <div className="absolute top-1 left-1 pr-8">
                 <div className="text-xs font-medium truncate leading-3.5">{name}</div>
                 <div className="text-xs opacity-75 truncate leading-3.5">{eventInfo.timeText}</div>
                 <div className="text-xs opacity-75 truncate leading-3.5 ">Cpt: {classInstance.bookedCount}/{classInstance.capacity}</div>
-                {/* <div className="text-xs opacity-75 truncate leading-3.5 ">{classInstance.venueSnapshot.address.street}</div> */}
             </div>
             <div className="absolute top-1 right-1">
                 <DropdownMenu>

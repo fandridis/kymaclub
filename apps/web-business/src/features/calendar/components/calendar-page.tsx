@@ -23,6 +23,8 @@ import type { ClassInstance } from '../hooks/use-class-instances';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useCalendarResize } from '../hooks/use-calendar-resize';
 import { useDoubleClick } from '../hooks/use-double-click';
+import { TEMPLATE_COLORS_MAP } from '@/utils/colors';
+import type { TemplateColorType } from '@repo/utils/colors';
 
 interface CalendarPageProps {
     startDate: Date;
@@ -202,17 +204,13 @@ export const transformClassInstancesToCalendarEvents = (classInstances: ClassIns
         const formattedStart = startInBusinessTz.toISOString();
         const formattedEnd = endInBusinessTz.toISOString();
 
-        // TODO: Get the color from somewhere else
-        const backgroundColor = instance.color || '#3B82F6';
-
         return {
             id: instance._id,
             allDay: false,
             title: instance.name,
             start: formattedStart,
             end: formattedEnd,
-            backgroundColor,
-            borderColor: backgroundColor,
+            backgroundColor: TEMPLATE_COLORS_MAP[instance.color as TemplateColorType].backgroundHex,
             opacity: 1,
             extendedProps: {
                 classInstance: instance,

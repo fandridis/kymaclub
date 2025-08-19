@@ -5,9 +5,8 @@ import { venueService } from "../../services/venueService";
 import { getAuthenticatedUserOrThrow } from "../utils";
 
 /***************************************************************
- * Get All Venues
+ * Get one business's Venues
  ***************************************************************/
-
 export const getVenues = query({
     args: {},
     handler: async (ctx) => {
@@ -17,9 +16,21 @@ export const getVenues = query({
 });
 
 /***************************************************************
+ * Get one business's Venues
+ ***************************************************************/
+export const getAllVenues = query({
+    args: {},
+    handler: async (ctx) => {
+        const user = await getAuthenticatedUserOrThrow(ctx);
+        return await venueService.getAllVenues({ ctx, user });
+    }
+});
+
+
+
+/***************************************************************
  * Get Venues By City (Paginated)
  ***************************************************************/
-
 export const getVenuesByCityPaginatedArgs = v.object({
     paginationOpts: paginationOptsValidator,
     city: v.string(),

@@ -294,6 +294,9 @@ export const createTestBooking = internalMutation({
     returns: v.id("bookings"),
     handler: async (ctx, args) => {
         const now = Date.now();
+        // Get user info for metadata if possible
+        const user = await ctx.db.get(args.booking.userId);
+
         const bookingId = await ctx.db.insert("bookings", {
             businessId: args.booking.businessId,
             userId: args.booking.userId,
@@ -303,6 +306,16 @@ export const createTestBooking = internalMutation({
             finalPrice: args.booking.finalPrice || 10,
             creditsUsed: args.booking.creditsUsed || 10,
             creditTransactionId: args.booking.creditTransactionId || "test_transaction_id",
+            // Include user metadata for test bookings if user exists
+            userSnapshot: user ? {
+                name: user.name || undefined,
+                email: user.email || undefined,
+                phone: user.phone || undefined,
+            } : {
+                name: "Test User",
+                email: "test@example.com",
+                phone: "+1234567890",
+            },
             bookedAt: args.booking.bookedAt || now,
             createdAt: args.booking.createdAt || now,
             createdBy: args.booking.createdBy || args.booking.userId,
@@ -665,7 +678,7 @@ export const updateUser = internalMutation({
     returns: v.null(),
     handler: async (ctx, args) => {
         const updates: any = {};
-        
+
         if (args.updates.name !== undefined) updates.name = args.updates.name;
         if (args.updates.email !== undefined) updates.email = args.updates.email;
         if (args.updates.hasConsumerOnboarded !== undefined) updates.hasConsumerOnboarded = args.updates.hasConsumerOnboarded;
@@ -673,12 +686,12 @@ export const updateUser = internalMutation({
         if (args.updates.role !== undefined) updates.role = args.updates.role;
         if (args.updates.businessRole !== undefined) updates.businessRole = args.updates.businessRole;
         if (args.updates.credits !== undefined) updates.credits = args.updates.credits;
-        
+
         if (Object.keys(updates).length > 0) {
             updates.updatedAt = Date.now();
             await ctx.db.patch(args.userId, updates);
         }
-        
+
         return null;
     },
 });

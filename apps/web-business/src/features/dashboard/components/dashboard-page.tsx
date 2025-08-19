@@ -31,24 +31,6 @@ export default function DashboardPage() {
 
             {/* Side list */}
 
-            {/* Activity list */}
-            <Card className="col-span-1 sm:col-span-2 xl:col-span-2">
-                <CardHeader>
-                    <CardTitle>Recent Activity</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {Array.from({ length: 5 }).map((_, index) => (
-                        <div key={index} className="flex items-center gap-4">
-                            <Skeleton className="h-10 w-10 rounded-full" />
-                            <div className="flex-1 space-y-2">
-                                <Skeleton className="h-4 w-3/5" />
-                                <Skeleton className="h-3 w-2/5" />
-                            </div>
-                        </div>
-                    ))}
-                </CardContent>
-            </Card>
-
             {/* Table / large content */}
             <Card className="xl:col-span-2">
                 <CardHeader>

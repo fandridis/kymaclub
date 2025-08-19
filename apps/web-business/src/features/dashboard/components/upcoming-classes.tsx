@@ -1,204 +1,181 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { CalendarDays, Users, ArrowRight } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ArrowRight, CalendarDays } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import React from "react"
 import { Button } from "@/components/ui/button"
 import { Link } from "@tanstack/react-router"
-import { ClassDetailsDialog } from "@/features/bookings/components/class-bookings-dialog"
-
-// Mock data for demonstration
-const mockBookedUsers = [
-    { id: "u1", name: "Alice Johnson", email: "alice@example.com" },
-    { id: "u2", name: "Bob Smith", email: "bob@example.com" },
-    { id: "u3", name: "Clara Lee", email: "clara@example.com" },
-    { id: "u4", name: "Daniel Park", email: "daniel@example.com" },
-    { id: "u5", name: "Eva Martinez", email: "eva@example.com" },
-    { id: "u6", name: "Fiona Chen", email: "fiona@example.com" },
-    { id: "u7", name: "George Kim", email: "george@example.com" },
-    { id: "u8", name: "Hannah Lee", email: "hannah@example.com" },
-    { id: "u9", name: "Isaac Park", email: "isaac@example.com" },
-    { id: "u10", name: "Jenny Kim", email: "jenny@example.com" },
-    { id: "u11", name: "Kevin Lee", email: "kevin@example.com" },
-]
-
-const upcomingClassesByDate = {
-    Today: [
-        {
-            id: "yoga-9am",
-            date: "Today",
-            time: "9:00 AM",
-            name: "Vinyasa Yoga",
-            description: "A dynamic yoga session focusing on breath and movement.",
-            instructor: "Alex Morgan",
-            address: "123 Studio St, Springfield",
-            currentEnrollment: 12,
-            capacity: 15,
-            newBookings: 3,
-        },
-        {
-            id: "hiit-11am",
-            date: "Today",
-            time: "11:00 AM",
-            name: "HIIT Training",
-            description: "High intensity interval training for strength and cardio.",
-            instructor: "Jamie Lee",
-            address: "123 Studio St, Springfield",
-            currentEnrollment: 8,
-            capacity: 12,
-            newBookings: 1,
-        },
-        {
-            id: "spin-6pm",
-            date: "Today",
-            time: "6:00 PM",
-            name: "Spin Class",
-            description: "End your day with a motivating spin ride.",
-            instructor: "Taylor Kim",
-            address: "123 Studio St, Springfield",
-            currentEnrollment: 15,
-            capacity: 20,
-            newBookings: 5,
-        },
-        {
-            id: "yoga-9am-2",
-            date: "Today",
-            time: "9:00 AM",
-            name: "Vinyasa Yoga",
-            description: "Flow-based practice improving flexibility and balance.",
-            instructor: "Jordan Smith",
-            address: "123 Studio St, Springfield",
-            currentEnrollment: 8,
-            capacity: 12,
-            newBookings: 1,
-        },
-        {
-            id: "hiit-11am-2",
-            date: "Today",
-            time: "11:00 AM",
-            name: "HIIT Training",
-            description: "Full body HIIT with short recovery intervals.",
-            instructor: "Sam Rivera",
-            address: "123 Studio St, Springfield",
-            currentEnrollment: 15,
-            capacity: 20,
-            newBookings: 5,
-        },
-    ],
-    Tomorrow: [
-        {
-            id: "yoga-9am-tomorrow",
-            date: "Tomorrow",
-            time: "9:00 AM",
-            name: "Vinyasa Yoga",
-            description: "Gentle morning flow to start your day.",
-            instructor: "Alex Morgan",
-            address: "123 Studio St, Springfield",
-            currentEnrollment: 5,
-            capacity: 10,
-            newBookings: 0,
-        },
-        {
-            id: "zumba-10am",
-            date: "Tomorrow",
-            time: "10:00 AM",
-            name: "Zumba Dance",
-            description: "Fun dance workout set to energetic music.",
-            instructor: "Jamie Lee",
-            address: "123 Studio St, Springfield",
-            currentEnrollment: 5,
-            capacity: 10,
-            newBookings: 0,
-        },
-    ],
-    "Feb 21": [
-        {
-            id: "pilates-7pm",
-            date: "Feb 21",
-            time: "7:00 PM",
-            name: "Pilates Core",
-            description: "Core-strengthening pilates routine.",
-            instructor: "Taylor Kim",
-            address: "123 Studio St, Springfield",
-            currentEnrollment: 10,
-            capacity: 10,
-            newBookings: 0,
-        },
-        {
-            id: "yoga-9am-feb21",
-            date: "Feb 21",
-            time: "9:00 AM",
-            name: "Vinyasa Yoga",
-            description: "Breath-led flow suitable for all levels.",
-            instructor: "Jordan Smith",
-            address: "123 Studio St, Springfield",
-            currentEnrollment: 10,
-            capacity: 10,
-            newBookings: 0,
-        },
-        {
-            id: "hiit-11am-feb21",
-            date: "Feb 21",
-            time: "11:00 AM",
-            name: "HIIT Training",
-            description: "Interval training for endurance and power.",
-            instructor: "Sam Rivera",
-            address: "123 Studio St, Springfield",
-            currentEnrollment: 10,
-            capacity: 10,
-            newBookings: 0,
-        },
-        {
-            id: "yoga-12am",
-            date: "Feb 21",
-            time: "9:00 AM",
-            name: "Vinyasa Yoga",
-            description: "Mindful movement and deep stretching.",
-            instructor: "Alex Morgan",
-            address: "123 Studio St, Springfield",
-            currentEnrollment: 10,
-            capacity: 10,
-            newBookings: 0,
-        },
-    ],
-    "Feb 22": [], // No classes for this date
-    "Feb 23": [
-        {
-            id: "barre-5pm",
-            date: "Feb 23",
-            time: "5:00 PM",
-            name: "Barre Fitness",
-            description: "Low-impact barre to tone and strengthen.",
-            instructor: "Jamie Lee",
-            address: "123 Studio St, Springfield",
-            currentEnrollment: 7,
-            capacity: 8,
-            newBookings: 2,
-        },
-        {
-            id: "yoga-9am-feb23",
-            date: "Feb 23",
-            time: "9:00 AM",
-            name: "Vinyasa Yoga",
-            description: "Energizing morning practice.",
-            instructor: "Alex Morgan",
-            address: "123 Studio St, Springfield",
-            currentEnrollment: 7,
-            capacity: 8,
-            newBookings: 2,
-        },
-    ],
-}
+import { ClassBookingsDialog } from "@/features/bookings/components/class-bookings-dialog"
+import useUpcomingClassesWithBookings from "../hooks/use-upcoming-classes-with-bookings"
+import type { Doc } from "@repo/api/convex/_generated/dataModel"
+import { TEMPLATE_COLORS_MAP } from "@/utils/colors"
+import type { TemplateColorType } from "@repo/utils/colors"
 
 interface UpcomingClassesProps {
     className?: string;
 }
 
+interface Booking {
+    id: string
+    user: {
+        name: string
+        avatar?: string
+    }
+}
+
+interface ClassBookingRowProps {
+    classInstance: Doc<"classInstances">
+    instructor: string
+    date: string
+    time: string
+    location: string
+    bookings: Booking[]
+    maxCapacity: number
+}
+
+export function ClassBookingRow({
+    classInstance,
+    instructor,
+    date,
+    time,
+    location,
+    bookings,
+    maxCapacity,
+}: ClassBookingRowProps) {
+    const availableSpots = maxCapacity - bookings.length
+    const isFullyBooked = availableSpots === 0
+
+    // const cardBackground = TEMPLATE_COLORS_MAP[classInstance.templateSnapshot?.color]?.background || 'bg-green-50'
+
+    console.log('classInstance', classInstance.color)
+    const color = classInstance.color as TemplateColorType
+
+    const cardBackground = TEMPLATE_COLORS_MAP[color]?.background || 'bg-white'
+    const cardBorder = TEMPLATE_COLORS_MAP[color]?.border || 'border-gray-200'
+    const cardText = TEMPLATE_COLORS_MAP[color]?.text || 'text-gray-950'
+
+    return (
+        <Card className={cn("p-4 shadow-xs text-green-950 bg-green-50", cardBackground, cardBorder, cardText)}>
+            <div className="flex gap-6">
+                {/* Left Column - Prominent Date & Time */}
+                <div className={cn("flex flex-col items-center justify-center min-w-[100px] text-center border-r-2 pr-6", cardBorder)}>
+                    <div className="text-sm font-medium">{date}</div>
+                    <div className="text-xl font-bold">{time}</div>
+                </div>
+
+                {/* Right Column - Class Details */}
+                <div className="flex-1 flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                        <div className="mb-2">
+                            <h3 className="font-semibold text-lg leading-tight">{classInstance.templateSnapshot?.name}</h3>
+                            <p className="text-sm">with {instructor}</p>
+                        </div>
+
+                        {/* <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+                             <div className="flex items-center gap-1">
+                                 <MapPin className="h-4 w-4" />
+                                 <span>{location}</span>
+                             </div>
+                         </div> */}
+
+                        <div className="flex items-center gap-2 text-sm">
+                            <Badge variant='outline'>
+                                {isFullyBooked
+                                    ? `Fully booked ${bookings.length}/${maxCapacity}`
+                                    : `${availableSpots} out of ${maxCapacity} spots left`}
+                            </Badge>
+                        </div>
+                    </div>
+
+                    {/* Avatars on the right side */}
+                    <div className="flex -space-x-2">
+                        {bookings.slice(0, 4).map((booking) => (
+                            <Avatar key={booking.id} className="h-10 w-10 border-2 border-background">
+                                <AvatarImage src={booking.user.avatar || "/placeholder.svg"} alt={booking.user.name} />
+                                <AvatarFallback className="text-sm">
+                                    {booking.user.name
+                                        .split(" ")
+                                        .map((n) => n[0])
+                                        .join("")
+                                        .toUpperCase()}
+                                </AvatarFallback>
+                            </Avatar>
+                        ))}
+                        {bookings.length > 4 && (
+                            <div className="h-10 w-10 rounded-full bg-muted border-2 border-background flex items-center justify-center">
+                                <span className="text-xs text-muted-foreground font-medium">+{bookings.length - 4}</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </Card >
+    )
+}
+
+const now = Date.now()
+
 export function UpcomingClasses({ className }: UpcomingClassesProps) {
-    const sections = React.useMemo(() => Object.entries(upcomingClassesByDate), [])
+    const { data, loading } = useUpcomingClassesWithBookings({
+        startDate: now,
+        limit: 500,
+    })
+
+    // Group classes by date
+    const classesByDate = React.useMemo(() => {
+        if (!data || data.length === 0) return {}
+
+        const grouped: Record<string, typeof data> = {}
+
+        data.forEach((item) => {
+            const classInstance = item.classInstance
+            const date = new Date(classInstance.startTime)
+            const dateKey = getDateKey(date)
+
+            if (!grouped[dateKey]) {
+                grouped[dateKey] = []
+            }
+            // At this point, grouped[dateKey] is guaranteed to be an array
+            grouped[dateKey]!.push(item)
+        })
+
+        // Sort dates and sort classes within each date by start time
+        Object.keys(grouped).forEach(dateKey => {
+            const classes = grouped[dateKey]
+            if (classes) {
+                classes.sort((a, b) =>
+                    new Date(a.classInstance.startTime).getTime() - new Date(b.classInstance.startTime).getTime()
+                )
+            }
+        })
+
+        return grouped
+    }, [data])
+
+    const sections = React.useMemo(() => Object.entries(classesByDate), [classesByDate])
+
+    if (loading) {
+        return (
+            <Card className={cn("h-[80vh] md:h-[60vh] flex flex-col shadow-sm gap-2", className)}>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <CalendarDays className="w-5 h-5" />
+                        <h2 className="text-xl font-semibold">Upcoming Classes</h2>
+                    </CardTitle>
+                    <CardDescription>
+                        Classes scheduled for today and future dates.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0 flex-1 overflow-y-auto">
+                    <div className="flex items-center justify-center h-full">
+                        <p className="text-muted-foreground">Loading upcoming classes...</p>
+                    </div>
+                </CardContent>
+            </Card>
+        )
+    }
 
     return (
         <Card className={cn("h-[80vh] md:h-[60vh] flex flex-col shadow-sm gap-2", className)}>
@@ -213,87 +190,63 @@ export function UpcomingClasses({ className }: UpcomingClassesProps) {
             </CardHeader>
             <CardContent className="p-0 flex-1 overflow-y-auto">
                 <ScrollArea className="h-full px-3">
-                    {sections.map(([date, classes]) => (
-                        <div key={date} data-date-section className="flex flex-col gap-1">
-                            <h3 className="px-1 mt-3 sticky top-0 z-10 bg-background text-[11px] font-medium uppercase tracking-wide text-primary/70">
-                                {date}
-                            </h3>
-                            <Separator />
-                            {classes.length > 0 ? (
-                                <div className="grid">
-                                    {classes.map((cls) => {
-                                        const isFull = cls.currentEnrollment >= cls.capacity
-                                        const occupancy = Math.round((cls.currentEnrollment / cls.capacity) * 100)
+                    {sections.length > 0 ? (
+                        sections.map(([date, classes]) => (
+                            <div key={date} data-date-section className="flex flex-col gap-1">
+                                <h3 className="px-1 mt-3 sticky top-0 z-10 bg-background text-[11px] font-medium uppercase tracking-wide text-primary/70">
+                                    {date}
+                                </h3>
+                                <div className="grid gap-2">
+                                    {classes.map((item) => {
+                                        const { classInstance, bookings } = item
+                                        const classTitle = classInstance.templateSnapshot?.name || classInstance.name || 'Unnamed Class'
+                                        const instructor = classInstance.instructor || 'TBD'
+                                        const dateStr = formatDate(new Date(classInstance.startTime))
+                                        const timeStr = formatTime(classInstance.startTime)
+                                        const location = classInstance.venueSnapshot?.address ?
+                                            `${classInstance.venueSnapshot.address.street}, ${classInstance.venueSnapshot.address.city}` :
+                                            'Location TBD'
+                                        const maxCapacity = classInstance.capacity || 0
+
+                                        // Transform bookings to match the new interface
+                                        const transformedBookings: Booking[] = (bookings || []).map(booking => ({
+                                            id: booking._id || Math.random().toString(),
+                                            user: {
+                                                name: booking.userSnapshot?.name || 'Unknown User',
+                                                avatar: undefined // userSnapshot doesn't have avatar field
+                                            }
+                                        }))
 
                                         return (
-                                            <ClassDetailsDialog
-                                                key={cls.id}
-                                                classDetails={{
-                                                    id: cls.id,
-                                                    name: cls.name,
-                                                    description: cls.description,
-                                                    instructor: cls.instructor,
-                                                    address: cls.address,
-                                                    date: cls.date,
-                                                    time: cls.time,
-                                                    capacity: cls.capacity,
-                                                    currentBookings: cls.currentEnrollment,
-                                                    bookedUsers: mockBookedUsers.slice(0, Math.min(cls.currentEnrollment, mockBookedUsers.length)),
-                                                }}
-                                                onRemoveBooking={(classId, userId) =>
-                                                    console.log("remove-booking", { classId, userId })
-                                                }
-                                                onCancelClass={(classId) =>
-                                                    console.log("cancel-class", { classId })
-                                                }
+                                            <ClassBookingsDialog
+                                                key={classInstance._id}
+                                                classInstance={classInstance}
+                                                bookings={bookings}
                                             >
-                                                <div
-                                                    className="px-0 md:px-2 py-3 group rounded-lg bg-card/50 transition-colors hover:bg-accent/40 cursor-pointer"
-                                                >
-                                                    <div className="grid grid-cols-[1fr_auto] items-start gap-3">
-                                                        <div className="flex items-start gap-3">
-                                                            <div>
-                                                                <h4 className="font-semibold text-base leading-tight">
-                                                                    {cls.time} - {cls.name}
-                                                                </h4>
-                                                                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                                                                    <Users className="inline-block w-4 h-4 align-text-bottom" />
-                                                                    <Tooltip>
-                                                                        <TooltipTrigger className="text-sm text-muted-foreground/90 underline-offset-2 hover:underline">
-                                                                            {cls.currentEnrollment}/{cls.capacity} enrolled
-                                                                        </TooltipTrigger>
-                                                                        <TooltipContent>
-                                                                            {occupancy}% full
-                                                                        </TooltipContent>
-                                                                    </Tooltip>
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            {isFull && (
-                                                                <Badge variant="destructive" className="px-2.5 py-1">
-                                                                    Full
-                                                                </Badge>
-                                                            )}
-                                                            {cls.newBookings > 0 && (
-                                                                <Badge variant="outline" className="px-2.5 py-1">
-                                                                    +{cls.newBookings} new
-                                                                </Badge>
-                                                            )}
-                                                        </div>
-                                                    </div>
+                                                <div className="cursor-pointer">
+                                                    <ClassBookingRow
+                                                        classInstance={classInstance}
+                                                        instructor={instructor}
+                                                        date={dateStr}
+                                                        time={timeStr}
+                                                        location={location}
+                                                        bookings={transformedBookings}
+                                                        maxCapacity={maxCapacity}
+                                                    />
                                                 </div>
-                                            </ClassDetailsDialog>
+                                            </ClassBookingsDialog>
                                         )
                                     })}
                                 </div>
-                            ) : (
-                                <p className="pl-4 pt-3 pb-4 text-muted-foreground italic text-sm">
-                                    No classes scheduled.
-                                </p>
-                            )}
+                            </div>
+                        ))
+                    ) : (
+                        <div className="flex items-center justify-center h-full">
+                            <p className="text-muted-foreground italic text-sm">
+                                No upcoming classes scheduled.
+                            </p>
                         </div>
-                    ))}
+                    )}
                 </ScrollArea>
             </CardContent>
             <CardFooter>
@@ -305,4 +258,51 @@ export function UpcomingClasses({ className }: UpcomingClassesProps) {
             </CardFooter>
         </Card>
     )
+}
+
+// Helper function to truncate description to first 10 words
+function truncateDescription(description: string): string {
+    if (!description) return ''
+    const words = description.split(' ')
+    if (words.length <= 10) return description
+    return words.slice(0, 10).join(' ') + '...'
+}
+
+// Helper function to get a readable date key
+function getDateKey(date: Date): string {
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+
+    if (dateOnly.getTime() === today.getTime()) {
+        return 'Today'
+    } else if (dateOnly.getTime() === tomorrow.getTime()) {
+        return 'Tomorrow'
+    } else {
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
+        })
+    }
+}
+
+// Helper function to format date
+function formatDate(date: Date): string {
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric'
+    })
+}
+
+// Helper function to format time
+function formatTime(timestamp: number | string): string {
+    const date = new Date(timestamp)
+    return date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    })
 }

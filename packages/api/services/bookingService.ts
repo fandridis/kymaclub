@@ -484,7 +484,7 @@ export const bookingService = {
             .withIndex("by_user_class", (q: any) => q.eq("userId", user._id).eq("classInstanceId", args.classInstanceId))
             .filter(q => q.and(
                 q.neq(q.field("deleted"), true),
-                q.eq(q.field("status"), "pending") // Only check for active bookings
+                q.eq(q.field("status"), 'pending')
             ))
             .first();
 
@@ -505,7 +505,7 @@ export const bookingService = {
             });
         }
 
-        // Create booking row first
+        // Create booking row first with user metadata for business owners
         const bookingId = await ctx.db.insert("bookings", {
             businessId: instance.businessId,
             userId: user._id,
@@ -516,6 +516,12 @@ export const bookingService = {
             creditsUsed: finalPrice,
             creditTransactionId: "", // Will be updated after credit transaction
             appliedDiscount: appliedDiscount || undefined,
+            // Populate user metadata for business owners to see customer details
+            userSnapshot: {
+                name: user.name || undefined,
+                email: user.email || undefined,
+                phone: user.phone || undefined,
+            },
             bookedAt: now,
             createdAt: now,
             createdBy: user._id,

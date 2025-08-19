@@ -167,6 +167,17 @@ export const venueService = {
     },
 
     /**
+     * Get all venues for all businesses
+     */
+    getAllVenues: async ({ ctx, user }: { ctx: QueryCtx, user: Doc<"users"> }): Promise<Doc<"venues">[]> => {
+        const venues = await ctx.db
+            .query("venues")
+            .withIndex("by_deleted", q => q.eq("deleted", false))
+            .collect();
+        return venues;
+    },
+
+    /**
      * Get venue by ID
      */
     getVenueById: async ({ ctx, args, user }: { ctx: QueryCtx, args: { venueId: Id<"venues"> }, user: Doc<"users"> }): Promise<Doc<"venues">> => {

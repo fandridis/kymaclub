@@ -378,6 +378,14 @@ export const bookingsFields = {
   userId: v.id("users"),
   classInstanceId: v.id("classInstances"),
 
+  // Denormalized user metadata for business owners to see customer details
+  // This field is automatically populated when bookings are created (optional for backward compatibility)
+  userSnapshot: v.object({
+    name: v.optional(v.string()),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+  }),
+
   // Simplified status flow
   status: v.union(
     v.literal("pending"),    // Just booked, not yet attended
@@ -624,7 +632,8 @@ export default defineSchema({
    */
   venues: defineTable(venuesFields)
     .index("by_business", ["businessId"])
-    .index("by_city", ["address.city"]),
+    .index("by_city", ["address.city"])
+    .index("by_deleted", ["deleted"]),
 
   /** 
    * Class templates - blueprints for creating class instances

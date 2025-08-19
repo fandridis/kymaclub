@@ -421,6 +421,11 @@ describe('Booking System Integration Tests', () => {
             expect(booking.venue).toBeDefined();
             expect(booking.classTemplate?.name).toBe("Morning Yoga");
             expect(booking.venue?.name).toBe("Test Yoga Studio");
+
+            // Test userSnapshot is populated for business owners
+            expect(booking.userSnapshot).toBeDefined();
+            expect(booking.userSnapshot?.email).toBe("test@example.com"); // From initAuth helper
+            expect(booking.userSnapshot?.name).toBe("Test User"); // From initAuth helper
         });
 
         test('should get upcoming bookings only', async () => {
