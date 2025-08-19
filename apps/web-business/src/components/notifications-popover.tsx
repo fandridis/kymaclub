@@ -35,7 +35,9 @@ export function NotificationsPopover() {
             switch (type) {
                 case "booking_created":
                     return "booked"
-                case "booking_cancelled":
+                case "booking_cancelled_by_consumer":
+                    return "cancelled"
+                case "booking_cancelled_by_business":
                     return "cancelled"
                 case "payment_received":
                     return "paid for"

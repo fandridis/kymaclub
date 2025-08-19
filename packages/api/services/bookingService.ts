@@ -6,6 +6,8 @@ import { ConvexError } from "convex/values";
 import { creditService } from "./creditService";
 import { calculateBestDiscount } from "../utils/classDiscount";
 import { BookingWithDetails } from "../types/booking";
+import { notificationService } from "./notificationService";
+import { internal } from "../convex/_generated/api";
 
 
 /***************************************************************

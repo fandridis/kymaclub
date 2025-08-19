@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { ClockIcon, XIcon, EyeIcon } from 'lucide-react-native';
 import { format } from 'date-fns';
@@ -13,7 +13,7 @@ interface BookingCardProps {
   isCanceling?: boolean;
 }
 
-export const BookingCard = memo<BookingCardProps>(({ booking, onCancel, onViewClass, isCanceling = false }) => {
+export const BookingCard = ({ booking, onCancel, onViewClass, isCanceling = false }: BookingCardProps) => {
   const { t } = useTypedTranslation();
 
   // Extract booking details
@@ -119,9 +119,7 @@ export const BookingCard = memo<BookingCardProps>(({ booking, onCancel, onViewCl
       </View>
     </TouchableOpacity>
   );
-});
-
-BookingCard.displayName = 'BookingCard';
+};
 
 const styles = StyleSheet.create({
   container: {

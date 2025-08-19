@@ -137,7 +137,7 @@ export async function createTestNotification(
         businessId: Id<"businesses">;
         recipientType: "business" | "consumer";
         recipientUserId?: Id<"users">;
-        type: "booking_created" | "booking_cancelled" | "class_cancelled" | "payment_received" | "booking_confirmation" | "booking_reminder" | "booking_cancelled_by_business" | "payment_receipt";
+        type: "booking_created" | "booking_cancelled_by_consumer" | "class_cancelled" | "payment_received" | "booking_confirmation" | "booking_reminder" | "booking_cancelled_by_business" | "payment_receipt";
         title: string;
         message: string;
         metadata?: {

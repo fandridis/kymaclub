@@ -487,7 +487,7 @@ export const notificationsFields = {
   type: v.union(
     // Business notifications
     v.literal("booking_created"),
-    v.literal("booking_cancelled"),
+    v.literal("booking_cancelled_by_consumer"),
     v.literal("payment_received"),
 
     // Consumer notifications  
@@ -542,7 +542,11 @@ export const businessNotificationSettingsFields = {
       email: v.boolean(),
       web: v.boolean(),
     }),
-    booking_cancelled: v.object({
+    booking_cancelled_by_consumer: v.object({
+      email: v.boolean(),
+      web: v.boolean(),
+    }),
+    booking_cancelled_by_business: v.object({
       email: v.boolean(),
       web: v.boolean(),
     }),

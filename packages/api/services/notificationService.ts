@@ -3,6 +3,8 @@ import type { Doc, Id } from "../convex/_generated/dataModel";
 import { ConvexError } from "convex/values";
 import { ERROR_CODES } from "../utils/errorCodes";
 import { PaginationOptions, PaginationResult } from "convex/server";
+import { internal } from "../convex/_generated/api";
+import { format } from "date-fns";
 
 /***************************************************************
  * Notification Service - All notification-related operations
@@ -11,19 +13,19 @@ export const notificationService = {
     /**
      * Create a new notification
      */
-    createNotification: async ({ 
-        ctx, 
-        args, 
-        user 
-    }: { 
-        ctx: MutationCtx; 
+    createNotification: async ({
+        ctx,
+        args,
+        user
+    }: {
+        ctx: MutationCtx;
         args: {
             businessId: Id<"businesses">;
             recipientType: "business" | "consumer";
             recipientUserId?: Id<"users">;
-            type: "booking_created" | "booking_cancelled" | "payment_received" | 
-                  "booking_confirmation" | "booking_reminder" | "class_cancelled" | 
-                  "booking_cancelled_by_business" | "payment_receipt";
+            type: "booking_created" | "booking_cancelled_by_consumer" | "booking_cancelled_by_business" | "payment_received" |
+            "booking_confirmation" | "booking_reminder" | "class_cancelled" |
+            "booking_cancelled_by_business" | "payment_receipt";
             title: string;
             message: string;
             relatedBookingId?: Id<"bookings">;
@@ -36,8 +38,8 @@ export const notificationService = {
                 venueName?: string;
                 amount?: number;
             };
-        }; 
-        user: Doc<"users">; 
+        };
+        user: Doc<"users">;
     }): Promise<{ createdNotificationId: Id<"notifications"> }> => {
         const now = Date.now();
 
@@ -163,23 +165,23 @@ export const notificationService = {
 
         let query = ctx.db
             .query("notifications")
-            .withIndex("by_business_type", q => 
+            .withIndex("by_business_type", q =>
                 q.eq("businessId", user.businessId!)
-                 .eq("type", "booking_created") // Start with business notifications
+                    .eq("type", "booking_created") // Start with business notifications
             );
 
         // Get all business notification types
-        const businessTypes = ["booking_created", "booking_cancelled", "payment_received"];
-        
+        const businessTypes = ["booking_created", "booking_cancelled_by_consumer", "booking_cancelled_by_business", "payment_received"];
+
         const allNotifications: Doc<"notifications">[] = [];
 
         // Query each business notification type
         for (const notificationType of businessTypes) {
             const typeQuery = ctx.db
                 .query("notifications")
-                .withIndex("by_business_type", q => 
+                .withIndex("by_business_type", q =>
                     q.eq("businessId", user.businessId!)
-                     .eq("type", notificationType as any)
+                        .eq("type", notificationType as any)
                 )
                 .filter(q => {
                     let conditions = [
@@ -243,7 +245,7 @@ export const notificationService = {
         }
 
         // Validate user can access this notification
-        if (notification.recipientUserId !== user._id && 
+        if (notification.recipientUserId !== user._id &&
             notification.businessId !== user.businessId) {
             throw new ConvexError({
                 message: "You don't have permission to access this notification",
@@ -294,8 +296,8 @@ export const notificationService = {
         }
 
         // Increment retry count if failed
-        const retryCount = args.deliveryStatus === "failed" 
-            ? (notification.retryCount || 0) + 1 
+        const retryCount = args.deliveryStatus === "failed"
+            ? (notification.retryCount || 0) + 1
             : notification.retryCount;
 
         // Update notification
@@ -425,7 +427,8 @@ export const notificationService = {
         args: {
             notificationPreferences: {
                 booking_created: { email: boolean; web: boolean; };
-                booking_cancelled: { email: boolean; web: boolean; };
+                booking_cancelled_by_consumer: { email: boolean; web: boolean; };
+                booking_cancelled_by_business: { email: boolean; web: boolean; };
                 payment_received: { email: boolean; web: boolean; };
             };
         };
@@ -468,5 +471,257 @@ export const notificationService = {
 
             return { settingsId };
         }
+    },
+
+    /**
+     * Handle new class booking event
+     */
+    handleNewClassBookingEvent: async ({
+        ctx,
+        payload,
+    }: {
+        ctx: MutationCtx;
+        payload: {
+            bookingId: Id<"bookings">;
+            userId: Id<"users">;
+            classInstanceId: Id<"classInstances">;
+            businessId: Id<"businesses">;
+            creditsPaid: number;
+        };
+    }): Promise<{ createdNotificationId: Id<"notifications"> }> => {
+        const { bookingId, userId, classInstanceId, businessId, creditsPaid } = payload;
+
+        // Fetch the booking, user classInstance and business with Promise.all
+        const booking = await ctx.db.get(bookingId);
+        const [user, classInstance, business] = await Promise.all([
+            ctx.db.get(userId),
+            ctx.db.get(classInstanceId),
+            ctx.db.get(businessId),
+        ]);
+
+        if (!user || !classInstance || !business || !booking) {
+            throw new ConvexError({
+                message: "User, class instance, or business not found",
+                field: "userId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND
+            });
+        }
+
+        // TODO: Get user preferences/notification settings and only send if they have opted in
+
+        // Send web notification to business
+        const notificationId = await ctx.db.insert("notifications", {
+            businessId,
+            recipientType: "business",
+            recipientUserId: userId,
+            type: "booking_created",
+            title: "New booking",
+            message: `New booking for ${classInstance?.name || classInstance.templateSnapshot.name} at ${classInstance.venueSnapshot.name}`,
+            relatedBookingId: bookingId,
+            relatedClassInstanceId: classInstanceId,
+            seen: false,
+            deliveryStatus: "pending",
+            retryCount: 0,
+            sentToEmail: false,
+            sentToWeb: false,
+            sentToPush: false,
+            metadata: {
+                className: classInstance?.name || classInstance.templateSnapshot.name,
+                userName: user.name,
+                userEmail: user.email,
+                amount: creditsPaid,
+            },
+            createdAt: Date.now(),
+            createdBy: userId,
+        });
+
+        // Send email notification to business
+        if (process.env.NODE_ENV === "production") {
+            try {
+                await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
+                    businessEmail: business.email,
+                    businessName: business.name,
+                    customerName: user.name || user.email || "Customer",
+                    customerEmail: user.email,
+                    className: classInstance.name || classInstance.templateSnapshot.name || "",
+                    venueName: classInstance.venueId || "",
+                    classTime: format(classInstance.startTime, "MMM d, yyyy h:mm a"),
+                    bookingAmount: booking.finalPrice,
+                    notificationType: 'booking_created',
+                });
+            } catch (error) {
+                console.error('Error sending email notification:', error);
+            }
+        }
+
+        return { createdNotificationId: notificationId };
+    },
+
+    /**
+     * Handle user cancelled booking event
+     */
+    handleUserCancelledBookingEvent: async ({
+        ctx,
+        payload,
+    }: {
+        ctx: MutationCtx;
+        payload: {
+            bookingId: Id<"bookings">;
+            userId: Id<"users">;
+            classInstanceId: Id<"classInstances">;
+            businessId: Id<"businesses">;
+            creditsPaid: number;
+        };
+    }): Promise<{ createdNotificationId: Id<"notifications"> }> => {
+        const { bookingId, userId, classInstanceId, businessId, creditsPaid } = payload;
+
+        // Fetch the booking, user classInstance and business with Promise.all
+        const booking = await ctx.db.get(bookingId);
+        const [user, classInstance, business] = await Promise.all([
+            ctx.db.get(userId),
+            ctx.db.get(classInstanceId),
+            ctx.db.get(businessId),
+        ]);
+
+        if (!user || !classInstance || !business || !booking) {
+            throw new ConvexError({
+                message: "User, class instance, or business not found",
+                field: "userId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND
+            });
+        }
+
+        // TODO: Get user preferences/notification settings and only send if they have opted in
+
+        // Send web notification to business
+        const notificationId = await ctx.db.insert("notifications", {
+            businessId,
+            recipientType: "business",
+            recipientUserId: userId,
+            type: "booking_cancelled_by_consumer",
+            title: "Booking Cancelled",
+            message: `Booking for ${classInstance?.name || classInstance.templateSnapshot.name} at ${classInstance.venueSnapshot.name} has been cancelled`,
+            relatedBookingId: bookingId,
+            relatedClassInstanceId: classInstanceId,
+            seen: false,
+            deliveryStatus: "pending",
+            retryCount: 0,
+            sentToEmail: false,
+            sentToWeb: false,
+            sentToPush: false,
+            metadata: {
+                className: classInstance?.name || classInstance.templateSnapshot.name,
+                userName: user.name,
+                userEmail: user.email,
+                amount: creditsPaid,
+            },
+            createdAt: Date.now(),
+            createdBy: userId,
+        });
+
+        // Send email notification to business
+        if (process.env.NODE_ENV === "production") {
+            try {
+                await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
+                    businessEmail: business.email,
+                    businessName: business.name,
+                    customerName: user.name || user.email || "Customer",
+                    customerEmail: user.email,
+                    className: classInstance.name || classInstance.templateSnapshot.name || "",
+                    venueName: classInstance.venueId || "",
+                    classTime: format(classInstance.startTime, "MMM d, yyyy h:mm a"),
+                    bookingAmount: booking.finalPrice,
+                    notificationType: 'booking_cancelled_by_consumer',
+                });
+            } catch (error) {
+                console.error('Error sending email notification:', error);
+            }
+        }
+
+        return { createdNotificationId: notificationId };
+    },
+
+    /**
+     * Handle business cancelled booking event
+     */
+    handleBusinessCancelledBookingEvent: async ({
+        ctx,
+        payload,
+    }: {
+        ctx: MutationCtx;
+        payload: {
+            bookingId: Id<"bookings">;
+            userId: Id<"users">;
+            classInstanceId: Id<"classInstances">;
+            businessId: Id<"businesses">;
+            creditsPaid: number;
+        };
+    }): Promise<{ createdNotificationId: Id<"notifications"> }> => {
+        const { bookingId, userId, classInstanceId, businessId, creditsPaid } = payload;
+
+        // Fetch the booking, user classInstance and business with Promise.all
+        const booking = await ctx.db.get(bookingId);
+        const [user, classInstance, business] = await Promise.all([
+            ctx.db.get(userId),
+            ctx.db.get(classInstanceId),
+            ctx.db.get(businessId),
+        ]);
+
+        if (!user || !classInstance || !business || !booking) {
+            throw new ConvexError({
+                message: "User, class instance, or business not found",
+                field: "userId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND
+            });
+        }
+
+        // TODO: Get user preferences/notification settings and only send if they have opted in
+
+        // Send web notification to business
+        const notificationId = await ctx.db.insert("notifications", {
+            businessId,
+            recipientType: "business",
+            recipientUserId: userId,
+            type: "booking_cancelled_by_business",
+            title: "Booking cancelled",
+            message: `Booking for ${classInstance?.name || classInstance.templateSnapshot.name} at ${classInstance.venueSnapshot.name} has been cancelled`,
+            relatedBookingId: bookingId,
+            relatedClassInstanceId: classInstanceId,
+            seen: false,
+            deliveryStatus: "pending",
+            retryCount: 0,
+            sentToEmail: false,
+            sentToWeb: false,
+            sentToPush: false,
+            metadata: {
+                className: classInstance?.name || classInstance.templateSnapshot.name,
+                userName: user.name,
+                userEmail: user.email,
+                amount: creditsPaid,
+            },
+            createdAt: Date.now(),
+            createdBy: userId,
+        });
+
+        // Send email notification to user
+        if (process.env.NODE_ENV === "production") {
+            try {
+                await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
+                    businessEmail: business.email,
+                    businessName: business.name,
+                    customerName: user.name || user.email || "Customer",
+                    customerEmail: user.email,
+                    className: classInstance.name || classInstance.templateSnapshot.name || "",
+                    venueName: classInstance.venueId || "",
+                    classTime: format(classInstance.startTime, "MMM d, yyyy h:mm a"),
+                    bookingAmount: booking.finalPrice,
+                    notificationType: 'booking_cancelled_by_business',
+                });
+            } catch (error) {
+                console.error('Error sending email notification:', error);
+            }
+        }
+
+        return { createdNotificationId: notificationId };
     },
 };

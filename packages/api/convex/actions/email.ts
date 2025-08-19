@@ -21,7 +21,7 @@ export const sendBookingNotificationEmail = internalAction({
         venueName: v.string(),
         classTime: v.string(),
         bookingAmount: v.number(),
-        notificationType: v.union(v.literal("booking_created"), v.literal("booking_cancelled"), v.literal("booking_cancelled_by_business")),
+        notificationType: v.union(v.literal("booking_created"), v.literal("booking_cancelled_by_consumer"), v.literal("booking_cancelled_by_business")),
     }),
     handler: async (ctx, args) => {
         try {
@@ -41,19 +41,19 @@ export const sendBookingNotificationEmail = internalAction({
             });
 
             console.log(`✅ Booking notification email queued successfully - EmailId: ${result.emailId}`);
-            return { 
-                success: true, 
-                emailSent: true, 
+            return {
+                success: true,
+                emailSent: true,
                 emailId: result.emailId,
-                reason: "Email sent successfully" 
+                reason: "Email sent successfully"
             };
 
         } catch (error) {
             console.error("Failed to send booking notification email:", error);
-            return { 
-                success: false, 
-                emailSent: false, 
-                reason: error instanceof Error ? error.message : "Unknown error" 
+            return {
+                success: false,
+                emailSent: false,
+                reason: error instanceof Error ? error.message : "Unknown error"
             };
         }
     }
@@ -90,19 +90,19 @@ export const sendBookingConfirmationEmail = internalAction({
             });
 
             console.log(`✅ Booking confirmation email queued successfully - EmailId: ${result.emailId}`);
-            return { 
-                success: true, 
-                emailSent: true, 
+            return {
+                success: true,
+                emailSent: true,
                 emailId: result.emailId,
-                reason: "Email sent successfully" 
+                reason: "Email sent successfully"
             };
 
         } catch (error) {
             console.error("Failed to send booking confirmation email:", error);
-            return { 
-                success: false, 
-                emailSent: false, 
-                reason: error instanceof Error ? error.message : "Unknown error" 
+            return {
+                success: false,
+                emailSent: false,
+                reason: error instanceof Error ? error.message : "Unknown error"
             };
         }
     }
@@ -129,19 +129,19 @@ export const sendTestEmail = internalAction({
             });
 
             console.log(`✅ Test email queued successfully - EmailId: ${result.emailId}`);
-            return { 
-                success: true, 
-                emailSent: true, 
+            return {
+                success: true,
+                emailSent: true,
                 emailId: result.emailId,
-                reason: "Test email sent successfully" 
+                reason: "Test email sent successfully"
             };
 
         } catch (error) {
             console.error("Failed to send test email:", error);
-            return { 
-                success: false, 
-                emailSent: false, 
-                reason: error instanceof Error ? error.message : "Unknown error" 
+            return {
+                success: false,
+                emailSent: false,
+                reason: error instanceof Error ? error.message : "Unknown error"
             };
         }
     }

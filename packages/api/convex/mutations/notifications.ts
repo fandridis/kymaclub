@@ -1,4 +1,4 @@
-import { mutation } from "../_generated/server";
+import { internalMutation } from "../_generated/server";
 import { Infer, v } from "convex/values";
 import { getAuthenticatedUserOrThrow } from "../utils";
 import { notificationService } from "../../services/notificationService";
@@ -12,7 +12,7 @@ import { mutationWithTriggers } from "../triggers";
 export const createNotificationArgs = v.object({
     notification: v.object({
         ...omit(notificationsFields, [
-            'createdAt', 'createdBy', 'updatedAt', 'updatedBy', 
+            'createdAt', 'createdBy', 'updatedAt', 'updatedBy',
             'seen', 'seenAt', 'deliveryStatus', 'failureReason', 'retryCount',
             'sentToEmail', 'sentToWeb', 'sentToPush', 'deleted', 'deletedAt', 'deletedBy'
         ])
@@ -104,5 +104,65 @@ export const upsertBusinessNotificationSettings = mutationWithTriggers({
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
         return notificationService.upsertBusinessNotificationSettings({ ctx, args: args.settings, user });
+    }
+});
+
+/***************************************************************
+ * Handle New Class Booking Event
+ ***************************************************************/
+export const handleNewClassBookingEvent = internalMutation({
+    args: v.object({
+        payload: v.object({
+            bookingId: v.id("bookings"),
+            userId: v.id("users"),
+            classInstanceId: v.id("classInstances"),
+            businessId: v.id("businesses"),
+            creditsPaid: v.number(),
+        })
+    }),
+    handler: async (ctx, args) => {
+        console.log('----- [mutations/notifications] handleNewClassBookingEvent -----');
+        console.log('args: ', args);
+        return await notificationService.handleNewClassBookingEvent({ ctx, payload: args.payload });
+    }
+});
+
+/***************************************************************
+ * Handle User Cancelled Booking Event
+ ***************************************************************/
+export const handleUserCancelledBookingEvent = internalMutation({
+    args: v.object({
+        payload: v.object({
+            bookingId: v.id("bookings"),
+            userId: v.id("users"),
+            classInstanceId: v.id("classInstances"),
+            businessId: v.id("businesses"),
+            creditsPaid: v.number(),
+        })
+    }),
+    handler: async (ctx, args) => {
+        console.log('----- [mutations/notifications] handleUserCancelledBookingEvent -----');
+        console.log('args: ', args);
+        return await notificationService.handleUserCancelledBookingEvent({ ctx, payload: args.payload });
+    }
+});
+
+/***************************************************************
+ * Handle Business Cancelled Booking Event
+ ***************************************************************/
+export const handleBusinessCancelledBookingEvent = internalMutation({
+    args: v.object({
+        payload: v.object({
+            bookingId: v.id("bookings"),
+            userId: v.id("users"),
+            classInstanceId: v.id("classInstances"),
+            businessId: v.id("businesses"),
+            creditsPaid: v.number(),
+        })
+    }),
+    handler: async (ctx, args) => {
+        console.log('----- [mutations/notifications] handleBusinessCancelledBookingEvent -----');
+        console.log('args: ', args);
+        return await notificationService.handleBusinessCancelledBookingEvent({ ctx, payload: args.payload });
     }
 });

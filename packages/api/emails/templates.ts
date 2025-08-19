@@ -338,7 +338,7 @@ const createBusinessNotificationEmail = ({
   venueName: string;
   classTime: string;
   bookingAmount: number;
-  notificationType: "booking_created" | "booking_cancelled" | "booking_cancelled_by_business";
+  notificationType: "booking_created" | "booking_cancelled_by_consumer" | "booking_cancelled_by_business";
 }) => {
   const isBooking = notificationType === "booking_created";
   const isCancelledByBusiness = notificationType === "booking_cancelled_by_business";
@@ -355,8 +355,8 @@ const createBusinessNotificationEmail = ({
         ${isBooking
         ? `Great news! You have a new booking from ${customerName}.`
         : isCancelledByBusiness
-        ? `Your booking for ${className} has been cancelled. We apologize for any inconvenience.`
-        : `${customerName} has cancelled their booking for ${className}.`
+          ? `Your booking for ${className} has been cancelled. We apologize for any inconvenience.`
+          : `${customerName} has cancelled their booking for ${className}.`
       }
       </p>
       

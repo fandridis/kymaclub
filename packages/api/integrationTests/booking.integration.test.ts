@@ -239,7 +239,8 @@ describe('Booking System Integration Tests', () => {
             // Cancel the booking
             const cancelResult = await asUser.mutation(api.mutations.bookings.cancelBooking, {
                 bookingId: bookingResult.bookingId,
-                reason: "Schedule conflict"
+                reason: "Schedule conflict",
+                cancelledBy: "consumer"
             });
 
             expect(cancelResult.success).toBe(true);
@@ -307,7 +308,8 @@ describe('Booking System Integration Tests', () => {
             // Cancel the booking (late cancellation)
             const cancelResult = await asUser.mutation(api.mutations.bookings.cancelBooking, {
                 bookingId: bookingResult.bookingId,
-                reason: "Emergency"
+                reason: "Emergency",
+                cancelledBy: "consumer"
             });
 
             expect(cancelResult.success).toBe(true);
@@ -344,13 +346,15 @@ describe('Booking System Integration Tests', () => {
 
             // Cancel once
             await asUser.mutation(api.mutations.bookings.cancelBooking, {
-                bookingId: bookingResult.bookingId
+                bookingId: bookingResult.bookingId,
+                cancelledBy: "consumer"
             });
 
             // Try to cancel again
             await expect(
                 asUser.mutation(api.mutations.bookings.cancelBooking, {
-                    bookingId: bookingResult.bookingId
+                    bookingId: bookingResult.bookingId,
+                    cancelledBy: "consumer"
                 })
             ).rejects.toThrow("Cannot cancel booking with status: cancelled");
         });
@@ -382,7 +386,8 @@ describe('Booking System Integration Tests', () => {
             const asUser2 = testT.withIdentity({ subject: user2Id });
             await expect(
                 asUser2.mutation(api.mutations.bookings.cancelBooking, {
-                    bookingId: bookingResult.bookingId
+                    bookingId: bookingResult.bookingId,
+                    cancelledBy: "consumer"
                 })
             ).rejects.toThrow("You are not authorized to cancel this booking");
         });
@@ -473,7 +478,8 @@ describe('Booking System Integration Tests', () => {
             });
 
             await asUser.mutation(api.mutations.bookings.cancelBooking, {
-                bookingId: bookingResult.bookingId
+                bookingId: bookingResult.bookingId,
+                cancelledBy: "consumer"
             });
 
             // Get cancelled bookings
@@ -523,7 +529,8 @@ describe('Booking System Integration Tests', () => {
 
             // Cancel booking
             await asUser.mutation(api.mutations.bookings.cancelBooking, {
-                bookingId: bookingResult.bookingId
+                bookingId: bookingResult.bookingId,
+                cancelledBy: "consumer"
             });
 
             // Verify class instance booked count decreased

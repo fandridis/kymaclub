@@ -33,7 +33,7 @@ describe('Notification System Integration Tests', () => {
             expect(notifications.page).toHaveLength(1);
             const notification = notifications.page[0];
             expect(notification.type).toBe("booking_created");
-            expect(notification.title).toBe("New Booking");
+            expect(notification.title).toBe("New booking");
             expect(notification.recipientType).toBe("business");
             expect(notification.relatedBookingId).toBe(bookingResult.bookingId);
             expect(notification.relatedClassInstanceId).toBe(instanceId);
@@ -63,7 +63,8 @@ describe('Notification System Integration Tests', () => {
             // Cancel the booking 
             await asUser.mutation(api.mutations.bookings.cancelBooking, {
                 bookingId: bookingResult.bookingId,
-                reason: "Schedule conflict"
+                reason: "Schedule conflict",
+                cancelledBy: "consumer"
             });
 
             // Verify both notifications were created
@@ -74,7 +75,7 @@ describe('Notification System Integration Tests', () => {
             expect(notifications.page).toHaveLength(2);
 
             // Find the cancellation notification
-            const cancellationNotification = notifications.page.find(n => n.type === "booking_cancelled");
+            const cancellationNotification = notifications.page.find(n => n.type === "booking_cancelled_by_consumer");
             expect(cancellationNotification).toBeDefined();
             expect(cancellationNotification?.title).toBe("Booking Cancelled");
             expect(cancellationNotification?.recipientType).toBe("business");
@@ -135,6 +136,8 @@ describe('Notification System Integration Tests', () => {
                 classInstanceId: instanceId,
                 description: "My advanced practice session"
             });
+
+            console.log('bookingResult', bookingResult);
 
             // Verify notification has correct detailed metadata
             const notifications = await asUser.query(api.queries.notifications.getBusinessNotifications, {
@@ -306,7 +309,7 @@ describe('Notification System Integration Tests', () => {
                 notification: {
                     businessId,
                     recipientType: "business",
-                    type: "booking_cancelled",
+                    type: "booking_cancelled_by_consumer",
                     title: "Notification 2",
                     message: "Message 2"
                 }

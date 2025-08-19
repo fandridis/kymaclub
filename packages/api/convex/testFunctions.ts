@@ -339,6 +339,11 @@ export const createTestClassInstance = internalMutation({
             throw new Error("Template not found");
         }
 
+        const venue = await ctx.db.get(template.venueId);
+        if (!venue) {
+            throw new Error("Venue not found");
+        }
+
         const instanceId = await ctx.db.insert("classInstances", {
             businessId: business._id,
             templateId: args.templateId,
@@ -358,15 +363,16 @@ export const createTestClassInstance = internalMutation({
                 deleted: template.deleted,
             },
             venueSnapshot: {
-                name: "Test Venue", // This would normally come from the venue
+                name: venue.name, // Use the actual venue name
                 address: {
-                    street: "123 Test St",
-                    city: "Test City",
-                    zipCode: "12345",
-                    country: "USA"
+                    street: venue.address.street,
+                    city: venue.address.city,
+                    zipCode: venue.address.zipCode,
+                    country: venue.address.country,
+                    state: venue.address.state,
                 },
-                imageStorageIds: [],
-                deleted: false,
+                imageStorageIds: venue.imageStorageIds || [],
+                deleted: venue.deleted || false,
             },
             createdAt: Date.now(),
             createdBy: user._id,
@@ -522,12 +528,12 @@ export const createTestNotification = internalMutation({
             recipientUserId: v.optional(v.id("users")),
             type: v.union(
                 v.literal("booking_created"),
-                v.literal("booking_cancelled"),
+                v.literal("booking_cancelled_by_consumer"),
+                v.literal("booking_cancelled_by_business"),
                 v.literal("class_cancelled"),
                 v.literal("payment_received"),
                 v.literal("booking_confirmation"),
                 v.literal("booking_reminder"),
-                v.literal("booking_cancelled_by_business"),
                 v.literal("payment_receipt")
             ),
             title: v.string(),
@@ -645,7 +651,11 @@ export const createTestBusinessNotificationSettings = internalMutation({
                     email: true,
                     web: true,
                 },
-                booking_cancelled: {
+                booking_cancelled_by_consumer: {
+                    email: true,
+                    web: true,
+                },
+                booking_cancelled_by_business: {
                     email: true,
                     web: true,
                 },
