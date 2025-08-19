@@ -220,43 +220,108 @@ triggers.register("bookings", async (ctx, change) => {
                     minute: '2-digit'
                 });
 
-                // Create web notification for business
-                await notificationService.createNotification({
-                    ctx,
-                    args: {
-                        businessId: newDoc.businessId,
-                        recipientType: "business",
-                        type: "booking_cancelled",
-                        title: "Booking Cancelled",
-                        message: `${user.name || user.email || "Customer"} cancelled ${template.name} at ${venue.name} (${classTime})`,
-                        relatedBookingId: id,
-                        relatedClassInstanceId: newDoc.classInstanceId,
-                        metadata: {
-                            className: template.name,
-                            userEmail: user.email,
-                            userName: user.name || user.email || "Customer",
-                            amount: newDoc.originalPrice,
-                        }
-                    },
-                    user: user
-                });
-
-                // Schedule email notification to business about cancellation
-                if (process.env.NODE_ENV === "production") {
-                    await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
-                        businessEmail: business.email,
-                        businessName: business.name,
-                        customerName: user.name || user.email || "Customer",
-                        customerEmail: user.email,
-                        className: template.name,
-                        venueName: venue.name,
-                        classTime: classTime,
-                        bookingAmount: newDoc.originalPrice,
-                        notificationType: "booking_cancelled",
+                // Determine who should be notified based on who cancelled
+                if (newDoc.cancelledBy === "consumer") {
+                    // Consumer cancelled - notify business
+                    await notificationService.createNotification({
+                        ctx,
+                        args: {
+                            businessId: newDoc.businessId,
+                            recipientType: "business",
+                            type: "booking_cancelled",
+                            title: "Booking Cancelled",
+                            message: `${user.name || user.email || "Customer"} cancelled ${template.name} at ${venue.name} (${classTime})`,
+                            relatedBookingId: id,
+                            relatedClassInstanceId: newDoc.classInstanceId,
+                            metadata: {
+                                className: template.name,
+                                userEmail: user.email,
+                                userName: user.name || user.email || "Customer",
+                                amount: newDoc.originalPrice,
+                            }
+                        },
+                        user: user
                     });
-                }
 
-                console.log(`✅ Created cancellation notification for business ${newDoc.businessId}`);
+                    // Schedule email notification to business about consumer cancellation
+                    if (process.env.NODE_ENV === "production") {
+                        await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
+                            businessEmail: business.email,
+                            businessName: business.name,
+                            customerName: user.name || user.email || "Customer",
+                            customerEmail: user.email,
+                            className: template.name,
+                            venueName: venue.name,
+                            classTime: classTime,
+                            bookingAmount: newDoc.originalPrice,
+                            notificationType: "booking_cancelled",
+                        });
+                    }
+
+                    console.log(`✅ Created cancellation notification for business ${newDoc.businessId} (cancelled by consumer)`);
+
+                } else if (newDoc.cancelledBy === "business") {
+                    // Business cancelled - notify consumer
+                    await notificationService.createNotification({
+                        ctx,
+                        args: {
+                            businessId: newDoc.businessId,
+                            recipientType: "consumer",
+                            type: "booking_cancelled_by_business",
+                            title: "Booking Cancelled",
+                            message: `Your booking for ${template.name} at ${venue.name} (${classTime}) was cancelled by ${business.name}`,
+                            relatedBookingId: id,
+                            relatedClassInstanceId: newDoc.classInstanceId,
+                            metadata: {
+                                className: template.name,
+                                businessName: business.name,
+                                venueName: venue.name,
+                                amount: newDoc.originalPrice,
+                            }
+                        },
+                        user: user
+                    });
+
+                    // Schedule email notification to consumer about business cancellation
+                    if (process.env.NODE_ENV === "production" && user.email) {
+                        await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
+                            businessEmail: user.email, // Send to customer
+                            businessName: business.name,
+                            customerName: user.name || user.email || "Customer",
+                            customerEmail: user.email,
+                            className: template.name,
+                            venueName: venue.name,
+                            classTime: classTime,
+                            bookingAmount: newDoc.originalPrice,
+                            notificationType: "booking_cancelled_by_business",
+                        });
+                    }
+
+                    console.log(`✅ Created cancellation notification for consumer ${user._id} (cancelled by business)`);
+                } else {
+                    // Fallback for legacy bookings without cancelledBy field - assume consumer cancelled
+                    await notificationService.createNotification({
+                        ctx,
+                        args: {
+                            businessId: newDoc.businessId,
+                            recipientType: "business",
+                            type: "booking_cancelled",
+                            title: "Booking Cancelled",
+                            message: `${user.name || user.email || "Customer"} cancelled ${template.name} at ${venue.name} (${classTime})`,
+                            relatedBookingId: id,
+                            relatedClassInstanceId: newDoc.classInstanceId,
+                            metadata: {
+                                className: template.name,
+                                userEmail: user.email,
+                                userName: user.name || user.email || "Customer",
+                                amount: newDoc.originalPrice,
+                            }
+                        },
+                        user: user
+                    });
+
+                    console.log(`✅ Created legacy cancellation notification for business ${newDoc.businessId}`);
+                }
 
             } catch (error) {
                 console.error("Failed to create cancellation notification:", error);

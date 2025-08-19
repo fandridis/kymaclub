@@ -36,13 +36,15 @@ export const emailService = {
             venueName: string;
             classTime: string;
             bookingAmount: number;
-            notificationType: "booking_created" | "booking_cancelled";
+            notificationType: "booking_created" | "booking_cancelled" | "booking_cancelled_by_business";
         };
     }): Promise<{ emailId: string; success: boolean }> => {
         try {
             const subject = args.notificationType === "booking_created"
                 ? `New Booking: ${args.className}`
-                : `Booking Cancelled: ${args.className}`;
+                : args.notificationType === "booking_cancelled"
+                ? `Booking Cancelled: ${args.className}`
+                : `Your Booking Cancelled: ${args.className}`;
 
             const htmlContent = createBusinessNotificationEmail({
                 businessName: args.businessName,

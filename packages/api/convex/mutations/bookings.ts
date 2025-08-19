@@ -29,6 +29,7 @@ export const cancelBooking = mutationWithTriggers({
   args: v.object({
     bookingId: v.id("bookings"),
     reason: v.optional(v.string()),
+    cancelledBy: v.union(v.literal("consumer"), v.literal("business")),
   }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);

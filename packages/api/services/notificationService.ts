@@ -32,6 +32,8 @@ export const notificationService = {
                 className?: string;
                 userEmail?: string;
                 userName?: string;
+                businessName?: string;
+                venueName?: string;
                 amount?: number;
             };
         }; 

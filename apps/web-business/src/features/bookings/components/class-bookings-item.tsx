@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,9 +18,13 @@ import {
     CreditCard,
     AlertCircle,
     CheckCircle,
-    XCircle
+    XCircle,
+    Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useMutation } from "convex/react";
+import { api } from "@repo/api/convex/_generated/api";
+import { toast } from "sonner";
 import type { BookingWithDetails } from "@repo/api/types/booking";
 
 interface ClassBookingsItemProps {
@@ -39,12 +44,37 @@ export function ClassBookingsItem({
     onMarkNoShow,
     className,
 }: ClassBookingsItemProps) {
+    const [isCancelling, setIsCancelling] = useState(false);
+    const cancelBooking = useMutation(api.mutations.bookings.cancelBooking);
+    
     const customerName = booking.userSnapshot?.name;
     const customerEmail = booking.userSnapshot?.email;
     const customerPhone = booking.userSnapshot?.phone;
 
-    const handleCancelBooking = () => {
-        console.log('cancel booking', booking);
+    const handleCancelBooking = async () => {
+        if (isCancelling) return;
+        
+        try {
+            setIsCancelling(true);
+            
+            await cancelBooking({
+                bookingId: booking._id,
+                reason: "Cancelled by business",
+                cancelledBy: "business"
+            });
+            
+            toast.success(`Cancelled booking for ${customerName}`);
+            
+            // Call parent callback if provided
+            if (onCancelBooking) {
+                onCancelBooking(booking);
+            }
+        } catch (error) {
+            console.error('Failed to cancel booking:', error);
+            toast.error('Failed to cancel booking. Please try again.');
+        } finally {
+            setIsCancelling(false);
+        }
     };
 
     const formatBookingTime = (timestamp: number) => {
@@ -108,17 +138,34 @@ export function ClassBookingsItem({
                 {/* More Actions Dropdown */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                            <MoreVertical className="h-4 w-4" />
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8 w-8 p-0"
+                            disabled={isCancelling}
+                        >
+                            {isCancelling ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <MoreVertical className="h-4 w-4" />
+                            )}
                             <span className="sr-only">Open menu</span>
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem
                             onClick={handleCancelBooking}
+                            disabled={isCancelling}
                             className="text-destructive focus:text-destructive"
                         >
-                            Cancel Booking
+                            {isCancelling ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Cancelling...
+                                </>
+                            ) : (
+                                "Cancel Booking"
+                            )}
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>

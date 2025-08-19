@@ -21,7 +21,7 @@ export const sendBookingNotificationEmail = internalAction({
         venueName: v.string(),
         classTime: v.string(),
         bookingAmount: v.number(),
-        notificationType: v.union(v.literal("booking_created"), v.literal("booking_cancelled")),
+        notificationType: v.union(v.literal("booking_created"), v.literal("booking_cancelled"), v.literal("booking_cancelled_by_business")),
     }),
     handler: async (ctx, args) => {
         try {

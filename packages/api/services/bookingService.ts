@@ -614,6 +614,7 @@ export const bookingService = {
         args: {
             bookingId: Id<"bookings">;
             reason?: string;
+            cancelledBy: "consumer" | "business";
         };
         user: Doc<"users">;
     }): Promise<{ success: boolean }> => {
@@ -628,7 +629,8 @@ export const bookingService = {
             });
         }
 
-        if (booking.userId !== user._id) {
+        // Check if the user is the owner of the booking or the business owner
+        if (booking.userId !== user._id && booking.businessId !== user.businessId) {
             throw new ConvexError({
                 message: "You are not authorized to cancel this booking",
                 field: "userId",
@@ -682,6 +684,7 @@ export const bookingService = {
         await ctx.db.patch(args.bookingId, {
             status: "cancelled",
             cancelledAt: now,
+            cancelledBy: args.cancelledBy,
             updatedAt: now,
             updatedBy: user._id,
         });

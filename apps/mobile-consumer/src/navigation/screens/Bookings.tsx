@@ -152,7 +152,8 @@ export function Bookings() {
 
             await cancelBooking({
                 bookingId: booking._id as Id<"bookings">,
-                reason: 'Cancelled by user via mobile app'
+                reason: 'Cancelled by user via mobile app',
+                cancelledBy: 'consumer'
             });
 
             // Success feedback

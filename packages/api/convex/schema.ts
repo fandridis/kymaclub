@@ -417,6 +417,7 @@ export const bookingsFields = {
   // Simple timestamps
   bookedAt: v.number(),
   cancelledAt: v.optional(v.number()),
+  cancelledBy: v.optional(v.union(v.literal("consumer"), v.literal("business"))),
   completedAt: v.optional(v.number()),
 
   ...auditFields,
