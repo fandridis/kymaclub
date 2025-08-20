@@ -488,7 +488,7 @@ export const notificationService = {
             businessId: Id<"businesses">;
             creditsPaid: number;
         };
-    }): Promise<{ createdNotificationId: Id<"notifications"> }> => {
+    }): Promise<{ createdNotificationId: Id<"notifications"> | null }> => {
         const { bookingId, userId, classInstanceId, businessId, creditsPaid } = payload;
 
         // Fetch the booking, user classInstance and business with Promise.all
@@ -507,36 +507,50 @@ export const notificationService = {
             });
         }
 
-        // TODO: Get user preferences/notification settings and only send if they have opted in
+        // Get business notification preferences
+        const businessNotificationSettings = await ctx.db
+            .query("businessNotificationSettings")
+            .withIndex("by_business", q => q.eq("businessId", businessId))
+            .filter(q => q.neq(q.field("deleted"), true))
+            .first();
 
-        // Send web notification to business
-        const notificationId = await ctx.db.insert("notifications", {
-            businessId,
-            recipientType: "business",
-            recipientUserId: userId,
-            type: "booking_created",
-            title: "New booking",
-            message: `New booking for ${classInstance?.name || classInstance.templateSnapshot.name} at ${classInstance.venueSnapshot.name}`,
-            relatedBookingId: bookingId,
-            relatedClassInstanceId: classInstanceId,
-            seen: false,
-            deliveryStatus: "pending",
-            retryCount: 0,
-            sentToEmail: false,
-            sentToWeb: false,
-            sentToPush: false,
-            metadata: {
-                className: classInstance?.name || classInstance.templateSnapshot.name,
-                userName: user.name,
-                userEmail: user.email,
-                amount: creditsPaid,
-            },
-            createdAt: Date.now(),
-            createdBy: userId,
+        console.log("Business notification settings:", {
+            businessNotificationSettings,
         });
 
+        // Only send notification if business has opted in for this type
+        let notificationId: Id<"notifications"> | undefined;
+
+        if (businessNotificationSettings?.notificationPreferences?.booking_created?.web) {
+            // Send web notification to business
+            notificationId = await ctx.db.insert("notifications", {
+                businessId,
+                recipientType: "business",
+                recipientUserId: userId,
+                type: "booking_created",
+                title: "New booking",
+                message: `New booking for ${classInstance?.name || classInstance.templateSnapshot.name} at ${classInstance.venueSnapshot.name}`,
+                relatedBookingId: bookingId,
+                relatedClassInstanceId: classInstanceId,
+                seen: false,
+                deliveryStatus: "pending",
+                retryCount: 0,
+                sentToEmail: false,
+                sentToWeb: false,
+                sentToPush: false,
+                metadata: {
+                    className: classInstance?.name || classInstance.templateSnapshot.name,
+                    userName: user.name,
+                    userEmail: user.email,
+                    amount: creditsPaid,
+                },
+                createdAt: Date.now(),
+                createdBy: userId,
+            });
+        }
+
         // Send email notification to business
-        if (process.env.NODE_ENV === "production") {
+        if (businessNotificationSettings?.notificationPreferences?.booking_created?.email && process.env.NODE_ENV === "production") {
             try {
                 await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
                     businessEmail: business.email,
@@ -552,6 +566,11 @@ export const notificationService = {
             } catch (error) {
                 console.error('Error sending email notification:', error);
             }
+        }
+
+
+        if (!notificationId) {
+            return { createdNotificationId: null };
         }
 
         return { createdNotificationId: notificationId };
@@ -572,7 +591,7 @@ export const notificationService = {
             businessId: Id<"businesses">;
             creditsPaid: number;
         };
-    }): Promise<{ createdNotificationId: Id<"notifications"> }> => {
+    }): Promise<{ createdNotificationId: Id<"notifications"> | null }> => {
         const { bookingId, userId, classInstanceId, businessId, creditsPaid } = payload;
 
         // Fetch the booking, user classInstance and business with Promise.all
@@ -591,36 +610,53 @@ export const notificationService = {
             });
         }
 
-        // TODO: Get user preferences/notification settings and only send if they have opted in
+        // Get business notification preferences
+        const businessNotificationSettings = await ctx.db
+            .query("businessNotificationSettings")
+            .withIndex("by_business", q => q.eq("businessId", businessId))
+            .filter(q => q.neq(q.field("deleted"), true))
+            .first();
 
-        // Send web notification to business
-        const notificationId = await ctx.db.insert("notifications", {
+        console.log("Business notification settings:", {
             businessId,
-            recipientType: "business",
-            recipientUserId: userId,
-            type: "booking_cancelled_by_consumer",
-            title: "Booking Cancelled",
-            message: `Booking for ${classInstance?.name || classInstance.templateSnapshot.name} at ${classInstance.venueSnapshot.name} has been cancelled`,
-            relatedBookingId: bookingId,
-            relatedClassInstanceId: classInstanceId,
-            seen: false,
-            deliveryStatus: "pending",
-            retryCount: 0,
-            sentToEmail: false,
-            sentToWeb: false,
-            sentToPush: false,
-            metadata: {
-                className: classInstance?.name || classInstance.templateSnapshot.name,
-                userName: user.name,
-                userEmail: user.email,
-                amount: creditsPaid,
-            },
-            createdAt: Date.now(),
-            createdBy: userId,
+            businessName: business.name,
+            settings: businessNotificationSettings,
+            notificationType: "booking_cancelled_by_consumer"
         });
 
+        // Only send notification if business has opted in for this type
+        let notificationId: Id<"notifications"> | undefined;
+
+        if (businessNotificationSettings?.notificationPreferences?.booking_cancelled_by_consumer?.web) {
+            // Send web notification to business
+            notificationId = await ctx.db.insert("notifications", {
+                businessId,
+                recipientType: "business",
+                recipientUserId: userId,
+                type: "booking_cancelled_by_consumer",
+                title: "Booking Cancelled",
+                message: `Booking for ${classInstance?.name || classInstance.templateSnapshot.name} at ${classInstance.venueSnapshot.name} has been cancelled`,
+                relatedBookingId: bookingId,
+                relatedClassInstanceId: classInstanceId,
+                seen: false,
+                deliveryStatus: "pending",
+                retryCount: 0,
+                sentToEmail: false,
+                sentToWeb: false,
+                sentToPush: false,
+                metadata: {
+                    className: classInstance?.name || classInstance.templateSnapshot.name,
+                    userName: user.name,
+                    userEmail: user.email,
+                    amount: creditsPaid,
+                },
+                createdAt: Date.now(),
+                createdBy: userId,
+            });
+        }
+
         // Send email notification to business
-        if (process.env.NODE_ENV === "production") {
+        if (businessNotificationSettings?.notificationPreferences?.booking_cancelled_by_consumer?.email && process.env.NODE_ENV === "production") {
             try {
                 await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
                     businessEmail: business.email,
@@ -636,6 +672,10 @@ export const notificationService = {
             } catch (error) {
                 console.error('Error sending email notification:', error);
             }
+        }
+
+        if (!notificationId) {
+            return { createdNotificationId: null };
         }
 
         return { createdNotificationId: notificationId };
@@ -656,7 +696,7 @@ export const notificationService = {
             businessId: Id<"businesses">;
             creditsPaid: number;
         };
-    }): Promise<{ createdNotificationId: Id<"notifications"> }> => {
+    }): Promise<{ createdNotificationId: Id<"notifications"> | null }> => {
         const { bookingId, userId, classInstanceId, businessId, creditsPaid } = payload;
 
         // Fetch the booking, user classInstance and business with Promise.all
@@ -675,36 +715,53 @@ export const notificationService = {
             });
         }
 
-        // TODO: Get user preferences/notification settings and only send if they have opted in
+        // Get business notification preferences
+        const businessNotificationSettings = await ctx.db
+            .query("businessNotificationSettings")
+            .withIndex("by_business", q => q.eq("businessId", businessId))
+            .filter(q => q.neq(q.field("deleted"), true))
+            .first();
 
-        // Send web notification to business
-        const notificationId = await ctx.db.insert("notifications", {
+        console.log("Business notification settings:", {
             businessId,
-            recipientType: "business",
-            recipientUserId: userId,
-            type: "booking_cancelled_by_business",
-            title: "Booking cancelled",
-            message: `Booking for ${classInstance?.name || classInstance.templateSnapshot.name} at ${classInstance.venueSnapshot.name} has been cancelled`,
-            relatedBookingId: bookingId,
-            relatedClassInstanceId: classInstanceId,
-            seen: false,
-            deliveryStatus: "pending",
-            retryCount: 0,
-            sentToEmail: false,
-            sentToWeb: false,
-            sentToPush: false,
-            metadata: {
-                className: classInstance?.name || classInstance.templateSnapshot.name,
-                userName: user.name,
-                userEmail: user.email,
-                amount: creditsPaid,
-            },
-            createdAt: Date.now(),
-            createdBy: userId,
+            businessName: business.name,
+            settings: businessNotificationSettings,
+            notificationType: "booking_cancelled_by_business"
         });
 
+        // Only send notification if business has opted in for this type
+        let notificationId: Id<"notifications"> | undefined;
+
+        if (businessNotificationSettings?.notificationPreferences?.booking_cancelled_by_business?.web) {
+            // Send web notification to business
+            notificationId = await ctx.db.insert("notifications", {
+                businessId,
+                recipientType: "business",
+                recipientUserId: userId,
+                type: "booking_cancelled_by_business",
+                title: "Booking cancelled",
+                message: `Booking for ${classInstance?.name || classInstance.templateSnapshot.name} at ${classInstance.venueSnapshot.name} has been cancelled`,
+                relatedBookingId: bookingId,
+                relatedClassInstanceId: classInstanceId,
+                seen: false,
+                deliveryStatus: "pending",
+                retryCount: 0,
+                sentToEmail: false,
+                sentToWeb: false,
+                sentToPush: false,
+                metadata: {
+                    className: classInstance?.name || classInstance.templateSnapshot.name,
+                    userName: user.name,
+                    userEmail: user.email,
+                    amount: creditsPaid,
+                },
+                createdAt: Date.now(),
+                createdBy: userId,
+            });
+        }
+
         // Send email notification to user
-        if (process.env.NODE_ENV === "production") {
+        if (businessNotificationSettings?.notificationPreferences?.booking_cancelled_by_business?.email && process.env.NODE_ENV === "production") {
             try {
                 await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
                     businessEmail: business.email,
@@ -720,6 +777,10 @@ export const notificationService = {
             } catch (error) {
                 console.error('Error sending email notification:', error);
             }
+        }
+
+        if (!notificationId) {
+            return { createdNotificationId: null };
         }
 
         return { createdNotificationId: notificationId };

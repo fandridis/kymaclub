@@ -136,15 +136,6 @@ triggers.register("bookings", async (ctx, change) => {
     if (operation === 'update' && newDoc.status === 'cancelled') {
         console.log('----- [triggers/bookings] cancelled -----');
         if (newDoc.cancelledBy === "consumer") {
-            // await ctx.scheduler.runAfter(0, internal.mutations.notifications.handleUserCancelledBookingEvent, {
-            //     payload: {
-            //         bookingId: id,
-            //         userId: newDoc.userId,
-            //         classInstanceId: newDoc.classInstanceId,
-            //         businessId: newDoc.businessId,
-            //         creditsPaid: newDoc.creditsUsed,
-            //     },
-            // });
             notificationService.handleUserCancelledBookingEvent({
                 ctx,
                 payload: {
@@ -167,15 +158,6 @@ triggers.register("bookings", async (ctx, change) => {
                     creditsPaid: newDoc.creditsUsed,
                 },
             });
-            // await ctx.scheduler.runAfter(0, internal.mutations.notifications.handleBusinessCancelledBookingEvent, {
-            //     payload: {
-            //         bookingId: id,
-            //         userId: newDoc.userId,
-            //         classInstanceId: newDoc.classInstanceId,
-            //         businessId: newDoc.businessId,
-            //         creditsPaid: newDoc.creditsUsed,
-            //     },
-            // });
         }
     }
 });
