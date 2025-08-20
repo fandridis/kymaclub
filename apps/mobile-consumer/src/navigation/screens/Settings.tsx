@@ -1,115 +1,61 @@
-import { Text } from '@react-navigation/elements';
-import { StyleSheet, View, TouchableOpacity, Alert } from 'react-native';
-import { useAuthActions } from '@convex-dev/auth/react';
-import { useAuth } from '../../stores/auth-store';
-import { SettingsScreen } from '../../components/example-component';
+import React from 'react';
+import { SafeAreaView, ScrollView, StyleSheet } from 'react-native';
+import { Settings as SettingsContainer, SettingsRow, SettingsSectionHeader } from '../../components/Settings';
+import { useNavigation } from '@react-navigation/native';
 
 export function Settings() {
-  const { signOut } = useAuthActions();
-  const { user, logout } = useAuth();
-
-  const handleSignOut = async () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              logout();
-              await signOut();
-            } catch (error) {
-              console.error('Sign out error:', error);
-              Alert.alert('Error', 'Failed to sign out. Please try again.');
-            }
-          },
-        },
-      ],
-    );
-  };
+  const navigation = useNavigation();
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Settings</Text>
-
-      {user && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          <View style={styles.userInfo}>
-            <Text style={styles.label}>Email:</Text>
-            <Text style={styles.value}>{user.email}</Text>
-          </View>
-          <View style={styles.userInfo}>
-            <Text style={styles.label}>Credits:</Text>
-            <Text style={styles.value}>{user.credits ?? 0}</Text>
-          </View>
-        </View>
-      )}
-
-      <TouchableOpacity
-        style={styles.signOutButton}
-        onPress={handleSignOut}
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.signOutButtonText}>Sign Out</Text>
-      </TouchableOpacity>
-
-      <SettingsScreen />
-    </View>
+        <SettingsSectionHeader title="Settings" />
+        
+        <SettingsContainer>
+          <SettingsRow
+            title="Profile"
+            subtitle="Account information and sign out"
+            showChevron
+            onPress={() => navigation.navigate('ProfileSettings')}
+          />
+          <SettingsRow
+            title="Notifications"
+            subtitle="Manage notification preferences"
+            showChevron
+            onPress={() => navigation.navigate('NotificationSettings')}
+          />
+          <SettingsRow
+            title="Subscription"
+            subtitle="Manage your subscription"
+            showChevron
+            onPress={() => navigation.navigate('SubscriptionSettings')}
+          />
+          <SettingsRow
+            title="Account"
+            subtitle="Privacy and account settings"
+            showChevron
+            onPress={() => navigation.navigate('AccountSettings')}
+          />
+        </SettingsContainer>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
     padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 30,
-  },
-  section: {
-    marginBottom: 30,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 15,
-    color: '#333',
-  },
-  userInfo: {
-    backgroundColor: '#f5f5f5',
-    padding: 15,
-    borderRadius: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  label: {
-    fontSize: 16,
-    color: '#666',
-  },
-  value: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
-  },
-  signOutButton: {
-    backgroundColor: '#FF3B30',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  signOutButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    paddingBottom: 100, // Extra padding to avoid bottom navigation
   },
 });

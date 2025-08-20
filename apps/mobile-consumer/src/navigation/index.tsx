@@ -13,6 +13,11 @@ import { NotFound } from './screens/NotFound';
 import { QRScannerScreen } from './screens/QRScannerScreen';
 import { ClassDetailsModal } from './screens/ClassDetailsModal';
 import { VenueDetailsScreen } from './screens/VenueDetailsScreen';
+import { NotificationPreferenceScreen } from './screens/NotificationPreferenceScreen';
+import { ProfileSettings } from './screens/ProfileSettings';
+import { NotificationSettings } from './screens/NotificationSettings';
+import { SubscriptionSettings } from './screens/SubscriptionSettings';
+import { AccountSettings } from './screens/AccountSettings';
 // Auth screens
 import { LandingScreen } from '../features/core/screens/landing-screen';
 import { CreateAccountModalScreen } from '../features/core/screens/create-account-modal-screen';
@@ -183,6 +188,51 @@ export function RootNavigator() {
               animation: 'slide_from_right',
             }}
           />
+          <RootStack.Screen
+            name="ProfileSettings"
+            component={ProfileSettings}
+            options={{
+              title: 'Profile Settings',
+              animation: 'slide_from_right',
+              headerShown: true,
+            }}
+          />
+          <RootStack.Screen
+            name="NotificationSettings"
+            component={NotificationSettings}
+            options={{
+              title: 'Notification Settings',
+              animation: 'slide_from_right',
+              headerShown: true,
+            }}
+          />
+          <RootStack.Screen
+            name="SubscriptionSettings"
+            component={SubscriptionSettings}
+            options={{
+              title: 'Subscription Settings',
+              animation: 'slide_from_right',
+              headerShown: true,
+            }}
+          />
+          <RootStack.Screen
+            name="AccountSettings"
+            component={AccountSettings}
+            options={{
+              title: 'Account Settings',
+              animation: 'slide_from_right',
+              headerShown: true,
+            }}
+          />
+          <RootStack.Screen
+            name="NotificationPreference"
+            component={NotificationPreferenceScreen}
+            options={{
+              title: 'Notification Settings',
+              animation: 'slide_from_right',
+              headerShown: true,
+            }}
+          />
           <RootStack.Screen name="NotFound" component={NotFound} />
         </>
       ) : (
@@ -248,6 +298,17 @@ export type RootStackParamList = {
   Settings: undefined;
   Profile: { user: string };
   VenueDetailsScreen: { venueId: string };
+  ProfileSettings: undefined;
+  NotificationSettings: undefined;
+  SubscriptionSettings: undefined;
+  AccountSettings: undefined;
+  NotificationPreference: {
+    notificationType: {
+      key: string;
+      title: string;
+      description: string;
+    };
+  };
   NotFound: undefined;
   // Auth screens
   Landing: undefined;
@@ -276,6 +337,17 @@ export type RootStackParamListWithNestedTabs = {
   Settings: undefined;
   Profile: { user: string };
   VenueDetailsScreen: { venueId: string };
+  ProfileSettings: undefined;
+  NotificationSettings: undefined;
+  SubscriptionSettings: undefined;
+  AccountSettings: undefined;
+  NotificationPreference: {
+    notificationType: {
+      key: string;
+      title: string;
+      description: string;
+    };
+  };
   NotFound: undefined;
   // Auth screens
   Landing: undefined;
