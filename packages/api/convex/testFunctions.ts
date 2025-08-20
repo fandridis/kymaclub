@@ -58,7 +58,7 @@ export const createTestBusiness = internalMutation({
     },
     returns: v.id("businesses"),
     handler: async (ctx, args) => {
-        const business = await ctx.db.insert("businesses", {
+        const businessId = await ctx.db.insert("businesses", {
             name: args.business.name || "Test Business",
             email: args.business.email || "test@example.com",
             phone: args.business.phone || "+1234567890",
@@ -84,7 +84,21 @@ export const createTestBusiness = internalMutation({
             createdBy: args.userId,
         });
 
-        return business;
+        // Create notification settings for the business with all notifications enabled
+        await ctx.db.insert("businessNotificationSettings", {
+            businessId: businessId,
+            notificationPreferences: {
+                booking_created: { email: true, web: true },
+                booking_cancelled_by_consumer: { email: true, web: true },
+                booking_cancelled_by_business: { email: true, web: true },
+                payment_received: { email: true, web: true },
+            },
+            createdAt: Date.now(),
+            createdBy: args.userId,
+            updatedAt: Date.now(),
+        });
+
+        return businessId;
     }
 });
 

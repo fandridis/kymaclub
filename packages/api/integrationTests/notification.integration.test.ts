@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { api } from "../convex/_generated/api";
 import { internal } from "../convex/_generated/api";
 import { initAuth, testT, createTestVenue, createTestClassTemplate, createTestClassInstance, setupClassForBooking } from "./helpers";
@@ -6,6 +6,7 @@ import { initAuth, testT, createTestVenue, createTestClassTemplate, createTestCl
 describe('Notification System Integration Tests', () => {
     describe('Booking Trigger Notifications', () => {
         test('should create web notification when booking is created (manual trigger)', async () => {
+            vi.useFakeTimers();
             const { userId, businessId } = await initAuth();
             const asUser = testT.withIdentity({ subject: userId });
 
@@ -25,6 +26,12 @@ describe('Notification System Integration Tests', () => {
 
             expect(bookingResult.bookingId).toBeDefined();
 
+            // Advance time to trigger scheduled functions
+            vi.advanceTimersByTime(1000);
+
+            // Wait for scheduled functions to complete
+            await asUser.finishInProgressScheduledFunctions();
+
             // Verify web notification was created for business
             const notifications = await asUser.query(api.queries.notifications.getBusinessNotifications, {
                 paginationOpts: { numItems: 10, cursor: null }
@@ -43,9 +50,12 @@ describe('Notification System Integration Tests', () => {
                 userName: "Test User",
                 amount: 10
             });
+
+            vi.useRealTimers();
         });
 
         test('should create web notification when booking is cancelled (manual trigger)', async () => {
+            vi.useFakeTimers();
             const { userId, businessId } = await initAuth();
             const asUser = testT.withIdentity({ subject: userId });
 
@@ -60,12 +70,20 @@ describe('Notification System Integration Tests', () => {
                 classInstanceId: instanceId
             });
 
+            // Advance time and wait for first notification
+            vi.advanceTimersByTime(1000);
+            await asUser.finishInProgressScheduledFunctions();
+
             // Cancel the booking 
             await asUser.mutation(api.mutations.bookings.cancelBooking, {
                 bookingId: bookingResult.bookingId,
                 reason: "Schedule conflict",
                 cancelledBy: "consumer"
             });
+
+            // Advance time and wait for cancellation notification
+            vi.advanceTimersByTime(1000);
+            await asUser.finishInProgressScheduledFunctions();
 
             // Verify both notifications were created
             const notifications = await asUser.query(api.queries.notifications.getBusinessNotifications, {
@@ -86,9 +104,12 @@ describe('Notification System Integration Tests', () => {
                 userName: "Test User",
                 amount: 10
             });
+
+            vi.useRealTimers();
         });
 
         test('should handle trigger gracefully when related data is missing', async () => {
+            vi.useFakeTimers();
             const { userId, businessId } = await initAuth();
             const asUser = testT.withIdentity({ subject: userId });
 
@@ -104,9 +125,12 @@ describe('Notification System Integration Tests', () => {
             });
 
             expect(notifications.page).toHaveLength(0);
+
+            vi.useRealTimers();
         });
 
         test('should create notifications with correct metadata from complex booking (manual trigger)', async () => {
+            vi.useFakeTimers();
             const { userId, businessId } = await initAuth();
             const asUser = testT.withIdentity({ subject: userId });
 
@@ -139,6 +163,10 @@ describe('Notification System Integration Tests', () => {
 
             console.log('bookingResult', bookingResult);
 
+            // Advance time and wait for scheduled functions
+            vi.advanceTimersByTime(1000);
+            await asUser.finishInProgressScheduledFunctions();
+
             // Verify notification has correct detailed metadata
             const notifications = await asUser.query(api.queries.notifications.getBusinessNotifications, {
                 paginationOpts: { numItems: 10, cursor: null }
@@ -155,6 +183,8 @@ describe('Notification System Integration Tests', () => {
                 userName: "Test User",
                 amount: 15
             });
+
+            vi.useRealTimers();
         });
     });
 

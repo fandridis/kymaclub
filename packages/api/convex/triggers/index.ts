@@ -121,8 +121,7 @@ triggers.register("bookings", async (ctx, change) => {
     console.log(`🔥 🔥 🔥 🔥 🔥 🔥 BOOKINGS TRIGGER ${operation} 🔥 🔥 🔥 🔥 🔥 🔥`)
 
     if (operation === 'insert') {
-        notificationService.handleNewClassBookingEvent({
-            ctx,
+        await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleNewClassBookingEvent, {
             payload: {
                 bookingId: id,
                 userId: newDoc.userId,
@@ -136,8 +135,7 @@ triggers.register("bookings", async (ctx, change) => {
     if (operation === 'update' && newDoc.status === 'cancelled') {
         console.log('----- [triggers/bookings] cancelled -----');
         if (newDoc.cancelledBy === "consumer") {
-            notificationService.handleUserCancelledBookingEvent({
-                ctx,
+            await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleUserCancelledBookingEvent, {
                 payload: {
                     bookingId: id,
                     userId: newDoc.userId,
@@ -148,8 +146,7 @@ triggers.register("bookings", async (ctx, change) => {
             });
         }
         if (newDoc.cancelledBy === "business") {
-            notificationService.handleBusinessCancelledBookingEvent({
-                ctx,
+            await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleBusinessCancelledBookingEvent, {
                 payload: {
                     bookingId: id,
                     userId: newDoc.userId,

@@ -199,30 +199,6 @@ export async function createTestBusinessNotificationSettings(
     });
 }
 
-export async function waitForNotifications(
-    t: TestConvexForDataModel<GenericDataModel>,
-    businessId: Id<"businesses">,
-    expectedCount: number,
-    maxWaitMs: number = 1000
-): Promise<boolean> {
-    const startTime = Date.now();
-
-    while (Date.now() - startTime < maxWaitMs) {
-        const notifications = await t.query(api.queries.notifications.getBusinessNotifications, {
-            paginationOpts: { numItems: 50, cursor: null }
-        });
-
-        if (notifications.page.length >= expectedCount) {
-            return true;
-        }
-
-        // Wait a bit before checking again
-        await new Promise(resolve => setTimeout(resolve, 50));
-    }
-
-    return false;
-}
-
 export async function setupCompleteBookingScenario(
     asUser: TestConvexForDataModel<GenericDataModel>,
     businessId: Id<"businesses">,
@@ -266,4 +242,3 @@ export async function setupCompleteBookingScenario(
 
     return { venueId, templateId, instanceId, startTime, endTime };
 }
-

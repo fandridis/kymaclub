@@ -10,8 +10,8 @@ interface SettingsProps {
 
 export function Settings({ children, style }: SettingsProps) {
     const validChildren = Children.toArray(children).filter(
-        child => isValidElement(child) && 
-        (child.type === SettingsRow || child.type === SettingsDivider || child.type === SettingsSwitchRow)
+        child => isValidElement(child) &&
+            (child.type === SettingsRow || child.type === SettingsDivider || child.type === SettingsSwitchRow)
     );
 
     return (
@@ -22,7 +22,7 @@ export function Settings({ children, style }: SettingsProps) {
                         key: index,
                         isFirst: index === 0,
                         isLast: index === validChildren.length - 1,
-                        ...child.props
+                        ...(child.props as any)
                     });
                 }
                 return child;
@@ -84,7 +84,7 @@ export function SettingsRow({
 
     const finalOnPress = toggle ? undefined : onPress;
     const finalShowChevron = toggle ? false : showChevron;
-    
+
     const Component = finalOnPress ? TouchableOpacity : View;
 
     return (
