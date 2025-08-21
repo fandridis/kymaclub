@@ -8,7 +8,7 @@ import { ClassesSection } from './ClassesSection';
 import { useTypedTranslation } from '../../../i18n/typed';
 import { useBusinesses } from '../hooks/useBusinesses';
 
-export function ExploreScreen() {
+export function Explore() {
     const { t } = useTypedTranslation();
     const [activeTab, setActiveTab] = useState<TabType>('businesses');
     const [isMapView, setIsMapView] = useState<boolean>(false);

@@ -1,7 +1,7 @@
 import { Text, Button } from '@react-navigation/elements';
 import { StyleSheet, View } from 'react-native';
 
-export function NotFound() {
+export function NotFoundScreen() {
   return (
     <View style={styles.container}>
       <Text>404</Text>

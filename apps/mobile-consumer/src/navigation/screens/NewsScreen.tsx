@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import LanguageSwitcher from '../../components/language-switcher';
 import { useTypedTranslation } from '../../i18n/typed';
 
-export function News() {
+export function NewsScreen() {
     const { t } = useTypedTranslation();
     return (
         <View style={styles.container}>

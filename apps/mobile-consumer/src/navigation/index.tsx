@@ -3,27 +3,26 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { BlurView } from 'expo-blur';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { News } from './screens/News';
-import { Explore } from './screens/Explore';
-import { Scan } from './screens/Scan';
-import { Bookings } from './screens/Bookings';
-import { Profile } from './screens/Profile';
-import { Settings } from './screens/Settings';
-import { NotFound } from './screens/NotFound';
+import { NewsScreen } from './screens/NewsScreen';
+import { ExploreScreen } from './screens/ExploreScreen';
+import { ScanScreen } from './screens/ScanScreen';
+import { BookingsScreen } from './screens/BookingsScreen';
+import { SettingsScreen } from './screens/SettingsScreen';
+import { NotFoundScreen } from './screens/NotFoundScreen';
 import { QRScannerScreen } from './screens/QRScannerScreen';
-import { ClassDetailsModal } from './screens/ClassDetailsModal';
+import { ClassDetailsModalScreen } from './screens/ClassDetailsModalScreen';
 import { VenueDetailsScreen } from './screens/VenueDetailsScreen';
-import { NotificationPreferenceScreen } from './screens/NotificationPreferenceScreen';
-import { ProfileSettings } from './screens/ProfileSettings';
-import { NotificationSettings } from './screens/NotificationSettings';
-import { SubscriptionSettings } from './screens/SubscriptionSettings';
-import { AccountSettings } from './screens/AccountSettings';
+import { SettingsNotificationsPreferenceScreen } from './screens/SettingsNotificationsPreferenceScreen';
+import { SettingsProfileScreen } from './screens/SettingsProfileScreen';
+import { SettingsNotificationsScreen } from './screens/SettingsNotificationsScreen';
+import { SettingsSubscriptionScreen } from './screens/SettingsSubscriptionScreen';
+import { SettingsAccountScreen } from './screens/SettingsAccountScreen';
 // Auth screens
 import { LandingScreen } from '../features/core/screens/landing-screen';
 import { CreateAccountModalScreen } from '../features/core/screens/create-account-modal-screen';
 
 import { SearchIcon, NewspaperIcon, ScanQrCodeIcon, SettingsIcon, TicketIcon } from 'lucide-react-native';
-import { StyleSheet, View, Alert } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useTypedTranslation } from '../i18n/typed';
 import { useAuth } from '../stores/auth-store';
 import { LocationObject } from 'expo-location';
@@ -94,7 +93,7 @@ function HomeTabs() {
       >
         <Tab.Screen
           name="News"
-          component={News}
+          component={NewsScreen}
           options={{
             title: t('navigation.home'),
             tabBarLabel: 'Home',
@@ -105,7 +104,7 @@ function HomeTabs() {
         />
         <Tab.Screen
           name="Explore"
-          component={Explore}
+          component={ExploreScreen}
           options={{
             title: t('navigation.explore'),
             tabBarLabel: 'Explore',
@@ -116,7 +115,7 @@ function HomeTabs() {
         />
         <Tab.Screen
           name="Scan"
-          component={Scan}
+          component={ScanScreen}
           options={{
             title: t('navigation.scan'),
             tabBarLabel: () => null,
@@ -133,7 +132,7 @@ function HomeTabs() {
         />
         <Tab.Screen
           name="Bookings"
-          component={Bookings}
+          component={BookingsScreen}
           options={{
             title: t('navigation.bookings'),
             tabBarLabel: 'Bookings',
@@ -145,7 +144,7 @@ function HomeTabs() {
         />
         <Tab.Screen
           name="Settings"
-          component={Settings}
+          component={SettingsScreen}
           options={{
             title: t('navigation.settings'),
             tabBarLabel: 'Account',
@@ -173,10 +172,10 @@ export function RootNavigator() {
     >
       {isAuthenticated ? (
         <>
-          <RootStack.Screen name="HomeTabs" component={HomeTabs} />
+          <RootStack.Screen name="Home" component={HomeTabs} />
           <RootStack.Screen
             name="Settings"
-            component={Settings}
+            component={SettingsScreen}
             options={{
               animation: 'slide_from_right',
             }}
@@ -189,8 +188,8 @@ export function RootNavigator() {
             }}
           />
           <RootStack.Screen
-            name="ProfileSettings"
-            component={ProfileSettings}
+            name="SettingsProfile"
+            component={SettingsProfileScreen}
             options={{
               title: 'Profile Settings',
               animation: 'slide_from_right',
@@ -198,8 +197,8 @@ export function RootNavigator() {
             }}
           />
           <RootStack.Screen
-            name="NotificationSettings"
-            component={NotificationSettings}
+            name="SettingsNotifications"
+            component={SettingsNotificationsScreen}
             options={{
               title: 'Notification Settings',
               animation: 'slide_from_right',
@@ -207,8 +206,8 @@ export function RootNavigator() {
             }}
           />
           <RootStack.Screen
-            name="SubscriptionSettings"
-            component={SubscriptionSettings}
+            name="SettingsSubscription"
+            component={SettingsSubscriptionScreen}
             options={{
               title: 'Subscription Settings',
               animation: 'slide_from_right',
@@ -216,8 +215,8 @@ export function RootNavigator() {
             }}
           />
           <RootStack.Screen
-            name="AccountSettings"
-            component={AccountSettings}
+            name="SettingsAccount"
+            component={SettingsAccountScreen}
             options={{
               title: 'Account Settings',
               animation: 'slide_from_right',
@@ -225,15 +224,15 @@ export function RootNavigator() {
             }}
           />
           <RootStack.Screen
-            name="NotificationPreference"
-            component={NotificationPreferenceScreen}
+            name="SettingsNotificationsPreference"
+            component={SettingsNotificationsPreferenceScreen}
             options={{
               title: 'Notification Settings',
               animation: 'slide_from_right',
               headerShown: true,
             }}
           />
-          <RootStack.Screen name="NotFound" component={NotFound} />
+          <RootStack.Screen name="NotFound" component={NotFoundScreen} />
         </>
       ) : (
         <>
@@ -266,7 +265,7 @@ export function RootNavigator() {
         />
         <RootStack.Screen
           name="ClassDetailsModal"
-          component={ClassDetailsModal}
+          component={ClassDetailsModalScreen}
           options={{
             title: 'Class Details',
             animation: 'slide_from_bottom',
@@ -298,11 +297,11 @@ export type RootStackParamList = {
   Settings: undefined;
   Profile: { user: string };
   VenueDetailsScreen: { venueId: string };
-  ProfileSettings: undefined;
-  NotificationSettings: undefined;
-  SubscriptionSettings: undefined;
-  AccountSettings: undefined;
-  NotificationPreference: {
+  SettingsProfile: undefined;
+  SettingsNotifications: undefined;
+  SettingsSubscription: undefined;
+  SettingsAccount: undefined;
+  SettingsNotificationsPreference: {
     notificationType: {
       key: string;
       title: string;
@@ -338,10 +337,10 @@ export type RootStackParamListWithNestedTabs = {
   Profile: { user: string };
   VenueDetailsScreen: { venueId: string };
   ProfileSettings: undefined;
-  NotificationSettings: undefined;
-  SubscriptionSettings: undefined;
-  AccountSettings: undefined;
-  NotificationPreference: {
+  SettingsNotifications: undefined;
+  SettingsSubscription: undefined;
+  SettingsAccount: undefined;
+  SettingsNotificationsPreference: {
     notificationType: {
       key: string;
       title: string;

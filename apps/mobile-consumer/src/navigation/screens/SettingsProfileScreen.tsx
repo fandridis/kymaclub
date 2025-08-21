@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { useAuth } from '../../stores/auth-store';
-import { Settings as SettingsContainer, SettingsRow, SettingsSectionHeader } from '../../components/Settings';
+import { SettingsGroup, SettingsHeader, SettingsRow } from '../../components/Settings';
 
-export function ProfileSettings() {
+export function SettingsProfileScreen() {
     const { signOut } = useAuthActions();
     const { user, logout } = useAuth();
 
@@ -34,33 +34,36 @@ export function ProfileSettings() {
         );
     };
 
-    return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.content}>
-                <SettingsSectionHeader title="Account Information" />
-                {user && (
-                    <SettingsContainer>
-                        <SettingsRow
-                            title="Email"
-                            subtitle={user.email || 'Not provided'}
-                        />
-                        <SettingsRow
-                            title="Credits"
-                            subtitle={`${user.credits ?? 0} credits`}
-                        />
-                    </SettingsContainer>
-                )}
+    if (!user) {
+        return null;
+    }
 
-                <SettingsSectionHeader title="Actions" />
-                <SettingsContainer>
+    return (
+        <View style={styles.container}>
+            <View style={styles.content}>
+                <SettingsHeader title="Account Information" />
+
+                <SettingsGroup>
+                    <SettingsRow
+                        title="Email"
+                        subtitle={user.email || 'Not provided'}
+                    />
+                    <SettingsRow
+                        title="Credits"
+                        subtitle={`${user.credits ?? 0} credits`}
+                    />
+                </SettingsGroup>
+
+                <SettingsHeader title="Actions" />
+                <SettingsGroup>
                     <SettingsRow
                         title="Sign Out"
                         onPress={handleSignOut}
                         style={styles.signOutRow}
                     />
-                </SettingsContainer>
+                </SettingsGroup>
             </View>
-        </SafeAreaView>
+        </View>
     );
 }
 
@@ -71,7 +74,6 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        padding: 20,
     },
     signOutRow: {
         backgroundColor: '#fff',

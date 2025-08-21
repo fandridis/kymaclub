@@ -17,7 +17,7 @@ type ClassDetailsRoute = RouteProp<RootStackParamList, 'ClassDetailsModal'>;
 
 const { width: screenWidth } = Dimensions.get('window');
 
-export function ClassDetailsModal() {
+export function ClassDetailsModalScreen() {
     const navigation = useNavigation();
     const route = useRoute<ClassDetailsRoute>();
     const { classInstance } = route.params;

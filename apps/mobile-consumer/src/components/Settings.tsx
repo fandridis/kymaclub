@@ -1,44 +1,34 @@
-import React, { Children, cloneElement, isValidElement } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch } from 'react-native';
-import { ChevronRight } from 'lucide-react-native';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, ViewStyle } from 'react-native';
+import { ChevronRight, LucideIcon } from 'lucide-react-native';
+import { theme } from '../theme';
 
-// Main Settings Container that auto-handles first/last positioning
-interface SettingsProps {
+// Settings Group - groups rows together with styling
+interface SettingsGroupProps {
     children: React.ReactNode;
-    style?: any;
+    style?: ViewStyle;
 }
 
-export function Settings({ children, style }: SettingsProps) {
-    const validChildren = Children.toArray(children).filter(
-        child => isValidElement(child) &&
-            (child.type === SettingsRow || child.type === SettingsDivider || child.type === SettingsSwitchRow)
-    );
-
+export function SettingsGroup({ children, style }: SettingsGroupProps) {
     return (
-        <View style={[styles.settingsGroup, style]}>
-            {validChildren.map((child, index) => {
-                if (isValidElement(child) && (child.type === SettingsRow || child.type === SettingsSwitchRow)) {
-                    return cloneElement(child as any, {
-                        key: index,
-                        isFirst: index === 0,
-                        isLast: index === validChildren.length - 1,
-                        ...(child.props as any)
-                    });
-                }
-                return child;
-            })}
+        <View style={[styles.settingsRowContainer, style]}>
+            {children}
         </View>
     );
 }
 
-// Legacy SettingsGroup for backward compatibility
-interface SettingsGroupProps {
-    children: React.ReactNode;
-    style?: any;
+// Settings Header - simple header component
+interface SettingsHeaderProps {
+    title: string;
+    style?: ViewStyle;
 }
 
-export function SettingsGroup({ children, style }: SettingsGroupProps) {
-    return <Settings style={style}>{children}</Settings>;
+export function SettingsHeader({ title, style }: SettingsHeaderProps) {
+    return (
+        <Text style={[styles.settingsHeader, style]}>
+            {title}
+        </Text>
+    );
 }
 
 // Settings Row Component
@@ -48,15 +38,17 @@ interface SettingsRowProps {
     onPress?: () => void;
     rightElement?: React.ReactNode;
     showChevron?: boolean;
+    // Function to completely override the right side rendering
+    renderRightSide?: () => React.ReactNode;
     // Toggle functionality
     toggle?: {
         value: boolean;
         onToggle: (value: boolean) => void;
     };
     disabled?: boolean;
-    style?: any;
-    isFirst?: boolean; // Auto-managed by Settings container
-    isLast?: boolean;  // Auto-managed by Settings container
+    style?: ViewStyle;
+    // Optional icon to display on the left side
+    icon?: LucideIcon;
 }
 
 export function SettingsRow({
@@ -65,34 +57,43 @@ export function SettingsRow({
     onPress,
     rightElement,
     showChevron = false,
+    renderRightSide,
     toggle,
     disabled = false,
     style,
-    isFirst = false,
-    isLast = false
+    icon: Icon
 }: SettingsRowProps) {
-    // If toggle is provided, use it as rightElement and handle onPress
-    const finalRightElement = toggle ? (
-        <Switch
-            value={toggle.value}
-            onValueChange={toggle.onToggle}
-            disabled={disabled}
-            trackColor={{ false: '#767577', true: '#007AFF' }}
-            thumbColor={toggle.value ? '#fff' : '#f4f3f4'}
-        />
-    ) : rightElement;
+    // If renderRightSide is provided, use it to completely override the right side
+    const rightSideContent = renderRightSide ? (
+        renderRightSide()
+    ) : (
+        <>
+            {toggle ? (
+                <Switch
+                    value={toggle.value}
+                    onValueChange={toggle.onToggle}
+                    disabled={disabled}
+                    trackColor={{ false: '#767577', true: '#007AFF' }}
+                    thumbColor={toggle.value ? '#fff' : '#f4f3f4'}
+                />
+            ) : rightElement}
+            {!toggle && showChevron && (
+                <ChevronRight
+                    size={16}
+                    color={disabled ? '#999' : '#666'}
+                    style={styles.chevron}
+                />
+            )}
+        </>
+    );
 
     const finalOnPress = toggle ? undefined : onPress;
-    const finalShowChevron = toggle ? false : showChevron;
-
     const Component = finalOnPress ? TouchableOpacity : View;
 
     return (
         <Component
             style={[
                 styles.settingsRow,
-                isFirst && styles.firstRow,
-                isLast && styles.lastRow,
                 disabled && styles.disabledRow,
                 style
             ]}
@@ -100,7 +101,15 @@ export function SettingsRow({
             disabled={disabled}
         >
             <View style={styles.settingsRowContent}>
-                <View style={styles.settingsRowText}>
+                {Icon && (
+                    <View style={styles.iconContainer}>
+                        <Icon
+                            size={20}
+                            color={disabled ? theme.colors.zinc[400] : theme.colors.zinc[600]}
+                        />
+                    </View>
+                )}
+                <View style={[styles.settingsRowText, Icon && styles.settingsRowTextWithIcon]}>
                     <Text style={[
                         styles.settingsRowTitle,
                         disabled && styles.disabledText
@@ -117,14 +126,7 @@ export function SettingsRow({
                     )}
                 </View>
                 <View style={styles.settingsRowRight}>
-                    {finalRightElement}
-                    {finalShowChevron && (
-                        <ChevronRight
-                            size={16}
-                            color={disabled ? '#999' : '#666'}
-                            style={styles.chevron}
-                        />
-                    )}
+                    {rightSideContent}
                 </View>
             </View>
         </Component>
@@ -133,102 +135,50 @@ export function SettingsRow({
 
 // Settings Divider
 interface SettingsDividerProps {
-    style?: any;
+    style?: ViewStyle;
 }
 
 export function SettingsDivider({ style }: SettingsDividerProps) {
     return <View style={[styles.settingsDivider, style]} />;
 }
 
-// Convenience component for switch rows (legacy, use toggle prop instead)
-interface SettingsSwitchRowProps {
-    title: string;
-    subtitle?: string;
-    value: boolean;
-    onValueChange: (value: boolean) => void;
-    disabled?: boolean;
-    style?: any;
-    isFirst?: boolean; // Auto-managed by Settings container
-    isLast?: boolean;  // Auto-managed by Settings container
-}
-
-export function SettingsSwitchRow({
-    title,
-    subtitle,
-    value,
-    onValueChange,
-    disabled = false,
-    style,
-    isFirst = false,
-    isLast = false
-}: SettingsSwitchRowProps) {
-    return (
-        <SettingsRow
-            title={title}
-            subtitle={subtitle}
-            disabled={disabled}
-            style={style}
-            isFirst={isFirst}
-            isLast={isLast}
-            toggle={{
-                value,
-                onToggle: onValueChange
-            }}
-        />
-    );
-}
-
-// Section Header
-interface SettingsSectionHeaderProps {
-    title: string;
-    style?: any;
-}
-
-export function SettingsSectionHeader({ title, style }: SettingsSectionHeaderProps) {
-    return (
-        <Text style={[styles.sectionHeader, style]}>
-            {title}
-        </Text>
-    );
-}
-
 // Section Footer (for explanatory text)
 interface SettingsSectionFooterProps {
     text: string;
-    style?: any;
+    style?: ViewStyle;
 }
 
 export function SettingsSectionFooter({ text, style }: SettingsSectionFooterProps) {
     return (
-        <Text style={[styles.sectionFooter, style]}>
+        <Text style={[styles.settingsSectionFooter, style]}>
             {text}
         </Text>
     );
 }
 
 const styles = StyleSheet.create({
-    settingsGroup: {
+    settingsRowContainer: {
         backgroundColor: '#fff',
         borderWidth: 1,
-        borderColor: '#f0f0f0', // make it a bit
+        borderColor: theme.colors.zinc[100],
         marginBottom: 20,
-        borderRadius: 8,
+        borderRadius: 0,
         overflow: 'hidden',
+        width: '100%',
+    },
+    settingsHeader: {
+        fontSize: theme.fontSize.base,
+        fontWeight: '600',
+        color: theme.colors.zinc[500],
+        marginBottom: 12,
+        marginTop: 20,
+        marginHorizontal: 16,
     },
     settingsRow: {
         backgroundColor: '#fff',
         borderBottomWidth: 1,
         borderBottomColor: '#f0f0f0',
         minHeight: 44,
-    },
-    firstRow: {
-        borderTopLeftRadius: 8,
-        borderTopRightRadius: 8,
-    },
-    lastRow: {
-        borderBottomWidth: 0,
-        borderBottomLeftRadius: 8,
-        borderBottomRightRadius: 8,
     },
     disabledRow: {
         opacity: 0.6,
@@ -241,18 +191,26 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         minHeight: 44,
     },
+    iconContainer: {
+        marginRight: 12,
+        width: 24,
+        alignItems: 'center',
+    },
     settingsRowText: {
         flex: 1,
         marginRight: 12,
     },
+    settingsRowTextWithIcon: {
+        marginRight: 12,
+    },
     settingsRowTitle: {
         fontSize: 16,
-        color: '#333',
-        fontWeight: '400',
+        color: theme.colors.zinc[900],
+        fontWeight: theme.fontWeight.medium,
     },
     settingsRowSubtitle: {
         fontSize: 14,
-        color: '#666',
+        color: theme.colors.zinc[500],
         marginTop: 2,
     },
     settingsRowRight: {
@@ -263,24 +221,14 @@ const styles = StyleSheet.create({
         marginLeft: 8,
     },
     disabledText: {
-        color: '#999',
+        color: theme.colors.zinc[400],
     },
     settingsDivider: {
         height: 1,
         backgroundColor: '#f0f0f0',
         marginLeft: 16,
     },
-    sectionHeader: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#666',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        marginBottom: 8,
-        marginTop: 20,
-        marginHorizontal: 16,
-    },
-    sectionFooter: {
+    settingsSectionFooter: {
         fontSize: 14,
         color: '#666',
         marginTop: 8,

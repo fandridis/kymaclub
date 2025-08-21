@@ -14,7 +14,7 @@ type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Profile'>;
 };
 
-export function Profile({ route }: Props) {
+export function ProfileScreen({ route }: Props) {
   return (
     <View style={styles.container}>
       <Text>{route.params.user}'s Profile</Text>
@@ -25,8 +25,5 @@ export function Profile({ route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 10,
   },
 });

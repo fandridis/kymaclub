@@ -6,7 +6,7 @@ import LanguageSwitcher from '../../components/language-switcher';
 import { useNavigation } from '@react-navigation/native';
 import { useTypedTranslation } from '../../i18n/typed';
 
-export function Home() {
+export function HomeScreen() {
   const navigation = useNavigation();
   const { t } = useTypedTranslation();
 

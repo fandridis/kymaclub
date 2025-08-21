@@ -1,13 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
-import { Settings as SettingsContainer, SettingsRow, SettingsSectionHeader } from '../../components/Settings';
+import { SettingsGroup, SettingsHeader, SettingsRow } from '../../components/Settings';
 
-export function AccountSettings() {
+export function SettingsAccountScreen() {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
-                <SettingsSectionHeader title="Account" />
-                <SettingsContainer>
+                <SettingsHeader title="Account" />
+                <SettingsGroup>
                     <SettingsRow
                         title="Privacy Settings"
                         subtitle="Manage your privacy preferences"
@@ -32,7 +32,7 @@ export function AccountSettings() {
                             // TODO: Navigate to delete account screen
                         }}
                     />
-                </SettingsContainer>
+                </SettingsGroup>
 
                 <Text style={styles.comingSoon}>
                     Account management coming soon
@@ -49,7 +49,6 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        padding: 20,
     },
     comingSoon: {
         fontSize: 16,

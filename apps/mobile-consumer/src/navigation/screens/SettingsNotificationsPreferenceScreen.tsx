@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, SafeAreaView, TouchableOpacity } from 'react-native';
 import { useUserNotificationSettings } from '../../hooks/use-user-notification-settings';
-import { RouteProp } from '@react-navigation/native';
-import { Settings as SettingsContainer, SettingsRow, SettingsSectionHeader } from '../../components/Settings';
+import { useRoute, RouteProp } from '@react-navigation/native';
+import { SettingsGroup, SettingsHeader, SettingsRow } from '../../components/Settings';
 
 type NotificationChannels = { email: boolean; web: boolean; push: boolean; };
 
 type RootStackParamList = {
-    NotificationPreference: {
+    SettingsNotificationsPreference: {
         notificationType: {
             key: string;
             title: string;
@@ -16,13 +16,10 @@ type RootStackParamList = {
     };
 };
 
-type NotificationPreferenceScreenRouteProp = RouteProp<RootStackParamList, 'NotificationPreference'>;
+type SettingsNotificationsPreferenceScreenRouteProp = RouteProp<RootStackParamList, 'SettingsNotificationsPreference'>;
 
-interface NotificationPreferenceScreenProps {
-    route: NotificationPreferenceScreenRouteProp;
-}
-
-export function NotificationPreferenceScreen({ route }: NotificationPreferenceScreenProps) {
+export function SettingsNotificationsPreferenceScreen() {
+    const route = useRoute<SettingsNotificationsPreferenceScreenRouteProp>();
     const { notificationType } = route.params;
     const { settings, updateSettings } = useUserNotificationSettings();
     const [channels, setChannels] = useState<NotificationChannels>({ email: false, web: false, push: false });
@@ -77,10 +74,9 @@ export function NotificationPreferenceScreen({ route }: NotificationPreferenceSc
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
-                <SettingsSectionHeader title={notificationType.title} />
                 <Text style={styles.description}>{notificationType.description}</Text>
 
-                <SettingsContainer>
+                <SettingsGroup>
                     {channelLabels.map((channel) => (
                         <SettingsRow
                             key={channel.key}
@@ -88,12 +84,11 @@ export function NotificationPreferenceScreen({ route }: NotificationPreferenceSc
                             subtitle={channel.description}
                             toggle={{
                                 value: channels[channel.key],
-                                onToggle: (value) => handleChannelToggle(channel.key, value),
-                                disabled: globalOptOut
+                                onToggle: (value) => handleChannelToggle(channel.key, value)
                             }}
                         />
                     ))}
-                </SettingsContainer>
+                </SettingsGroup>
 
                 {globalOptOut && (
                     <Text style={styles.disabledNote}>

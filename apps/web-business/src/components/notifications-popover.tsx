@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Bell, XCircle } from "lucide-react"
+import { Bell } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useBusinessNotifications, useUnreadBusinessNotifications } from "@/features/dashboard/hooks/use-business-notifications"
 import { api } from "@repo/api/convex/_generated/api"

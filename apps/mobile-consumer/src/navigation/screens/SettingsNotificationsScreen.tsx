@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { useUserNotificationSettings } from '../hooks/use-user-notification-settings';
+import { SafeAreaView, StyleSheet, View, Text } from 'react-native';
+import { useUserNotificationSettings } from '../../hooks/use-user-notification-settings';
 import { useNavigation } from '@react-navigation/native';
-import { Settings as SettingsContainer, SettingsRow, SettingsSectionHeader } from './Settings';
+import { theme } from '../../theme';
+import { user } from '../../../../../packages/api/convex/testResources';
+import { SettingsGroup, SettingsHeader, SettingsRow } from '../../components/Settings';
 
 type UserNotificationPreferences = {
     booking_confirmation: { email: boolean; web: boolean; push: boolean; };
@@ -34,69 +36,47 @@ const notificationTypes = [
     {
         key: 'booking_confirmation' as const,
         title: 'Booking Confirmation',
-        description: 'When your booking is confirmed'
+        description: 'You will receive a notification when your booking is confirmed.'
     },
     {
         key: 'booking_reminder' as const,
         title: 'Class Reminders',
-        description: 'Reminders before your class starts'
+        description: 'You will receive a notification before your class starts.'
     },
     {
         key: 'class_cancelled' as const,
         title: 'Class Cancelled',
-        description: 'When a class you booked is cancelled'
+        description: 'You will receive a notification when a class you booked is cancelled.'
     },
     {
         key: 'booking_cancelled_by_business' as const,
         title: 'Booking Cancelled',
-        description: 'When business cancels your booking'
+        description: 'You will receive a notification when a business cancels your booking.'
     },
     {
         key: 'payment_receipt' as const,
         title: 'Payment Receipt',
-        description: 'Payment confirmations and receipts'
+        description: 'You will receive a notification when a payment is confirmed or a receipt is sent.'
     }
 ];
 
-export function NotificationsSettings() {
+export function SettingsNotificationsScreen() {
     const navigation = useNavigation();
-    const { settings, loading, updateSettings } = useUserNotificationSettings();
+    const { settings, loading } = useUserNotificationSettings();
     const [preferences, setPreferences] = useState<UserNotificationPreferences>(defaultPreferences);
-    const [globalOptOut, setGlobalOptOut] = useState(false);
 
     // Update local state when settings are loaded
     useEffect(() => {
         if (settings) {
             setPreferences(settings.notificationPreferences);
-            setGlobalOptOut(settings.globalOptOut);
         }
     }, [settings]);
 
     const handleNotificationPress = (notification: typeof notificationTypes[0]) => {
-        navigation.navigate('NotificationPreference', {
+        navigation.navigate('SettingsNotificationsPreference', {
             notificationType: notification
         });
     };
-
-    const handleGlobalOptOutChange = async (value: boolean) => {
-        setGlobalOptOut(value);
-
-        // Save immediately
-        try {
-            await updateSettings({
-                settings: {
-                    globalOptOut: value,
-                    notificationPreferences: preferences
-                }
-            });
-        } catch (error) {
-            console.error('Failed to save notification preferences:', error);
-            Alert.alert('Error', 'Failed to save notification preferences');
-            // Revert the change on error
-            setGlobalOptOut(!value);
-        }
-    };
-
 
     if (loading) {
         return (
@@ -106,27 +86,26 @@ export function NotificationsSettings() {
         );
     }
 
+    console.log('preferences', preferences);
+
     return (
         <View style={styles.container}>
-            <View style={styles.notificationsContainer}>
-                <SettingsSectionHeader title="Notification Types" />
+            <SettingsHeader title="Notification Types" />
+            <SettingsGroup>
+                {notificationTypes.map((notificationType) => {
+                    const enabledChannels = getEnabledChannels(preferences[notificationType.key]);
 
-                <SettingsContainer>
-                    {notificationTypes.map((notificationType) => {
-                        const enabledChannels = getEnabledChannels(preferences[notificationType.key]);
-
-                        return (
-                            <SettingsRow
-                                key={notificationType.key}
-                                title={notificationType.title}
-                                subtitle={enabledChannels}
-                                onPress={() => handleNotificationPress(notificationType)}
-                                showChevron={true}
-                            />
-                        );
-                    })}
-                </SettingsContainer>
-            </View>
+                    return (
+                        <SettingsRow
+                            key={notificationType.key}
+                            title={notificationType.title}
+                            subtitle={enabledChannels}
+                            onPress={() => handleNotificationPress(notificationType)}
+                            showChevron={true}
+                        />
+                    );
+                })}
+            </SettingsGroup>
         </View>
     );
 }
@@ -134,14 +113,13 @@ export function NotificationsSettings() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: theme.colors.zinc[50],
     },
+
     loadingText: {
         fontSize: 16,
         color: '#666',
         textAlign: 'center',
         marginTop: 40,
-    },
-    notificationsContainer: {
-        marginTop: 20,
     },
 });

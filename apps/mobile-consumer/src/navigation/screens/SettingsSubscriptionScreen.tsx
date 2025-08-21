@@ -1,13 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
-import { Settings as SettingsContainer, SettingsRow, SettingsSectionHeader } from '../../components/Settings';
+import { SettingsGroup, SettingsHeader, SettingsRow } from '../../components/Settings';
 
-export function SubscriptionSettings() {
+export function SettingsSubscriptionScreen() {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
-                <SettingsSectionHeader title="Subscription" />
-                <SettingsContainer>
+                <SettingsHeader title="Subscription" />
+                <SettingsGroup>
                     <SettingsRow
                         title="Current Plan"
                         subtitle="Free Plan"
@@ -20,7 +20,7 @@ export function SubscriptionSettings() {
                             // TODO: Navigate to upgrade screen
                         }}
                     />
-                </SettingsContainer>
+                </SettingsGroup>
 
                 <Text style={styles.comingSoon}>
                     Subscription management coming soon
@@ -37,7 +37,6 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        padding: 20,
     },
     comingSoon: {
         fontSize: 16,

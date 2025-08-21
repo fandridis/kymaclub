@@ -87,7 +87,7 @@ const ATHENS_MONUMENTS: Monument[] = [
     }
 ];
 
-export function Map() {
+export function MapScreen() {
     const [location, setLocation] = useState<Location.LocationObject | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);

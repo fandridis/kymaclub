@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ScanQrCodeIcon } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 
-export function Scan() {
+export function ScanScreen() {
     const navigation = useNavigation();
 
 

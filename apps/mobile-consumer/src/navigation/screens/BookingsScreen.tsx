@@ -11,6 +11,7 @@ import { useAuth, useAuthenticatedUser } from '../../stores/auth-store';
 import type { Doc, Id } from '@repo/api/convex/_generated/dataModel';
 import { getCancellationInfo, getCancellationMessage } from '../../utils/cancellationUtils';
 import { BookingWithDetails } from '@repo/api/types/booking';
+import { theme } from '../../theme';
 
 // Date formatting utilities (same as VenueDetailsScreen)
 const formatDateHeader = (date: Date): string => {
@@ -64,7 +65,7 @@ const groupBookingsByDate = (bookings: any[]): Record<string, any[]> => {
     return grouped;
 };
 
-export function Bookings() {
+export function BookingsScreen() {
     const { showActionSheetWithOptions } = useActionSheet();
     const navigation = useNavigation();
     const user = useAuthenticatedUser()
@@ -258,9 +259,9 @@ const styles = StyleSheet.create({
         backgroundColor: '#f9fafb',
     },
     title: {
-        fontSize: 28,
-        fontWeight: '800',
-        color: '#111827',
+        fontSize: theme.fontSize['2xl'],
+        fontWeight: theme.fontWeight.black,
+        color: theme.colors.zinc[900],
         paddingHorizontal: 20,
         paddingTop: 16,
         paddingBottom: 20,

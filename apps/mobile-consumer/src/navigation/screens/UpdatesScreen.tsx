@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import { SettingsScreen } from '../../components/example-component';
 import OnboardingWizard from '../../components/OnboardingWizard';
 
-export function Updates() {
+export function UpdatesScreen() {
   return (
     <View style={styles.container}>
       <OnboardingWizard />
