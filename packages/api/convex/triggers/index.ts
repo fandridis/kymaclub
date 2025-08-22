@@ -8,6 +8,7 @@ import { classInstanceOperations } from "../../operations/classInstance";
 import { venueRules } from "../../rules/venue";
 import { creditService } from "../../services/creditService";
 import { notificationService } from "../../services/notificationService";
+import { format } from "date-fns";
 
 const triggers = new Triggers<DataModel>();
 
@@ -132,8 +133,12 @@ triggers.register("bookings", async (ctx, change) => {
         });
     }
 
-    if (operation === 'update' && newDoc.status === 'cancelled') {
+    const isCancelled = newDoc?.status === 'cancelled_by_consumer' || newDoc?.status === 'cancelled_by_business';
+
+    if (operation === 'update' && isCancelled) {
         console.log('----- [triggers/bookings] cancelled -----');
+        // fire emoji and log cancelledBy
+        console.log('🔥🔥🔥 CANCELLED BY: ', newDoc.cancelledBy);
         if (newDoc.cancelledBy === "consumer") {
             await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleUserCancelledBookingEvent, {
                 payload: {

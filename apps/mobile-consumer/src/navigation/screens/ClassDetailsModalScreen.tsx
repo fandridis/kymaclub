@@ -133,7 +133,7 @@ export function ClassDetailsModalScreen() {
                 index: 0,
                 routes: [
                     {
-                        name: 'HomeTabs',
+                        name: 'Home',
                         params: { screen: 'Bookings' }
                     }
                 ],
@@ -350,15 +350,28 @@ export function ClassDetailsModalScreen() {
                     {/* Sticky Button - Book or Already Attending */}
                     <View style={styles.stickyButtonContainer}>
                         {existingBooking ? (
-                            /* Already Attending Container */
-                            <TouchableOpacity
-                                style={styles.alreadyAttendingContainer}
-                                onPress={handleGoToBookings}
-                                activeOpacity={0.8}
-                            >
-                                <Text style={styles.alreadyAttendingTitle}>✓ You're Attending</Text>
-                                <Text style={styles.alreadyAttendingSubtext}>Tap to view your bookings</Text>
-                            </TouchableOpacity>
+                            existingBooking.status === "pending" ? (
+                                /* Already Attending Container */
+                                <TouchableOpacity
+                                    style={styles.alreadyAttendingContainer}
+                                    onPress={handleGoToBookings}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text style={styles.alreadyAttendingTitle}>✓ You're Attending</Text>
+                                    <Text style={styles.alreadyAttendingSubtext}>Tap to view your bookings</Text>
+                                </TouchableOpacity>
+                            ) : (
+                                /* Status Display Container - Not clickable */
+                                <View style={styles.statusContainer}>
+                                    <Text style={styles.statusTitle}>
+                                        {existingBooking.status === "completed" && "✓ Completed"}
+                                        {existingBooking.status === "cancelled_by_consumer" && "✗ You cancelled"}
+                                        {existingBooking.status === "cancelled_by_business" && "✗ Cancelled by studio"}
+                                        {existingBooking.status === "no_show" && "⚠ No show"}
+                                    </Text>
+                                    <Text style={styles.statusSubtext}>You cannot book this class again</Text>
+                                </View>
+                            )
                         ) : (
                             /* Book Class Button */
                             <TouchableOpacity
@@ -804,6 +817,36 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '500',
         color: 'rgba(255, 255, 255, 0.9)',
+        textAlign: 'center',
+        marginTop: 2,
+    },
+    statusContainer: {
+        backgroundColor: '#fbbf24', // Yellow background
+        borderRadius: 40,
+        height: 56,
+        paddingHorizontal: 28,
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 8,
+    },
+    statusTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#7c2d12', // Dark brown text for contrast on yellow
+        textAlign: 'center',
+    },
+    statusSubtext: {
+        fontSize: 13,
+        fontWeight: '500',
+        color: '#92400e', // Medium brown text
         textAlign: 'center',
         marginTop: 2,
     },

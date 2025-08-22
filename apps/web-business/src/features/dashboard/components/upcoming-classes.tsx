@@ -1,5 +1,4 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ArrowRight, CalendarDays } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -23,6 +22,7 @@ interface Booking {
         name: string
         avatar?: string
     }
+    status: string
 }
 
 interface ClassBookingRowProps {
@@ -40,21 +40,43 @@ export function ClassBookingRow({
     instructor,
     date,
     time,
-    location,
     bookings,
     maxCapacity,
 }: ClassBookingRowProps) {
-    const availableSpots = maxCapacity - bookings.length
-    const isFullyBooked = availableSpots === 0
-
-    // const cardBackground = TEMPLATE_COLORS_MAP[classInstance.templateSnapshot?.color]?.background || 'bg-green-50'
-
-    console.log('classInstance', classInstance.color)
     const color = classInstance.color as TemplateColorType
 
     const cardBackground = TEMPLATE_COLORS_MAP[color]?.background || 'bg-white'
     const cardBorder = TEMPLATE_COLORS_MAP[color]?.border || 'border-gray-200'
     const cardText = TEMPLATE_COLORS_MAP[color]?.text || 'text-gray-950'
+
+    // Filter only pending bookings for counting and display
+    const pendingBookings = bookings.filter(booking => booking.status === 'pending')
+    const pendingCount = pendingBookings.length
+
+    // Create the spots grid
+    const renderSpotsGrid = () => {
+        return (
+            <div className="flex flex-col gap-1">
+                <div className="text-xs text-muted-foreground text-center">{pendingCount} out of {maxCapacity} booked</div>
+                <div className="grid grid-cols-5 gap-y-[3px]">
+                    {Array.from({ length: maxCapacity }, (_, index) => {
+                        const isBooked = index < pendingCount
+
+                        return (
+                            <div
+                                key={index}
+                                className={cn(
+                                    "w-4 h-4 rounded",
+                                    isBooked ? "bg-green-500" : "bg-zinc-200"
+                                )}
+                                title={isBooked ? "Booked" : "Available"}
+                            />
+                        )
+                    })}
+                </div>
+            </div>
+        )
+    }
 
     return (
         <Card className={cn("p-4 shadow-xs text-green-950 bg-green-50", cardBackground, cardBorder, cardText)}>
@@ -65,36 +87,27 @@ export function ClassBookingRow({
                     <div className="text-xl font-bold">{time}</div>
                 </div>
 
-                {/* Right Column - Class Details */}
-                <div className="flex-1 flex items-center justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                        <div className="mb-2">
-                            <h3 className="font-semibold text-lg leading-tight">{classInstance.templateSnapshot?.name}</h3>
-                            <p className="text-sm">with {instructor}</p>
-                        </div>
-
-                        {/* <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
-                             <div className="flex items-center gap-1">
-                                 <MapPin className="h-4 w-4" />
-                                 <span>{location}</span>
-                             </div>
-                         </div> */}
-
-                        <div className="flex items-center gap-2 text-sm">
-                            <Badge variant='outline'>
-                                {isFullyBooked
-                                    ? `Fully booked ${bookings.length}/${maxCapacity}`
-                                    : `${availableSpots} out of ${maxCapacity} spots left`}
-                            </Badge>
-                        </div>
+                {/* Middle Column - Class Details */}
+                <div className="flex-1 min-w-0">
+                    <div className="mb-2">
+                        <h3 className="font-semibold text-lg leading-tight">{classInstance.templateSnapshot?.name}</h3>
+                        <p className="text-sm">with {instructor}</p>
                     </div>
 
-                    {/* Avatars on the right side */}
+                    {/* <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+                         <div className="flex items-center gap-1">
+                             <MapPin className="h-4 w-4" />
+                             <span>{location}</span>
+                         </div>
+                     </div> */}
+
+
+                    {/* Avatars - Show only pending bookings */}
                     <div className="flex -space-x-2">
-                        {bookings.slice(0, 4).map((booking) => (
-                            <Avatar key={booking.id} className="h-10 w-10 border-2 border-background">
+                        {pendingBookings.slice(0, 4).map((booking) => (
+                            <Avatar key={booking.id} className="h-8 w-8 border-2 border-background">
                                 <AvatarImage src={booking.user.avatar || "/placeholder.svg"} alt={booking.user.name} />
-                                <AvatarFallback className="text-sm">
+                                <AvatarFallback className="text-xs">
                                     {booking.user.name
                                         .split(" ")
                                         .map((n) => n[0])
@@ -103,12 +116,17 @@ export function ClassBookingRow({
                                 </AvatarFallback>
                             </Avatar>
                         ))}
-                        {bookings.length > 4 && (
-                            <div className="h-10 w-10 rounded-full bg-muted border-2 border-background flex items-center justify-center">
-                                <span className="text-xs text-muted-foreground font-medium">+{bookings.length - 4}</span>
+                        {pendingCount > 4 && (
+                            <div className="h-8 w-8 rounded-full bg-muted border-2 border-background flex items-center justify-center">
+                                <span className="text-xs text-muted-foreground font-medium">+{pendingCount - 4}</span>
                             </div>
                         )}
                     </div>
+                </div>
+
+                {/* Right Column - Spots Grid */}
+                <div className="flex items-start">
+                    {renderSpotsGrid()}
                 </div>
             </div>
         </Card >
@@ -214,7 +232,8 @@ export function UpcomingClasses({ className }: UpcomingClassesProps) {
                                             user: {
                                                 name: booking.userSnapshot?.name || 'Unknown User',
                                                 avatar: undefined // userSnapshot doesn't have avatar field
-                                            }
+                                            },
+                                            status: booking.status || 'pending'
                                         }))
 
                                         return (
@@ -258,14 +277,6 @@ export function UpcomingClasses({ className }: UpcomingClassesProps) {
             </CardFooter>
         </Card>
     )
-}
-
-// Helper function to truncate description to first 10 words
-function truncateDescription(description: string): string {
-    if (!description) return ''
-    const words = description.split(' ')
-    if (words.length <= 10) return description
-    return words.slice(0, 10).join(' ') + '...'
 }
 
 // Helper function to get a readable date key

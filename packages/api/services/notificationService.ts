@@ -2,13 +2,17 @@ import type { MutationCtx, QueryCtx } from "../convex/_generated/server";
 import type { Doc, Id } from "../convex/_generated/dataModel";
 import { ConvexError } from "convex/values";
 import { ERROR_CODES } from "../utils/errorCodes";
-import { PaginationOptions, PaginationResult } from "convex/server";
-import { internal } from "../convex/_generated/api";
+import type { PaginationOptions, PaginationResult } from "convex/server";
+import { components, internal } from "../convex/_generated/api";
 import { format } from "date-fns";
+import { PushNotifications } from "@convex-dev/expo-push-notifications";
 
 /***************************************************************
  * Notification Service - All notification-related operations
  ***************************************************************/
+
+const pushNotifications = new PushNotifications(components.pushNotifications);
+
 export const notificationService = {
     /**
      * Create a new notification
@@ -696,7 +700,7 @@ export const notificationService = {
             businessId: Id<"businesses">;
             creditsPaid: number;
         };
-    }): Promise<{ createdNotificationId: Id<"notifications"> | null }> => {
+    }): Promise<{ success: boolean }> => {
         const { bookingId, userId, classInstanceId, businessId, creditsPaid } = payload;
 
         // Fetch the booking, user classInstance and business with Promise.all
@@ -715,26 +719,16 @@ export const notificationService = {
             });
         }
 
-        // Get business notification preferences
-        const businessNotificationSettings = await ctx.db
-            .query("businessNotificationSettings")
-            .withIndex("by_business", q => q.eq("businessId", businessId))
+        // get the user notification settings
+        const userNotificationSettings = await ctx.db
+            .query("userNotificationSettings")
+            .withIndex("by_user", q => q.eq("userId", userId))
             .filter(q => q.neq(q.field("deleted"), true))
             .first();
 
-        console.log("Business notification settings:", {
-            businessId,
-            businessName: business.name,
-            settings: businessNotificationSettings,
-            notificationType: "booking_cancelled_by_business"
-        });
-
-        // Only send notification if business has opted in for this type
-        let notificationId: Id<"notifications"> | undefined;
-
-        if (businessNotificationSettings?.notificationPreferences?.booking_cancelled_by_business?.web) {
+        if (userNotificationSettings?.notificationPreferences?.booking_cancelled_by_business?.web) {
             // Send web notification to business
-            notificationId = await ctx.db.insert("notifications", {
+            await ctx.db.insert("notifications", {
                 businessId,
                 recipientType: "business",
                 recipientUserId: userId,
@@ -761,28 +755,30 @@ export const notificationService = {
         }
 
         // Send email notification to user
-        if (businessNotificationSettings?.notificationPreferences?.booking_cancelled_by_business?.email && process.env.NODE_ENV === "production") {
-            try {
-                await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
-                    businessEmail: business.email,
-                    businessName: business.name,
-                    customerName: user.name || user.email || "Customer",
-                    customerEmail: user.email,
-                    className: classInstance.name || classInstance.templateSnapshot.name || "",
-                    venueName: classInstance.venueId || "",
-                    classTime: format(classInstance.startTime, "MMM d, yyyy h:mm a"),
-                    bookingAmount: booking.finalPrice,
-                    notificationType: 'booking_cancelled_by_business',
-                });
-            } catch (error) {
-                console.error('Error sending email notification:', error);
-            }
+        if (userNotificationSettings?.notificationPreferences?.booking_cancelled_by_business?.email && process.env.NODE_ENV === "production") {
+            await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
+                businessEmail: business.email,
+                businessName: business.name,
+                customerName: user.name || user.email || "Customer",
+                customerEmail: user.email,
+                className: classInstance.name || classInstance.templateSnapshot.name || "",
+                venueName: classInstance.venueId || "",
+                classTime: format(classInstance.startTime, "MMM d, yyyy h:mm a"),
+                bookingAmount: booking.finalPrice,
+                notificationType: 'booking_cancelled_by_business',
+            });
         }
 
-        if (!notificationId) {
-            return { createdNotificationId: null };
+        if (userNotificationSettings?.notificationPreferences?.booking_cancelled_by_business?.push) {
+            await pushNotifications.sendPushNotification(ctx, {
+                userId: userId,
+                notification: {
+                    title: "Booking cancelled",
+                    body: `Your booking for ${classInstance.name} - ${classInstance.venueSnapshot?.name} at ${format(classInstance.startTime, 'MMM d, yyyy h:mm a')} has been cancelled by the venue.`,
+                },
+            });
         }
 
-        return { createdNotificationId: notificationId };
+        return { success: true };
     },
 };

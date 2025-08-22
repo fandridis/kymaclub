@@ -8,12 +8,13 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as React from 'react';
 import {
   ActivityIndicator,
+  Button,
   StyleSheet,
   Text,
   useColorScheme,
   View,
 } from 'react-native';
-import { ConvexProvider, ConvexReactClient } from "convex/react";
+import { ConvexProvider, ConvexReactClient, useMutation } from "convex/react";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexQueryCacheProvider } from "convex-helpers/react/cache";
 import i18n from './i18n';
@@ -25,6 +26,12 @@ import { convexAuthStorage } from './utils/storage';
 import { RootNavigator } from './navigation';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import OnboardingWizard from './components/OnboardingWizard';
+
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
+import { api } from '@repo/api/convex/_generated/api';
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
@@ -70,8 +77,25 @@ interface InnerAppProps {
 
 export function InnerApp({ theme, onReady }: InnerAppProps) {
   const { user } = useAuth();
+  const recordPushNotificationToken = useMutation(api.mutations.pushNotifications.recordPushNotificationToken);
   const [appReady, setAppReady] = useState(false);
   const isLoading = user === undefined;
+
+  useEffect(() => {
+    if (!user?._id) return;
+
+    registerForPushNotificationsAsync()
+      .then(token => {
+        if (token) {
+          recordPushNotificationToken({ token });
+        } else {
+          console.warn("No push token received");
+        }
+      })
+      .catch(err => {
+        console.error("Push registration failed", err);
+      });
+  }, [user?._id]);
 
   // Initialize i18n
   useEffect(() => {
@@ -152,3 +176,52 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
+
+/**
+ * Utils
+ */
+function handleRegistrationError(errorMessage: string) {
+  alert(errorMessage);
+}
+
+async function registerForPushNotificationsAsync() {
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'default',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF231F7C',
+    });
+  }
+
+  if (Device.isDevice) {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    if (finalStatus !== 'granted') {
+      handleRegistrationError('Permission not granted to get push token for push notification!');
+      return;
+    }
+    const projectId =
+      Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+    if (!projectId) {
+      handleRegistrationError('Project ID not found');
+    }
+    try {
+      const pushTokenString = (
+        await Notifications.getExpoPushTokenAsync({
+          projectId,
+        })
+      ).data;
+      console.log(pushTokenString);
+      return pushTokenString;
+    } catch (e: unknown) {
+      handleRegistrationError(`${e}`);
+    }
+  } else {
+    handleRegistrationError('Must use physical device for push notifications');
+  }
+}

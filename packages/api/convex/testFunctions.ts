@@ -295,7 +295,7 @@ export const createTestBooking = internalMutation({
             businessId: v.id("businesses"),
             userId: v.id("users"),
             classInstanceId: v.id("classInstances"),
-            status: v.optional(v.union(v.literal("pending"), v.literal("completed"), v.literal("cancelled"), v.literal("no_show"))),
+            status: v.optional(v.union(v.literal("pending"), v.literal("completed"), v.literal("cancelled_by_consumer"), v.literal("cancelled_by_business"), v.literal("no_show"))),
             originalPrice: v.optional(v.number()),
             finalPrice: v.optional(v.number()),
             creditsUsed: v.optional(v.number()),

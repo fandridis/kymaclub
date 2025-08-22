@@ -3,7 +3,7 @@ import { useVenues } from '../../../hooks/use-venues';
 import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 
-export function useBusinesses() {
+export function useAllVenues() {
     const { venues, loading: venuesLoading } = useVenues();
 
     const allImageStorageIds = useMemo(

@@ -386,13 +386,26 @@ export const bookingsFields = {
     phone: v.optional(v.string()),
   }),
 
+  // Denormalized class instance metadata for efficient queries and display
+  // This field is automatically populated when bookings are created (optional for backward compatibility)
+  classInstanceSnapshot: v.optional(v.object({
+    startTime: v.number(),           // For efficient ordering and display
+    endTime: v.optional(v.number()), // For display purposes
+    name: v.optional(v.string()),    // Class name for display
+    status: v.optional(v.string()),  // Instance status
+  })),
+
   // Simplified status flow
   status: v.union(
     v.literal("pending"),    // Just booked, not yet attended
     v.literal("completed"),  // User attended class
-    v.literal("cancelled"),  // User cancelled before class
+    v.literal("cancelled_by_consumer"),  // User cancelled before class
+    v.literal("cancelled_by_business"),  // Business cancelled class
     v.literal("no_show")     // User didn't show up
   ),
+
+  // Optional Cancel reason
+  cancelReason: v.optional(v.string()),
 
   // Simple pricing tracking (links to credit ledger)
   originalPrice: v.number(),           // Template baseCredits (before any discount)
@@ -673,7 +686,8 @@ export default defineSchema({
     .index("by_user_class", ["userId", "classInstanceId"])
     .index("by_business_status", ["businessId", "status"])
     .index("by_credit_transaction", ["creditTransactionId"])
-    .index("by_discount_source", ["appliedDiscount.source"]),
+    .index("by_discount_source", ["appliedDiscount.source"])
+    .index("by_user_start_time", ["userId", "classInstanceSnapshot.startTime"]),
 
   /**
    * Simple Credit Transactions - One record per credit operation

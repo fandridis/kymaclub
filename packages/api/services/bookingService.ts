@@ -1,13 +1,11 @@
-import { PaginationResult, PaginationOptions } from "convex/server";
+import type { PaginationResult, PaginationOptions } from "convex/server";
 import type { Doc, Id } from "../convex/_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../convex/_generated/server";
 import { ERROR_CODES } from "../utils/errorCodes";
 import { ConvexError } from "convex/values";
 import { creditService } from "./creditService";
 import { calculateBestDiscount } from "../utils/classDiscount";
-import { BookingWithDetails } from "../types/booking";
-import { notificationService } from "./notificationService";
-import { internal } from "../convex/_generated/api";
+import type { BookingWithDetails } from "../types/booking";
 
 
 /***************************************************************
@@ -30,27 +28,27 @@ export const bookingService = {
         };
         user: Doc<"users">;
     }): Promise<PaginationResult<BookingWithDetails>> => {
-        const { includeHistory = false } = args;
+        const { includeHistory = true } = args;
 
         // Build status filter
         let statusFilter;
         if (includeHistory) {
-            // Include all booking statuses
-            statusFilter = (q: any) => q.gte(q.field("createdAt"), 0); // Always true
+            // Include all booking statuses - check if classInstanceSnapshot exists
+            statusFilter = (q: any) => q.neq(q.field("classInstanceSnapshot"), null);
         } else {
             // Only include active bookings (pending)
             statusFilter = (q: any) => q.eq(q.field("status"), "pending");
         }
 
-        // Get paginated bookings for current user
+        // Get paginated bookings for current user, ordered by start time (most recent first)
         const result = await ctx.db
             .query("bookings")
-            .withIndex("by_user", q => q.eq("userId", user._id))
+            .withIndex("by_user_start_time", q => q.eq("userId", user._id))
             .filter(q => q.and(
                 q.neq(q.field("deleted"), true),
                 statusFilter(q)
             ))
-            .order("desc") // Most recent first
+            .order("desc") // Most recent startTime first (upcoming classes at the top)
             .paginate(args.paginationOpts);
 
         // Enrich bookings with related data
@@ -211,68 +209,6 @@ export const bookingService = {
     },
 
     /***************************************************************
-     * Get Current User Booking History Handler  
-     * Returns user's historical bookings (completed, cancelled, no_show)
-     ***************************************************************/
-    getCurrentUserBookingHistory: async ({
-        ctx,
-        args,
-        user,
-    }: {
-        ctx: QueryCtx;
-        args: {
-            paginationOpts: PaginationOptions;
-            daysBack?: number;
-        };
-        user: Doc<"users">;
-    }): Promise<PaginationResult<BookingWithDetails>> => {
-        const daysBack = args.daysBack ?? 90; // Default 90 days
-        const cutoffDate = Date.now() - (daysBack * 24 * 60 * 60 * 1000);
-
-        // Get historical bookings (completed, cancelled, no_show)
-        const result = await ctx.db
-            .query("bookings")
-            .withIndex("by_user", q => q.eq("userId", user._id))
-            .filter(q => q.and(
-                q.neq(q.field("deleted"), true),
-                q.or(
-                    q.eq(q.field("status"), "completed"),
-                    q.eq(q.field("status"), "cancelled"),
-                    q.eq(q.field("status"), "no_show")
-                ),
-                q.gte(q.field("createdAt"), cutoffDate)
-            ))
-            .order("desc") // Most recent first
-            .paginate(args.paginationOpts);
-
-        // Enrich with related data
-        const enrichedBookings: BookingWithDetails[] = [];
-
-        for (const booking of result.page) {
-            const enrichedBooking: BookingWithDetails = { ...booking };
-
-            if (booking.classInstanceId) {
-                enrichedBooking.classInstance = await ctx.db.get(booking.classInstanceId) || undefined;
-
-                if (enrichedBooking.classInstance?.templateId) {
-                    enrichedBooking.classTemplate = await ctx.db.get(enrichedBooking.classInstance.templateId) || undefined;
-                }
-
-                if (enrichedBooking.classInstance?.venueId) {
-                    enrichedBooking.venue = await ctx.db.get(enrichedBooking.classInstance.venueId) || undefined;
-                }
-            }
-
-            enrichedBookings.push(enrichedBooking);
-        }
-
-        return {
-            ...result,
-            page: enrichedBookings
-        };
-    },
-
-    /***************************************************************
      * Get Current User Bookings By Status Handler
      * Returns user's bookings filtered by specific status
      ***************************************************************/
@@ -360,7 +296,7 @@ export const bookingService = {
             )
             .filter(q => q.and(
                 q.neq(q.field("deleted"), true),
-                q.eq(q.field("status"), "pending") // Only active bookings
+                // q.eq(q.field("status"), "pending") // Only active bookings
             ))
             .first();
 
@@ -524,6 +460,13 @@ export const bookingService = {
                 email: user.email || undefined,
                 phone: user.phone || undefined,
             },
+            // Populate class instance snapshot for efficient querying and display
+            classInstanceSnapshot: {
+                startTime: instance.startTime,
+                endTime: instance.endTime,
+                name: template.name,
+                status: instance.status,
+            },
             bookedAt: now,
             createdAt: now,
             createdBy: user._id,
@@ -684,9 +627,10 @@ export const bookingService = {
 
         // Update booking status
         await ctx.db.patch(args.bookingId, {
-            status: "cancelled",
+            status: args.cancelledBy === "consumer" ? "cancelled_by_consumer" : "cancelled_by_business",
             cancelledAt: now,
             cancelledBy: args.cancelledBy,
+            cancelReason: args.reason,
             updatedAt: now,
             updatedBy: user._id,
         });
@@ -770,6 +714,42 @@ export const bookingService = {
             status: "no_show",
             updatedAt: now,
             updatedBy: user._id,
+        });
+
+        return { success: true };
+    },
+
+    /***************************************************************
+     * Delete Booking Handler
+     * Deletes a booking
+     ***************************************************************/
+    deleteBooking: async ({
+        ctx,
+        args,
+        user,
+    }: {
+        ctx: MutationCtx;
+        args: {
+            bookingId: Id<"bookings">;
+        };
+        user: Doc<"users">;
+    }): Promise<{ success: boolean }> => {
+        const now = Date.now();
+
+        const booking = await ctx.db.get(args.bookingId);
+        if (!booking) {
+            throw new ConvexError({
+                message: "Booking not found",
+                field: "bookingId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND,
+            });
+        }
+
+        // Update booking status
+        await ctx.db.patch(args.bookingId, {
+            deleted: true,
+            deletedAt: now,
+            deletedBy: user._id,
         });
 
         return { success: true };

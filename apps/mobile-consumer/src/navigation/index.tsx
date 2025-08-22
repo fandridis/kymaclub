@@ -1,6 +1,5 @@
 // navigation/index.tsx
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { BlurView } from 'expo-blur';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { NewsScreen } from './screens/NewsScreen';
@@ -67,7 +66,8 @@ function HomeTabs() {
             left: 20,
             right: 20,
             borderRadius: 40,
-            height: 60,
+            height: 62,
+            backgroundColor: 'white',
 
             borderTopWidth: 0,
             elevation: 10,
@@ -85,9 +85,9 @@ function HomeTabs() {
           },
           tabBarActiveTintColor: '#ff4747',
           tabBarInactiveTintColor: '#8E8E93',
-          tabBarBackground: () => (
-            <BlurView intensity={30} style={styles.blurContainer} />
-          ),
+          // tabBarBackground: () => (
+          //   <BlurView intensity={30} style={styles.blurContainer} />
+          // ),
           animation: 'shift',
         }}
       >
@@ -98,7 +98,7 @@ function HomeTabs() {
             title: t('navigation.home'),
             tabBarLabel: 'Home',
             tabBarIcon: ({ color }) => (
-              <NewspaperIcon color={color} size={20} />
+              <NewspaperIcon color={color} size={26} />
             ),
           }}
         />
@@ -109,7 +109,7 @@ function HomeTabs() {
             title: t('navigation.explore'),
             tabBarLabel: 'Explore',
             tabBarIcon: ({ color }) => (
-              <SearchIcon color={color} size={20} />
+              <SearchIcon color={color} size={26} />
             ),
           }}
         />
@@ -137,7 +137,7 @@ function HomeTabs() {
             title: t('navigation.bookings'),
             tabBarLabel: 'Bookings',
             tabBarIcon: ({ color }) => (
-              <TicketIcon color={color} size={20} />
+              <TicketIcon color={color} size={26} />
             ),
             tabBarBadge: 3,
           }}
@@ -149,7 +149,7 @@ function HomeTabs() {
             title: t('navigation.settings'),
             tabBarLabel: 'Account',
             tabBarIcon: ({ color }) => (
-              <SettingsIcon color={color} size={20} />
+              <SettingsIcon color={color} size={26} />
             ),
           }}
         />

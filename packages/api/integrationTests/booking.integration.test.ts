@@ -249,7 +249,7 @@ describe('Booking System Integration Tests', () => {
             const booking = await asUser.query(api.queries.bookings.getBookingDetails, {
                 bookingId: bookingResult.bookingId
             });
-            expect(booking.status).toBe("cancelled");
+            expect(booking.status).toBe("cancelled_by_consumer");
             expect(booking.cancelledAt).toBeDefined();
 
             // Verify full refund
@@ -356,7 +356,7 @@ describe('Booking System Integration Tests', () => {
                     bookingId: bookingResult.bookingId,
                     cancelledBy: "consumer"
                 })
-            ).rejects.toThrow("Cannot cancel booking with status: cancelled");
+            ).rejects.toThrow("Cannot cancel booking with status: cancelled_by_consumer");
         });
 
         test('should not allow unauthorized cancellation', async () => {
@@ -489,7 +489,7 @@ describe('Booking System Integration Tests', () => {
             });
 
             expect(cancelledBookings.page).toHaveLength(1);
-            expect(cancelledBookings.page[0].status).toBe("cancelled");
+            expect(cancelledBookings.page[0].status).toBe("cancelled_by_consumer");
         });
     });
 

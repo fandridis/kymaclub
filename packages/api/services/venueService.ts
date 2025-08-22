@@ -1,6 +1,6 @@
 import type { MutationCtx, QueryCtx } from "../convex/_generated/server";
 import type { Doc, Id } from "../convex/_generated/dataModel";
-import { CreateVenueArgs, DeleteVenueArgs, UpdateVenueArgs } from "../convex/mutations/venues";
+import type { CreateVenueArgs, DeleteVenueArgs, UpdateVenueArgs } from "../convex/mutations/venues";
 import { internal } from "../convex/_generated/api";
 import { ConvexError } from "convex/values";
 import { userMustBeAssociatedWithBusiness } from "../rules/core";
@@ -169,7 +169,7 @@ export const venueService = {
     /**
      * Get all venues for all businesses
      */
-    getAllVenues: async ({ ctx, user }: { ctx: QueryCtx, user: Doc<"users"> }): Promise<Doc<"venues">[]> => {
+    getAllVenues: async ({ ctx }: { ctx: QueryCtx }): Promise<Doc<"venues">[]> => {
         const venues = await ctx.db
             .query("venues")
             .withIndex("by_deleted", q => q.eq("deleted", false))
@@ -192,71 +192,6 @@ export const venueService = {
         }
 
         return venue;
-    },
-
-    /**
-     * Get venues by city with pagination and distance sorting
-     */
-    getVenuesByCityPaginated: async ({ ctx, args }: {
-        ctx: QueryCtx,
-        args: {
-            paginationOpts: { numItems: number, cursor?: string },
-            city: string,
-            userLat?: number,
-            userLng?: number
-        },
-        user: Doc<"users">
-    }): Promise<{
-        page: (Doc<"venues"> & { distance?: number })[],
-        isDone: boolean,
-        continueCursor: string
-    }> => {
-
-        // Fetch all venues in the city
-        const allVenues = await ctx.db
-            .query("venues")
-            .withIndex('by_city', q => q.eq("address.city", args.city))
-            .filter(q => q.neq(q.field("deleted"), true))
-            .collect();
-
-        let venuesWithDistance = allVenues;
-
-        // If user location is provided, calculate distances and sort
-        if (args.userLat !== undefined && args.userLng !== undefined) {
-            const { calculateDistance } = await import("@repo/utils/distances");
-            venuesWithDistance = allVenues
-                .map(venue => {
-                    const venueLat = venue.address.latitude;
-                    const venueLng = venue.address.longitude;
-
-                    if (venueLat && venueLng) {
-                        const distance = calculateDistance(
-                            args.userLat!,
-                            args.userLng!,
-                            venueLat,
-                            venueLng
-                        );
-                        return { ...venue, distance };
-                    }
-                    return { ...venue, distance: Infinity };
-                })
-                .sort((a, b) => (a.distance || 0) - (b.distance || 0));
-        }
-
-        // Manual pagination
-        const { numItems, cursor } = args.paginationOpts;
-        const startIndex = cursor ? parseInt(cursor) : 0;
-        const endIndex = startIndex + numItems;
-
-        const page = venuesWithDistance.slice(startIndex, endIndex);
-        const isDone = endIndex >= venuesWithDistance.length;
-        const continueCursor = isDone ? "" : endIndex.toString();
-
-        return {
-            page,
-            isDone,
-            continueCursor
-        };
     },
 
     /**

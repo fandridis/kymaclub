@@ -4,29 +4,16 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StarIcon, MapPinIcon } from 'lucide-react-native';
 import { useTypedTranslation } from '../i18n/typed';
+import { Doc } from '@repo/api/convex/_generated/dataModel';
 
-export interface Business {
-  id: string;
-  name: string;
-  type: string;
-  rating: number;
-  reviewCount: number;
-  distance: number;
-  isOpen: boolean;
-  imageUrl?: string;
-  address: string;
-  coordinate: {
-    latitude: number;
-    longitude: number;
-  };
+
+interface VenueCardProps {
+  venue: Doc<'venues'>;
+  storageIdToUrl: Map<string, string | null>;
+  onPress?: (venue: Doc<'venues'>) => void;
 }
 
-interface BusinessCardProps {
-  business: Business;
-  onPress?: (business: Business) => void;
-}
-
-export const BusinessCard = memo<BusinessCardProps>(({ business, onPress }) => {
+export const VenueCard = ({ venue, storageIdToUrl, onPress }: VenueCardProps) => {
   const { t } = useTypedTranslation();
 
   const formatDistance = (distance: number) => {
@@ -41,19 +28,17 @@ export const BusinessCard = memo<BusinessCardProps>(({ business, onPress }) => {
     return `${distance.toFixed(1)}km`;
   };
 
-  const distanceLabel = t('explore.distance', { distance: formatDistance(business.distance) });
-
   return (
     <TouchableOpacity
       style={styles.container}
-      onPress={() => onPress?.(business)}
+      onPress={() => onPress?.(venue)}
       activeOpacity={0.8}
     >
       {/* Image */}
       <View style={styles.imageWrapper}>
-        {business.imageUrl ? (
+        {venue.imageStorageIds?.[0] && storageIdToUrl.get(venue.imageStorageIds[0]) ? (
           <Image
-            source={{ uri: business.imageUrl }}
+            source={{ uri: storageIdToUrl.get(venue.imageStorageIds[0])! }}
             style={styles.image}
             contentFit="cover"
             transition={200}
@@ -68,7 +53,7 @@ export const BusinessCard = memo<BusinessCardProps>(({ business, onPress }) => {
         {/* Top-left rating badge */}
         <View style={styles.ratingBadge}>
           <StarIcon size={12} color="#fff" fill="#ffd700" />
-          <Text style={styles.ratingText}>{business.rating.toFixed(1)} ({business.reviewCount})</Text>
+          <Text style={styles.ratingText}>{venue.rating?.toFixed(1)} ({venue.reviewCount || 0})</Text>
         </View>
 
         {/* Bottom gradient overlay */}
@@ -88,24 +73,16 @@ export const BusinessCard = memo<BusinessCardProps>(({ business, onPress }) => {
         {/* Bottom-left overlay text */}
         <View pointerEvents="none" style={styles.imageOverlayContainer}>
           <Text style={styles.imageOverlayTitle} numberOfLines={1}>
-            {business.name}
+            {venue.name}
           </Text>
           <Text style={styles.imageOverlaySubtitle} numberOfLines={1}>
-            {business.type}
+            {venue.primaryCategory}
           </Text>
-          <View style={styles.locationRow}>
-            <MapPinIcon size={12} color="rgba(255,255,255,0.9)" />
-            <Text style={styles.locationText} numberOfLines={1}>
-              {business.address} | {distanceLabel}
-            </Text>
-          </View>
         </View>
       </View>
     </TouchableOpacity>
   );
-});
-
-BusinessCard.displayName = 'BusinessCard';
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -127,7 +104,7 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    height: 180,
+    height: 220,
     backgroundColor: '#f3f4f6',
   },
   placeholderImage: {

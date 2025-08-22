@@ -7,8 +7,8 @@ import { classInstanceRules } from "../rules/classInstance";
 import { classTemplateRules } from "../rules/classTemplate";
 import { classInstanceOperations } from "../operations/classInstance";
 import { timeUtils } from "../utils/timeGeneration";
-import { CreateClassInstanceArgs, CreateMultipleClassInstancesArgs, DeleteSimilarFutureInstancesArgs, DeleteSingleInstanceArgs, UpdateMultipleInstancesArgs, UpdateSingleInstanceArgs } from "../convex/mutations/classInstances";
-import { BookingWithDetails } from "../types/booking";
+import type { CreateClassInstanceArgs, CreateMultipleClassInstancesArgs, DeleteSimilarFutureInstancesArgs, DeleteSingleInstanceArgs, UpdateMultipleInstancesArgs, UpdateSingleInstanceArgs } from "../convex/mutations/classInstances";
+import type { BookingWithDetails } from "../types/booking";
 
 // Service object with all class instance operations
 export const classInstanceService = {
@@ -412,17 +412,17 @@ export const classInstanceService = {
      * Get class instances with their bookings for business dashboard
      * Returns all class instances from startDate onwards with their associated bookings
      */
-    getClassInstancesWithBookings: async ({ 
-        ctx, 
-        args, 
-        user 
-    }: { 
-        ctx: QueryCtx, 
-        args: { startDate: number, limit?: number }, 
-        user: Doc<"users"> 
+    getClassInstancesWithBookings: async ({
+        ctx,
+        args,
+        user
+    }: {
+        ctx: QueryCtx,
+        args: { startDate: number, limit?: number },
+        user: Doc<"users">
     }): Promise<Array<{ classInstance: Doc<"classInstances">; bookings: BookingWithDetails[] }>> => {
         coreRules.userMustBeAssociatedWithBusiness(user);
-        
+
         const limit = args.limit ?? 500;
         const businessId = user.businessId!; // TypeScript guard - we know it's not undefined after the rule check
 
@@ -446,7 +446,7 @@ export const classInstanceService = {
 
         // Get all active bookings for these class instances
         const allBookings: Doc<"bookings">[] = [];
-        
+
         for (const classInstanceId of classInstanceIds) {
             const bookings = await ctx.db
                 .query("bookings")
@@ -454,10 +454,9 @@ export const classInstanceService = {
                 .filter(q => q.and(
                     q.neq(q.field("deleted"), true),
                     q.eq(q.field("businessId"), businessId),
-                    q.eq(q.field("status"), "pending") // Only active bookings
                 ))
                 .collect();
-            
+
             allBookings.push(...bookings);
         }
 

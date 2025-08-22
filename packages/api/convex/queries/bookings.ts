@@ -26,7 +26,6 @@ export const getBookingDetails = query({
   args: {
     bookingId: v.id("bookings"),
   },
-  returns: v.any(), // BookingWithDetails
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
     return bookingService.getBookingById({ ctx, args, user });
@@ -40,7 +39,6 @@ export const getCurrentUserUpcomingBookings = query({
   args: {
     daysAhead: v.optional(v.number()),
   },
-  returns: v.array(v.any()), // BookingWithDetails array
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
     return bookingService.getCurrentUserUpcomingBookings({ ctx, args, user });
@@ -55,33 +53,9 @@ export const getCurrentUserBookings = query({
     paginationOpts: paginationOptsValidator,
     includeHistory: v.optional(v.boolean()),
   },
-  returns: v.object({
-    page: v.array(v.any()), // BookingWithDetails array
-    isDone: v.boolean(),
-    continueCursor: v.string(),
-  }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
     return bookingService.getCurrentUserBookings({ ctx, args, user });
-  },
-});
-
-/**
- * Get current user's booking history
- */
-export const getCurrentUserBookingHistory = query({
-  args: {
-    paginationOpts: paginationOptsValidator,
-    daysBack: v.optional(v.number()),
-  },
-  returns: v.object({
-    page: v.array(v.any()), // BookingWithDetails array
-    isDone: v.boolean(),
-    continueCursor: v.string(),
-  }),
-  handler: async (ctx, args) => {
-    const user = await getAuthenticatedUserOrThrow(ctx);
-    return bookingService.getCurrentUserBookingHistory({ ctx, args, user });
   },
 });
 
@@ -94,10 +68,6 @@ export const getClassInstancesWithBookings = query({
     startDate: v.number(),
     limit: v.optional(v.number()),
   },
-  returns: v.array(v.object({
-    classInstance: v.any(), // Doc<"classInstances">
-    bookings: v.array(v.any()) // BookingWithDetails array
-  })),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
     return classInstanceService.getClassInstancesWithBookings({ ctx, args, user });

@@ -39,3 +39,14 @@ export const cancelBooking = mutationWithTriggers({
     return result;
   },
 });
+
+export const deleteBooking = mutationWithTriggers({
+  args: v.object({
+    bookingId: v.id("bookings"),
+  }),
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUserOrThrow(ctx);
+    const result = await bookingService.deleteBooking({ ctx, args, user });
+    return result;
+  },
+});

@@ -34,30 +34,20 @@ const getEnabledChannels = (setting: { email: boolean; web: boolean; push: boole
 
 const notificationTypes = [
     {
-        key: 'booking_confirmation' as const,
-        title: 'Booking Confirmation',
-        description: 'You will receive a notification when your booking is confirmed.'
-    },
-    {
         key: 'booking_reminder' as const,
         title: 'Class Reminders',
-        description: 'You will receive a notification before your class starts.'
+        description: 'We will remind you an hour before your class starts.'
     },
     {
         key: 'class_cancelled' as const,
         title: 'Class Cancelled',
-        description: 'You will receive a notification when a class you booked is cancelled.'
+        description: 'If the class is cancelled by the business, we will send you a notification.'
     },
     {
         key: 'booking_cancelled_by_business' as const,
         title: 'Booking Cancelled',
-        description: 'You will receive a notification when a business cancels your booking.'
+        description: 'If the business cancels your booking, we will send you a notification.'
     },
-    {
-        key: 'payment_receipt' as const,
-        title: 'Payment Receipt',
-        description: 'You will receive a notification when a payment is confirmed or a receipt is sent.'
-    }
 ];
 
 export function SettingsNotificationsScreen() {

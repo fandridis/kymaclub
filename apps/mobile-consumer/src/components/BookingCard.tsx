@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { ClockIcon, XIcon, EyeIcon } from 'lucide-react-native';
+import { ClockIcon, XIcon } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { tz } from '@date-fns/tz';
 import { useTypedTranslation } from '../i18n/typed';
@@ -21,9 +21,19 @@ export const BookingCard = ({ booking, onCancel, onViewClass, isCanceling = fals
   const instructor = booking.classTemplate?.instructor ?? 'TBD';
   const venueName = booking.venue?.name ?? 'Unknown Venue';
 
-  // Time formatting in Europe/Athens timezone
-  const startTime = booking.classInstance ? new Date(booking.classInstance.startTime) : null;
-  const endTime = booking.classInstance ? new Date(booking.classInstance.endTime) : null;
+  // Time formatting in Europe/Athens timezone - use classInstanceSnapshot.startTime first
+  const startTimeValue = booking.classInstanceSnapshot?.startTime || booking.classInstance?.startTime;
+  const endTimeValue = booking.classInstanceSnapshot?.endTime || booking.classInstance?.endTime;
+  const startTime = startTimeValue ? new Date(startTimeValue) : null;
+  const endTime = endTimeValue ? new Date(endTimeValue) : null;
+
+  // Check if booking is in the past
+  const isPastBooking = startTime ? startTime.getTime() < Date.now() : false;
+
+  // Check if booking is cancelled and determine cancellation source
+  const isCancelled = booking.status === 'cancelled_by_business' || booking.status === 'cancelled_by_consumer';
+  const cancelledByBusiness = booking.status === 'cancelled_by_business';
+  const cancelledByConsumer = booking.status === 'cancelled_by_consumer';
 
   const startTimeStr = startTime ? format(startTime, 'HH:mm', { in: tz('Europe/Athens') }) : '';
   const duration = startTime && endTime ? Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60)) : 0;
@@ -80,8 +90,8 @@ export const BookingCard = ({ booking, onCancel, onViewClass, isCanceling = fals
           </Text>
         </View>
 
-        {/* Cancellation info */}
-        {cancellationStatusText && (
+        {/* Cancellation info - only show for future, non-cancelled bookings */}
+        {!isPastBooking && !isCancelled && cancellationStatusText && (
           <View style={styles.cancellationRow}>
             <Text style={[
               styles.cancellationText,
@@ -91,31 +101,43 @@ export const BookingCard = ({ booking, onCancel, onViewClass, isCanceling = fals
             </Text>
           </View>
         )}
+
+        {/* Cancellation badge - moved to bottom */}
+        {isCancelled && (
+          <View style={styles.badgeContainer}>
+            <View style={[
+              styles.badge, 
+              cancelledByBusiness ? styles.badgeBusiness : styles.badgeConsumer
+            ]}>
+              <Text style={styles.badgeText}>
+                {cancelledByBusiness ? 'Cancelled by the studio' : 'Cancelled by you'}
+              </Text>
+            </View>
+            {/* Show cancel reason if it exists */}
+            {booking.cancelReason && (
+              <Text style={styles.cancelReasonText}>
+                {booking.cancelReason}
+              </Text>
+            )}
+          </View>
+        )}
       </View>
 
       {/* Right side - Action buttons */}
       <View style={styles.actionsSection}>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.viewButton]}
-          onPress={(e) => {
-            e.stopPropagation();
-            onViewClass?.(booking.classInstance);
-          }}
-          disabled={isCanceling}
-        >
-          <EyeIcon size={20} color="#0000ff" />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionButton, styles.cancelButton, isCanceling && styles.actionButtonDisabled]}
-          onPress={(e) => {
-            e.stopPropagation();
-            onCancel?.(booking);
-          }}
-          disabled={isCanceling}
-        >
-          <XIcon size={20} color={isCanceling ? "#9ca3af" : "#dc2626"} />
-        </TouchableOpacity>
+        {/* Only show cancel button for future, non-cancelled bookings */}
+        {!isPastBooking && !isCancelled && (
+          <TouchableOpacity
+            style={[styles.actionButton, styles.cancelButton, isCanceling && styles.actionButtonDisabled]}
+            onPress={(e) => {
+              e.stopPropagation();
+              onCancel?.(booking);
+            }}
+            disabled={isCanceling}
+          >
+            <XIcon size={20} color={isCanceling ? "#9ca3af" : "#dc2626"} />
+          </TouchableOpacity>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -217,11 +239,10 @@ const styles = StyleSheet.create({
     color: '#d97706', // Orange for partial refund
   },
   actionsSection: {
-    width: 70,
+    width: 40,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 3,
+    justifyContent: 'flex-end',
   },
   actionButton: {
     width: 32,
@@ -231,10 +252,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
   },
-  viewButton: {
-    backgroundColor: '#fff',
-    borderColor: '#0000ff',
-  },
   cancelButton: {
     backgroundColor: '#fff',
     borderColor: '#dc2626',
@@ -242,5 +259,38 @@ const styles = StyleSheet.create({
   actionButtonDisabled: {
     opacity: 0.5,
     borderColor: '#9ca3af',
+  },
+  badgeContainer: {
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  badge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    maxWidth: '100%',
+  },
+  badgeBusiness: {
+    backgroundColor: '#fef3c7', // Light amber background
+    borderWidth: 1,
+    borderColor: '#f59e0b', // Amber border
+  },
+  badgeConsumer: {
+    backgroundColor: '#e5e7eb', // Light gray background  
+    borderWidth: 1,
+    borderColor: '#9ca3af', // Gray border
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#374151', // Dark gray text
+  },
+  cancelReasonText: {
+    fontSize: 10,
+    fontStyle: 'italic',
+    color: '#6b7280', // Lighter gray for reason text
+    marginTop: 4,
+    lineHeight: 14,
   },
 });

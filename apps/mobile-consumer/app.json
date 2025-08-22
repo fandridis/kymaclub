@@ -37,6 +37,7 @@
       "expo-asset",
       "expo-secure-store",
       "expo-localization",
+      "expo-notifications",
       "react-native-edge-to-edge",
       [
         "expo-splash-screen",

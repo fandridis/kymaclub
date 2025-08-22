@@ -11,13 +11,13 @@ import {
 import { Button } from "@/components/ui/button"
 import { CalendarDays, Clock, MapPin, Users, AlertCircle } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { format } from "date-fns"
 import type { Doc } from "@repo/api/convex/_generated/dataModel"
 import type { BookingWithDetails } from "@repo/api/types/booking"
 import { ClassBookingsItem } from "./class-bookings-item"
-import { toast } from "sonner"
+import { useMutation } from "convex/react"
+import { api } from "@repo/api/convex/_generated/api"
 
 interface ClassBookingsDialogProps {
     classInstance: Doc<"classInstances">
@@ -37,26 +37,7 @@ export function ClassBookingsDialog({
     children,
 }: ClassBookingsDialogProps) {
     const [isOpen, setIsOpen] = useState(false)
-
-    const handleViewCustomer = (booking: BookingWithDetails) => {
-        // TODO: Implement customer details view
-        toast.info("Customer details view not implemented yet")
-    }
-
-    const handleCancelBooking = (booking: BookingWithDetails) => {
-        // TODO: Implement booking cancellation
-        toast.info("Booking cancellation not implemented yet")
-    }
-
-    const handleMarkCompleted = (booking: BookingWithDetails) => {
-        // TODO: Implement mark as completed
-        toast.info("Mark completed not implemented yet")
-    }
-
-    const handleMarkNoShow = (booking: BookingWithDetails) => {
-        // TODO: Implement mark as no-show
-        toast.info("Mark no-show not implemented yet")
-    }
+    const deleteBooking = useMutation((api as any).mutations.bookings.deleteBooking)
 
     const formatDateTime = (startTime: number, endTime: number) => {
         const start = new Date(startTime)
@@ -70,6 +51,18 @@ export function ClassBookingsDialog({
     const { date, time } = formatDateTime(classInstance.startTime, classInstance.endTime ?? 0)
     const capacity = classInstance.capacity ?? classTemplate?.capacity ?? 0
     const className = classTemplate?.name ?? classInstance.name ?? "Class"
+
+    // Filter only pending bookings for the count
+    const pendingBookings = bookings.filter(booking => booking.status === 'pending')
+
+    const handleRemoveBooking = async (bookingId: any) => {
+        try {
+            await deleteBooking({ bookingId })
+        } catch (error) {
+            console.error('Failed to delete booking:', error)
+        }
+    }
+
     console.log('bookings', bookings)
 
     return (
@@ -110,7 +103,7 @@ export function ClassBookingsDialog({
                         {/* Bookings List */}
                         <div className="space-y-2">
                             <h3 className="text-lg font-semibold">
-                                Current Bookings - {bookings.length} / {capacity}
+                                Current Bookings - {pendingBookings.length} / {capacity}
                             </h3>
 
                             <ScrollArea className="max-h-96">
@@ -120,6 +113,7 @@ export function ClassBookingsDialog({
                                             <div key={booking._id}>
                                                 <ClassBookingsItem
                                                     booking={booking}
+                                                    onDeleteBooking={handleRemoveBooking}
                                                 />
                                                 {index < bookings.length - 1 && (
                                                     <Separator className="ml-13" />

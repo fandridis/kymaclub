@@ -3,10 +3,10 @@ import { SafeAreaView, View, ActivityIndicator, Text, StyleSheet } from 'react-n
 import * as Location from 'expo-location';
 import { ExploreHeader, TabType } from './ExploreHeader';
 import { FilterBar, FilterOptions } from '../../../components/FilterBar';
-import { BusinessesSection } from './BusinessesSection';
 import { ClassesSection } from './ClassesSection';
 import { useTypedTranslation } from '../../../i18n/typed';
-import { useBusinesses } from '../hooks/useBusinesses';
+import { useAllVenues } from '../hooks/useAllVenues';
+import { VenuesSection } from './VenuesSection';
 
 export function Explore() {
     const { t } = useTypedTranslation();
@@ -17,7 +17,10 @@ export function Explore() {
     const [filters, setFilters] = useState<FilterOptions>({ searchQuery: '', categories: [], priceRange: { min: 0, max: 100 }, rating: 0 });
     const [mapSheetOpen, setMapSheetOpen] = useState(false);
 
-    const { venues, venuesLoading, storageIdToUrl } = useBusinesses();
+    const { venues, venuesLoading, storageIdToUrl } = useAllVenues();
+
+    console.log('Explore component storageIdToUrl:', storageIdToUrl);
+    console.log('Explore component venues:', venues?.length);
 
     const [loadingLocation, setLoadingLocation] = useState(true);
 
@@ -104,7 +107,7 @@ export function Explore() {
 
             <View style={styles.content}>
                 {activeTab === 'businesses' ? (
-                    <BusinessesSection
+                    <VenuesSection
                         venues={venues}
                         storageIdToUrl={storageIdToUrl}
                         userLocation={userLocation}
