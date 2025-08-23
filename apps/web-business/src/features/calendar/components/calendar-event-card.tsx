@@ -40,7 +40,7 @@ export const CalendarEventCard = ({ eventInfo, onEdit, onDelete }: CalendarEvent
             <div className="absolute top-1 left-1 pr-8">
                 <div className="text-xs font-medium truncate leading-3.5">{name}</div>
                 <div className="text-xs opacity-75 truncate leading-3.5">{eventInfo.timeText}</div>
-                <div className="text-xs opacity-75 truncate leading-3.5 ">Cpt: {classInstance.bookedCount}/{classInstance.capacity}</div>
+                {/* <div className="text-xs opacity-75 truncate leading-3.5 ">Cpt: {classInstance.bookedCount}/{classInstance.capacity}</div> */}
             </div>
             <div className="absolute top-1 right-1">
                 <DropdownMenu>

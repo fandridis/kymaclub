@@ -65,11 +65,27 @@ const groupBookingsByDate = (bookings: any[]): Record<string, any[]> => {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     
+    // First, deduplicate bookings by showing only the latest booking per class instance
+    const latestBookingsByClass = new Map<string, any>();
+    
+    bookings.forEach((booking: any) => {
+        const classInstanceId = booking.classInstanceId;
+        if (!classInstanceId) return;
+        
+        const existing = latestBookingsByClass.get(classInstanceId);
+        if (!existing || booking.createdAt > existing.createdAt) {
+            latestBookingsByClass.set(classInstanceId, booking);
+        }
+    });
+    
+    // Convert back to array with only latest bookings per class
+    const deduplicatedBookings = Array.from(latestBookingsByClass.values());
+    
     // Separate future and past bookings
     const futureBookings: any[] = [];
     const pastBookings: any[] = [];
 
-    bookings.forEach((booking: any) => {
+    deduplicatedBookings.forEach((booking: any) => {
         // Use classInstanceSnapshot.startTime first, fallback to classInstance.startTime for backward compatibility
         const startTime = booking.classInstanceSnapshot?.startTime || booking.classInstance?.startTime;
         if (!startTime) return;
@@ -200,9 +216,11 @@ export function BookingsScreen() {
     const user = useAuthenticatedUser()
 
     const [cancelingBookingId, setCancelingBookingId] = useState<string | null>(null);
+    const [rebookingBookingId, setRebookingBookingId] = useState<string | null>(null);
 
     // Mutations
     const cancelBooking = useMutation(api.mutations.bookings.cancelBooking);
+    const bookClass = useMutation(api.mutations.bookings.bookClass);
 
     // Paginated query for all bookings (future and past)
     const {
@@ -387,6 +405,42 @@ export function BookingsScreen() {
             );
         } finally {
             setCancelingBookingId(null);
+        }
+    };
+
+    const handleRebookClass = async (booking: BookingWithDetails) => {
+        if (!booking.classInstanceId) {
+            Alert.alert('Error', 'Cannot rebook this class. Class information is missing.');
+            return;
+        }
+
+        try {
+            setRebookingBookingId(booking._id);
+
+            await bookClass({
+                classInstanceId: booking.classInstanceId,
+                description: `Rebooking for ${booking.classInstance?.name || 'class'}`,
+            });
+
+            Alert.alert(
+                'Rebooked Successfully',
+                'Your class has been rebooked successfully!',
+                [{ text: 'OK', style: 'default' }]
+            );
+        } catch (error: any) {
+            console.error('Failed to rebook class:', error);
+
+            const errorMessage = error?.data?.message ||
+                error?.message ||
+                'Failed to rebook class. Please try again or contact support.';
+
+            Alert.alert(
+                'Rebooking Failed',
+                errorMessage,
+                [{ text: 'OK', style: 'default' }]
+            );
+        } finally {
+            setRebookingBookingId(null);
         }
     };
 

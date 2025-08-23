@@ -60,6 +60,19 @@ export const getCurrentUserBookings = query({
 });
 
 /**
+ * Get current user's booking history for a specific class instance
+ */
+export const getUserBookingHistory = query({
+  args: {
+    classInstanceId: v.id("classInstances"),
+  },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUserOrThrow(ctx);
+    return bookingService.getUserBookingHistoryForClassInstance({ ctx, args, user });
+  },
+});
+
+/**
  * Get class instances with their bookings for the current business
  * Used by business dashboard to display bookings grouped by class instance
  */

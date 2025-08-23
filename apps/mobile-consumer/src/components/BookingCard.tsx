@@ -31,9 +31,10 @@ export const BookingCard = ({ booking, onCancel, onViewClass, isCanceling = fals
   const isPastBooking = startTime ? startTime.getTime() < Date.now() : false;
 
   // Check if booking is cancelled and determine cancellation source
-  const isCancelled = booking.status === 'cancelled_by_business' || booking.status === 'cancelled_by_consumer';
-  const cancelledByBusiness = booking.status === 'cancelled_by_business';
+  const isCancelled = booking.status === 'cancelled_by_business' || booking.status === 'cancelled_by_consumer' || booking.status === 'cancelled_by_business_rebookable';
+  const cancelledByBusiness = booking.status === 'cancelled_by_business' || booking.status === 'cancelled_by_business_rebookable';
   const cancelledByConsumer = booking.status === 'cancelled_by_consumer';
+  const isRebookable = booking.status === 'cancelled_by_business_rebookable' || booking.status === 'cancelled_by_consumer';
 
   const startTimeStr = startTime ? format(startTime, 'HH:mm', { in: tz('Europe/Athens') }) : '';
   const duration = startTime && endTime ? Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60)) : 0;
@@ -110,13 +111,26 @@ export const BookingCard = ({ booking, onCancel, onViewClass, isCanceling = fals
               cancelledByBusiness ? styles.badgeBusiness : styles.badgeConsumer
             ]}>
               <Text style={styles.badgeText}>
-                {cancelledByBusiness ? 'Cancelled by the studio' : 'Cancelled by you'}
+                {booking.status === 'cancelled_by_business_rebookable' 
+                  ? 'Cancelled by the studio' 
+                  : cancelledByBusiness 
+                    ? 'Cancelled by the studio' 
+                    : 'Cancelled by you'}
               </Text>
             </View>
             {/* Show cancel reason if it exists */}
             {booking.cancelReason && (
               <Text style={styles.cancelReasonText}>
                 {booking.cancelReason}
+              </Text>
+            )}
+            
+            {/* Rebook button removed from list view - users can rebook from class details modal */}
+            
+            {/* Show "You cannot book this class again" only for non-rebookable cancellations */}
+            {isCancelled && !isRebookable && (
+              <Text style={styles.noRebookText}>
+                You cannot book this class again
               </Text>
             )}
           </View>
@@ -292,5 +306,12 @@ const styles = StyleSheet.create({
     color: '#6b7280', // Lighter gray for reason text
     marginTop: 4,
     lineHeight: 14,
+  },
+  noRebookText: {
+    fontSize: 10,
+    fontStyle: 'italic',
+    color: '#9ca3af', // Light gray
+    marginTop: 6,
+    textAlign: 'center',
   },
 });

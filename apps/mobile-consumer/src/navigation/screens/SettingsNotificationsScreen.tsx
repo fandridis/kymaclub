@@ -40,7 +40,7 @@ const notificationTypes = [
     },
     {
         key: 'class_cancelled' as const,
-        title: 'Class Cancelled',
+        title: 'Class Cancellations',
         description: 'If the class is cancelled by the business, we will send you a notification.'
     },
     {

@@ -142,6 +142,27 @@ export const bookingService = {
     },
 
     /***************************************************************
+     * Get Bookings by Class Instance ID Handler
+     * Returns all pending bookings related to a class instance
+     ***************************************************************/
+    getBookingsByClassInstanceId: async ({
+        ctx,
+        args,
+    }: {
+        ctx: QueryCtx;
+        args: {
+            classInstanceId: Id<"classInstances">;
+        };
+    }): Promise<BookingWithDetails[]> => {
+        const bookings = await ctx.db.query("bookings")
+            .withIndex("by_class_instance", q => q.eq("classInstanceId", args.classInstanceId))
+            .filter(q => q.eq(q.field("status"), "pending"))
+            .collect();
+
+        return bookings;
+    },
+
+    /***************************************************************
      * Get Current User Upcoming Bookings Handler
      * Returns user's upcoming bookings (pending status only)
      ***************************************************************/
@@ -287,18 +308,18 @@ export const bookingService = {
         };
         user: Doc<"users">;
     }): Promise<BookingWithDetails | null> => {
-        // Query for booking by user and class instance
-        const booking = await ctx.db
+        // Query for booking by user and class instance - get the latest booking (most recent)
+        const bookings = await ctx.db
             .query("bookings")
             .withIndex("by_user_class", q =>
                 q.eq("userId", user._id)
                     .eq("classInstanceId", args.classInstanceId)
             )
-            .filter(q => q.and(
-                q.neq(q.field("deleted"), true),
-                // q.eq(q.field("status"), "pending") // Only active bookings
-            ))
-            .first();
+            .filter(q => q.neq(q.field("deleted"), true))
+            .collect();
+
+        // Sort by creation time and get the most recent booking
+        const booking = bookings.sort((a, b) => b.createdAt - a.createdAt)[0] || null;
 
         if (!booking) {
             return null;
@@ -320,6 +341,58 @@ export const bookingService = {
         }
 
         return enrichedBooking;
+    },
+
+    /***************************************************************
+     * Get User Booking History for Class Instance Handler
+     * Returns all user's bookings for a specific class instance (for booking history)
+     ***************************************************************/
+    getUserBookingHistoryForClassInstance: async ({
+        ctx,
+        args,
+        user,
+    }: {
+        ctx: QueryCtx;
+        args: {
+            classInstanceId: Id<"classInstances">;
+        };
+        user: Doc<"users">;
+    }): Promise<BookingWithDetails[]> => {
+        // Query for all bookings by user and class instance
+        const bookings = await ctx.db
+            .query("bookings")
+            .withIndex("by_user_class", q =>
+                q.eq("userId", user._id)
+                    .eq("classInstanceId", args.classInstanceId)
+            )
+            .filter(q => q.neq(q.field("deleted"), true))
+            .collect();
+
+        // Sort by creation time (most recent first)
+        const sortedBookings = bookings.sort((a, b) => b.createdAt - a.createdAt);
+
+        // Enrich with related data
+        const enrichedBookings: BookingWithDetails[] = [];
+
+        for (const booking of sortedBookings) {
+            const enrichedBooking: BookingWithDetails = { ...booking };
+
+            if (booking.classInstanceId) {
+                enrichedBooking.classInstance = await ctx.db.get(booking.classInstanceId) || undefined;
+
+                if (enrichedBooking.classInstance?.templateId) {
+                    enrichedBooking.classTemplate = await ctx.db.get(enrichedBooking.classInstance.templateId) || undefined;
+                }
+
+                if (enrichedBooking.classInstance?.venueId) {
+                    enrichedBooking.venue = await ctx.db.get(enrichedBooking.classInstance.venueId) || undefined;
+                }
+            }
+
+            enrichedBookings.push(enrichedBooking);
+        }
+
+        return enrichedBookings;
     },
 
     /***************************************************************
@@ -750,6 +823,60 @@ export const bookingService = {
             deleted: true,
             deletedAt: now,
             deletedBy: user._id,
+        });
+
+        return { success: true };
+    },
+
+    /***************************************************************
+     * Allow Rebooking Handler
+     * Changes cancelled_by_business status to cancelled_by_business_rebookable
+     ***************************************************************/
+    allowRebooking: async ({
+        ctx,
+        args,
+        user,
+    }: {
+        ctx: MutationCtx;
+        args: {
+            bookingId: Id<"bookings">;
+        };
+        user: Doc<"users">;
+    }): Promise<{ success: boolean }> => {
+        const now = Date.now();
+
+        const booking = await ctx.db.get(args.bookingId);
+        if (!booking) {
+            throw new ConvexError({
+                message: "Booking not found",
+                field: "bookingId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND,
+            });
+        }
+
+        // Check if user has permission to modify this booking
+        if (booking.businessId !== user.businessId) {
+            throw new ConvexError({
+                message: "You are not authorized to modify this booking",
+                field: "businessId",
+                code: ERROR_CODES.UNAUTHORIZED,
+            });
+        }
+
+        // Only allow rebooking for bookings cancelled by business
+        if (booking.status !== "cancelled_by_business") {
+            throw new ConvexError({
+                message: "Only business-cancelled bookings can be made rebookable",
+                field: "status",
+                code: ERROR_CODES.ACTION_NOT_ALLOWED,
+            });
+        }
+
+        // Update booking status to rebookable
+        await ctx.db.patch(args.bookingId, {
+            status: "cancelled_by_business_rebookable",
+            updatedAt: now,
+            updatedBy: user._id,
         });
 
         return { success: true };

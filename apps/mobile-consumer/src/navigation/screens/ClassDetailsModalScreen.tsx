@@ -33,6 +33,11 @@ export function ClassDetailsModalScreen() {
         classInstanceId: classInstance._id
     });
 
+    // Get booking history for this class (to show history if multiple bookings exist)
+    const bookingHistory = useQuery(api.queries.bookings.getUserBookingHistory, {
+        classInstanceId: classInstance._id
+    });
+
     // Fetch full template data
     const template = useQuery(api.queries.classTemplates.getClassTemplateById, {
         templateId: classInstance.templateId
@@ -343,6 +348,42 @@ export function ClassDetailsModalScreen() {
                             )}
                         </View>
 
+                        {/* Booking History Section */}
+                        {bookingHistory && bookingHistory.length > 1 && (
+                            <View style={styles.bookingHistorySection}>
+                                <Text style={styles.sectionTitle}>Booking History</Text>
+                                <View style={styles.bookingHistoryList}>
+                                    {bookingHistory.map((booking, index) => (
+                                        <View key={booking._id} style={styles.bookingHistoryItem}>
+                                            <View style={styles.bookingHistoryLeft}>
+                                                <Text style={styles.bookingHistoryStatus}>
+                                                    {booking.status === "pending" && "✓ Current Booking"}
+                                                    {booking.status === "completed" && "✓ Completed"}
+                                                    {booking.status === "cancelled_by_consumer" && "✗ You cancelled"}
+                                                    {booking.status === "cancelled_by_business" && "✗ Cancelled by studio"}
+                                                    {booking.status === "cancelled_by_business_rebookable" && "✗ Cancelled by studio"}
+                                                    {booking.status === "no_show" && "⚠ No show"}
+                                                </Text>
+                                                <Text style={styles.bookingHistoryDate}>
+                                                    {format(new Date(booking.createdAt), 'MMM d, yyyy \'at\' h:mm a', {
+                                                        in: tz('Europe/Athens')
+                                                    })}
+                                                </Text>
+                                                {booking.cancelReason && (
+                                                    <Text style={styles.bookingHistoryReason}>
+                                                        {booking.cancelReason}
+                                                    </Text>
+                                                )}
+                                            </View>
+                                            <Text style={styles.bookingHistoryCredits}>
+                                                {booking.creditsUsed} credits
+                                            </Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+
                         {/* Bottom padding to account for sticky button */}
                         <View style={styles.bottomPadding} />
                     </ScrollView>
@@ -361,16 +402,33 @@ export function ClassDetailsModalScreen() {
                                     <Text style={styles.alreadyAttendingSubtext}>Tap to view your bookings</Text>
                                 </TouchableOpacity>
                             ) : (
-                                /* Status Display Container - Not clickable */
-                                <View style={styles.statusContainer}>
-                                    <Text style={styles.statusTitle}>
-                                        {existingBooking.status === "completed" && "✓ Completed"}
-                                        {existingBooking.status === "cancelled_by_consumer" && "✗ You cancelled"}
-                                        {existingBooking.status === "cancelled_by_business" && "✗ Cancelled by studio"}
-                                        {existingBooking.status === "no_show" && "⚠ No show"}
-                                    </Text>
-                                    <Text style={styles.statusSubtext}>You cannot book this class again</Text>
-                                </View>
+                                (existingBooking.status === "cancelled_by_consumer" || existingBooking.status === "cancelled_by_business_rebookable") ? (
+                                    /* Rebookable Container - Allow rebooking */
+                                    <TouchableOpacity
+                                        style={styles.rebookContainer}
+                                        onPress={onPress}
+                                        activeOpacity={0.8}
+                                        disabled={isBooking}
+                                    >
+                                        <Text style={styles.rebookTitle}>
+                                            {existingBooking.status === "cancelled_by_consumer" && "✗ You cancelled"}
+                                            {existingBooking.status === "cancelled_by_business_rebookable" && "✗ Cancelled by studio"}
+                                        </Text>
+                                        <Text style={styles.rebookSubtext}>
+                                            {isBooking ? 'Rebooking...' : 'Tap to rebook this class'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ) : (
+                                    /* Status Display Container - Not clickable */
+                                    <View style={styles.statusContainer}>
+                                        <Text style={styles.statusTitle}>
+                                            {existingBooking.status === "completed" && "✓ Completed"}
+                                            {existingBooking.status === "cancelled_by_business" && "✗ Cancelled by studio"}
+                                            {existingBooking.status === "no_show" && "⚠ No show"}
+                                        </Text>
+                                        <Text style={styles.statusSubtext}>You cannot book this class again</Text>
+                                    </View>
+                                )
                             )
                         ) : (
                             /* Book Class Button */
@@ -850,6 +908,36 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 2,
     },
+    rebookContainer: {
+        backgroundColor: '#3b82f6', // Blue background for rebooking
+        borderRadius: 40,
+        height: 56,
+        paddingHorizontal: 28,
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 8,
+    },
+    rebookTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: 'white',
+        textAlign: 'center',
+    },
+    rebookSubtext: {
+        fontSize: 13,
+        fontWeight: '500',
+        color: 'rgba(255, 255, 255, 0.9)',
+        textAlign: 'center',
+        marginTop: 2,
+    },
     imageOverlayContainer: {
         position: 'absolute',
         left: 20,
@@ -881,5 +969,49 @@ const styles = StyleSheet.create({
         bottom: 0,
         height: '40%',
         zIndex: 1,
+    },
+    bookingHistorySection: {
+        paddingTop: 12,
+        paddingHorizontal: 20,
+        paddingBottom: 24,
+        borderTopWidth: 1,
+        borderTopColor: '#f3f4f6',
+    },
+    bookingHistoryList: {
+        marginTop: 12,
+    },
+    bookingHistoryItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f3f4f6',
+    },
+    bookingHistoryLeft: {
+        flex: 1,
+        marginRight: 12,
+    },
+    bookingHistoryStatus: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#111827',
+        marginBottom: 4,
+    },
+    bookingHistoryDate: {
+        fontSize: 12,
+        color: '#6b7280',
+        marginBottom: 2,
+    },
+    bookingHistoryReason: {
+        fontSize: 11,
+        fontStyle: 'italic',
+        color: '#9ca3af',
+        marginTop: 2,
+    },
+    bookingHistoryCredits: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#374151',
     },
 }); 

@@ -18,6 +18,7 @@ import type { Doc } from '@repo/api/convex/_generated/dataModel';
 import { useIsMobile } from '@/hooks/use-mobile';
 import ConfirmDeleteInstancesDialog from './confirm-delete-multiple-instances-dialog';
 import { dbTimestampToBusinessDate } from '@/lib/timezone-utils';
+import { ConvexError } from 'convex/values';
 
 export interface DeleteEventDialogProps {
   /** Whether the dialog is open */
@@ -74,8 +75,13 @@ export function DeleteEventDialog({
       await deleteSingleInstance({ instanceId: eventId });
       onDeleteSuccess({ mode: 'single' });
     } catch (error) {
-      console.error('Failed to delete event:', error);
-      toast.error('Failed to delete event. Please try again.');
+      if (error instanceof ConvexError) {
+        console.log('Error.data:', error.data);
+        toast.error(error.data.message);
+      } else {
+        console.error('Failed to delete event:', error);
+        toast.error('Failed to delete event. Please try again.');
+      }
     } finally {
       setIsDeletingSingle(false);
     }
@@ -91,8 +97,13 @@ export function DeleteEventDialog({
       await deleteSimilarFutureInstances({ instanceId: eventId });
       onDeleteSuccess({ mode: 'similar' });
     } catch (error) {
-      console.error('Failed to delete similar future events:', error);
-      toast.error('Failed to delete similar future events. Please try again.');
+      if (error instanceof ConvexError) {
+        console.log('Error.data:', error.data);
+        toast.error(error.data.message);
+      } else {
+        console.error('Failed to delete event:', error);
+        toast.error('Failed to delete event. Please try again.');
+      }
     } finally {
       setIsDeletingMultiple(false);
     }

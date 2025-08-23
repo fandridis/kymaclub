@@ -401,6 +401,7 @@ export const bookingsFields = {
     v.literal("completed"),  // User attended class
     v.literal("cancelled_by_consumer"),  // User cancelled before class
     v.literal("cancelled_by_business"),  // Business cancelled class
+    v.literal("cancelled_by_business_rebookable"),  // Business cancelled, but allows rebooking
     v.literal("no_show")     // User didn't show up
   ),
 

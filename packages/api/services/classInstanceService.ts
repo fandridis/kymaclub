@@ -9,6 +9,7 @@ import { classInstanceOperations } from "../operations/classInstance";
 import { timeUtils } from "../utils/timeGeneration";
 import type { CreateClassInstanceArgs, CreateMultipleClassInstancesArgs, DeleteSimilarFutureInstancesArgs, DeleteSingleInstanceArgs, UpdateMultipleInstancesArgs, UpdateSingleInstanceArgs } from "../convex/mutations/classInstances";
 import type { BookingWithDetails } from "../types/booking";
+import { bookingService } from "./bookingService";
 
 // Service object with all class instance operations
 export const classInstanceService = {
@@ -250,6 +251,22 @@ export const classInstanceService = {
 
         classInstanceRules.userMustBeInstanceOwner(existingInstance, user);
 
+        // Find all bookings for this instance
+        const bookings = await bookingService.getBookingsByClassInstanceId({
+            ctx,
+            args: {
+                classInstanceId: args.instanceId
+            }
+        });
+
+        if (bookings.length > 0) {
+            throw new ConvexError({
+                message: "You cannot delete a class instance that has bookings. Please cancel the bookings first.",
+                field: "instanceId",
+                code: ERROR_CODES.ACTION_NOT_ALLOWED
+            });
+        }
+
         await ctx.db.patch(args.instanceId, {
             deleted: true,
             deletedAt: Date.now(),
@@ -290,6 +307,23 @@ export const classInstanceService = {
 
         const deletedInstanceIds: Array<Id<"classInstances">> = [];
         const timestamp = Date.now();
+
+        // Find all bookings for all matchingInstances with a promise.all
+        const bookings = await Promise.all(matchingInstances.map(async (instance) => {
+            return bookingService.getBookingsByClassInstanceId({
+                ctx,
+                args: { classInstanceId: instance._id }
+            });
+        }));
+
+        // If any instance has bookings, throw an error
+        if (bookings.some(booking => booking.length > 0)) {
+            throw new ConvexError({
+                message: "You cannot delete a class instance that has bookings. Please cancel the bookings first.",
+                field: "instanceId",
+                code: ERROR_CODES.ACTION_NOT_ALLOWED
+            });
+        }
 
         for (const futureInstance of matchingInstances) {
             await ctx.db.patch(futureInstance._id, {

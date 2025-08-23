@@ -39,7 +39,9 @@ export function ClassBookingsItem({
 }: ClassBookingsItemProps) {
     const [isCancelling, setIsCancelling] = useState(false);
     const [showCancelDialog, setShowCancelDialog] = useState(false);
+    const [isAllowingRebook, setIsAllowingRebook] = useState(false);
     const cancelBooking = useMutation(api.mutations.bookings.cancelBooking);
+    const allowRebooking = useMutation(api.mutations.bookings.allowRebooking);
 
     const customerName = booking.userSnapshot?.name;
 
@@ -72,6 +74,25 @@ export function ClassBookingsItem({
         }
     };
 
+    const handleAllowRebooking = async () => {
+        if (isAllowingRebook) return;
+
+        try {
+            setIsAllowingRebook(true);
+
+            await allowRebooking({
+                bookingId: booking._id,
+            });
+
+            toast.success(`Rebooking allowed for ${customerName}`);
+        } catch (error) {
+            console.error('Failed to allow rebooking:', error);
+            toast.error('Failed to allow rebooking. Please try again.');
+        } finally {
+            setIsAllowingRebook(false);
+        }
+    };
+
     const formatBookingTime = (timestamp: number) => {
         return format(new Date(timestamp), "MMM d, yyyy 'at' h:mm a");
     };
@@ -94,6 +115,8 @@ export function ClassBookingsItem({
             case 'cancelled_by_consumer':
             case 'cancelled_by_business':
                 return 'destructive';
+            case 'cancelled_by_business_rebookable':
+                return 'secondary'; // Yellow-ish variant for rebookable
             case 'no_show':
                 return 'outline';
             default:
@@ -111,6 +134,8 @@ export function ClassBookingsItem({
                 return 'Cancelled (User)';
             case 'cancelled_by_business':
                 return 'Cancelled (Business)';
+            case 'cancelled_by_business_rebookable':
+                return 'Rebookable';
             case 'no_show':
                 return 'No Show';
             default:
@@ -172,49 +197,70 @@ export function ClassBookingsItem({
                         {getStatusLabel(booking.status)}
                     </Badge>
 
-                    {/* More Actions Dropdown */}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                                disabled={isCancelling}
-                            >
-                                {isCancelling ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    <MoreVertical className="h-4 w-4" />
-                                )}
-                                <span className="sr-only">Open menu</span>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            {/* Only show Cancel Booking for non-cancelled bookings */}
-                            {booking.status !== 'cancelled_by_consumer' &&
-                                booking.status !== 'cancelled_by_business' && (
-                                    <DropdownMenuItem
-                                        onClick={() => setShowCancelDialog(true)}
-                                        disabled={isCancelling}
-                                        className="text-destructive focus:text-destructive"
-                                    >
-                                        Cancel Booking
-                                    </DropdownMenuItem>
-                                )}
+                    {/* More Actions Dropdown - Only show if there are actions */}
+                    {(() => {
+                        const hasActions =
+                            (booking.status === 'pending') || // Can cancel
+                            (booking.status === 'cancelled_by_business'); // Can allow rebooking
 
-                            {/* Only show Remove Booking for cancelled bookings */}
-                            {(booking.status === 'cancelled_by_consumer' ||
-                                booking.status === 'cancelled_by_business') &&
-                                onDeleteBooking && (
-                                    <DropdownMenuItem
-                                        onClick={() => onDeleteBooking(booking._id)}
-                                        className="text-destructive focus:text-destructive"
+                        if (!hasActions) return null;
+
+                        return (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        disabled={isCancelling || isAllowingRebook}
                                     >
-                                        Remove Booking
-                                    </DropdownMenuItem>
-                                )}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                                        {(isCancelling || isAllowingRebook) ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <MoreVertical className="h-4 w-4" />
+                                        )}
+                                        <span className="sr-only">Open menu</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    {/* Only show Cancel Booking for non-cancelled bookings */}
+                                    {booking.status === 'pending' && (
+                                        <DropdownMenuItem
+                                            onClick={() => setShowCancelDialog(true)}
+                                            disabled={isCancelling}
+                                            className="text-destructive focus:text-destructive"
+                                        >
+                                            Cancel Booking
+                                        </DropdownMenuItem>
+                                    )}
+
+                                    {/* Show Allow Rebooking for business-cancelled bookings */}
+                                    {booking.status === 'cancelled_by_business' && (
+                                        <DropdownMenuItem
+                                            onClick={handleAllowRebooking}
+                                            disabled={isAllowingRebook}
+                                            className="text-blue-600 focus:text-blue-600"
+                                        >
+                                            Allow Rebooking
+                                        </DropdownMenuItem>
+                                    )}
+
+                                    {/* Only show Remove Booking for cancelled bookings */}
+                                    {/* {(booking.status === 'cancelled_by_consumer' ||
+                                        booking.status === 'cancelled_by_business' ||
+                                        booking.status === 'cancelled_by_business_rebookable') &&
+                                        onDeleteBooking && (
+                                            <DropdownMenuItem
+                                                onClick={() => onDeleteBooking(booking._id)}
+                                                className="text-destructive focus:text-destructive"
+                                            >
+                                                Remove Booking
+                                            </DropdownMenuItem>
+                                        )} */}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        );
+                    })()}
                 </div>
             </div>
 

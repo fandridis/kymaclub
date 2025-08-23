@@ -50,3 +50,14 @@ export const deleteBooking = mutationWithTriggers({
     return result;
   },
 });
+
+export const allowRebooking = mutationWithTriggers({
+  args: v.object({
+    bookingId: v.id("bookings"),
+  }),
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUserOrThrow(ctx);
+    const result = await bookingService.allowRebooking({ ctx, args, user });
+    return result;
+  },
+});
