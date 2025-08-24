@@ -1,6 +1,5 @@
-import { Infer, v } from "convex/values";
+import { type Infer, v } from "convex/values";
 import { bookingsFields } from "../convex/schema";
-import { Doc } from "../convex/_generated/dataModel";
 
 const bookingFieldObject = v.object(bookingsFields);
 
@@ -13,8 +12,9 @@ export type userSnapshot = {
     phone?: string;
 };
 
-export type BookingWithDetails = Doc<"bookings"> & {
-    classInstance?: Doc<"classInstances">;
-    classTemplate?: Doc<"classTemplates">;
-    venue?: Doc<"venues">;
-};
+// gg1
+// export type BookingWithDetails = Doc<"bookings"> & {
+//     classInstance?: Doc<"classInstances">;
+//     classTemplate?: Doc<"classTemplates">;
+//     venue?: Doc<"venues">;
+// };

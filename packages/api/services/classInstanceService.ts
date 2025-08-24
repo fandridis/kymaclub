@@ -8,7 +8,6 @@ import { classTemplateRules } from "../rules/classTemplate";
 import { classInstanceOperations } from "../operations/classInstance";
 import { timeUtils } from "../utils/timeGeneration";
 import type { CreateClassInstanceArgs, CreateMultipleClassInstancesArgs, DeleteSimilarFutureInstancesArgs, DeleteSingleInstanceArgs, UpdateMultipleInstancesArgs, UpdateSingleInstanceArgs } from "../convex/mutations/classInstances";
-import type { BookingWithDetails } from "../types/booking";
 import { bookingService } from "./bookingService";
 
 // Service object with all class instance operations
@@ -454,7 +453,7 @@ export const classInstanceService = {
         ctx: QueryCtx,
         args: { startDate: number, limit?: number },
         user: Doc<"users">
-    }): Promise<Array<{ classInstance: Doc<"classInstances">; bookings: BookingWithDetails[] }>> => {
+    }): Promise<Array<{ classInstance: Doc<"classInstances">; bookings: Doc<"bookings">[] }>> => {
         coreRules.userMustBeAssociatedWithBusiness(user);
 
         const limit = args.limit ?? 500;
@@ -495,7 +494,7 @@ export const classInstanceService = {
         }
 
         // Build the result array with enriched bookings
-        const result: Array<{ classInstance: Doc<"classInstances">; bookings: BookingWithDetails[] }> = [];
+        const result: Array<{ classInstance: Doc<"classInstances">; bookings: Doc<"bookings">[] }> = [];
 
         for (const classInstance of classInstances) {
             // Find bookings for this class instance
@@ -504,30 +503,30 @@ export const classInstanceService = {
             );
 
             // Enrich bookings with related data
-            const enrichedBookings: BookingWithDetails[] = [];
+            // const enrichedBookings: BookingWithDetails[] = [];
 
-            for (const booking of instanceBookings) {
-                const enrichedBooking: BookingWithDetails = {
-                    ...booking,
-                    classInstance: classInstance
-                };
+            // for (const booking of instanceBookings) {
+            //     const enrichedBooking: BookingWithDetails = {
+            //         ...booking,
+            //         classInstance: classInstance
+            //     };
 
-                // Get class template
-                if (classInstance.templateId) {
-                    enrichedBooking.classTemplate = await ctx.db.get(classInstance.templateId) || undefined;
-                }
+            //     // Get class template
+            //     if (classInstance.templateId) {
+            //         enrichedBooking.classTemplate = await ctx.db.get(classInstance.templateId) || undefined;
+            //     }
 
-                // Get venue
-                if (classInstance.venueId) {
-                    enrichedBooking.venue = await ctx.db.get(classInstance.venueId) || undefined;
-                }
+            //     // Get venue
+            //     if (classInstance.venueId) {
+            //         enrichedBooking.venue = await ctx.db.get(classInstance.venueId) || undefined;
+            //     }
 
-                enrichedBookings.push(enrichedBooking);
-            }
+            //     enrichedBookings.push(enrichedBooking);
+            // }
 
             result.push({
                 classInstance,
-                bookings: enrichedBookings
+                bookings: instanceBookings
             });
         }
 

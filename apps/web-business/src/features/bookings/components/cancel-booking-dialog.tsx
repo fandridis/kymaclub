@@ -11,13 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertTriangle } from "lucide-react";
-import type { BookingWithDetails } from "@repo/api/types/booking";
+import type { Doc } from "@repo/api/convex/_generated/dataModel";
 
 interface CancelBookingDialogProps {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: (reason?: string) => void;
-    booking: BookingWithDetails;
+    booking: Doc<"bookings">;
     isCancelling?: boolean;
 }
 

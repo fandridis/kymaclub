@@ -1,11 +1,10 @@
 import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../convex/_generated/dataModel";
-import type { MutationCtx, QueryCtx } from "../convex/_generated/server";
 import { format, getDay } from "date-fns";
 import { throwIfError, updateIfExists } from '../utils/core';
 import { ERROR_CODES } from '../utils/errorCodes';
 import { classValidations } from "../validations/class";
-import { CreateMultipleClassInstancesArgs, UpdateSingleInstanceArgs } from "../convex/mutations/classInstances";
+import type { CreateMultipleClassInstancesArgs, UpdateSingleInstanceArgs } from "../convex/mutations/classInstances";
 
 /***************************************************************
  * Instance Data Preparation
@@ -154,8 +153,7 @@ export const createInstanceFromTemplate = (
         capacity: template.capacity,
         baseCredits: template.baseCredits,
         bookingWindow: template.bookingWindow,
-        // We don't add this by default, it's can be added to manually override the template value
-        // cancellationWindowHours: template.cancellationWindowHours,
+        cancellationWindowHours: template.cancellationWindowHours,
         tags: template.tags,
         color: template.color,
 

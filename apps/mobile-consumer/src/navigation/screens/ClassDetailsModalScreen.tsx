@@ -20,7 +20,7 @@ const { width: screenWidth } = Dimensions.get('window');
 export function ClassDetailsModalScreen() {
     const navigation = useNavigation();
     const route = useRoute<ClassDetailsRoute>();
-    const { classInstance } = route.params;
+    const { classInstance, classInstanceId } = route.params;
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const { showActionSheetWithOptions } = useActionSheet();
 
@@ -28,25 +28,38 @@ export function ClassDetailsModalScreen() {
     const bookClass = useMutation(api.mutations.bookings.bookClass);
     const [isBooking, setIsBooking] = useState(false);
 
+    // Fetch classInstance if not provided directly
+    const fetchedClassInstance = useQuery(
+        api.queries.classInstances.getClassInstanceById,
+        classInstance || !classInstanceId ? "skip" : { instanceId: classInstanceId }
+    );
+
+    // Use either the provided classInstance or the fetched one
+    const finalClassInstance = classInstance || fetchedClassInstance;
+
     // Check if user already has a booking for this class
-    const existingBooking = useQuery(api.queries.bookings.getUserBookings, {
-        classInstanceId: classInstance._id
-    });
+    const existingBooking = useQuery(
+        api.queries.bookings.getUserBookings,
+        finalClassInstance ? { classInstanceId: finalClassInstance._id } : "skip"
+    );
 
     // Get booking history for this class (to show history if multiple bookings exist)
-    const bookingHistory = useQuery(api.queries.bookings.getUserBookingHistory, {
-        classInstanceId: classInstance._id
-    });
+    const bookingHistory = useQuery(
+        api.queries.bookings.getUserBookingHistory,
+        finalClassInstance ? { classInstanceId: finalClassInstance._id } : "skip"
+    );
 
     // Fetch full template data
-    const template = useQuery(api.queries.classTemplates.getClassTemplateById, {
-        templateId: classInstance.templateId
-    });
+    const template = useQuery(
+        api.queries.classTemplates.getClassTemplateById,
+        finalClassInstance ? { templateId: finalClassInstance.templateId } : "skip"
+    );
 
     // Fetch full venue data  
-    const venue = useQuery(api.queries.venues.getVenueById, {
-        venueId: classInstance.venueId
-    });
+    const venue = useQuery(
+        api.queries.venues.getVenueById,
+        finalClassInstance ? { venueId: finalClassInstance.venueId } : "skip"
+    );
 
     // Get all image storage IDs from both template and venue
     const templateImageIds = template?.imageStorageIds ?? [];
@@ -71,6 +84,8 @@ export function ClassDetailsModalScreen() {
     }, [imageUrlsQuery]);
 
     const onPress = () => {
+        if (!finalClassInstance) return;
+
         const options = [`Spend ${price} credits`, 'Cancel'];
         const cancelButtonIndex = 1;
 
@@ -86,7 +101,7 @@ export function ClassDetailsModalScreen() {
                     try {
                         setIsBooking(true);
                         await bookClass({
-                            classInstanceId: classInstance._id,
+                            classInstanceId: finalClassInstance._id,
                             description: `Booking for ${className}`,
                         });
                         Alert.alert('Booked', 'Your class has been booked successfully.');
@@ -146,21 +161,63 @@ export function ClassDetailsModalScreen() {
         );
     };
 
-    // Loading state
+    // Loading state - now only checks for template, venue, images, and booking data
     const isLoading = !template || !venue || (allImageIds.length > 0 && !imageUrlsQuery) || existingBooking === undefined;
 
+    // Early return if no classInstance available and no classInstanceId to fetch
+    if (!finalClassInstance && !classInstanceId) {
+        return (
+            <SafeAreaView style={styles.safeArea}>
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
+                        <Text style={styles.closeText}>Close</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle} numberOfLines={1}>
+                        Class Details
+                    </Text>
+                    <View style={styles.headerRightSpacer} />
+                </View>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#ff4747" />
+                    <Text style={styles.loadingText}>No class information provided</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    // Early return if still loading classInstance
+    if (!finalClassInstance) {
+        return (
+            <SafeAreaView style={styles.safeArea}>
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
+                        <Text style={styles.closeText}>Close</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle} numberOfLines={1}>
+                        Class Details
+                    </Text>
+                    <View style={styles.headerRightSpacer} />
+                </View>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#ff4747" />
+                    <Text style={styles.loadingText}>Loading class details...</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
     // Use template data (with instance overrides)
-    const className = classInstance.name ?? template?.name ?? 'Class';
-    const description = classInstance.description ?? template?.description ?? '';
-    const instructor = classInstance.instructor ?? template?.instructor ?? 'TBD';
-    const capacity = classInstance.capacity ?? template?.capacity ?? 0;
-    const baseCredits = classInstance.baseCredits ?? template?.baseCredits ?? 0;
+    const className = finalClassInstance.name ?? template?.name ?? 'Class';
+    const description = finalClassInstance.description ?? template?.description ?? '';
+    const instructor = finalClassInstance.instructor ?? template?.instructor ?? 'TBD';
+    const capacity = finalClassInstance.capacity ?? template?.capacity ?? 0;
+    const baseCredits = finalClassInstance.baseCredits ?? template?.baseCredits ?? 0;
 
     // Venue info
     const businessName = venue?.name ?? 'Unknown Venue';
 
     // Time and pricing calculations  
-    const startTime = new Date(classInstance.startTime);
+    const startTime = new Date(finalClassInstance.startTime);
 
     // Formatted "When" string like "Friday, 14 August, 13:00" in Europe/Athens timezone
     const whenStr = format(startTime, 'eeee, dd MMMM, HH:mm', {
@@ -171,7 +228,7 @@ export function ClassDetailsModalScreen() {
     const cancelUntilStr = template?.cancellationWindowHours
         ? (() => {
             const cancelUntilDate = new Date(
-                classInstance.startTime - template.cancellationWindowHours * 60 * 60 * 1000,
+                finalClassInstance.startTime - template.cancellationWindowHours * 60 * 60 * 1000,
             );
             // Format in Europe/Athens timezone
             return format(cancelUntilDate, 'eeee, dd MMMM, HH:mm', {
@@ -180,22 +237,10 @@ export function ClassDetailsModalScreen() {
         })()
         : null;
 
-    const duration = Math.round((classInstance.endTime - classInstance.startTime) / (1000 * 60));
+    const duration = Math.round((finalClassInstance.endTime - finalClassInstance.startTime) / (1000 * 60));
     const price = baseCredits; // Show in credits instead of euros
-    const spotsLeft = Math.max(0, capacity - (classInstance.bookedCount ?? 0));
-    // const typeLabel = classInstance.tags?.[0] ?? (className ? className.split(' ')[0] : 'Class');
-
-    const renderImageItem = ({ item: imageUrl }: { item: string }) => (
-        <View style={styles.imageContainer}>
-            <Image
-                source={{ uri: imageUrl }}
-                style={styles.image}
-                contentFit="cover"
-                transition={300}
-                cachePolicy="memory-disk"
-            />
-        </View>
-    );
+    const spotsLeft = Math.max(0, capacity - (finalClassInstance.bookedCount ?? 0));
+    // const typeLabel = finalClassInstance.tags?.[0] ?? (className ? className.split(' ')[0] : 'Class');
 
     return (
         <SafeAreaView style={styles.safeArea}>

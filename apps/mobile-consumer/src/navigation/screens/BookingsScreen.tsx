@@ -11,7 +11,6 @@ import { BookingCard } from '../../components/BookingCard';
 import { useAuth, useAuthenticatedUser } from '../../stores/auth-store';
 import type { Doc, Id } from '@repo/api/convex/_generated/dataModel';
 import { getCancellationInfo, getCancellationMessage } from '../../utils/cancellationUtils';
-import { BookingWithDetails } from '@repo/api/types/booking';
 import { theme } from '../../theme';
 
 // Configuration for initial load and load more
@@ -42,7 +41,7 @@ const formatDateHeader = (date: Date, isPast: boolean = false): string => {
     } else {
         // For future dates beyond tomorrow, show day of week and date
         const daysDiff = Math.ceil((dateOnly.getTime() - todayOnly.getTime()) / (1000 * 60 * 60 * 24));
-        
+
         if (daysDiff <= 7) {
             // Within a week - show day name and date
             return date.toLocaleDateString('en-US', {
@@ -61,33 +60,33 @@ const formatDateHeader = (date: Date, isPast: boolean = false): string => {
 };
 
 // Enhanced grouping for better mobile UX - separates future from past bookings
-const groupBookingsByDate = (bookings: any[]): Record<string, any[]> => {
+const groupBookingsByDate = (bookings: Doc<"bookings">[]): Record<string, Doc<"bookings">[]> => {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    
+
     // First, deduplicate bookings by showing only the latest booking per class instance
-    const latestBookingsByClass = new Map<string, any>();
-    
-    bookings.forEach((booking: any) => {
+    const latestBookingsByClass = new Map<string, Doc<"bookings">>();
+
+    bookings.forEach((booking: Doc<"bookings">) => {
         const classInstanceId = booking.classInstanceId;
         if (!classInstanceId) return;
-        
+
         const existing = latestBookingsByClass.get(classInstanceId);
         if (!existing || booking.createdAt > existing.createdAt) {
             latestBookingsByClass.set(classInstanceId, booking);
         }
     });
-    
+
     // Convert back to array with only latest bookings per class
     const deduplicatedBookings = Array.from(latestBookingsByClass.values());
-    
-    // Separate future and past bookings
-    const futureBookings: any[] = [];
-    const pastBookings: any[] = [];
 
-    deduplicatedBookings.forEach((booking: any) => {
+    // Separate future and past bookings
+    const futureBookings: Doc<"bookings">[] = [];
+    const pastBookings: Doc<"bookings">[] = [];
+
+    deduplicatedBookings.forEach((booking: Doc<"bookings">) => {
         // Use classInstanceSnapshot.startTime first, fallback to classInstance.startTime for backward compatibility
-        const startTime = booking.classInstanceSnapshot?.startTime || booking.classInstance?.startTime;
+        const startTime = booking.classInstanceSnapshot?.startTime;
         if (!startTime) return;
 
         if (startTime >= todayStart) {
@@ -98,24 +97,24 @@ const groupBookingsByDate = (bookings: any[]): Record<string, any[]> => {
     });
 
     // Sort future bookings by start time (earliest first)
-    futureBookings.sort((a: any, b: any) => {
-        const aTime = a.classInstanceSnapshot?.startTime || a.classInstance?.startTime || 0;
-        const bTime = b.classInstanceSnapshot?.startTime || b.classInstance?.startTime || 0;
+    futureBookings.sort((a: Doc<"bookings">, b: Doc<"bookings">) => {
+        const aTime = a.classInstanceSnapshot?.startTime || 0;
+        const bTime = b.classInstanceSnapshot?.startTime || 0;
         return aTime - bTime;
     });
 
     // Sort past bookings by start time (most recent first)
-    pastBookings.sort((a: any, b: any) => {
-        const aTime = a.classInstanceSnapshot?.startTime || a.classInstance?.startTime || 0;
-        const bTime = b.classInstanceSnapshot?.startTime || b.classInstance?.startTime || 0;
+    pastBookings.sort((a: Doc<"bookings">, b: Doc<"bookings">) => {
+        const aTime = a.classInstanceSnapshot?.startTime || 0;
+        const bTime = b.classInstanceSnapshot?.startTime || 0;
         return bTime - aTime;
     });
 
     // Group future bookings by date
-    const futureGrouped: Record<string, any[]> = {};
-    futureBookings.forEach((booking: any) => {
-        const startTime = booking.classInstanceSnapshot?.startTime || booking.classInstance?.startTime;
-        const date = new Date(startTime);
+    const futureGrouped: Record<string, Doc<"bookings">[]> = {};
+    futureBookings.forEach((booking: Doc<"bookings">) => {
+        const startTime = booking.classInstanceSnapshot?.startTime;
+        const date = new Date(startTime!);
         const dateKey = formatDateHeader(date, false);
 
         if (!futureGrouped[dateKey]) {
@@ -125,10 +124,10 @@ const groupBookingsByDate = (bookings: any[]): Record<string, any[]> => {
     });
 
     // Group past bookings by date
-    const pastGrouped: Record<string, any[]> = {};
-    pastBookings.forEach((booking: any) => {
-        const startTime = booking.classInstanceSnapshot?.startTime || booking.classInstance?.startTime;
-        const date = new Date(startTime);
+    const pastGrouped: Record<string, Doc<"bookings">[]> = {};
+    pastBookings.forEach((booking: Doc<"bookings">) => {
+        const startTime = booking.classInstanceSnapshot?.startTime;
+        const date = new Date(startTime!);
         const dateKey = formatDateHeader(date, true);
 
         if (!pastGrouped[dateKey]) {
@@ -139,23 +138,23 @@ const groupBookingsByDate = (bookings: any[]): Record<string, any[]> => {
 
     // Sort bookings within each day by start time
     Object.keys(futureGrouped).forEach(dateKey => {
-        futureGrouped[dateKey].sort((a: any, b: any) => {
-            const aTime = a.classInstanceSnapshot?.startTime || a.classInstance?.startTime || 0;
-            const bTime = b.classInstanceSnapshot?.startTime || b.classInstance?.startTime || 0;
+        futureGrouped[dateKey].sort((a: Doc<"bookings">, b: Doc<"bookings">) => {
+            const aTime = a.classInstanceSnapshot?.startTime || 0;
+            const bTime = b.classInstanceSnapshot?.startTime || 0;
             return aTime - bTime;
         });
     });
 
     Object.keys(pastGrouped).forEach(dateKey => {
-        pastGrouped[dateKey].sort((a: any, b: any) => {
-            const aTime = a.classInstanceSnapshot?.startTime || a.classInstance?.startTime || 0;
-            const bTime = b.classInstanceSnapshot?.startTime || b.classInstance?.startTime || 0;
+        pastGrouped[dateKey].sort((a: Doc<"bookings">, b: Doc<"bookings">) => {
+            const aTime = a.classInstanceSnapshot?.startTime || 0;
+            const bTime = b.classInstanceSnapshot?.startTime || 0;
             return aTime - bTime;
         });
     });
 
     // Combine future and past with separator
-    const orderedResult: Record<string, any[]> = {};
+    const orderedResult: Record<string, Doc<"bookings">[]> = {};
 
     // Add "UPCOMING BOOKINGS" separator first if there are future bookings
     const hasFutureBookings = Object.keys(futureGrouped).length > 0;
@@ -165,7 +164,7 @@ const groupBookingsByDate = (bookings: any[]): Record<string, any[]> => {
 
     // Add future bookings in chronological order
     const futureDateOrder = ['Today', 'Tomorrow'];
-    
+
     // Add Today and Tomorrow first if they exist
     futureDateOrder.forEach(dateKey => {
         if (futureGrouped[dateKey]) {
@@ -179,8 +178,8 @@ const groupBookingsByDate = (bookings: any[]): Record<string, any[]> => {
         // Get the first booking from each date group to compare dates
         const aFirstBooking = futureGrouped[a][0];
         const bFirstBooking = futureGrouped[b][0];
-        const aTime = aFirstBooking.classInstanceSnapshot?.startTime || aFirstBooking.classInstance?.startTime || 0;
-        const bTime = bFirstBooking.classInstanceSnapshot?.startTime || bFirstBooking.classInstance?.startTime || 0;
+        const aTime = aFirstBooking.classInstanceSnapshot?.startTime || 0;
+        const bTime = bFirstBooking.classInstanceSnapshot?.startTime || 0;
         return aTime - bTime;
     });
 
@@ -198,8 +197,8 @@ const groupBookingsByDate = (bookings: any[]): Record<string, any[]> => {
         // Get the first booking from each date group to compare dates
         const aFirstBooking = pastGrouped[a][0];
         const bFirstBooking = pastGrouped[b][0];
-        const aTime = aFirstBooking.classInstanceSnapshot?.startTime || aFirstBooking.classInstance?.startTime || 0;
-        const bTime = bFirstBooking.classInstanceSnapshot?.startTime || bFirstBooking.classInstance?.startTime || 0;
+        const aTime = aFirstBooking.classInstanceSnapshot?.startTime || 0;
+        const bTime = bFirstBooking.classInstanceSnapshot?.startTime || 0;
         return bTime - aTime; // Reverse order for past bookings
     });
 
@@ -240,64 +239,7 @@ export function BookingsScreen() {
     const bookingsSections = useMemo(() => {
         if (!allBookings?.length) return [];
 
-        // TEST: Add fake past bookings for testing date grouping
-        const fakeBookings = [
-            {
-                _id: 'fake-1',
-                status: 'completed',
-                classInstanceSnapshot: {
-                    startTime: new Date('2024-08-21T10:00:00').getTime(),
-                    name: 'Morning Yoga',
-                },
-                classTemplate: { name: 'Morning Yoga', cancellationWindowHours: 24 },
-                venue: { name: 'Wellness Center' }
-            },
-            {
-                _id: 'fake-2', 
-                status: 'completed',
-                classInstanceSnapshot: {
-                    startTime: new Date('2024-08-21T15:30:00').getTime(),
-                    name: 'Pilates Class',
-                },
-                classTemplate: { name: 'Pilates Class', cancellationWindowHours: 24 },
-                venue: { name: 'Fitness Studio' }
-            },
-            {
-                _id: 'fake-3',
-                status: 'completed', 
-                classInstanceSnapshot: {
-                    startTime: new Date('2024-08-20T09:00:00').getTime(),
-                    name: 'HIIT Workout',
-                },
-                classTemplate: { name: 'HIIT Workout', cancellationWindowHours: 24 },
-                venue: { name: 'Gym Plus' }
-            },
-            {
-                _id: 'fake-4',
-                status: 'completed',
-                classInstanceSnapshot: {
-                    startTime: new Date('2024-08-15T18:00:00').getTime(),
-                    name: 'Evening Meditation',
-                },
-                classTemplate: { name: 'Evening Meditation', cancellationWindowHours: 24 },
-                venue: { name: 'Zen Center' }
-            },
-            {
-                _id: 'fake-5',
-                status: 'completed',
-                classInstanceSnapshot: {
-                    startTime: new Date('2024-08-14T11:30:00').getTime(),
-                    name: 'CrossFit Training',
-                },
-                classTemplate: { name: 'CrossFit Training', cancellationWindowHours: 24 },
-                venue: { name: 'Box Gym' }
-            },
-        ];
-
-        // Combine real bookings with fake test bookings
-        const allBookingsWithTest = [...allBookings, ...fakeBookings];
-
-        const grouped = groupBookingsByDate(allBookingsWithTest);
+        const grouped = groupBookingsByDate(allBookings);
         return Object.entries(grouped).map(([dateKey, bookings]) => ({
             title: dateKey,
             data: bookings,
@@ -311,7 +253,7 @@ export function BookingsScreen() {
             title: string
         } | {
             type: 'booking';
-            data: any
+            data: Doc<"bookings">
         } | {
             type: 'loadMore'
         }> = [];
@@ -335,19 +277,19 @@ export function BookingsScreen() {
         return { flattenedItems: items, headerIndices: headerIdx };
     }, [bookingsSections, status]);
 
-    const handleCancelBooking = (booking: BookingWithDetails) => {
+    const handleCancelBooking = (booking: Doc<"bookings">) => {
         const options = ['Cancel Booking', 'Keep Booking'];
         const destructiveButtonIndex = 0;
         const cancelButtonIndex = 1;
 
         // Calculate cancellation info for detailed message
-        const className = booking.classInstance?.name ?? booking.classTemplate?.name ?? 'Class';
+        const className = booking.classInstanceSnapshot?.name ?? 'Class';
         let message = 'This action cannot be undone. You may not get a full refund depending on the cancellation policy.';
 
-        if (booking.classInstance?.startTime && booking.classTemplate?.cancellationWindowHours) {
+        if (booking.classInstanceSnapshot?.startTime && booking.classInstanceSnapshot?.cancellationWindowHours) {
             const cancellationInfo = getCancellationInfo(
-                booking.classInstance.startTime,
-                booking.classTemplate.cancellationWindowHours
+                booking.classInstanceSnapshot.startTime,
+                booking.classInstanceSnapshot.cancellationWindowHours
             );
             message = getCancellationMessage(className, cancellationInfo);
         }
@@ -408,50 +350,16 @@ export function BookingsScreen() {
         }
     };
 
-    const handleRebookClass = async (booking: BookingWithDetails) => {
-        if (!booking.classInstanceId) {
-            Alert.alert('Error', 'Cannot rebook this class. Class information is missing.');
-            return;
-        }
 
-        try {
-            setRebookingBookingId(booking._id);
 
-            await bookClass({
-                classInstanceId: booking.classInstanceId,
-                description: `Rebooking for ${booking.classInstance?.name || 'class'}`,
-            });
-
-            Alert.alert(
-                'Rebooked Successfully',
-                'Your class has been rebooked successfully!',
-                [{ text: 'OK', style: 'default' }]
-            );
-        } catch (error: any) {
-            console.error('Failed to rebook class:', error);
-
-            const errorMessage = error?.data?.message ||
-                error?.message ||
-                'Failed to rebook class. Please try again or contact support.';
-
-            Alert.alert(
-                'Rebooking Failed',
-                errorMessage,
-                [{ text: 'OK', style: 'default' }]
-            );
-        } finally {
-            setRebookingBookingId(null);
-        }
-    };
-
-    const handleViewClass = (classInstance: Doc<"classInstances">) => {
-        if (!classInstance) {
-            console.log('No class instance available');
+    const handleViewClass = (booking: Doc<"bookings">) => {
+        if (!booking) {
+            console.log('No booking available');
             return;
         }
 
         // Navigate to ClassDetailsModal
-        navigation.navigate('ClassDetailsModal', { classInstance });
+        navigation.navigate('ClassDetailsModal', { classInstanceId: booking.classInstanceId });
     };
 
     const handleLoadMore = useCallback(() => {
@@ -466,7 +374,7 @@ export function BookingsScreen() {
             title: string
         } | {
             type: 'booking';
-            data: any
+            data: Doc<"bookings">
         } | {
             type: 'loadMore'
         }
@@ -476,7 +384,7 @@ export function BookingsScreen() {
             const isPastBookingsSeparator = item.title === 'PAST BOOKINGS';
             const isUpcomingBookingsSeparator = item.title === 'UPCOMING BOOKINGS';
             const isSectionSeparator = isPastBookingsSeparator || isUpcomingBookingsSeparator;
-            
+
             return (
                 <View style={[
                     styles.stickyDateHeader,

@@ -1,5 +1,4 @@
 import type * as React from "react"
-import { useState } from "react"
 import {
     DialogOrDrawer,
     DialogOrDrawerContent,
@@ -9,35 +8,38 @@ import {
     DialogOrDrawerTrigger,
 } from "@/components/ui/dialog-or-drawer"
 import { Button } from "@/components/ui/button"
-import { CalendarDays, Clock, MapPin, Users, AlertCircle } from "lucide-react"
+import { CalendarDays, Clock, Users } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Skeleton } from "@/components/ui/skeleton"
 import { format } from "date-fns"
 import type { Doc } from "@repo/api/convex/_generated/dataModel"
-import type { BookingWithDetails } from "@repo/api/types/booking"
-import { ClassBookingsItem } from "./class-bookings-item"
 import { useMutation } from "convex/react"
 import { api } from "@repo/api/convex/_generated/api"
+import { ClassBookingsItem } from "@/features/bookings/components/class-bookings-item"
+import { useClassBookings } from "../hooks/use-class-bookings"
 
 interface ClassBookingsDialogProps {
     classInstance: Doc<"classInstances">
-    classTemplate?: Doc<"classTemplates">
-    venue?: Doc<"venues">
-    bookings: BookingWithDetails[]
-    onCancelClass?: (classInstanceId: string) => void
+    open: boolean
+    onOpenChange: (open: boolean) => void
     children: React.ReactNode
+    bookings?: Doc<"bookings">[]
 }
 
 export function ClassBookingsDialog({
     classInstance,
-    classTemplate,
-    venue,
-    bookings,
-    onCancelClass,
+    open,
+    onOpenChange,
     children,
+    bookings: providedBookings,
 }: ClassBookingsDialogProps) {
-    const [isOpen, setIsOpen] = useState(false)
+    const { bookings: queriedBookings, isLoading } = useClassBookings(classInstance._id)
+
     const deleteBooking = useMutation((api as any).mutations.bookings.deleteBooking)
+
+    // Use provided bookings if available, otherwise use queried bookings
+    const bookings = providedBookings || queriedBookings || []
 
     const formatDateTime = (startTime: number, endTime: number) => {
         const start = new Date(startTime)
@@ -49,8 +51,8 @@ export function ClassBookingsDialog({
     }
 
     const { date, time } = formatDateTime(classInstance.startTime, classInstance.endTime ?? 0)
-    const capacity = classInstance.capacity ?? classTemplate?.capacity ?? 0
-    const className = classTemplate?.name ?? classInstance.name ?? "Class"
+    const capacity = classInstance.capacity ?? 0
+    const className = classInstance.name ?? classInstance.templateSnapshot?.name ?? "Class"
 
     // Filter only pending bookings for the count
     const pendingBookings = bookings.filter(booking => booking.status === 'pending')
@@ -66,7 +68,7 @@ export function ClassBookingsDialog({
     console.log('bookings', bookings)
 
     return (
-        <DialogOrDrawer open={isOpen} onOpenChange={setIsOpen}>
+        <DialogOrDrawer open={open} onOpenChange={onOpenChange}>
             <DialogOrDrawerTrigger asChild>{children}</DialogOrDrawerTrigger>
             <DialogOrDrawerContent className="px-2 md:px-6 w-full sm:max-w-2xl">
                 <div className="flex flex-col max-h-[75vh]">
@@ -89,13 +91,6 @@ export function ClassBookingsDialog({
                                 <span className="font-medium">Time:</span>
                                 <span className="text-muted-foreground">{time}</span>
                             </div>
-                            {venue && (
-                                <div className="flex items-center gap-2 text-sm sm:col-span-2">
-                                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                                    <span className="font-medium">Venue:</span>
-                                    <span className="text-muted-foreground">{venue.name}</span>
-                                </div>
-                            )}
                         </div>
 
                         <Separator className="my-2" />
@@ -103,11 +98,33 @@ export function ClassBookingsDialog({
                         {/* Bookings List */}
                         <div className="space-y-2">
                             <h3 className="text-lg font-semibold">
-                                Current Bookings - {pendingBookings.length} / {capacity}
+                                {isLoading && !providedBookings ? (
+                                    <div className="flex items-center gap-2">
+                                        <span>Current Bookings - </span>
+                                        <Skeleton className="h-5 w-12 inline-block" />
+                                        <span> / {capacity}</span>
+                                    </div>
+                                ) : (
+                                    `Current Bookings - ${pendingBookings.length} / ${capacity}`
+                                )}
                             </h3>
 
                             <ScrollArea className="max-h-96">
-                                {bookings.length > 0 ? (
+                                {isLoading && !providedBookings ? (
+                                    <div className="space-y-4">
+                                        {/* Loading skeleton for bookings */}
+                                        {Array.from({ length: 2 }).map((_, index) => (
+                                            <div key={index} className="flex items-center space-x-3 p-3">
+                                                <Skeleton className="h-10 w-10 rounded-full" />
+                                                <div className="space-y-2 flex-1">
+                                                    <Skeleton className="h-4 w-32" />
+                                                    <Skeleton className="h-3 w-24" />
+                                                </div>
+                                                <Skeleton className="h-8 w-20" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : bookings.length > 0 ? (
                                     <div className="space-y-0">
                                         {bookings.map((booking, index) => (
                                             <div key={booking._id}>
@@ -136,15 +153,7 @@ export function ClassBookingsDialog({
                         </div>
                     </div>
                     <DialogOrDrawerFooter className="flex flex-col sm:flex-row sm:justify-end sm:space-x-2 pt-4">
-                        {onCancelClass && (
-                            <Button
-                                variant="destructive"
-                                onClick={() => onCancelClass(classInstance._id)}
-                            >
-                                Cancel Class
-                            </Button>
-                        )}
-                        <Button variant="outline" onClick={() => setIsOpen(false)}>
+                        <Button variant="outline" onClick={() => onOpenChange(false)}>
                             Close
                         </Button>
                     </DialogOrDrawerFooter>

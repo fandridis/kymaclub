@@ -25,6 +25,7 @@ import { useCalendarResize } from '../hooks/use-calendar-resize';
 import { useDoubleClick } from '../hooks/use-double-click';
 import { TEMPLATE_COLORS_MAP } from '@/utils/colors';
 import type { TemplateColorType } from '@repo/utils/colors';
+import { ClassBookingsDialog } from '../../bookings/components/class-bookings-dialog';
 
 interface CalendarPageProps {
     startDate: Date;
@@ -38,6 +39,7 @@ export function CalendarPage({ startDate, classInstances, user }: CalendarPagePr
     const { state: sidebarState } = useSidebar();
     const [createDialog, setCreateDialog] = useState<{ open: boolean; selectedDateTime: string; } | null>(null);
     const [editDialog, setEditDialog] = useState<{ open: boolean; instance: ClassInstance | null } | null>(null);
+    const [viewBookingsDialog, setViewBookingsDialog] = useState<{ open: boolean; classInstance: ClassInstance | null } | null>(null);
     const [deleteDialogInstance, setDeleteDialogInstance] = useState<ClassInstance | null>(null);
     const eventHandlers = useCalendarEventHandler(user.business.timezone);
     const calendarRef = useRef<FullCalendar>(null);
@@ -72,6 +74,17 @@ export function CalendarPage({ startDate, classInstances, user }: CalendarPagePr
     const handleDeleteEvent = (eventInfo: EventContentArg) => {
         const classInstance = eventInfo.event.extendedProps.classInstance as ClassInstance
         setDeleteDialogInstance(classInstance);
+    };
+
+    const handleViewBookings = (eventInfo: EventContentArg) => {
+        const classInstance = eventInfo.event.extendedProps.classInstance as ClassInstance
+        setViewBookingsDialog({
+            open: true,
+            classInstance: classInstance
+        });
+
+
+        console.log('Gotta view bookings for', classInstance)
     };
 
     const preparedCalendarEvents = useMemo(() => {
@@ -120,6 +133,7 @@ export function CalendarPage({ startDate, classInstances, user }: CalendarPagePr
                         eventInfo={eventInfo}
                         onEdit={handleEdit}
                         onDelete={handleDeleteEvent}
+                        onViewBookings={handleViewBookings}
                     />}
             />
 
@@ -180,6 +194,16 @@ export function CalendarPage({ startDate, classInstances, user }: CalendarPagePr
                     dayChanged={eventHandlers.pendingUpdate.dayChanged}
                     businessTimezone={user.business.timezone}
                 />
+            )}
+
+            {viewBookingsDialog && (
+                <ClassBookingsDialog
+                    open={viewBookingsDialog.open}
+                    onOpenChange={(open) => setViewBookingsDialog(open ? viewBookingsDialog : null)}
+                    classInstance={viewBookingsDialog.classInstance!}
+                >
+                    <div />
+                </ClassBookingsDialog>
             )}
         </>
     );

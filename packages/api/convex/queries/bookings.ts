@@ -87,3 +87,21 @@ export const getClassInstancesWithBookings = query({
   },
 });
 
+/**
+ * Get all bookings for a specific class instance
+ * Used by business dashboard to display all bookings for a class
+ */
+export const getBookingsForClassInstance = query({
+  args: {
+    classInstanceId: v.id("classInstances"),
+  },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUserOrThrow(ctx);
+    // For now, we'll use a simple query - in the future this could be moved to a service
+    return await ctx.db
+      .query("bookings")
+      .withIndex("by_class_instance", (q) => q.eq("classInstanceId", args.classInstanceId))
+      .collect();
+  },
+});
+

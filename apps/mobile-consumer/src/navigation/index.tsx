@@ -313,7 +313,10 @@ export type RootStackParamList = {
   Landing: undefined;
   // Modal screens
   QRScannerModal: undefined;
-  ClassDetailsModal: { classInstance: import('../hooks/use-class-instances').ClassInstance };
+  ClassDetailsModal: {
+    classInstance?: import('@repo/api/convex/_generated/dataModel').Doc<"classInstances">;
+    classInstanceId?: import('@repo/api/convex/_generated/dataModel').Id<"classInstances">;
+  };
   SignInModal: undefined;
   CreateAccountModal: {
     waitlistData?: {
@@ -352,7 +355,10 @@ export type RootStackParamListWithNestedTabs = {
   Landing: undefined;
   // Modal screens
   QRScannerModal: undefined;
-  ClassDetailsModal: { classInstance: import('../hooks/use-class-instances').ClassInstance };
+  ClassDetailsModal: {
+    classInstance?: import('../hooks/use-class-instances').ClassInstance;
+    classInstanceId?: import('@repo/api/convex/_generated/dataModel').Id<"classInstances">;
+  };
   SignInModal: undefined;
   CreateAccountModal: {
     waitlistData?: {

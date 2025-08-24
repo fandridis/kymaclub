@@ -5,7 +5,6 @@ import { ERROR_CODES } from "../utils/errorCodes";
 import { ConvexError } from "convex/values";
 import { creditService } from "./creditService";
 import { calculateBestDiscount } from "../utils/classDiscount";
-import type { BookingWithDetails } from "../types/booking";
 
 
 /***************************************************************
@@ -27,7 +26,7 @@ export const bookingService = {
             includeHistory?: boolean;
         };
         user: Doc<"users">;
-    }): Promise<PaginationResult<BookingWithDetails>> => {
+    }): Promise<PaginationResult<Doc<"bookings">>> => {
         const { includeHistory = true } = args;
 
         // Build status filter
@@ -52,33 +51,35 @@ export const bookingService = {
             .paginate(args.paginationOpts);
 
         // Enrich bookings with related data
-        const enrichedBookings: BookingWithDetails[] = [];
+        // const enrichedBookings: BookingWithDetails[] = [];
 
-        for (const booking of result.page) {
-            const enrichedBooking: BookingWithDetails = { ...booking };
+        // for (const booking of result.page) {
+        //     const enrichedBooking: BookingWithDetails = { ...booking };
 
-            // Get class instance
-            if (booking.classInstanceId) {
-                enrichedBooking.classInstance = await ctx.db.get(booking.classInstanceId) || undefined;
+        //     // Get class instance
+        //     if (booking.classInstanceId) {
+        //         enrichedBooking.classInstance = await ctx.db.get(booking.classInstanceId) || undefined;
 
-                // Get class template if instance exists
-                if (enrichedBooking.classInstance?.templateId) {
-                    enrichedBooking.classTemplate = await ctx.db.get(enrichedBooking.classInstance.templateId) || undefined;
-                }
+        //         // Get class template if instance exists
+        //         if (enrichedBooking.classInstance?.templateId) {
+        //             enrichedBooking.classTemplate = await ctx.db.get(enrichedBooking.classInstance.templateId) || undefined;
+        //         }
 
-                // Get venue if instance exists
-                if (enrichedBooking.classInstance?.venueId) {
-                    enrichedBooking.venue = await ctx.db.get(enrichedBooking.classInstance.venueId) || undefined;
-                }
-            }
+        //         // Get venue if instance exists
+        //         if (enrichedBooking.classInstance?.venueId) {
+        //             enrichedBooking.venue = await ctx.db.get(enrichedBooking.classInstance.venueId) || undefined;
+        //         }
+        //     }
 
-            enrichedBookings.push(enrichedBooking);
-        }
+        //     enrichedBookings.push(enrichedBooking);
+        // }
 
-        return {
-            ...result,
-            page: enrichedBookings
-        };
+        // return {
+        //     ...result,
+        //     page: enrichedBookings
+        // };
+
+        return result;
     },
 
     /***************************************************************
@@ -95,7 +96,7 @@ export const bookingService = {
             bookingId: Id<"bookings">;
         };
         user: Doc<"users">;
-    }): Promise<BookingWithDetails> => {
+    }): Promise<Doc<"bookings">> => {
         const booking = await ctx.db.get(args.bookingId);
 
         if (!booking) {
@@ -123,22 +124,23 @@ export const bookingService = {
             });
         }
 
-        // Enrich with related data
-        const enrichedBooking: BookingWithDetails = { ...booking };
+        // // Enrich with related data
+        // const enrichedBooking: BookingWithDetails = { ...booking };
 
-        if (booking.classInstanceId) {
-            enrichedBooking.classInstance = await ctx.db.get(booking.classInstanceId) || undefined;
+        // if (booking.classInstanceId) {
+        //     enrichedBooking.classInstance = await ctx.db.get(booking.classInstanceId) || undefined;
 
-            if (enrichedBooking.classInstance?.templateId) {
-                enrichedBooking.classTemplate = await ctx.db.get(enrichedBooking.classInstance.templateId) || undefined;
-            }
+        //     if (enrichedBooking.classInstance?.templateId) {
+        //         enrichedBooking.classTemplate = await ctx.db.get(enrichedBooking.classInstance.templateId) || undefined;
+        //     }
 
-            if (enrichedBooking.classInstance?.venueId) {
-                enrichedBooking.venue = await ctx.db.get(enrichedBooking.classInstance.venueId) || undefined;
-            }
-        }
+        //     if (enrichedBooking.classInstance?.venueId) {
+        //         enrichedBooking.venue = await ctx.db.get(enrichedBooking.classInstance.venueId) || undefined;
+        //     }
+        // }
 
-        return enrichedBooking;
+        // return enrichedBooking;
+        return booking;
     },
 
     /***************************************************************
@@ -153,7 +155,7 @@ export const bookingService = {
         args: {
             classInstanceId: Id<"classInstances">;
         };
-    }): Promise<BookingWithDetails[]> => {
+    }): Promise<Doc<"bookings">[]> => {
         const bookings = await ctx.db.query("bookings")
             .withIndex("by_class_instance", q => q.eq("classInstanceId", args.classInstanceId))
             .filter(q => q.eq(q.field("status"), "pending"))
@@ -176,7 +178,7 @@ export const bookingService = {
             daysAhead?: number;
         };
         user: Doc<"users">;
-    }): Promise<BookingWithDetails[]> => {
+    }): Promise<Doc<"bookings">[]> => {
         const daysAhead = args.daysAhead ?? 30; // Default 30 days
         const now = Date.now();
         const endDate = now + (daysAhead * 24 * 60 * 60 * 1000);
@@ -192,39 +194,39 @@ export const bookingService = {
             .collect();
 
         // Filter by date and enrich with details
-        const upcomingBookings: BookingWithDetails[] = [];
+        // const upcomingBookings: Doc<"bookings">[] = [];
 
-        for (const booking of bookings) {
-            const classInstance = booking.classInstanceId
-                ? await ctx.db.get(booking.classInstanceId)
-                : null;
+        // for (const booking of bookings) {
+        //     const classInstance = booking.classInstanceId
+        //         ? await ctx.db.get(booking.classInstanceId)
+        //         : null;
 
-            // Skip if class instance not found or is in the past or too far in future
-            if (!classInstance || classInstance.startTime < now || classInstance.startTime > endDate) {
-                continue;
-            }
+        //     // Skip if class instance not found or is in the past or too far in future
+        //     if (!classInstance || classInstance.startTime < now || classInstance.startTime > endDate) {
+        //         continue;
+        //     }
 
-            const enrichedBooking: BookingWithDetails = {
-                ...booking,
-                classInstance: classInstance || undefined
-            };
+        //     const enrichedBooking: Doc<"bookings"> = {
+        //         ...booking,
+        //         classInstance: classInstance || undefined
+        //     };
 
-            // Get template and venue
-            if (classInstance.templateId) {
-                enrichedBooking.classTemplate = await ctx.db.get(classInstance.templateId) || undefined;
-            }
+        //     // Get template and venue
+        //     if (classInstance.templateId) {
+        //         enrichedBooking.classTemplate = await ctx.db.get(classInstance.templateId) || undefined;
+        //     }
 
-            if (classInstance.venueId) {
-                enrichedBooking.venue = await ctx.db.get(classInstance.venueId) || undefined;
-            }
+        //     if (classInstance.venueId) {
+        //         enrichedBooking.venue = await ctx.db.get(classInstance.venueId) || undefined;
+        //     }
 
-            upcomingBookings.push(enrichedBooking);
-        }
+        //     upcomingBookings.push(enrichedBooking);
+        // }
 
         // Sort by class start time (earliest first)
-        return upcomingBookings.sort((a, b) => {
-            const aStartTime = a.classInstance?.startTime ?? 0;
-            const bStartTime = b.classInstance?.startTime ?? 0;
+        return bookings.sort((a, b) => {
+            const aStartTime = a.classInstanceSnapshot?.startTime ?? 0;
+            const bStartTime = b.classInstanceSnapshot?.startTime ?? 0;
             return aStartTime - bStartTime;
         });
     },
@@ -244,7 +246,7 @@ export const bookingService = {
             paginationOpts: PaginationOptions;
         };
         user: Doc<"users">;
-    }): Promise<PaginationResult<BookingWithDetails>> => {
+    }): Promise<PaginationResult<Doc<"bookings">>> => {
         // Map status to our schema (confirmed/waitlisted both map to "pending" in our schema)
         let dbStatus: "pending" | "completed" | "cancelled" | "no_show";
         if (args.status === "confirmed" || args.status === "waitlisted") {
@@ -267,30 +269,32 @@ export const bookingService = {
         // This is a simplified implementation - you may want to add capacity checking logic here
 
         // Enrich with related data
-        const enrichedBookings: BookingWithDetails[] = [];
+        // const enrichedBookings: Doc<"bookings">[] = [];
 
-        for (const booking of result.page) {
-            const enrichedBooking: BookingWithDetails = { ...booking };
+        // for (const booking of result.page) {
+        //     const enrichedBooking: Doc<"bookings"> = { ...booking };
 
-            if (booking.classInstanceId) {
-                enrichedBooking.classInstance = await ctx.db.get(booking.classInstanceId) || undefined;
+        //     if (booking.classInstanceId) {
+        //         enrichedBooking.classInstance = await ctx.db.get(booking.classInstanceId) || undefined;
 
-                if (enrichedBooking.classInstance?.templateId) {
-                    enrichedBooking.classTemplate = await ctx.db.get(enrichedBooking.classInstance.templateId) || undefined;
-                }
+        //         if (enrichedBooking.classInstance?.templateId) {
+        //             enrichedBooking.classTemplate = await ctx.db.get(enrichedBooking.classInstance.templateId) || undefined;
+        //         }
 
-                if (enrichedBooking.classInstance?.venueId) {
-                    enrichedBooking.venue = await ctx.db.get(enrichedBooking.classInstance.venueId) || undefined;
-                }
-            }
+        //         if (enrichedBooking.classInstance?.venueId) {
+        //             enrichedBooking.venue = await ctx.db.get(enrichedBooking.classInstance.venueId) || undefined;
+        //         }
+        //     }
 
-            enrichedBookings.push(enrichedBooking);
-        }
+        //     enrichedBookings.push(enrichedBooking);
+        // }
 
-        return {
-            ...result,
-            page: enrichedBookings
-        };
+        return result;
+
+        // return {
+        //     ...result,
+        //    //  page: result.page
+        // };
     },
 
     /***************************************************************
@@ -307,7 +311,7 @@ export const bookingService = {
             classInstanceId: Id<"classInstances">;
         };
         user: Doc<"users">;
-    }): Promise<BookingWithDetails | null> => {
+    }): Promise<Doc<"bookings"> | null> => {
         // Query for booking by user and class instance - get the latest booking (most recent)
         const bookings = await ctx.db
             .query("bookings")
@@ -325,22 +329,22 @@ export const bookingService = {
             return null;
         }
 
-        // Enrich with related data
-        const enrichedBooking: BookingWithDetails = { ...booking };
+        // // Enrich with related data
+        // const enrichedBooking: BookingWithDetails = { ...booking };
 
-        if (booking.classInstanceId) {
-            enrichedBooking.classInstance = await ctx.db.get(booking.classInstanceId) || undefined;
+        // if (booking.classInstanceId) {
+        //     enrichedBooking.classInstance = await ctx.db.get(booking.classInstanceId) || undefined;
 
-            if (enrichedBooking.classInstance?.templateId) {
-                enrichedBooking.classTemplate = await ctx.db.get(enrichedBooking.classInstance.templateId) || undefined;
-            }
+        //     if (enrichedBooking.classInstance?.templateId) {
+        //         enrichedBooking.classTemplate = await ctx.db.get(enrichedBooking.classInstance.templateId) || undefined;
+        //     }
 
-            if (enrichedBooking.classInstance?.venueId) {
-                enrichedBooking.venue = await ctx.db.get(enrichedBooking.classInstance.venueId) || undefined;
-            }
-        }
+        //     if (enrichedBooking.classInstance?.venueId) {
+        //         enrichedBooking.venue = await ctx.db.get(enrichedBooking.classInstance.venueId) || undefined;
+        //     }
+        // }
 
-        return enrichedBooking;
+        return booking;
     },
 
     /***************************************************************
@@ -357,7 +361,7 @@ export const bookingService = {
             classInstanceId: Id<"classInstances">;
         };
         user: Doc<"users">;
-    }): Promise<BookingWithDetails[]> => {
+    }): Promise<Doc<"bookings">[]> => {
         // Query for all bookings by user and class instance
         const bookings = await ctx.db
             .query("bookings")
@@ -371,28 +375,28 @@ export const bookingService = {
         // Sort by creation time (most recent first)
         const sortedBookings = bookings.sort((a, b) => b.createdAt - a.createdAt);
 
-        // Enrich with related data
-        const enrichedBookings: BookingWithDetails[] = [];
+        // // Enrich with related data
+        // const enrichedBookings: BookingWithDetails[] = [];
 
-        for (const booking of sortedBookings) {
-            const enrichedBooking: BookingWithDetails = { ...booking };
+        // for (const booking of sortedBookings) {
+        //     const enrichedBooking: BookingWithDetails = { ...booking };
 
-            if (booking.classInstanceId) {
-                enrichedBooking.classInstance = await ctx.db.get(booking.classInstanceId) || undefined;
+        //     if (booking.classInstanceId) {
+        //         enrichedBooking.classInstance = await ctx.db.get(booking.classInstanceId) || undefined;
 
-                if (enrichedBooking.classInstance?.templateId) {
-                    enrichedBooking.classTemplate = await ctx.db.get(enrichedBooking.classInstance.templateId) || undefined;
-                }
+        //         if (enrichedBooking.classInstance?.templateId) {
+        //             enrichedBooking.classTemplate = await ctx.db.get(enrichedBooking.classInstance.templateId) || undefined;
+        //         }
 
-                if (enrichedBooking.classInstance?.venueId) {
-                    enrichedBooking.venue = await ctx.db.get(enrichedBooking.classInstance.venueId) || undefined;
-                }
-            }
+        //         if (enrichedBooking.classInstance?.venueId) {
+        //             enrichedBooking.venue = await ctx.db.get(enrichedBooking.classInstance.venueId) || undefined;
+        //         }
+        //     }
 
-            enrichedBookings.push(enrichedBooking);
-        }
+        //     enrichedBookings.push(enrichedBooking);
+        // }
 
-        return enrichedBookings;
+        return sortedBookings;
     },
 
     /***************************************************************
@@ -516,6 +520,8 @@ export const bookingService = {
             });
         }
 
+        console.log('instance.cancellationWindowHours', instance.cancellationWindowHours);
+
         // Create booking row first with user metadata for business owners
         const bookingId = await ctx.db.insert("bookings", {
             businessId: instance.businessId,
@@ -539,6 +545,11 @@ export const bookingService = {
                 endTime: instance.endTime,
                 name: template.name,
                 status: instance.status,
+                cancellationWindowHours: instance.cancellationWindowHours,
+                instructor: instance.instructor,
+            },
+            venueSnapshot: {
+                name: instance.venueSnapshot.name,
             },
             bookedAt: now,
             createdAt: now,

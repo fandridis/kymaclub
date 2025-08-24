@@ -20,14 +20,14 @@ import { cn } from "@/lib/utils";
 import { useMutation } from "convex/react";
 import { api } from "@repo/api/convex/_generated/api";
 import { toast } from "sonner";
-import type { BookingWithDetails } from "@repo/api/types/booking";
 import { CancelBookingDialog } from "./cancel-booking-dialog";
 import { Badge } from "@/components/ui/badge";
+import type { Doc } from "@repo/api/convex/_generated/dataModel";
 
 interface ClassBookingsItemProps {
-    booking: BookingWithDetails;
+    booking: Doc<"bookings">;
     className?: string;
-    onCancelBooking?: (booking: BookingWithDetails) => void;
+    onCancelBooking?: (booking: Doc<"bookings">) => void;
     onDeleteBooking?: (bookingId: any) => Promise<void>;
 }
 

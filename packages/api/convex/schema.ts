@@ -393,6 +393,12 @@ export const bookingsFields = {
     endTime: v.optional(v.number()), // For display purposes
     name: v.optional(v.string()),    // Class name for display
     status: v.optional(v.string()),  // Instance status
+    cancellationWindowHours: v.optional(v.number()),
+    instructor: v.optional(v.string()),
+  })),
+
+  venueSnapshot: v.optional(v.object({
+    name: v.optional(v.string()),
   })),
 
   // Simplified status flow

@@ -5,11 +5,12 @@ import { format } from 'date-fns';
 import { tz } from '@date-fns/tz';
 import { useTypedTranslation } from '../i18n/typed';
 import { getCancellationInfo, formatCancellationStatus } from '../utils/cancellationUtils';
-// Using any type to avoid import issues with BookingWithDetails
+import { Doc } from '@repo/api/convex/_generated/dataModel';
+
 interface BookingCardProps {
-  booking: any;
-  onCancel?: (booking: any) => void;
-  onViewClass?: (booking: any) => void;
+  booking: Doc<"bookings">;
+  onCancel?: (booking: Doc<"bookings">) => void;
+  onViewClass?: (booking: Doc<"bookings">) => void;
   isCanceling?: boolean;
 }
 
@@ -17,13 +18,13 @@ export const BookingCard = ({ booking, onCancel, onViewClass, isCanceling = fals
   const { t } = useTypedTranslation();
 
   // Extract booking details
-  const className = booking.classInstance?.name ?? booking.classTemplate?.name ?? 'Class';
-  const instructor = booking.classTemplate?.instructor ?? 'TBD';
-  const venueName = booking.venue?.name ?? 'Unknown Venue';
+  const className = booking.classInstanceSnapshot?.name ?? 'Class';
+  const instructor = booking.classInstanceSnapshot?.instructor ?? 'TBD';
+  const venueName = booking.venueSnapshot?.name ?? 'Unknown Venue';
 
   // Time formatting in Europe/Athens timezone - use classInstanceSnapshot.startTime first
-  const startTimeValue = booking.classInstanceSnapshot?.startTime || booking.classInstance?.startTime;
-  const endTimeValue = booking.classInstanceSnapshot?.endTime || booking.classInstance?.endTime;
+  const startTimeValue = booking.classInstanceSnapshot?.startTime;
+  const endTimeValue = booking.classInstanceSnapshot?.endTime;
   const startTime = startTimeValue ? new Date(startTimeValue) : null;
   const endTime = endTimeValue ? new Date(endTimeValue) : null;
 
@@ -41,22 +42,23 @@ export const BookingCard = ({ booking, onCancel, onViewClass, isCanceling = fals
 
   // Calculate cancellation window information
   const cancellationInfo = useMemo(() => {
-    if (!startTime || !booking.classTemplate?.cancellationWindowHours) {
+    console.log('booking.classInstanceSnapshot?.cancellationWindowHours', booking.classInstanceSnapshot?.cancellationWindowHours);
+    if (!startTime || !booking.classInstanceSnapshot?.cancellationWindowHours) {
       return null;
     }
 
     return getCancellationInfo(
       startTime.getTime(),
-      booking.classTemplate.cancellationWindowHours
+      booking.classInstanceSnapshot?.cancellationWindowHours
     );
-  }, [startTime, booking.classTemplate?.cancellationWindowHours]);
+  }, [startTime, booking.classInstanceSnapshot?.cancellationWindowHours]);
 
   const cancellationStatusText = cancellationInfo ? formatCancellationStatus(cancellationInfo) : null;
 
   return (
     <TouchableOpacity
       style={styles.container}
-      onPress={() => onViewClass?.(booking.classInstance)}
+      onPress={() => onViewClass?.(booking)}
       activeOpacity={0.7}
       disabled={isCanceling}
     >
@@ -107,14 +109,14 @@ export const BookingCard = ({ booking, onCancel, onViewClass, isCanceling = fals
         {isCancelled && (
           <View style={styles.badgeContainer}>
             <View style={[
-              styles.badge, 
+              styles.badge,
               cancelledByBusiness ? styles.badgeBusiness : styles.badgeConsumer
             ]}>
               <Text style={styles.badgeText}>
-                {booking.status === 'cancelled_by_business_rebookable' 
-                  ? 'Cancelled by the studio' 
-                  : cancelledByBusiness 
-                    ? 'Cancelled by the studio' 
+                {booking.status === 'cancelled_by_business_rebookable'
+                  ? 'Cancelled by the studio'
+                  : cancelledByBusiness
+                    ? 'Cancelled by the studio'
                     : 'Cancelled by you'}
               </Text>
             </View>
@@ -124,9 +126,9 @@ export const BookingCard = ({ booking, onCancel, onViewClass, isCanceling = fals
                 {booking.cancelReason}
               </Text>
             )}
-            
+
             {/* Rebook button removed from list view - users can rebook from class details modal */}
-            
+
             {/* Show "You cannot book this class again" only for non-rebookable cancellations */}
             {isCancelled && !isRebookable && (
               <Text style={styles.noRebookText}>

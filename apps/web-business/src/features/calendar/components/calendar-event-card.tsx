@@ -1,5 +1,5 @@
 import type { EventContentArg } from "@fullcalendar/core/index.js";
-import { MoreVertical, Edit, Trash2 } from "lucide-react";
+import { MoreVertical, Edit, Trash2, Users } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -16,10 +16,16 @@ interface CalendarEventProps {
     eventInfo: EventContentArg;
     onEdit: (eventInfo: EventContentArg) => void;
     onDelete: (eventInfo: EventContentArg) => void;
+    onViewBookings: (eventInfo: EventContentArg) => void;
 }
 
-export const CalendarEventCard = ({ eventInfo, onEdit, onDelete }: CalendarEventProps) => {
+export const CalendarEventCard = ({ eventInfo, onEdit, onDelete, onViewBookings }: CalendarEventProps) => {
     const classInstance = eventInfo.event.extendedProps.classInstance as ClassInstance;
+
+    const handleViewBookingsClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onViewBookings(eventInfo);
+    };
 
     const handleEditClick = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -53,6 +59,10 @@ export const CalendarEventCard = ({ eventInfo, onEdit, onDelete }: CalendarEvent
                         </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" sideOffset={4}>
+                        <DropdownMenuItem onClick={handleViewBookingsClick} className="text-gray-700 focus:text-gray-700">
+                            <Users className="h-4 w-4 mr-2" />
+                            View Bookings
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={handleEditClick} className="text-gray-700 focus:text-gray-700">
                             <Edit className="h-4 w-4 mr-2" />
                             Edit
