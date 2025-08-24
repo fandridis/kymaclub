@@ -37,6 +37,8 @@
   },
   "exports": {
     "./types/booking": "./types/booking.ts",
+    "./types/notification": "./types/notification.ts",
+    "./utils/deep-linking": "./utils/deep-linking.ts",
     "./convex/_generated/api": {
       "import": "./convex/_generated/api.js",
       "types": "./convex/_generated/api.d.ts"

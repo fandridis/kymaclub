@@ -24,7 +24,6 @@ interface ClassBookingsDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     children: React.ReactNode
-    bookings?: Doc<"bookings">[]
 }
 
 export function ClassBookingsDialog({
@@ -32,14 +31,10 @@ export function ClassBookingsDialog({
     open,
     onOpenChange,
     children,
-    bookings: providedBookings,
 }: ClassBookingsDialogProps) {
-    const { bookings: queriedBookings, isLoading } = useClassBookings(classInstance._id)
+    const { bookings, isLoading } = useClassBookings(classInstance._id)
 
-    const deleteBooking = useMutation((api as any).mutations.bookings.deleteBooking)
-
-    // Use provided bookings if available, otherwise use queried bookings
-    const bookings = providedBookings || queriedBookings || []
+    const deleteBooking = useMutation(api.mutations.bookings.deleteBooking)
 
     const formatDateTime = (startTime: number, endTime: number) => {
         const start = new Date(startTime)
@@ -55,7 +50,7 @@ export function ClassBookingsDialog({
     const className = classInstance.name ?? classInstance.templateSnapshot?.name ?? "Class"
 
     // Filter only pending bookings for the count
-    const pendingBookings = bookings.filter(booking => booking.status === 'pending')
+    const pendingBookings = bookings?.filter(booking => booking.status === 'pending') || []
 
     const handleRemoveBooking = async (bookingId: any) => {
         try {
@@ -98,7 +93,7 @@ export function ClassBookingsDialog({
                         {/* Bookings List */}
                         <div className="space-y-2">
                             <h3 className="text-lg font-semibold">
-                                {isLoading && !providedBookings ? (
+                                {isLoading ? (
                                     <div className="flex items-center gap-2">
                                         <span>Current Bookings - </span>
                                         <Skeleton className="h-5 w-12 inline-block" />
@@ -110,7 +105,7 @@ export function ClassBookingsDialog({
                             </h3>
 
                             <ScrollArea className="max-h-96">
-                                {isLoading && !providedBookings ? (
+                                {isLoading ? (
                                     <div className="space-y-4">
                                         {/* Loading skeleton for bookings */}
                                         {Array.from({ length: 2 }).map((_, index) => (
@@ -124,7 +119,7 @@ export function ClassBookingsDialog({
                                             </div>
                                         ))}
                                     </div>
-                                ) : bookings.length > 0 ? (
+                                ) : bookings && bookings.length > 0 ? (
                                     <div className="space-y-0">
                                         {bookings.map((booking, index) => (
                                             <div key={booking._id}>

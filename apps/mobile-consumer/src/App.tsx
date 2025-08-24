@@ -33,8 +33,7 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { api } from '@repo/api/convex/_generated/api';
-import * as Linking from 'expo-linking';
-import { parseDeepLink } from './utils/deep-linking';
+import { parseDeepLink } from '@repo/api/utils/deep-linking';
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,

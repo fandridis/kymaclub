@@ -1,4 +1,4 @@
-import { Infer, v } from "convex/values";
+import { type Infer, v } from "convex/values";
 import { notificationsFields } from "../convex/schema";
 
 const notificationFieldObject = v.object(notificationsFields);

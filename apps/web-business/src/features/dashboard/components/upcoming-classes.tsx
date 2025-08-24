@@ -284,7 +284,6 @@ export function UpcomingClasses({ className }: UpcomingClassesProps) {
                     open={bookingsDialog.open}
                     onOpenChange={(open: boolean) => setBookingsDialog(open ? bookingsDialog : null)}
                     classInstance={bookingsDialog.classInstance!}
-                    bookings={bookingsDialog.bookings}
                 >
                     <div />
                 </ClassBookingsDialog>
