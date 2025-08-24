@@ -514,6 +514,7 @@ export const notificationsFields = {
     v.literal("booking_confirmation"),
     v.literal("booking_reminder"),
     v.literal("class_cancelled"),
+    v.literal("class_rebookable"),
     v.literal("booking_cancelled_by_business"),
     v.literal("payment_receipt")
   ),
@@ -600,6 +601,11 @@ export const userNotificationSettingsFields = {
       push: v.boolean(),
     }),
     class_cancelled: v.object({
+      email: v.boolean(),
+      web: v.boolean(),
+      push: v.boolean(),
+    }),
+    class_rebookable: v.object({
       email: v.boolean(),
       web: v.boolean(),
       push: v.boolean(),

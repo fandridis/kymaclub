@@ -77,23 +77,31 @@ export function generateNotificationDeepLink(
     venueId?: Id<"venues">;
   }
 ): string {
+  console.log(`[Deep Link] Generating deep link for type: "${type}", data:`, data);
+  
   switch (type) {
     case 'booking_cancelled_by_business':
     case 'booking_reminder':
     case 'class_cancelled':
+    case 'class_rebookable':
     case 'booking_confirmation':
+      console.log(`[Deep Link] Matched class-related type: ${type}`);
       if (data.classInstanceId) {
+        console.log(`[Deep Link] Has classInstanceId: ${data.classInstanceId}, generating class details link`);
         return generateClassDetailsLink(data.classInstanceId);
       }
+      console.log('[Deep Link] No classInstanceId, falling back to bookings link');
       return generateBookingsLink();
 
     case 'booking_created':
     case 'booking_cancelled_by_consumer':
     case 'payment_received':
     case 'payment_receipt':
+      console.log(`[Deep Link] Matched booking-related type: ${type}, generating bookings link`);
       return generateBookingsLink();
 
     default:
+      console.log(`[Deep Link] Unmatched type: "${type}", falling back to home link`);
       return generateHomeLink();
   }
 }
@@ -198,7 +206,7 @@ export function parseDeepLink(url: string): { route: string; params: Record<stri
     if (segments[0] === 'home') {
       const tabRoute = segments[1] || 'news';
       return {
-        route: 'HomeTabs',
+        route: 'Home',
         params: { screen: tabRoute }
       };
     }
@@ -211,7 +219,7 @@ export function parseDeepLink(url: string): { route: string; params: Record<stri
       };
     }
 
-    return { route: 'HomeTabs', params: {} };
+    return { route: 'Home', params: {} };
   } catch (error) {
     console.error('Error parsing deep link:', error);
     return null;

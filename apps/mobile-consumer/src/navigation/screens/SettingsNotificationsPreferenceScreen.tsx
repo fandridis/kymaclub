@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Alert, SafeAreaView, TouchableOpacity } from 'r
 import { useUserNotificationSettings } from '../../hooks/use-user-notification-settings';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { SettingsGroup, SettingsHeader, SettingsRow } from '../../components/Settings';
+import { getDefaultUserNotificationSettings } from '../../../../../packages/api/operations/notifications';
 
 type NotificationChannels = { email: boolean; web: boolean; push: boolean; };
 
@@ -41,26 +42,32 @@ export function SettingsNotificationsPreferenceScreen() {
         };
         setChannels(newChannels);
 
-        // Save immediately
-        if (settings) {
-            try {
-                const updatedPreferences = {
-                    ...settings.notificationPreferences,
-                    [notificationType.key]: newChannels
-                };
+        console.log('🔥🔥🔥 NEW SETTINGS: ', settings);
 
-                await updateSettings({
-                    settings: {
-                        globalOptOut,
-                        notificationPreferences: updatedPreferences
-                    }
-                });
-            } catch (error) {
-                console.error('Failed to save notification preferences:', error);
-                Alert.alert('Error', 'Failed to save notification preferences');
-                // Revert the change on error
-                setChannels(channels);
-            }
+        const notificationPreferences = settings?.notificationPreferences || getDefaultUserNotificationSettings();
+
+        // Save immediately
+        // if (settings) {
+        try {
+            const updatedPreferences = {
+                ...notificationPreferences,
+                [notificationType.key]: newChannels
+            };
+
+            console.log('🔥🔥🔥 UPDATED PREFERENCES: ', updatedPreferences);
+
+            await updateSettings({
+                settings: {
+                    globalOptOut,
+                    notificationPreferences: updatedPreferences
+                }
+            });
+        } catch (error) {
+            console.error('Failed to save notification preferences:', error);
+            Alert.alert('Error', 'Failed to save notification preferences');
+            // Revert the change on error
+            setChannels(channels);
+            // }
         }
     };
 

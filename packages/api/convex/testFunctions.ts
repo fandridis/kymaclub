@@ -637,7 +637,12 @@ export const createTestUserNotificationSettings = internalMutation({
                     email: true,
                     web: true,
                     push: true,
-                }
+                },
+                class_rebookable: {
+                    email: true,
+                    web: true,
+                    push: true,
+                },
             },
             createdAt: args.settings.createdAt || Date.now(),
             createdBy: user._id,
@@ -717,6 +722,118 @@ export const updateUser = internalMutation({
         }
 
         return null;
+    },
+});
+
+export const testSendClassRebookableNotification = internalMutation({
+    args: {
+        userId: v.id("users"),
+        classInstanceId: v.id("classInstances"),
+        bookingId: v.id("bookings"),
+        sendActualNotification: v.optional(v.boolean()),
+    },
+    returns: v.object({
+        deepLink: v.string(),
+        notification: v.object({
+            title: v.string(),
+            body: v.string(),
+            data: v.object({
+                deepLink: v.string(),
+                notificationType: v.string(),
+                classInstanceId: v.optional(v.id("classInstances")),
+                bookingId: v.optional(v.id("bookings")),
+            })
+        })
+    }),
+    handler: async (ctx, args) => {
+        // Import the deep linking utilities
+        const { createNotificationWithDeepLink } = await import("../utils/deep-linking");
+
+        // Create the notification content with deep link
+        const notificationContent = createNotificationWithDeepLink(
+            'class_rebookable',
+            'Booking Available Again - Test',
+            `Test rebookable notification for class instance ${args.classInstanceId}`,
+            {
+                classInstanceId: args.classInstanceId,
+                bookingId: args.bookingId,
+                additionalData: {
+                    testMode: true,
+                }
+            }
+        );
+
+        // Also test the deep link generation directly
+        const { generateNotificationDeepLink } = await import("../utils/deep-linking");
+        const directDeepLink = generateNotificationDeepLink('class_rebookable', {
+            classInstanceId: args.classInstanceId
+        });
+
+        console.log('Test class_rebookable notification:');
+        console.log('- Direct deep link:', directDeepLink);
+        console.log('- Notification data:', JSON.stringify(notificationContent, null, 2));
+
+        // Optionally send the actual push notification
+        if (args.sendActualNotification) {
+            const { components } = await import("../convex/_generated/api");
+            await ctx.runMutation(components.pushNotifications.public.sendPushNotification, {
+                logLevel: "DEBUG",
+                userId: args.userId,
+                notification: notificationContent,
+            });
+            console.log('✅ Actual push notification sent!');
+        }
+
+        return {
+            deepLink: directDeepLink,
+            notification: notificationContent
+        };
+    },
+});
+
+export const testDeepLinkGeneration = internalMutation({
+    args: {
+        type: v.union(
+            v.literal("booking_cancelled_by_business"),
+            v.literal("booking_reminder"),
+            v.literal("class_cancelled"),
+            v.literal("class_rebookable"),
+            v.literal("booking_confirmation"),
+            v.literal("booking_created"),
+            v.literal("booking_cancelled_by_consumer"),
+            v.literal("payment_received"),
+            v.literal("payment_receipt")
+        ),
+        classInstanceId: v.optional(v.id("classInstances")),
+        venueId: v.optional(v.id("venues")),
+    },
+    returns: v.object({
+        type: v.string(),
+        deepLink: v.string(),
+        data: v.object({
+            classInstanceId: v.optional(v.id("classInstances")),
+            venueId: v.optional(v.id("venues")),
+        })
+    }),
+    handler: async (ctx, args) => {
+        const { generateNotificationDeepLink } = await import("../utils/deep-linking");
+        
+        const data = {
+            classInstanceId: args.classInstanceId,
+            venueId: args.venueId,
+        };
+        
+        const deepLink = generateNotificationDeepLink(args.type, data);
+        
+        console.log(`Test deep link generation for type: ${args.type}`);
+        console.log(`Data:`, data);
+        console.log(`Result: ${deepLink}`);
+        
+        return {
+            type: args.type,
+            deepLink,
+            data
+        };
     },
 });
 

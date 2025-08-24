@@ -166,3 +166,23 @@ export const handleBusinessCancelledBookingEvent = internalMutation({
         return await notificationService.handleBusinessCancelledBookingEvent({ ctx, payload: args.payload });
     }
 });
+
+/***************************************************************
+ * Handle Rebookable Booking Event
+ ***************************************************************/
+export const handleRebookableBookingEvent = internalMutation({
+    args: v.object({
+        payload: v.object({
+            bookingId: v.id("bookings"),
+            userId: v.id("users"),
+            classInstanceId: v.id("classInstances"),
+            businessId: v.id("businesses"),
+            creditsPaid: v.number(),
+        })
+    }),
+    handler: async (ctx, args) => {
+        console.log('----- [mutations/notifications] handleRebookableBookingEvent -----');
+        console.log('args: ', args);
+        return await notificationService.handleBookingBecameRebookableEvent({ ctx, payload: args.payload });
+    }
+});

@@ -66,8 +66,8 @@ export function ClassBookingRow({
                             <div
                                 key={index}
                                 className={cn(
-                                    "w-4 h-4 rounded",
-                                    isBooked ? "bg-green-500" : "bg-zinc-200"
+                                    "w-4 h-4 rounded border border-zinc-500",
+                                    isBooked ? "bg-emerald-500" : "bg-zinc-100/20"
                                 )}
                                 title={isBooked ? "Booked" : "Available"}
                             />

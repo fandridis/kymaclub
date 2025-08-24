@@ -6,7 +6,9 @@ import type { PaginationOptions, PaginationResult } from "convex/server";
 import { components, internal } from "../convex/_generated/api";
 import { format } from "date-fns";
 import { PushNotifications } from "@convex-dev/expo-push-notifications";
-import { createNotificationWithDeepLink } from "../utils/deep-linking";
+import { createNotificationWithDeepLink, type NotificationType } from "../utils/deep-linking";
+import type { UserNotificationSettingsNotificationPreferences } from "../types/notification";
+import { getDefaultUserNotificationSettings } from "../operations/notifications";
 
 /***************************************************************
  * Notification Service - All notification-related operations
@@ -28,9 +30,7 @@ export const notificationService = {
             businessId: Id<"businesses">;
             recipientType: "business" | "consumer";
             recipientUserId?: Id<"users">;
-            type: "booking_created" | "booking_cancelled_by_consumer" | "booking_cancelled_by_business" | "payment_received" |
-            "booking_confirmation" | "booking_reminder" | "class_cancelled" |
-            "booking_cancelled_by_business" | "payment_receipt";
+            type: NotificationType;
             title: string;
             message: string;
             relatedBookingId?: Id<"bookings">;
@@ -167,13 +167,6 @@ export const notificationService = {
         }
 
         const { unreadOnly = false } = args;
-
-        let query = ctx.db
-            .query("notifications")
-            .withIndex("by_business_type", q =>
-                q.eq("businessId", user.businessId!)
-                    .eq("type", "booking_created") // Start with business notifications
-            );
 
         // Get all business notification types
         const businessTypes = ["booking_created", "booking_cancelled_by_consumer", "booking_cancelled_by_business", "payment_received"];
@@ -350,13 +343,7 @@ export const notificationService = {
         ctx: MutationCtx;
         args: {
             globalOptOut: boolean;
-            notificationPreferences: {
-                booking_confirmation: { email: boolean; web: boolean; push: boolean; };
-                booking_reminder: { email: boolean; web: boolean; push: boolean; };
-                class_cancelled: { email: boolean; web: boolean; push: boolean; };
-                booking_cancelled_by_business: { email: boolean; web: boolean; push: boolean; };
-                payment_receipt: { email: boolean; web: boolean; push: boolean; };
-            };
+            notificationPreferences: UserNotificationSettingsNotificationPreferences;
         };
         user: Doc<"users">;
     }): Promise<{ settingsId: Id<"userNotificationSettings"> }> => {
@@ -519,14 +506,19 @@ export const notificationService = {
             .filter(q => q.neq(q.field("deleted"), true))
             .first();
 
-        console.log("Business notification settings:", {
-            businessNotificationSettings,
+        console.log("Business notification settings for new booking event:", {
+            businessId,
+            businessName: business.name,
+            settings: businessNotificationSettings,
+            notificationType: "booking_created"
         });
 
         // Only send notification if business has opted in for this type
         let notificationId: Id<"notifications"> | undefined;
 
+        console.log('Checking if business has opted in for web notifications for booking_created');
         if (businessNotificationSettings?.notificationPreferences?.booking_created?.web) {
+            console.log('Sending web notification to business for booking_created');
             // Send web notification to business
             notificationId = await ctx.db.insert("notifications", {
                 businessId,
@@ -552,10 +544,14 @@ export const notificationService = {
                 createdAt: Date.now(),
                 createdBy: userId,
             });
+        } else {
+            console.log('Business has not opted in for web notifications for booking_created');
         }
 
         // Send email notification to business
+        console.log('Checking if business has opted in for email notifications for booking_created');
         if (businessNotificationSettings?.notificationPreferences?.booking_created?.email && process.env.NODE_ENV === "production") {
+            console.log('Sending email notification to business for booking_created');
             try {
                 await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
                     businessEmail: business.email,
@@ -571,6 +567,8 @@ export const notificationService = {
             } catch (error) {
                 console.error('Error sending email notification:', error);
             }
+        } else {
+            console.log('Business has not opted in for email notifications for booking_created or not in production');
         }
 
 
@@ -622,7 +620,7 @@ export const notificationService = {
             .filter(q => q.neq(q.field("deleted"), true))
             .first();
 
-        console.log("Business notification settings:", {
+        console.log("Business notification settings for user cancelled booking event:", {
             businessId,
             businessName: business.name,
             settings: businessNotificationSettings,
@@ -632,7 +630,9 @@ export const notificationService = {
         // Only send notification if business has opted in for this type
         let notificationId: Id<"notifications"> | undefined;
 
+        console.log('Checking if business has opted in for web notifications for booking_cancelled_by_consumer');
         if (businessNotificationSettings?.notificationPreferences?.booking_cancelled_by_consumer?.web) {
+            console.log('Sending web notification to business for booking_cancelled_by_consumer');
             // Send web notification to business
             notificationId = await ctx.db.insert("notifications", {
                 businessId,
@@ -658,10 +658,14 @@ export const notificationService = {
                 createdAt: Date.now(),
                 createdBy: userId,
             });
+        } else {
+            console.log('Business has not opted in for web notifications for booking_cancelled_by_consumer');
         }
 
         // Send email notification to business
+        console.log('Checking if business has opted in for email notifications for booking_cancelled_by_consumer');
         if (businessNotificationSettings?.notificationPreferences?.booking_cancelled_by_consumer?.email && process.env.NODE_ENV === "production") {
+            console.log('Sending email notification to business for booking_cancelled_by_consumer');
             try {
                 await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
                     businessEmail: business.email,
@@ -677,6 +681,8 @@ export const notificationService = {
             } catch (error) {
                 console.error('Error sending email notification:', error);
             }
+        } else {
+            console.log('Business has not opted in for email notifications for booking_cancelled_by_consumer or not in production');
         }
 
         if (!notificationId) {
@@ -727,7 +733,16 @@ export const notificationService = {
             .filter(q => q.neq(q.field("deleted"), true))
             .first();
 
+        console.log("User notification settings for business cancelled booking event:", {
+            userId,
+            userName: user.name,
+            settings: userNotificationSettings,
+            notificationType: "booking_cancelled_by_business"
+        });
+
+        console.log('Checking if user has opted in for web notifications for booking_cancelled_by_business');
         if (userNotificationSettings?.notificationPreferences?.booking_cancelled_by_business?.web) {
+            console.log('Sending web notification to user for booking_cancelled_by_business');
             // Send web notification to business
             await ctx.db.insert("notifications", {
                 businessId,
@@ -753,10 +768,14 @@ export const notificationService = {
                 createdAt: Date.now(),
                 createdBy: userId,
             });
+        } else {
+            console.log('User has not opted in for web notifications for booking_cancelled_by_business');
         }
 
         // Send email notification to user
+        console.log('Checking if user has opted in for email notifications for booking_cancelled_by_business');
         if (userNotificationSettings?.notificationPreferences?.booking_cancelled_by_business?.email && process.env.NODE_ENV === "production") {
+            console.log('Sending email notification to user for booking_cancelled_by_business');
             await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
                 businessEmail: business.email,
                 businessName: business.name,
@@ -768,9 +787,13 @@ export const notificationService = {
                 bookingAmount: booking.finalPrice,
                 notificationType: 'booking_cancelled_by_business',
             });
+        } else {
+            console.log('User has not opted in for email notifications for booking_cancelled_by_business or not in production');
         }
 
+        console.log('Checking if user has opted in for push notifications for booking_cancelled_by_business');
         if (userNotificationSettings?.notificationPreferences?.booking_cancelled_by_business?.push) {
+            console.log('Sending push notification to user for booking_cancelled_by_business');
             const notificationContent = createNotificationWithDeepLink(
                 'booking_cancelled_by_business',
                 'Booking cancelled',
@@ -792,6 +815,143 @@ export const notificationService = {
                 userId: userId,
                 notification: notificationContent,
             });
+        } else {
+            console.log('User has not opted in for push notifications for booking_cancelled_by_business');
+        }
+
+        return { success: true };
+    },
+
+    /**
+     * Handle booking became rebookable event
+     */
+    handleBookingBecameRebookableEvent: async ({
+        ctx,
+        payload,
+    }: {
+        ctx: MutationCtx;
+        payload: {
+            bookingId: Id<"bookings">;
+            userId: Id<"users">;
+            classInstanceId: Id<"classInstances">;
+            businessId: Id<"businesses">;
+            creditsPaid: number;
+        };
+    }): Promise<{ success: boolean }> => {
+        const { bookingId, userId, classInstanceId, businessId, creditsPaid } = payload;
+
+        // Fetch the booking, user classInstance and business with Promise.all
+        const booking = await ctx.db.get(bookingId);
+        const [user, classInstance, business] = await Promise.all([
+            ctx.db.get(userId),
+            ctx.db.get(classInstanceId),
+            ctx.db.get(businessId),
+        ]);
+
+        if (!user || !classInstance || !business || !booking) {
+            throw new ConvexError({
+                message: "User, class instance, or business not found",
+                field: "userId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND
+            });
+        }
+
+        // Get user notification settings
+        const userNotificationSettings = await ctx.db
+            .query("userNotificationSettings")
+            .withIndex("by_user", q => q.eq("userId", userId))
+            .filter(q => q.neq(q.field("deleted"), true))
+            .first();
+
+        console.log("User notification settings for rebookable event:", {
+            userId,
+            userName: user.name,
+            settings: userNotificationSettings,
+            notificationType: "class_rebookable"
+        });
+
+        // Send web notification to user if they have opted in
+        console.log('Checking if user has opted in for web notifications for class_rebookable');
+        if (userNotificationSettings?.notificationPreferences?.class_rebookable?.web) {
+            console.log('Sending web notification to user for class_rebookable');
+            await ctx.db.insert("notifications", {
+                businessId,
+                recipientType: "consumer",
+                recipientUserId: userId,
+                type: "class_rebookable",
+                title: "Booking Available Again",
+                message: `Your cancelled booking for ${classInstance?.name || classInstance.templateSnapshot.name} at ${classInstance.venueSnapshot.name} is now available to rebook.`,
+                relatedBookingId: bookingId,
+                relatedClassInstanceId: classInstanceId,
+                seen: false,
+                deliveryStatus: "pending",
+                retryCount: 0,
+                sentToEmail: false,
+                sentToWeb: false,
+                sentToPush: false,
+                metadata: {
+                    className: classInstance?.name || classInstance.templateSnapshot.name,
+                    userName: user.name,
+                    userEmail: user.email,
+                    amount: creditsPaid,
+                },
+                createdAt: Date.now(),
+                createdBy: userId,
+            });
+        } else {
+            console.log('User has not opted in for web notifications for class_rebookable');
+        }
+
+        // Send email notification to user if they have opted in
+        console.log('Checking if user has opted in for email notifications for class_rebookable');
+        if (userNotificationSettings?.notificationPreferences?.class_rebookable?.email && process.env.NODE_ENV === "production") {
+            console.log('Sending email notification to user for class_rebookable');
+            try {
+                await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingConfirmationEmail, {
+                    customerEmail: user.email || "",
+                    customerName: user.name || user.email || "Customer",
+                    className: classInstance.name || classInstance.templateSnapshot.name || "",
+                    venueName: classInstance.venueSnapshot.name || "",
+                    venueAddress: `${classInstance.venueSnapshot.address?.street || ""}, ${classInstance.venueSnapshot.address?.city || ""}, ${classInstance.venueSnapshot.address?.zipCode || ""}`.trim().replace(/^,\s*|,\s*$/g, ''),
+                    instructorName: classInstance.templateSnapshot.instructor || "",
+                    startTime: classInstance.startTime,
+                    bookingAmount: booking.finalPrice,
+                });
+            } catch (error) {
+                console.error('Error sending rebookable email notification:', error);
+            }
+        } else {
+            console.log('User has not opted in for email notifications for class_rebookable or not in production');
+        }
+
+        // Send push notification to user if they have opted in
+        console.log('Checking if user has opted in for push notifications for class_rebookable');
+        if (userNotificationSettings?.notificationPreferences?.class_rebookable?.push) {
+            console.log('Sending push notification to user for class_rebookable');
+            const notificationContent = createNotificationWithDeepLink(
+                'class_rebookable',
+                'Booking Available Again',
+                `Your cancelled booking for ${classInstance.name} - ${classInstance.venueSnapshot?.name} at ${format(classInstance.startTime, 'MMM d, yyyy h:mm a')} is now available to rebook.`,
+                {
+                    classInstanceId: classInstanceId,
+                    bookingId: bookingId,
+                    additionalData: {
+                        businessId: businessId,
+                        businessName: business.name,
+                        className: classInstance.name || classInstance.templateSnapshot.name,
+                        venueName: classInstance.venueSnapshot?.name,
+                        classTime: format(classInstance.startTime, 'MMM d, yyyy h:mm a'),
+                        rebookable: true,
+                    }
+                }
+            );
+
+            await pushNotifications.sendPushNotification(ctx, {
+                userId: userId,
+                notification: notificationContent,
+            });
+        } else {
+            console.log('User has not opted in for push notifications for class_rebookable');
         }
 
         return { success: true };

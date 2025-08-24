@@ -3,23 +3,16 @@ import { SafeAreaView, StyleSheet, View, Text } from 'react-native';
 import { useUserNotificationSettings } from '../../hooks/use-user-notification-settings';
 import { useNavigation } from '@react-navigation/native';
 import { theme } from '../../theme';
-import { user } from '../../../../../packages/api/convex/testResources';
 import { SettingsGroup, SettingsHeader, SettingsRow } from '../../components/Settings';
+import type { UserNotificationSettingsNotificationPreferences } from '@repo/api/types/notification';
 
-type UserNotificationPreferences = {
-    booking_confirmation: { email: boolean; web: boolean; push: boolean; };
-    booking_reminder: { email: boolean; web: boolean; push: boolean; };
-    class_cancelled: { email: boolean; web: boolean; push: boolean; };
-    booking_cancelled_by_business: { email: boolean; web: boolean; push: boolean; };
-    payment_receipt: { email: boolean; web: boolean; push: boolean; };
-};
-
-const defaultPreferences: UserNotificationPreferences = {
-    booking_confirmation: { email: true, web: true, push: true },
-    booking_reminder: { email: true, web: true, push: true },
-    class_cancelled: { email: true, web: true, push: true },
-    booking_cancelled_by_business: { email: true, web: true, push: true },
-    payment_receipt: { email: true, web: true, push: true },
+const defaultPreferences: UserNotificationSettingsNotificationPreferences = {
+    booking_confirmation: { email: false, web: false, push: false },
+    booking_reminder: { email: false, web: false, push: false },
+    class_cancelled: { email: false, web: false, push: false },
+    booking_cancelled_by_business: { email: false, web: false, push: false },
+    payment_receipt: { email: false, web: false, push: false },
+    class_rebookable: { email: false, web: false, push: false },
 };
 
 const getEnabledChannels = (setting: { email: boolean; web: boolean; push: boolean }): string => {
@@ -39,21 +32,26 @@ const notificationTypes = [
         description: 'We will remind you an hour before your class starts.'
     },
     {
+        key: 'class_rebookable' as const,
+        title: 'Class Rebookable',
+        description: 'If the class is rebookable, we will send you a notification.'
+    },
+    {
         key: 'class_cancelled' as const,
         title: 'Class Cancellations',
         description: 'If the class is cancelled by the business, we will send you a notification.'
     },
     {
         key: 'booking_cancelled_by_business' as const,
-        title: 'Booking Cancelled',
+        title: 'Booking Cancelled by Business',
         description: 'If the business cancels your booking, we will send you a notification.'
-    },
+    }
 ];
 
 export function SettingsNotificationsScreen() {
     const navigation = useNavigation();
     const { settings, loading } = useUserNotificationSettings();
-    const [preferences, setPreferences] = useState<UserNotificationPreferences>(defaultPreferences);
+    const [preferences, setPreferences] = useState<UserNotificationSettingsNotificationPreferences>(defaultPreferences);
 
     // Update local state when settings are loaded
     useEffect(() => {

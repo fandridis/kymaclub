@@ -197,7 +197,7 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
               Landing: 'welcome',
               SignInModal: 'signin',
               CreateAccountModal: 'signup',
-              HomeTabs: {
+              Home: {
                 path: 'home',
                 screens: {
                   News: 'news',

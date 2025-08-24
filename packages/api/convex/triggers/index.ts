@@ -133,11 +133,13 @@ triggers.register("bookings", async (ctx, change) => {
         });
     }
 
-    const isCancelled = newDoc?.status === 'cancelled_by_consumer' || newDoc?.status === 'cancelled_by_business';
+    const becameCancelled = newDoc?.status === 'cancelled_by_consumer' || newDoc?.status === 'cancelled_by_business';
+    const becameRebookable = oldDoc?.status !== 'cancelled_by_business_rebookable' && newDoc?.status === 'cancelled_by_business_rebookable';
 
-    if (operation === 'update' && isCancelled) {
-        console.log('----- [triggers/bookings] cancelled -----');
-        // fire emoji and log cancelledBy
+    console.log('🔥🔥🔥 BECOMING CANCELLED: ', becameCancelled);
+    console.log('🔥🔥🔥 BECOMING REBOOKABLE: ', becameRebookable);
+
+    if (operation === 'update' && (becameCancelled)) {
         console.log('🔥🔥🔥 CANCELLED BY: ', newDoc.cancelledBy);
         if (newDoc.cancelledBy === "consumer") {
             await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleUserCancelledBookingEvent, {
@@ -161,5 +163,18 @@ triggers.register("bookings", async (ctx, change) => {
                 },
             });
         }
+    }
+
+    if (operation === 'update' && becameRebookable) {
+        console.log('🔥🔥🔥 >  handleRebookableBookingEvent calling notification service');
+        await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleRebookableBookingEvent, {
+            payload: {
+                bookingId: id,
+                userId: newDoc.userId,
+                classInstanceId: newDoc.classInstanceId,
+                businessId: newDoc.businessId,
+                creditsPaid: newDoc.creditsUsed,
+            },
+        });
     }
 });
