@@ -20,7 +20,7 @@ import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexQueryCacheProvider } from "convex-helpers/react/cache";
 import i18n from './i18n';
 import { useEffect, useState } from 'react';
-import { useAuth } from './stores/auth-store';
+import { useAuth, useAuthStore } from './stores/auth-store';
 import { AuthSync } from './features/core/components/auth-sync';
 import { AuthGuard } from './features/core/components/auth-guard';
 import { convexAuthStorage } from './utils/storage';
@@ -41,6 +41,25 @@ const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
 
 // Create navigation reference for deep linking
 const navigationRef = createNavigationContainerRef();
+
+/**
+ * Check if a route requires authentication
+ */
+function needsAuthentication(route: string): boolean {
+  const protectedRoutes = [
+    'ClassDetailsModal',
+    'Home',
+    'Settings',
+    'SettingsProfile',
+    'SettingsNotifications',
+    'SettingsSubscription',
+    'SettingsAccount',
+    'VenueDetailsScreen',
+    'QRScannerModal'
+  ];
+
+  return protectedRoutes.includes(route);
+}
 
 // Configure how notifications are displayed
 Notifications.setNotificationHandler({
@@ -126,14 +145,30 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
 
         const parsedLink = parseDeepLink(data.deepLink as string);
         if (parsedLink) {
-          // @ts-ignore - navigation types are complex with nested navigators
-          navigationRef.navigate(parsedLink.route, parsedLink.params);
+          // Check if user is authenticated for protected routes
+          if (needsAuthentication(parsedLink.route)) {
+            if (user?._id) {
+              console.log('[Notification] User authenticated, navigating to protected route');
+              // @ts-ignore - navigation types are complex with nested navigators
+              navigationRef.navigate(parsedLink.route, parsedLink.params);
+            } else {
+              console.log('[Notification] User not authenticated, storing pending deep link and navigating to auth');
+              // Store the pending deep link and navigate to sign-in
+              useAuthStore.getState().setPendingDeepLink(data.deepLink as string);
+              navigationRef.navigate('SignInModal' as never);
+            }
+          } else {
+            // Public routes can be navigated to directly
+            console.log('[Notification] Navigating to public route');
+            // @ts-ignore - navigation types are complex with nested navigators
+            navigationRef.navigate(parsedLink.route, parsedLink.params);
+          }
         }
       }
     });
 
     return () => subscription.remove();
-  }, []);
+  }, [user?._id]);
 
   // Handle notification received while app is in foreground
   useEffect(() => {

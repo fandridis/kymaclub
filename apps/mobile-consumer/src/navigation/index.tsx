@@ -293,7 +293,7 @@ export function RootNavigator() {
 // Type definitions
 export type RootStackParamList = {
   // Main app screens
-  HomeTabs: undefined;
+  Home: undefined;
   Settings: undefined;
   Profile: { user: string };
   VenueDetailsScreen: { venueId: string };
@@ -335,7 +335,7 @@ export type TabParamList = {
 };
 
 export type RootStackParamListWithNestedTabs = {
-  HomeTabs: { screen?: keyof TabParamList };
+  Home: { screen?: keyof TabParamList };
   Settings: undefined;
   Profile: { user: string };
   VenueDetailsScreen: { venueId: string };

@@ -11,7 +11,7 @@ import { format } from 'date-fns';
 import { tz } from '@date-fns/tz';
 import type { RootStackParamList } from '..';
 import { useActionSheet } from '@expo/react-native-action-sheet';
-import { useAuthenticatedUser } from '../../stores/auth-store';
+import { useAuth } from '../../stores/auth-store';
 
 type ClassDetailsRoute = RouteProp<RootStackParamList, 'ClassDetailsModal'>;
 
@@ -24,7 +24,7 @@ export function ClassDetailsModalScreen() {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const { showActionSheetWithOptions } = useActionSheet();
 
-    const user = useAuthenticatedUser();
+    const { user } = useAuth();
     const bookClass = useMutation(api.mutations.bookings.bookClass);
     const [isBooking, setIsBooking] = useState(false);
 
@@ -37,16 +37,16 @@ export function ClassDetailsModalScreen() {
     // Use either the provided classInstance or the fetched one
     const finalClassInstance = classInstance || fetchedClassInstance;
 
-    // Check if user already has a booking for this class
+    // Check if user already has a booking for this class (only if authenticated)
     const existingBooking = useQuery(
         api.queries.bookings.getUserBookings,
-        finalClassInstance ? { classInstanceId: finalClassInstance._id } : "skip"
+        finalClassInstance && user ? { classInstanceId: finalClassInstance._id } : "skip"
     );
 
-    // Get booking history for this class (to show history if multiple bookings exist)
+    // Get booking history for this class (only if authenticated)
     const bookingHistory = useQuery(
         api.queries.bookings.getUserBookingHistory,
-        finalClassInstance ? { classInstanceId: finalClassInstance._id } : "skip"
+        finalClassInstance && user ? { classInstanceId: finalClassInstance._id } : "skip"
     );
 
     // Fetch full template data
@@ -98,6 +98,14 @@ export function ClassDetailsModalScreen() {
             switch (selectedIndex) {
                 case 0: {
                     // Book
+                    if (!user) {
+                        Alert.alert('Sign In Required', 'Please sign in to book classes.', [
+                            { text: 'Cancel', style: 'cancel' },
+                            { text: 'Sign In', onPress: () => navigation.navigate('SignInModal') }
+                        ]);
+                        return;
+                    }
+
                     try {
                         setIsBooking(true);
                         await bookClass({

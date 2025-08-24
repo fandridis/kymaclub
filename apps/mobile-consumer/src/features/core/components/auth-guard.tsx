@@ -39,13 +39,12 @@ export function AuthGuard({ children }: AuthGuardProps) {
         if (user && pendingDeepLink) {
             console.log('[AuthGuard] User authenticated, navigating to pending deep link:', pendingDeepLink)
 
-            // Parse the deep link for better handling
-            const parsed = Linking.parse(pendingDeepLink)
-            console.log('[AuthGuard] Parsed deep link:', parsed)
-
-            // Navigate to the pending deep link
-            Linking.openURL(pendingDeepLink)
-            setPendingDeepLink(null)
+            // Use Linking to handle the deep link (the navigation system will handle it)
+            setTimeout(() => {
+                Linking.openURL(pendingDeepLink);
+                setPendingDeepLink(null);
+                console.log('[AuthGuard] Opened pending deep link via Linking');
+            }, 500); // Small delay to ensure navigation is ready
         }
     }, [user, pendingDeepLink, setPendingDeepLink])
 

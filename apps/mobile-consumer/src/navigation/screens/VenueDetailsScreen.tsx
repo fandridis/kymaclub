@@ -386,11 +386,11 @@ export function VenueDetailsScreen() {
                             if (navigation.canGoBack()) {
                                 navigation.goBack();
                             } else {
-                                navigation.navigate('HomeTabs', { screen: 'Explore' });
+                                navigation.navigate('Home', { screen: 'Explore' });
                             }
                         } catch (error) {
                             console.error('Navigation error:', error);
-                            navigation.navigate('HomeTabs', { screen: 'Explore' });
+                            navigation.navigate('Home', { screen: 'Explore' });
                         }
                     }}
                     style={styles.backButton}
