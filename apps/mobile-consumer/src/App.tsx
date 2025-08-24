@@ -1,7 +1,8 @@
 // App.tsx - Clean implementation with modal auth flows
 import { Assets as NavigationAssets } from '@react-navigation/elements';
 import { DarkTheme, DefaultTheme } from '@react-navigation/native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
+import { createNavigationContainerRef } from '@react-navigation/native';
 import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import { Asset } from 'expo-asset';
 import * as SplashScreen from 'expo-splash-screen';
@@ -32,9 +33,25 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { api } from '@repo/api/convex/_generated/api';
+import * as Linking from 'expo-linking';
+import { parseDeepLink } from './utils/deep-linking';
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
+});
+
+// Create navigation reference for deep linking
+const navigationRef = createNavigationContainerRef();
+
+// Configure how notifications are displayed
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
 });
 
 // Preload assets
@@ -97,6 +114,38 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
       });
   }, [user?._id]);
 
+  // Handle notification interactions (when user taps on a notification)
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log('[Notification] Response received:', response);
+
+      const data = response.notification.request.content.data;
+
+      // Handle deep link from notification data
+      if (data?.deepLink && navigationRef.isReady()) {
+        console.log('[Notification] Navigating to deep link:', data.deepLink);
+
+        const parsedLink = parseDeepLink(data.deepLink as string);
+        if (parsedLink) {
+          // @ts-ignore - navigation types are complex with nested navigators
+          navigationRef.navigate(parsedLink.route, parsedLink.params);
+        }
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  // Handle notification received while app is in foreground
+  useEffect(() => {
+    const subscription = Notifications.addNotificationReceivedListener(notification => {
+      console.log('[Notification] Received while app in foreground:', notification);
+      // Notification is automatically displayed by the handler we set above
+    });
+
+    return () => subscription.remove();
+  }, []);
+
   // Initialize i18n
   useEffect(() => {
     const handleLanguageChange = (lng: string) => {
@@ -139,16 +188,44 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <NavigationContainer
+        ref={navigationRef}
         theme={theme}
         linking={{
           enabled: true,
-          prefixes: ['kymaclub://'],
+          prefixes: ['kymaclub://', 'https://kymaclub.com', 'https://*.kymaclub.com'],
           config: {
             screens: {
               Landing: 'welcome',
               SignInModal: 'signin',
               CreateAccountModal: 'signup',
-              HomeTabs: 'home',
+              HomeTabs: {
+                path: 'home',
+                screens: {
+                  News: 'news',
+                  Explore: 'explore',
+                  Bookings: 'bookings',
+                  Settings: 'settings',
+                },
+              },
+              // Modal screens with parameters
+              ClassDetailsModal: {
+                path: 'class/:classInstanceId',
+                parse: {
+                  classInstanceId: (id: string) => id,
+                },
+              },
+              VenueDetailsScreen: {
+                path: 'venue/:venueId',
+                parse: {
+                  venueId: (id: string) => id,
+                },
+              },
+              // Settings screens
+              SettingsProfile: 'settings/profile',
+              SettingsNotifications: 'settings/notifications',
+              SettingsSubscription: 'settings/subscription',
+              SettingsAccount: 'settings/account',
+              QRScannerModal: 'scanner',
             },
           },
         }}

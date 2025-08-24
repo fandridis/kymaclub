@@ -6,6 +6,7 @@ import type { PaginationOptions, PaginationResult } from "convex/server";
 import { components, internal } from "../convex/_generated/api";
 import { format } from "date-fns";
 import { PushNotifications } from "@convex-dev/expo-push-notifications";
+import { createNotificationWithDeepLink } from "../utils/deep-linking";
 
 /***************************************************************
  * Notification Service - All notification-related operations
@@ -770,12 +771,26 @@ export const notificationService = {
         }
 
         if (userNotificationSettings?.notificationPreferences?.booking_cancelled_by_business?.push) {
+            const notificationContent = createNotificationWithDeepLink(
+                'booking_cancelled_by_business',
+                'Booking cancelled',
+                `Your booking for ${classInstance.name} - ${classInstance.venueSnapshot?.name} at ${format(classInstance.startTime, 'MMM d, yyyy h:mm a')} has been cancelled by the venue.`,
+                {
+                    classInstanceId: classInstanceId,
+                    bookingId: bookingId,
+                    additionalData: {
+                        businessId: businessId,
+                        businessName: business.name,
+                        className: classInstance.name || classInstance.templateSnapshot.name,
+                        venueName: classInstance.venueSnapshot?.name,
+                        classTime: format(classInstance.startTime, 'MMM d, yyyy h:mm a'),
+                    }
+                }
+            );
+
             await pushNotifications.sendPushNotification(ctx, {
                 userId: userId,
-                notification: {
-                    title: "Booking cancelled",
-                    body: `Your booking for ${classInstance.name} - ${classInstance.venueSnapshot?.name} at ${format(classInstance.startTime, 'MMM d, yyyy h:mm a')} has been cancelled by the venue.`,
-                },
+                notification: notificationContent,
             });
         }
 

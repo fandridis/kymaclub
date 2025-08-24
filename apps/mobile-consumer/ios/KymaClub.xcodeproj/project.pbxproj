@@ -9,27 +9,27 @@
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		4B5395A22B2C06ED0DB323DA /* libPods-KymaClub.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 299706FFF441AC3B812137D2 /* libPods-KymaClub.a */; };
+		8E0D1E036DF2DF85F025BEA2 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56908CB6FB057592440E2141 /* ExpoModulesProvider.swift */; };
+		91EA5FDF455C097A8B155D3A /* libPods-KymaClub.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E885D61FF7F7D64E7A54A284 /* libPods-KymaClub.a */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		D257F10283302A9B83459381 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86BD7CB29ABFE552A27EC4D4 /* ExpoModulesProvider.swift */; };
+		DC56AB28C512AC5F54B4B9B7 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = FC4C557F558A1444623D8960 /* PrivacyInfo.xcprivacy */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
-		F9EAF9C313F1C75C2495D28E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = EA478909696BDC7DACC48C00 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		13B07F961A680F5B00A75B9A /* KymaClub.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KymaClub.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = KymaClub/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = KymaClub/Info.plist; sourceTree = "<group>"; };
-		299706FFF441AC3B812137D2 /* libPods-KymaClub.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-KymaClub.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		3E601F4474DA4D664575A2B0 /* Pods-KymaClub.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-KymaClub.debug.xcconfig"; path = "Target Support Files/Pods-KymaClub/Pods-KymaClub.debug.xcconfig"; sourceTree = "<group>"; };
-		86BD7CB29ABFE552A27EC4D4 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-KymaClub/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		56908CB6FB057592440E2141 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-KymaClub/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = KymaClub/SplashScreen.storyboard; sourceTree = "<group>"; };
-		B8BDE03FF0D0B107B17E0A88 /* Pods-KymaClub.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-KymaClub.release.xcconfig"; path = "Target Support Files/Pods-KymaClub/Pods-KymaClub.release.xcconfig"; sourceTree = "<group>"; };
+		B913867CAFAD1CB922413718 /* Pods-KymaClub.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-KymaClub.debug.xcconfig"; path = "Target Support Files/Pods-KymaClub/Pods-KymaClub.debug.xcconfig"; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		EA478909696BDC7DACC48C00 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = KymaClub/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		DBF7F8C913FEA76ED2224072 /* Pods-KymaClub.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-KymaClub.release.xcconfig"; path = "Target Support Files/Pods-KymaClub/Pods-KymaClub.release.xcconfig"; sourceTree = "<group>"; };
+		E885D61FF7F7D64E7A54A284 /* libPods-KymaClub.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-KymaClub.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = KymaClub/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* KymaClub-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "KymaClub-Bridging-Header.h"; path = "KymaClub/KymaClub-Bridging-Header.h"; sourceTree = "<group>"; };
+		FC4C557F558A1444623D8960 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = KymaClub/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,13 +37,21 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4B5395A22B2C06ED0DB323DA /* libPods-KymaClub.a in Frameworks */,
+				91EA5FDF455C097A8B155D3A /* libPods-KymaClub.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0023FC7A5D44415D7F695CA5 /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				6CEAC469E47F66446A5B4626 /* KymaClub */,
+			);
+			name = ExpoModulesProviders;
+			sourceTree = "<group>";
+		};
 		13B07FAE1A68108700A75B9A /* KymaClub */ = {
 			isa = PBXGroup;
 			children = (
@@ -53,7 +61,7 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				EA478909696BDC7DACC48C00 /* PrivacyInfo.xcprivacy */,
+				FC4C557F558A1444623D8960 /* PrivacyInfo.xcprivacy */,
 			);
 			name = KymaClub;
 			sourceTree = "<group>";
@@ -62,25 +70,17 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				299706FFF441AC3B812137D2 /* libPods-KymaClub.a */,
+				E885D61FF7F7D64E7A54A284 /* libPods-KymaClub.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		458F10073821458F36541FB6 /* KymaClub */ = {
+		6CEAC469E47F66446A5B4626 /* KymaClub */ = {
 			isa = PBXGroup;
 			children = (
-				86BD7CB29ABFE552A27EC4D4 /* ExpoModulesProvider.swift */,
+				56908CB6FB057592440E2141 /* ExpoModulesProvider.swift */,
 			);
 			name = KymaClub;
-			sourceTree = "<group>";
-		};
-		4BC5DEB122CB4217F4AAF113 /* ExpoModulesProviders */ = {
-			isa = PBXGroup;
-			children = (
-				458F10073821458F36541FB6 /* KymaClub */,
-			);
-			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -97,8 +97,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				AC160EC1D4385C39BA8E3E31 /* Pods */,
-				4BC5DEB122CB4217F4AAF113 /* ExpoModulesProviders */,
+				C681FF93FD3BFBC6A07BDD9E /* Pods */,
+				0023FC7A5D44415D7F695CA5 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -113,16 +113,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		AC160EC1D4385C39BA8E3E31 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				3E601F4474DA4D664575A2B0 /* Pods-KymaClub.debug.xcconfig */,
-				B8BDE03FF0D0B107B17E0A88 /* Pods-KymaClub.release.xcconfig */,
-			);
-			name = Pods;
-			path = Pods;
-			sourceTree = "<group>";
-		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
 			isa = PBXGroup;
 			children = (
@@ -130,6 +120,16 @@
 			);
 			name = Supporting;
 			path = KymaClub/Supporting;
+			sourceTree = "<group>";
+		};
+		C681FF93FD3BFBC6A07BDD9E /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				B913867CAFAD1CB922413718 /* Pods-KymaClub.debug.xcconfig */,
+				DBF7F8C913FEA76ED2224072 /* Pods-KymaClub.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -140,13 +140,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "KymaClub" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				4A1770F14E092EA1F7C93764 /* [Expo] Configure project */,
+				E002B7752F0BC58AF8DBBE52 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				BAD32F4545D278D523C3F12E /* [CP] Embed Pods Frameworks */,
+				88B39AF41859E26AE4330974 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -196,7 +196,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				F9EAF9C313F1C75C2495D28E /* PrivacyInfo.xcprivacy in Resources */,
+				DC56AB28C512AC5F54B4B9B7 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -239,25 +239,6 @@
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
-		};
-		4A1770F14E092EA1F7C93764 /* [Expo] Configure project */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "[Expo] Configure project";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-KymaClub/expo-configure-project.sh\"\n";
 		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -317,7 +298,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-KymaClub/Pods-KymaClub-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		BAD32F4545D278D523C3F12E /* [CP] Embed Pods Frameworks */ = {
+		88B39AF41859E26AE4330974 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -335,6 +316,25 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-KymaClub/Pods-KymaClub-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
+		E002B7752F0BC58AF8DBBE52 /* [Expo] Configure project */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "[Expo] Configure project";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-KymaClub/expo-configure-project.sh\"\n";
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -343,7 +343,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				D257F10283302A9B83459381 /* ExpoModulesProvider.swift in Sources */,
+				8E0D1E036DF2DF85F025BEA2 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -352,7 +352,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3E601F4474DA4D664575A2B0 /* Pods-KymaClub.debug.xcconfig */;
+			baseConfigurationReference = B913867CAFAD1CB922413718 /* Pods-KymaClub.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -388,7 +388,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = B8BDE03FF0D0B107B17E0A88 /* Pods-KymaClub.release.xcconfig */;
+			baseConfigurationReference = DBF7F8C913FEA76ED2224072 /* Pods-KymaClub.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
