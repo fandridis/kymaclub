@@ -65,13 +65,20 @@ export function CancelBookingDialog({
                             id="reason"
                             placeholder="Enter a reason for cancellation..."
                             value={reason}
-                            onChange={(e) => setReason(e.target.value)}
+                            onChange={(e) => {
+                                if (e.target.value.length <= 250) {
+                                    setReason(e.target.value);
+                                }
+                            }}
                             className="min-h-[80px]"
                             disabled={isCancelling}
+                            maxLength={250}
                         />
-                        <p className="text-xs text-muted-foreground">
-                            Providing a reason helps with customer communication and analytics.
-                        </p>
+                        <div className="flex justify-between items-start">
+                            <p className="text-xs text-muted-foreground">
+                                {reason.length}/250 characters
+                            </p>
+                        </div>
                     </div>
                 </div>
 
