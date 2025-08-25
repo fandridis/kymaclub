@@ -120,7 +120,7 @@ function HomeTabs() {
             title: t('navigation.scan'),
             tabBarLabel: () => null,
             tabBarIcon: ({ color, size, focused }) => (
-              <CenterScanIcon color={color} size={size} focused={focused} />
+              <CenterScanIcon color={color} size={size + 4} focused={focused} />
             ),
           }}
           listeners={{
@@ -384,13 +384,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   centerIconContainer: {
-    width: 56,
-    height: 56,
+    width: 62,
+    height: 62,
     borderRadius: 40,
     backgroundColor: '#ff4747',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -12,
+    marginTop: -8,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,

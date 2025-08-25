@@ -130,11 +130,11 @@ export const BookingCard = ({ booking, onCancel, onViewClass, isCanceling = fals
             {/* Rebook button removed from list view - users can rebook from class details modal */}
 
             {/* Show "You cannot book this class again" only for non-rebookable cancellations */}
-            {isCancelled && !isRebookable && (
+            {/* {isCancelled && !isRebookable && (
               <Text style={styles.noRebookText}>
                 You cannot book this class again
               </Text>
-            )}
+            )} */}
           </View>
         )}
       </View>
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   title: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#333',
     flex: 1,
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   businessName: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#666',
     fontWeight: '500',
     flexShrink: 1,
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 6,
   },
   instructor: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#666',
     fontStyle: 'italic',
     flex: 1,
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: '#22c55e',
   },
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   cancellationText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '500',
   },
   freeCancelText: {
@@ -298,19 +298,19 @@ const styles = StyleSheet.create({
     borderColor: '#9ca3af', // Gray border
   },
   badgeText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
     color: '#374151', // Dark gray text
   },
   cancelReasonText: {
-    fontSize: 10,
+    fontSize: 11,
     fontStyle: 'italic',
     color: '#6b7280', // Lighter gray for reason text
     marginTop: 4,
     lineHeight: 14,
   },
   noRebookText: {
-    fontSize: 10,
+    fontSize: 11,
     fontStyle: 'italic',
     color: '#9ca3af', // Light gray
     marginTop: 6,

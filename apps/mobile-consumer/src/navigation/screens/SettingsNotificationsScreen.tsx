@@ -1,10 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, StyleSheet, View, Text } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, ScrollView } from 'react-native';
 import { useUserNotificationSettings } from '../../hooks/use-user-notification-settings';
 import { useNavigation } from '@react-navigation/native';
 import { theme } from '../../theme';
-import { SettingsGroup, SettingsHeader, SettingsRow } from '../../components/Settings';
+import { SettingsGroup, SettingsRow } from '../../components/Settings';
+import { Clock, Calendar, CreditCard } from 'lucide-react-native';
 import type { UserNotificationSettingsNotificationPreferences } from '@repo/api/types/notification';
+import { LucideIcon } from 'lucide-react-native';
+
+type ConsumerNotificationType = keyof UserNotificationSettingsNotificationPreferences;
+
+type NotificationGroup = {
+    id: string;
+    title: string;
+    description: string;
+    icon: LucideIcon;
+    notificationKeys: readonly ConsumerNotificationType[];
+};
 
 const defaultPreferences: UserNotificationSettingsNotificationPreferences = {
     booking_confirmation: { email: false, web: false, push: false },
@@ -15,36 +27,28 @@ const defaultPreferences: UserNotificationSettingsNotificationPreferences = {
     class_rebookable: { email: false, web: false, push: false },
 };
 
-const getEnabledChannels = (setting: { email: boolean; web: boolean; push: boolean }): string => {
-    const channels = [];
-    if (setting.push) channels.push('Push');
-    if (setting.web) channels.push('In-app');
-    if (setting.email) channels.push('Email');
-
-    if (channels.length === 0) return 'Disabled';
-    return `via ${channels.join(', ')}`;
-};
-
-const notificationTypes = [
+// Grouped notification types with their underlying notification keys
+const notificationGroups: NotificationGroup[] = [
     {
-        key: 'booking_reminder' as const,
+        id: 'class_reminders',
         title: 'Class Reminders',
-        description: 'We will remind you an hour before your class starts.'
+        description: 'Get a notification 1 hour before your class starts.',
+        icon: Clock,
+        notificationKeys: ['booking_reminder'] as const
     },
     {
-        key: 'class_rebookable' as const,
-        title: 'Class Rebookable',
-        description: 'If the class is rebookable, we will send you a notification.'
+        id: 'bookings_changes',
+        title: 'Bookings & Changes',
+        description: 'Notifications about booking cancellations, changes and rebookable classes.',
+        icon: Calendar,
+        notificationKeys: ['class_cancelled', 'booking_cancelled_by_business', 'class_rebookable'] as const
     },
     {
-        key: 'class_cancelled' as const,
-        title: 'Class Cancellations',
-        description: 'If the class is cancelled by the business, we will send you a notification.'
-    },
-    {
-        key: 'booking_cancelled_by_business' as const,
-        title: 'Booking Cancelled by Business',
-        description: 'If the business cancels your booking, we will send you a notification.'
+        id: 'subscriptions',
+        title: 'Subscriptions',
+        description: 'Payment receipts and subscription updates.',
+        icon: CreditCard,
+        notificationKeys: ['payment_receipt'] as const
     }
 ];
 
@@ -60,41 +64,93 @@ export function SettingsNotificationsScreen() {
         }
     }, [settings]);
 
-    const handleNotificationPress = (notification: typeof notificationTypes[0]) => {
+    // Get group status - returns 'all', 'none', or 'mixed'
+    const getGroupStatus = (group: typeof notificationGroups[0]) => {
+        const allChannels: boolean[] = [];
+
+        group.notificationKeys.forEach(key => {
+            const pref = preferences[key];
+            allChannels.push(pref.email, pref.web, pref.push);
+        });
+
+        const enabledCount = allChannels.filter(Boolean).length;
+
+        if (enabledCount === 0) return 'none';
+        if (enabledCount === allChannels.length) return 'all';
+        return 'mixed';
+    };
+
+    // Get group description based on status
+    const getGroupDescription = (group: typeof notificationGroups[0]) => {
+        const status = getGroupStatus(group);
+
+        if (status === 'none') return 'Disabled';
+        if (status === 'all') return 'Enabled for all channels';
+
+        // For mixed status, show which channels are enabled across all notifications in the group
+        const enabledChannels = new Set<string>();
+        group.notificationKeys.forEach(key => {
+            const pref = preferences[key];
+            if (pref.push) enabledChannels.add('Push');
+            if (pref.email) enabledChannels.add('Email');
+            if (pref.web) enabledChannels.add('In-app');
+        });
+
+        return enabledChannels.size > 0 ? `via ${Array.from(enabledChannels).join(', ')}` : 'Disabled';
+    };
+
+    // Handle navigation to preference screen for the group
+    const handleGroupPress = (group: typeof notificationGroups[0]) => {
+        // Navigate with the first notification type from the group
+        // The preference screen will handle the individual notification type
+        const notificationType = {
+            key: group.notificationKeys[0],
+            title: group.title,
+            description: group.description
+        };
+
         navigation.navigate('SettingsNotificationsPreference', {
-            notificationType: notification
+            notificationType
         });
     };
 
     if (loading) {
         return (
-            <View style={styles.container}>
+            <SafeAreaView style={styles.container}>
                 <Text style={styles.loadingText}>Loading notification preferences...</Text>
-            </View>
+            </SafeAreaView>
         );
     }
 
-    console.log('preferences', preferences);
-
     return (
-        <View style={styles.container}>
-            <SettingsHeader title="Notification Types" />
-            <SettingsGroup>
-                {notificationTypes.map((notificationType) => {
-                    const enabledChannels = getEnabledChannels(preferences[notificationType.key]);
+        <SafeAreaView style={styles.container}>
+            <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                <Text style={styles.title}>Notifications</Text>
+                <Text style={styles.subtitle}>Choose what notifications you'd like to receive</Text>
 
-                    return (
-                        <SettingsRow
-                            key={notificationType.key}
-                            title={notificationType.title}
-                            subtitle={enabledChannels}
-                            onPress={() => handleNotificationPress(notificationType)}
-                            showChevron={true}
-                        />
-                    );
-                })}
-            </SettingsGroup>
-        </View>
+                <SettingsGroup>
+                    {notificationGroups.map((group) => {
+                        const status = getGroupStatus(group);
+                        const description = getGroupDescription(group);
+
+                        return (
+                            <SettingsRow
+                                key={group.id}
+                                title={group.title}
+                                subtitle={description}
+                                icon={group.icon}
+                                showChevron
+                                onPress={() => handleGroupPress(group)}
+                            />
+                        );
+                    })}
+                </SettingsGroup>
+            </ScrollView>
+        </SafeAreaView>
     );
 }
 
@@ -103,7 +159,27 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: theme.colors.zinc[50],
     },
-
+    scrollView: {
+        flex: 1,
+    },
+    scrollContent: {
+        paddingBottom: 60,
+    },
+    title: {
+        fontSize: theme.fontSize['2xl'],
+        fontWeight: theme.fontWeight.black,
+        color: theme.colors.zinc[900],
+        paddingHorizontal: 20,
+        paddingTop: 16,
+        paddingBottom: 8,
+    },
+    subtitle: {
+        fontSize: theme.fontSize.base,
+        color: theme.colors.zinc[600],
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+        lineHeight: 20,
+    },
     loadingText: {
         fontSize: 16,
         color: '#666',

@@ -1,47 +1,170 @@
-import React from 'react';
-import { SafeAreaView, StyleSheet, Text } from 'react-native';
+import React, { useState } from 'react';
+import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Image, Alert, Switch, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { User, Bell, CreditCard, Shield } from 'lucide-react-native';
+import { User, Bell, CreditCard, Shield, Camera, Plus, X, ChevronRight, Settings, LogOut, RefreshCw } from 'lucide-react-native';
 import { theme } from '../../theme';
 import { SettingsHeader, SettingsRow } from '../../components/Settings';
 import { SettingsGroup } from '../../components/Settings';
+import { useAuth, useAuthenticatedUser } from '../../stores/auth-store';
+import { useQuery } from 'convex/react';
+import { api } from '@repo/api/convex/_generated/api';
 
 export function SettingsScreen() {
   const navigation = useNavigation();
+  const { logout } = useAuth();
+  const user = useAuthenticatedUser();
+  const [avatarImage, setAvatarImage] = useState<string | null>(null);
+
+  // Get user credit balance
+  const creditBalance = useQuery(api.queries.credits.getUserBalance, { userId: user._id });
+
+  // Get user booking statistics (mock data for now - we'll need to implement this query)
+  const bookingStats = {
+    thisMonth: 12,
+    allTime: 45
+  };
+
+  const handleAvatarPress = () => {
+    Alert.alert(
+      'Profile Photo',
+      'Choose an option',
+      [
+        { text: 'Take Photo', onPress: () => console.log('Take Photo') },
+        { text: 'Choose from Library', onPress: () => console.log('Choose from Library') },
+        ...(avatarImage ? [{ text: 'Remove Photo', style: 'destructive' as const, onPress: () => setAvatarImage(null) }] : []),
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign Out', style: 'destructive', onPress: logout }
+      ]
+    );
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(part => part.charAt(0).toUpperCase())
+      .join('')
+      .substring(0, 2);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Settings</Text>
-      <SettingsGroup>
-        <SettingsRow
-          title="Profile"
-          subtitle="Account information and sign out"
-          showChevron
-          onPress={() => navigation.navigate('SettingsProfile')}
-          icon={User}
-        />
-        <SettingsRow
-          title="Notifications"
-          subtitle="Manage notification preferences"
-          showChevron
-          onPress={() => navigation.navigate('SettingsNotifications')}
-          icon={Bell}
-        />
-        <SettingsRow
-          title="Subscription"
-          subtitle="Manage your subscription"
-          showChevron
-          onPress={() => navigation.navigate('SettingsSubscription')}
-          icon={CreditCard}
-        />
-        <SettingsRow
-          title="Account"
-          subtitle="Privacy and account settings"
-          showChevron
-          onPress={() => navigation.navigate('SettingsAccount')}
-          icon={Shield}
-        />
-      </SettingsGroup>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.title}>Settings</Text>
+
+        {/* User Avatar Section */}
+        <View style={styles.avatarSection}>
+          <TouchableOpacity style={styles.avatarContainer} onPress={handleAvatarPress}>
+            {avatarImage ? (
+              <Image source={{ uri: avatarImage }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarInitials}>
+                  {getInitials(user.name || 'User')}
+                </Text>
+              </View>
+            )}
+            <View style={styles.avatarOverlay}>
+              <Camera size={16} color="#fff" />
+            </View>
+          </TouchableOpacity>
+          <Text style={styles.userName}>{user.name || 'User'}</Text>
+          <Text style={styles.userEmail}>{user.email}</Text>
+        </View>
+
+        {/* Statistics Section */}
+        <SettingsGroup>
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{bookingStats.thisMonth}</Text>
+              <Text style={styles.statLabel}>Classes this month</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{bookingStats.allTime}</Text>
+              <Text style={styles.statLabel}>Classes all-time</Text>
+            </View>
+          </View>
+        </SettingsGroup>
+
+        {/* Credits Section */}
+        <SettingsGroup>
+          <SettingsRow
+            title="Credits"
+            subtitle='Current balance'
+            rightElement={
+              <View style={styles.creditsContainer}>
+                <Text style={styles.creditsValue}>
+                  {creditBalance?.balance || 0}
+                </Text>
+              </View>
+            }
+          />
+        </SettingsGroup>
+
+        {/* Subscription Section */}
+        <SettingsGroup>
+          <SettingsRow
+            title="Subscription"
+            subtitle="Premium Plan • 20 credits/month"
+            showChevron
+            onPress={() => navigation.navigate('SettingsSubscription')}
+            icon={CreditCard}
+          />
+          <SettingsRow
+            title="Auto-Renewal"
+            subtitle="Automatically renew monthly"
+            icon={RefreshCw}
+            toggle={{
+              value: true,
+              onToggle: (value) => console.log('Toggle auto-renewal:', value)
+            }}
+          />
+        </SettingsGroup>
+
+        {/* Settings Navigation */}
+        <SettingsGroup>
+          <SettingsRow
+            title="Notifications"
+            subtitle="Push notifications, email preferences"
+            showChevron
+            onPress={() => navigation.navigate('SettingsNotifications')}
+            icon={Bell}
+          />
+          <SettingsRow
+            title="Account Settings"
+            subtitle="Privacy, security, data"
+            showChevron
+            onPress={() => navigation.navigate('SettingsAccount')}
+            icon={Shield}
+          />
+        </SettingsGroup>
+
+        {/* Logout Section */}
+        <SettingsGroup>
+          <TouchableOpacity style={styles.logoutRow} onPress={handleLogout}>
+            <View style={styles.logoutContent}>
+              <View style={styles.logoutIconContainer}>
+                <LogOut size={20} color={theme.colors.rose[500]} />
+              </View>
+              <Text style={styles.logoutText}>Sign Out</Text>
+            </View>
+          </TouchableOpacity>
+        </SettingsGroup>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -51,6 +174,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.zinc[50],
   },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 60,
+  },
   title: {
     fontSize: theme.fontSize['2xl'],
     fontWeight: theme.fontWeight.black,
@@ -58,5 +187,118 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 20,
+  },
+  avatarSection: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    backgroundColor: '#fff',
+    marginBottom: 20,
+    borderRadius: 0,
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: 12,
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  avatarPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: theme.colors.emerald[500],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitials: {
+    fontSize: 28,
+    fontWeight: theme.fontWeight.semibold,
+    color: '#fff',
+  },
+  avatarOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  userName: {
+    fontSize: theme.fontSize.xl,
+    fontWeight: theme.fontWeight.semibold,
+    color: theme.colors.zinc[900],
+    marginBottom: 4,
+  },
+  userEmail: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.zinc[600],
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: theme.colors.zinc[200],
+    marginHorizontal: 20,
+  },
+  statNumber: {
+    fontSize: theme.fontSize['2xl'],
+    fontWeight: theme.fontWeight.bold,
+    color: theme.colors.emerald[600],
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.zinc[600],
+    textAlign: 'center',
+  },
+  creditsContainer: {
+    backgroundColor: theme.colors.emerald[50],
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  creditsValue: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.semibold,
+    color: theme.colors.emerald[950],
+  },
+  logoutRow: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    minHeight: 44,
+  },
+  logoutContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: 44,
+  },
+  logoutIconContainer: {
+    marginRight: 12,
+    width: 24,
+    alignItems: 'center',
+  },
+  logoutText: {
+    fontSize: 16,
+    color: theme.colors.rose[500],
+    fontWeight: theme.fontWeight.medium,
+    flex: 1,
   },
 });
