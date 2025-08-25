@@ -1,7 +1,5 @@
-// navigation/index.tsx
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
 import { NewsScreen } from './screens/NewsScreen';
 import { ExploreScreen } from './screens/ExploreScreen';
 import { ScanScreen } from './screens/ScanScreen';
@@ -16,17 +14,14 @@ import { SettingsProfileScreen } from './screens/SettingsProfileScreen';
 import { SettingsNotificationsScreen } from './screens/SettingsNotificationsScreen';
 import { SettingsSubscriptionScreen } from './screens/SettingsSubscriptionScreen';
 import { SettingsAccountScreen } from './screens/SettingsAccountScreen';
-// Auth screens
 import { LandingScreen } from '../features/core/screens/landing-screen';
 import { CreateAccountModalScreen } from '../features/core/screens/create-account-modal-screen';
-
-import { SearchIcon, NewspaperIcon, ScanQrCodeIcon, SettingsIcon, TicketIcon } from 'lucide-react-native';
+import { SearchIcon, NewspaperIcon, ScanQrCodeIcon, TicketIcon, UserCogIcon } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
 import { useTypedTranslation } from '../i18n/typed';
 import { useAuth } from '../stores/auth-store';
 import { LocationObject } from 'expo-location';
 import { SignInModalScreen } from '../features/core/screens/sign-in-modal-screen';
-import React from 'react';
 import { useNavigation } from '@react-navigation/native';
 
 const Tab = createBottomTabNavigator();
@@ -147,9 +142,9 @@ function HomeTabs() {
           component={SettingsScreen}
           options={{
             title: t('navigation.settings'),
-            tabBarLabel: 'Account',
+            tabBarLabel: 'Profile',
             tabBarIcon: ({ color }) => (
-              <SettingsIcon color={color} size={26} />
+              <UserCogIcon color={color} size={26} />
             ),
           }}
         />

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Image, Alert, Switch, ScrollView } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Image, Alert, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { User, Bell, CreditCard, Shield, Camera, Plus, X, ChevronRight, Settings, LogOut, RefreshCw } from 'lucide-react-native';
+import { BellIcon, CreditCardIcon, ShieldIcon, CameraIcon, LogOutIcon, RefreshCwIcon, DiamondIcon } from 'lucide-react-native';
 import { theme } from '../../theme';
 import { SettingsHeader, SettingsRow } from '../../components/Settings';
 import { SettingsGroup } from '../../components/Settings';
@@ -78,7 +78,7 @@ export function SettingsScreen() {
               </View>
             )}
             <View style={styles.avatarOverlay}>
-              <Camera size={16} color="#fff" />
+              <CameraIcon size={16} color="#fff" />
             </View>
           </TouchableOpacity>
           <Text style={styles.userName}>{user.name || 'User'}</Text>
@@ -101,12 +101,15 @@ export function SettingsScreen() {
         </SettingsGroup>
 
         {/* Credits Section */}
+        <SettingsHeader title="Your credits" />
         <SettingsGroup>
           <SettingsRow
             title="Credits"
             subtitle='Current balance'
+            icon={DiamondIcon}
             rightElement={
               <View style={styles.creditsContainer}>
+                <DiamondIcon size={14} color={theme.colors.emerald[950]} />
                 <Text style={styles.creditsValue}>
                   {creditBalance?.balance || 0}
                 </Text>
@@ -116,18 +119,19 @@ export function SettingsScreen() {
         </SettingsGroup>
 
         {/* Subscription Section */}
+        <SettingsHeader title="Subscription" />
         <SettingsGroup>
           <SettingsRow
             title="Subscription"
             subtitle="Premium Plan • 20 credits/month"
             showChevron
             onPress={() => navigation.navigate('SettingsSubscription')}
-            icon={CreditCard}
+            icon={CreditCardIcon}
           />
           <SettingsRow
             title="Auto-Renewal"
             subtitle="Automatically renew monthly"
-            icon={RefreshCw}
+            icon={RefreshCwIcon}
             toggle={{
               value: true,
               onToggle: (value) => console.log('Toggle auto-renewal:', value)
@@ -136,20 +140,21 @@ export function SettingsScreen() {
         </SettingsGroup>
 
         {/* Settings Navigation */}
+        <SettingsHeader title="Settings" />
         <SettingsGroup>
           <SettingsRow
             title="Notifications"
             subtitle="Push notifications, email preferences"
             showChevron
             onPress={() => navigation.navigate('SettingsNotifications')}
-            icon={Bell}
+            icon={BellIcon}
           />
           <SettingsRow
             title="Account Settings"
             subtitle="Privacy, security, data"
             showChevron
             onPress={() => navigation.navigate('SettingsAccount')}
-            icon={Shield}
+            icon={ShieldIcon}
           />
         </SettingsGroup>
 
@@ -158,7 +163,7 @@ export function SettingsScreen() {
           <TouchableOpacity style={styles.logoutRow} onPress={handleLogout}>
             <View style={styles.logoutContent}>
               <View style={styles.logoutIconContainer}>
-                <LogOut size={20} color={theme.colors.rose[500]} />
+                <LogOutIcon size={20} color={theme.colors.rose[500]} />
               </View>
               <Text style={styles.logoutText}>Sign Out</Text>
             </View>
@@ -192,7 +197,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 20,
     backgroundColor: '#fff',
-    marginBottom: 20,
+    marginBottom: 0,
     borderRadius: 0,
   },
   avatarContainer: {
@@ -267,6 +272,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   creditsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: theme.colors.emerald[50],
     paddingHorizontal: 12,
     paddingVertical: 6,
