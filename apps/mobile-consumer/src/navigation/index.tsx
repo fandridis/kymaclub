@@ -15,6 +15,9 @@ import { SettingsNotificationsScreen } from './screens/SettingsNotificationsScre
 import { SettingsSubscriptionScreen } from './screens/SettingsSubscriptionScreen';
 import { SettingsAccountScreen } from './screens/SettingsAccountScreen';
 import { SettingsCreditsScreen } from './screens/SettingsCreditsScreen';
+import { SubscriptionScreen } from './screens/SubscriptionScreen';
+import { SuperpowersScreen } from './screens/SuperpowersScreen';
+import { BuyCreditsScreen } from './screens/BuyCreditsScreen';
 import { LandingScreen } from '../features/core/screens/landing-screen';
 import { CreateAccountModalScreen } from '../features/core/screens/create-account-modal-screen';
 import { SearchIcon, NewspaperIcon, ScanQrCodeIcon, TicketIcon, UserCogIcon } from 'lucide-react-native';
@@ -229,6 +232,33 @@ export function RootNavigator() {
             }}
           />
           <RootStack.Screen
+            name="Subscription"
+            component={SubscriptionScreen}
+            options={{
+              title: 'Subscription Management',
+              animation: 'slide_from_right',
+              headerShown: true,
+            }}
+          />
+          <RootStack.Screen
+            name="Superpowers"
+            component={SuperpowersScreen}
+            options={{
+              title: 'Superpowers',
+              animation: 'slide_from_right',
+              headerShown: true,
+            }}
+          />
+          <RootStack.Screen
+            name="BuyCredits"
+            component={BuyCreditsScreen}
+            options={{
+              title: 'Buy Credits',
+              animation: 'slide_from_right',
+              headerShown: true,
+            }}
+          />
+          <RootStack.Screen
             name="SettingsNotificationsPreference"
             component={SettingsNotificationsPreferenceScreen}
             options={{
@@ -307,6 +337,9 @@ export type RootStackParamList = {
   SettingsSubscription: undefined;
   SettingsAccount: undefined;
   SettingsCredits: undefined;
+  Subscription: undefined;
+  Superpowers: undefined;
+  BuyCredits: undefined;
   SettingsNotificationsPreference: {
     notificationType: {
       key: string;
@@ -350,6 +383,9 @@ export type RootStackParamListWithNestedTabs = {
   SettingsSubscription: undefined;
   SettingsAccount: undefined;
   SettingsCredits: undefined;
+  Subscription: undefined;
+  Superpowers: undefined;
+  BuyCredits: undefined;
   SettingsNotificationsPreference: {
     notificationType: {
       key: string;

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Image, Alert, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { BellIcon, CreditCardIcon, ShieldIcon, CameraIcon, LogOutIcon, RefreshCwIcon, DiamondIcon } from 'lucide-react-native';
+import { BellIcon, CreditCardIcon, ShieldIcon, CameraIcon, LogOutIcon, RefreshCwIcon, DiamondIcon, CrownIcon, ZapIcon } from 'lucide-react-native';
 import { theme } from '../../theme';
 import { SettingsHeader, SettingsRow } from '../../components/Settings';
 import { SettingsGroup } from '../../components/Settings';
@@ -165,30 +165,63 @@ export function SettingsScreen() {
           </View>
         </SettingsGroup>
 
-        {/* Credits Section */}
-        <SettingsHeader title="Your credits" />
+
         <SettingsGroup>
           <SettingsRow
-            title="Credits & Subscription"
-            renderSubtitle={() => (
-              <View style={styles.subscriptionStatusContainer}>
-                <View style={[styles.statusDot, { backgroundColor: true ? theme.colors.emerald[500] : theme.colors.rose[500] }]} />
-                <Text style={styles.subscriptionStatusText}>
-                  {true ? 'Active sub: 20 credits/month' : 'Inactive subscription'}
-                </Text>
-              </View>
-            )}
-            icon={DiamondIcon}
-            showChevron
-            onPress={() => navigation.navigate('SettingsCredits')}
+            title="Credits Balance"
+            subtitle={(() => {
+              const mockExpiringCredits = 15;
+              const mockDaysUntilExpiry = 12;
+              if (mockDaysUntilExpiry < 30 && mockExpiringCredits > 0) {
+                return `${mockExpiringCredits} credits expire in ${mockDaysUntilExpiry} days`;
+              }
+              return undefined;
+            })()}
             rightElement={
-              <View style={styles.creditsContainer}>
-                <DiamondIcon size={14} color={theme.colors.emerald[950]} />
-                <Text style={styles.creditsValue}>
-                  {creditBalance?.balance || 0}
+              <View style={styles.creditsBadge}>
+                <DiamondIcon size={16} color={theme.colors.emerald[600]} />
+                <Text style={styles.creditsBadgeText}>{creditBalance?.balance || 0}</Text>
+              </View>
+            }
+            showChevron={false}
+          />
+        </SettingsGroup>
+
+        {/* Credits Management */}
+        <SettingsHeader title="Credits Management" />
+        <SettingsGroup>
+          <SettingsRow
+            icon={CrownIcon}
+            title="Monthly Subscription"
+            subtitle={true ? '20 credits/month • Next billing: Sep 25' : 'Inactive subscription'}
+            rightElement={
+              <View style={[styles.statusBadge, { backgroundColor: true ? theme.colors.emerald[100] : theme.colors.zinc[100] }]}>
+                <Text style={[styles.statusBadgeText, { color: true ? theme.colors.emerald[700] : theme.colors.zinc[600] }]}>
+                  {true ? 'ACTIVE' : 'INACTIVE'}
                 </Text>
               </View>
             }
+            onPress={() => navigation.navigate('Subscription')}
+            showChevron
+          />
+          <SettingsRow
+            icon={ZapIcon}
+            title="Superpowers"
+            subtitle="Boost your class bookings with special features"
+            rightElement={
+              <View style={styles.countBadge}>
+                <Text style={styles.countBadgeText}>2</Text>
+              </View>
+            }
+            onPress={() => navigation.navigate('Superpowers')}
+            showChevron
+          />
+          <SettingsRow
+            icon={CreditCardIcon}
+            title="Buy Credits"
+            subtitle="One-time credit packs without subscription"
+            onPress={() => navigation.navigate('BuyCredits')}
+            showChevron
           />
         </SettingsGroup>
 
@@ -212,16 +245,18 @@ export function SettingsScreen() {
           />
         </SettingsGroup>
 
-        {/* Logout Section */}
+        {/* Account Actions */}
+        <SettingsHeader title="Account" />
         <SettingsGroup>
-          <TouchableOpacity style={styles.logoutRow} onPress={handleLogout}>
-            <View style={styles.logoutContent}>
-              <View style={styles.logoutIconContainer}>
-                <LogOutIcon size={20} color={theme.colors.rose[500]} />
-              </View>
-              <Text style={styles.logoutText}>Sign Out</Text>
-            </View>
-          </TouchableOpacity>
+          <SettingsRow
+            icon={LogOutIcon}
+            title="Sign Out"
+            subtitle="Sign out of your account"
+            titleStyle={{ color: theme.colors.rose[500] }}
+            iconColor={theme.colors.rose[500]}
+            onPress={handleLogout}
+            showChevron={false}
+          />
         </SettingsGroup>
       </ScrollView>
     </SafeAreaView>
@@ -237,7 +272,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 60,
+    paddingBottom: 80,
   },
   title: {
     fontSize: theme.fontSize['2xl'],
@@ -334,34 +369,6 @@ const styles = StyleSheet.create({
     color: theme.colors.zinc[600],
     textAlign: 'center',
   },
-  creditsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: theme.colors.emerald[50],
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  creditsValue: {
-    fontSize: theme.fontSize.sm,
-    fontWeight: theme.fontWeight.semibold,
-    color: theme.colors.emerald[950],
-  },
-  subscriptionStatusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  subscriptionStatusText: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.zinc[600],
-  },
   logoutRow: {
     backgroundColor: '#fff',
     borderBottomWidth: 1,
@@ -385,5 +392,41 @@ const styles = StyleSheet.create({
     color: theme.colors.rose[500],
     fontWeight: theme.fontWeight.medium,
     flex: 1,
+  },
+  creditsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.emerald[50],
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  creditsBadgeText: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.semibold,
+    color: theme.colors.emerald[700],
+    marginLeft: 4,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  statusBadgeText: {
+    fontSize: theme.fontSize.xs,
+    fontWeight: theme.fontWeight.bold,
+  },
+  countBadge: {
+    backgroundColor: theme.colors.sky[100],
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  countBadgeText: {
+    fontSize: theme.fontSize.xs,
+    fontWeight: theme.fontWeight.bold,
+    color: theme.colors.sky[700],
   },
 });

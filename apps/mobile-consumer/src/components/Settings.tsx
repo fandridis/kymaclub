@@ -20,14 +20,25 @@ export function SettingsGroup({ children, style }: SettingsGroupProps) {
 // Settings Header - simple header component
 interface SettingsHeaderProps {
     title: string;
+    subtitle?: string;
+    renderSubtitle?: () => React.ReactNode;
     style?: ViewStyle;
 }
 
-export function SettingsHeader({ title, style }: SettingsHeaderProps) {
+export function SettingsHeader({ title, subtitle, renderSubtitle, style }: SettingsHeaderProps) {
     return (
-        <Text style={[styles.settingsHeader, style]}>
-            {title}
-        </Text>
+        <View style={[styles.settingsHeaderContainer, style]}>
+            <Text style={styles.settingsHeader}>
+                {title}
+            </Text>
+            {renderSubtitle ? (
+                renderSubtitle()
+            ) : subtitle ? (
+                <Text style={styles.settingsHeaderSubtitle}>
+                    {subtitle}
+                </Text>
+            ) : null}
+        </View>
     );
 }
 
@@ -49,8 +60,10 @@ interface SettingsRowProps {
     };
     disabled?: boolean;
     style?: ViewStyle;
+    titleStyle?: any;
     // Optional icon to display on the left side
     icon?: LucideIcon;
+    iconColor?: string;
 }
 
 export function SettingsRow({
@@ -64,7 +77,9 @@ export function SettingsRow({
     toggle,
     disabled = false,
     style,
-    icon: Icon
+    titleStyle,
+    icon: Icon,
+    iconColor
 }: SettingsRowProps) {
     // If renderRightSide is provided, use it to completely override the right side
     const rightSideContent = renderRightSide ? (
@@ -108,14 +123,15 @@ export function SettingsRow({
                     <View style={styles.iconContainer}>
                         <Icon
                             size={20}
-                            color={disabled ? theme.colors.zinc[400] : theme.colors.zinc[600]}
+                            color={disabled ? theme.colors.zinc[400] : (iconColor || theme.colors.zinc[600])}
                         />
                     </View>
                 )}
                 <View style={[styles.settingsRowText, Icon && styles.settingsRowTextWithIcon]}>
                     <Text style={[
                         styles.settingsRowTitle,
-                        disabled && styles.disabledText
+                        disabled && styles.disabledText,
+                        titleStyle
                     ]}>
                         {title}
                     </Text>
@@ -166,18 +182,26 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderWidth: 1,
         borderColor: theme.colors.zinc[100],
-        marginBottom: 20,
+        // marginBottom: 20,
         borderRadius: 0,
         overflow: 'hidden',
         width: '100%',
+    },
+    settingsHeaderContainer: {
+        marginBottom: 12,
+        marginTop: 20,
+        marginHorizontal: 16,
     },
     settingsHeader: {
         fontSize: theme.fontSize.base,
         fontWeight: '600',
         color: theme.colors.zinc[500],
-        marginBottom: 12,
-        marginTop: 20,
-        marginHorizontal: 16,
+    },
+    settingsHeaderSubtitle: {
+        fontSize: theme.fontSize.sm,
+        color: theme.colors.amber[600],
+        marginTop: 4,
+        fontWeight: theme.fontWeight.medium,
     },
     settingsRow: {
         backgroundColor: '#fff',
