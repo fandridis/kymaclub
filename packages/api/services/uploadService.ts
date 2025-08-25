@@ -159,4 +159,56 @@ export const uploadService = {
 
     return { storageId: args.storageId, updatedTemplateId: args.templateId };
   },
+
+  /**
+   * Update user profile image
+   */
+  updateUserProfileImage: async ({
+    ctx,
+    args,
+    user,
+  }: {
+    ctx: MutationCtx;
+    args: { storageId: Id<"_storage"> };
+    user: Doc<"users">;
+  }): Promise<{ storageId: Id<"_storage">; updatedUserId: Id<"users"> }> => {
+    // Remove old profile image if it exists
+    if (user.consumerProfileImageStorageId) {
+      await ctx.storage.delete(user.consumerProfileImageStorageId);
+    }
+
+    // Update user with new profile image
+    await ctx.db.patch(user._id, {
+      consumerProfileImageStorageId: args.storageId,
+    });
+
+    return { storageId: args.storageId, updatedUserId: user._id };
+  },
+
+  /**
+   * Remove user profile image (also deletes from storage)
+   */
+  removeUserProfileImage: async ({
+    ctx,
+    args,
+    user,
+  }: {
+    ctx: MutationCtx;
+    args: {};
+    user: Doc<"users">;
+  }): Promise<{ removedStorageId: Id<"_storage"> | null; updatedUserId: Id<"users"> }> => {
+    const oldStorageId = user.consumerProfileImageStorageId || null;
+
+    // Remove profile image reference from user
+    await ctx.db.patch(user._id, {
+      consumerProfileImageStorageId: undefined,
+    });
+
+    // Delete the image from storage if it exists
+    if (oldStorageId) {
+      await ctx.storage.delete(oldStorageId);
+    }
+
+    return { removedStorageId: oldStorageId, updatedUserId: user._id };
+  },
 };

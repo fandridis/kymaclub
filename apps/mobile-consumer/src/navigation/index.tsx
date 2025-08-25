@@ -14,6 +14,7 @@ import { SettingsProfileScreen } from './screens/SettingsProfileScreen';
 import { SettingsNotificationsScreen } from './screens/SettingsNotificationsScreen';
 import { SettingsSubscriptionScreen } from './screens/SettingsSubscriptionScreen';
 import { SettingsAccountScreen } from './screens/SettingsAccountScreen';
+import { SettingsCreditsScreen } from './screens/SettingsCreditsScreen';
 import { LandingScreen } from '../features/core/screens/landing-screen';
 import { CreateAccountModalScreen } from '../features/core/screens/create-account-modal-screen';
 import { SearchIcon, NewspaperIcon, ScanQrCodeIcon, TicketIcon, UserCogIcon } from 'lucide-react-native';
@@ -219,6 +220,15 @@ export function RootNavigator() {
             }}
           />
           <RootStack.Screen
+            name="SettingsCredits"
+            component={SettingsCreditsScreen}
+            options={{
+              title: 'Credits & Subscription',
+              animation: 'slide_from_right',
+              headerShown: true,
+            }}
+          />
+          <RootStack.Screen
             name="SettingsNotificationsPreference"
             component={SettingsNotificationsPreferenceScreen}
             options={{
@@ -296,6 +306,7 @@ export type RootStackParamList = {
   SettingsNotifications: undefined;
   SettingsSubscription: undefined;
   SettingsAccount: undefined;
+  SettingsCredits: undefined;
   SettingsNotificationsPreference: {
     notificationType: {
       key: string;
@@ -338,6 +349,7 @@ export type RootStackParamListWithNestedTabs = {
   SettingsNotifications: undefined;
   SettingsSubscription: undefined;
   SettingsAccount: undefined;
+  SettingsCredits: undefined;
   SettingsNotificationsPreference: {
     notificationType: {
       key: string;

@@ -14,3 +14,15 @@ export const getUrls = query({
         return uploadService.getUploadUrls({ ctx, storageIds: args.storageIds });
     },
 });
+
+export const getUserProfileImageUrl = query({
+    args: { userId: v.id("users") },
+    returns: v.union(v.string(), v.null()),
+    handler: async (ctx, args) => {
+        const user = await ctx.db.get(args.userId);
+        if (!user || !user.consumerProfileImageStorageId) {
+            return null;
+        }
+        return await ctx.storage.getUrl(user.consumerProfileImageStorageId);
+    },
+});

@@ -49,3 +49,21 @@ export const removeTemplateImage = mutationWithTriggers({
     }
 });
 
+export const updateUserProfileImage = mutationWithTriggers({
+    args: { storageId: v.id("_storage") },
+    returns: v.object({ storageId: v.id("_storage"), updatedUserId: v.id("users") }),
+    handler: async (ctx, args) => {
+        const user = await getAuthenticatedUserOrThrow(ctx);
+        return uploadService.updateUserProfileImage({ ctx, args, user });
+    }
+});
+
+export const removeUserProfileImage = mutationWithTriggers({
+    args: {},
+    returns: v.object({ removedStorageId: v.union(v.id("_storage"), v.null()), updatedUserId: v.id("users") }),
+    handler: async (ctx, args) => {
+        const user = await getAuthenticatedUserOrThrow(ctx);
+        return uploadService.removeUserProfileImage({ ctx, args, user });
+    }
+});
+

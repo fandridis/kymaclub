@@ -5,6 +5,9 @@ PODS:
     - ExpoModulesCore
   - EXConstants (17.1.7):
     - ExpoModulesCore
+  - EXImageLoader (5.1.0):
+    - ExpoModulesCore
+    - React-Core
   - EXJSONUtils (0.15.0)
   - EXManifests (0.16.6):
     - ExpoModulesCore
@@ -295,6 +298,12 @@ PODS:
     - SDWebImageAVIFCoder (~> 0.11.0)
     - SDWebImageSVGCoder (~> 1.7.0)
     - SDWebImageWebPCoder (~> 0.14.6)
+  - ExpoImageManipulator (13.1.7):
+    - EXImageLoader
+    - ExpoModulesCore
+    - SDWebImageWebPCoder
+  - ExpoImagePicker (16.1.4):
+    - ExpoModulesCore
   - ExpoKeepAwake (14.1.4):
     - ExpoModulesCore
   - ExpoLinearGradient (14.1.5):
@@ -2443,6 +2452,7 @@ DEPENDENCIES:
   - "DoubleConversion (from `../../../node_modules/.pnpm/react-native@0.79.5_@babel+core@7.28.0_@react-native-community+cli@19.1.1_typescript@5.8.3__@_odtsq3tjzeo3kmm7harucsaixy/node_modules/react-native/third-party-podspecs/DoubleConversion.podspec`)"
   - "EXApplication (from `../../../node_modules/.pnpm/expo-application@6.1.5_expo@53.0.20_@babel+core@7.28.0_@expo+metro-runtime@5.0.4_react-native_bzswrawa5tkbffzftvumhygfwa/node_modules/expo-application/ios`)"
   - "EXConstants (from `../../../node_modules/.pnpm/expo-constants@17.1.7_expo@53.0.20_@babel+core@7.28.0_@expo+metro-runtime@5.0.4_react-native@_mp4y5ylj3w2q4nh36ijgnbz4aa/node_modules/expo-constants/ios`)"
+  - "EXImageLoader (from `../../../node_modules/.pnpm/expo-image-loader@5.1.0_expo@53.0.20_@babel+core@7.28.0_@expo+metro-runtime@5.0.4_react-nativ_x7qiwl7lobma5d5k7tm5bn2hmm/node_modules/expo-image-loader/ios`)"
   - "EXJSONUtils (from `../../../node_modules/.pnpm/expo-json-utils@0.15.0/node_modules/expo-json-utils/ios`)"
   - "EXManifests (from `../../../node_modules/.pnpm/expo-manifests@0.16.6_expo@53.0.20_@babel+core@7.28.0_@expo+metro-runtime@5.0.4_react-native@_ot2u4mgi72q5mdziead4miei6a/node_modules/expo-manifests/ios`)"
   - "EXNotifications (from `../../../node_modules/.pnpm/expo-notifications@0.31.4_expo@53.0.20_@babel+core@7.28.0_@expo+metro-runtime@5.0.4_react-nat_mdt6jammeuc4idg5bycvaypxua/node_modules/expo-notifications/ios`)"
@@ -2459,6 +2469,8 @@ DEPENDENCIES:
   - "ExpoFileSystem (from `../../../node_modules/.pnpm/expo-file-system@18.1.11_expo@53.0.20_@babel+core@7.28.0_@expo+metro-runtime@5.0.4_react-nati_tprgu2bmpolihfothb2rk2asly/node_modules/expo-file-system/ios`)"
   - "ExpoFont (from `../../../node_modules/.pnpm/expo-font@13.3.2_expo@53.0.20_@babel+core@7.28.0_@expo+metro-runtime@5.0.4_react-native@0.79._psbfjvy3khgbjdvquizdejki4i/node_modules/expo-font/ios`)"
   - "ExpoImage (from `../../../node_modules/.pnpm/expo-image@2.4.0_expo@53.0.20_@babel+core@7.28.0_@expo+metro-runtime@5.0.4_react-native@0.79._mvpf3zr23ydoozsfvbftagtvxm/node_modules/expo-image/ios`)"
+  - "ExpoImageManipulator (from `../../../node_modules/.pnpm/expo-image-manipulator@13.1.7_expo@53.0.20_@babel+core@7.28.0_@expo+metro-runtime@5.0.4_react_5qzipwkr7ylpsjx5leb2ntd2x4/node_modules/expo-image-manipulator/ios`)"
+  - "ExpoImagePicker (from `../../../node_modules/.pnpm/expo-image-picker@16.1.4_expo@53.0.20_@babel+core@7.28.0_@expo+metro-runtime@5.0.4_react-nati_sz2zxki4fsnsnaicg4cdnwmqim/node_modules/expo-image-picker/ios`)"
   - "ExpoKeepAwake (from `../../../node_modules/.pnpm/expo-keep-awake@14.1.4_expo@53.0.20_@babel+core@7.28.0_@expo+metro-runtime@5.0.4_react-native_d5lauytmlgh7zoq6766a4ypjcu/node_modules/expo-keep-awake/ios`)"
   - "ExpoLinearGradient (from `../../../node_modules/.pnpm/expo-linear-gradient@14.1.5_expo@53.0.20_@babel+core@7.28.0_@expo+metro-runtime@5.0.4_react-n_r6ft3kcr6u65qdgab4udj5ax3e/node_modules/expo-linear-gradient/ios`)"
   - "ExpoLinking (from `../../../node_modules/.pnpm/expo-linking@7.1.7_expo@53.0.20_@babel+core@7.28.0_@expo+metro-runtime@5.0.4_react-native@0.7_rsdyepphiymr2axrpe4ejgmf34/node_modules/expo-linking/ios`)"
@@ -2573,6 +2585,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/.pnpm/expo-application@6.1.5_expo@53.0.20_@babel+core@7.28.0_@expo+metro-runtime@5.0.4_react-native_bzswrawa5tkbffzftvumhygfwa/node_modules/expo-application/ios"
   EXConstants:
     :path: "../../../node_modules/.pnpm/expo-constants@17.1.7_expo@53.0.20_@babel+core@7.28.0_@expo+metro-runtime@5.0.4_react-native@_mp4y5ylj3w2q4nh36ijgnbz4aa/node_modules/expo-constants/ios"
+  EXImageLoader:
+    :path: "../../../node_modules/.pnpm/expo-image-loader@5.1.0_expo@53.0.20_@babel+core@7.28.0_@expo+metro-runtime@5.0.4_react-nativ_x7qiwl7lobma5d5k7tm5bn2hmm/node_modules/expo-image-loader/ios"
   EXJSONUtils:
     :path: "../../../node_modules/.pnpm/expo-json-utils@0.15.0/node_modules/expo-json-utils/ios"
   EXManifests:
@@ -2605,6 +2619,10 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/.pnpm/expo-font@13.3.2_expo@53.0.20_@babel+core@7.28.0_@expo+metro-runtime@5.0.4_react-native@0.79._psbfjvy3khgbjdvquizdejki4i/node_modules/expo-font/ios"
   ExpoImage:
     :path: "../../../node_modules/.pnpm/expo-image@2.4.0_expo@53.0.20_@babel+core@7.28.0_@expo+metro-runtime@5.0.4_react-native@0.79._mvpf3zr23ydoozsfvbftagtvxm/node_modules/expo-image/ios"
+  ExpoImageManipulator:
+    :path: "../../../node_modules/.pnpm/expo-image-manipulator@13.1.7_expo@53.0.20_@babel+core@7.28.0_@expo+metro-runtime@5.0.4_react_5qzipwkr7ylpsjx5leb2ntd2x4/node_modules/expo-image-manipulator/ios"
+  ExpoImagePicker:
+    :path: "../../../node_modules/.pnpm/expo-image-picker@16.1.4_expo@53.0.20_@babel+core@7.28.0_@expo+metro-runtime@5.0.4_react-nati_sz2zxki4fsnsnaicg4cdnwmqim/node_modules/expo-image-picker/ios"
   ExpoKeepAwake:
     :path: "../../../node_modules/.pnpm/expo-keep-awake@14.1.4_expo@53.0.20_@babel+core@7.28.0_@expo+metro-runtime@5.0.4_react-native_d5lauytmlgh7zoq6766a4ypjcu/node_modules/expo-keep-awake/ios"
   ExpoLinearGradient:
@@ -2788,6 +2806,7 @@ SPEC CHECKSUMS:
   DoubleConversion: cb417026b2400c8f53ae97020b2be961b59470cb
   EXApplication: 1e06972201838375ca1ec1ba34d586a98a5dc718
   EXConstants: 98bcf0f22b820f9b28f9fee55ff2daededadd2f8
+  EXImageLoader: 4d3d3284141f1a45006cc4d0844061c182daf7ee
   EXJSONUtils: 1d3e4590438c3ee593684186007028a14b3686cd
   EXManifests: 691a779b04e4f2c96da46fb9bef4f86174fefcb5
   EXNotifications: be5e949edf1d60b70e77178b81aa505298fadd07
@@ -2804,6 +2823,8 @@ SPEC CHECKSUMS:
   ExpoFileSystem: 7f92f7be2f5c5ed40a7c9efc8fa30821181d9d63
   ExpoFont: cf508bc2e6b70871e05386d71cab927c8524cc8e
   ExpoImage: e4102c93d1dbe99ff54b075452d1bc9d6ec21b7c
+  ExpoImageManipulator: 1e06e7a1e56f454e75d01b7032c1e44963bfc865
+  ExpoImagePicker: 0963da31800c906e01c03e25d7c849f16ebf02a2
   ExpoKeepAwake: bf0811570c8da182bfb879169437d4de298376e7
   ExpoLinearGradient: 7734c8059972fcf691fb4330bcdf3390960a152d
   ExpoLinking: d5c183998ca6ada66ff45e407e0f965b398a8902

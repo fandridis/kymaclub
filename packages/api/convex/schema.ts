@@ -56,6 +56,9 @@ export const usersFields = {
   // Simple credit balance for booking classes
   credits: v.optional(v.number()),
 
+  // Consumer profile image
+  consumerProfileImageStorageId: v.optional(v.id("_storage")),
+
   ...softDeleteFields,
 };
 

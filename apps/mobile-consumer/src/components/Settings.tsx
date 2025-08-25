@@ -40,6 +40,8 @@ interface SettingsRowProps {
     showChevron?: boolean;
     // Function to completely override the right side rendering
     renderRightSide?: () => React.ReactNode;
+    // Function to completely override the subtitle rendering
+    renderSubtitle?: () => React.ReactNode;
     // Toggle functionality
     toggle?: {
         value: boolean;
@@ -58,6 +60,7 @@ export function SettingsRow({
     rightElement,
     showChevron = false,
     renderRightSide,
+    renderSubtitle,
     toggle,
     disabled = false,
     style,
@@ -116,14 +119,16 @@ export function SettingsRow({
                     ]}>
                         {title}
                     </Text>
-                    {subtitle && (
+                    {renderSubtitle ? (
+                        renderSubtitle()
+                    ) : subtitle ? (
                         <Text style={[
                             styles.settingsRowSubtitle,
                             disabled && styles.disabledText
                         ]}>
                             {subtitle}
                         </Text>
-                    )}
+                    ) : null}
                 </View>
                 <View style={styles.settingsRowRight}>
                     {rightSideContent}
