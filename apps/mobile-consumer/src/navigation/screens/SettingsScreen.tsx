@@ -312,8 +312,8 @@ const styles = StyleSheet.create({
   userSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    paddingVertical: 20,
+    backgroundColor: theme.colors.zinc[50],
+    paddingVertical: 12,
     paddingHorizontal: 20,
     marginBottom: 16,
   },
