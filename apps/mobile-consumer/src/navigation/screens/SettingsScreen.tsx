@@ -9,6 +9,7 @@ import { useAuth, useAuthenticatedUser } from '../../stores/auth-store';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { useCompressedImageUpload } from '../../hooks/useCompressedImageUpload';
+import { TabScreenHeader } from '../../components/TabScreenHeader';
 
 export function SettingsScreen() {
   const navigation = useNavigation();
@@ -119,16 +120,16 @@ export function SettingsScreen() {
 
     // Format next billing date
     const nextBilling = new Date(subscription.currentPeriodEnd);
-    const formatter = new Intl.DateTimeFormat('en-US', { 
-      month: 'short', 
-      day: 'numeric' 
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric'
     });
-    
+
     // If subscription is set to cancel at period end, show cancellation message
     if (subscription.cancelAtPeriodEnd) {
       return `${subscription.creditAmount} credits/month • Subscription will end on ${formatter.format(nextBilling)}`;
     }
-    
+
     return `${subscription.creditAmount} credits/month • Next billing: ${formatter.format(nextBilling)}`;
   };
 
@@ -138,15 +139,15 @@ export function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <TabScreenHeader title="Settings" />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Settings</Text>
 
-        {/* User Avatar Section */}
-        <View style={styles.avatarSection}>
+        {/* Compact User Section */}
+        <View style={styles.userSection}>
           <TouchableOpacity
             style={styles.avatarContainer}
             onPress={handleAvatarPress}
@@ -163,23 +164,25 @@ export function SettingsScreen() {
             )}
             <View style={[styles.avatarOverlay, status !== "idle" && styles.avatarOverlayLoading]}>
               <CameraIcon
-                size={20}
+                size={16}
                 color={status !== "idle" ? theme.colors.zinc[400] : "#fff"}
               />
             </View>
           </TouchableOpacity>
-          <Text style={styles.userName}>{user.name || 'User'}</Text>
-          <Text style={styles.userEmail}>{user.email}</Text>
-          {status !== "idle" && (
-            <Text style={styles.uploadStatus}>
-              {status === "preparing" ? "Preparing..." : "Uploading..."}
-            </Text>
-          )}
+          <View style={styles.userInfo}>
+            <Text style={styles.userName}>{user.name || 'User'}</Text>
+            <Text style={styles.userEmail}>{user.email}</Text>
+            {status !== "idle" && (
+              <Text style={styles.uploadStatus}>
+                {status === "preparing" ? "Preparing..." : "Uploading..."}
+              </Text>
+            )}
+          </View>
         </View>
 
-        {/* Statistics Section */}
-        <SettingsGroup>
-          <View style={styles.statsContainer}>
+        {/* Statistics with Colored Background */}
+        <View style={styles.statsCard}>
+          <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{bookingStats.thisMonth}</Text>
               <Text style={styles.statLabel}>Classes this month</Text>
@@ -190,29 +193,32 @@ export function SettingsScreen() {
               <Text style={styles.statLabel}>Classes all-time</Text>
             </View>
           </View>
-        </SettingsGroup>
+        </View>
 
-
-        <SettingsGroup>
-          <SettingsRow
-            title="Credits Balance"
-            subtitle={(() => {
-              const mockExpiringCredits = 15;
-              const mockDaysUntilExpiry = 12;
-              if (mockDaysUntilExpiry < 30 && mockExpiringCredits > 0) {
-                return `${mockExpiringCredits} credits expire in ${mockDaysUntilExpiry} days`;
-              }
-              return undefined;
-            })()}
-            rightElement={
-              <View style={styles.creditsBadge}>
-                <DiamondIcon size={16} color={theme.colors.emerald[600]} />
-                <Text style={styles.creditsBadgeText}>{creditBalance?.balance || 0}</Text>
-              </View>
-            }
-            showChevron={false}
-          />
-        </SettingsGroup>
+        {/* Credits Balance with Colored Background */}
+        <View style={styles.creditsCard}>
+          <View style={styles.creditsRow}>
+            <View style={styles.creditsInfo}>
+              <Text style={styles.creditsTitle}>Credits Balance</Text>
+              {(() => {
+                const mockExpiringCredits = 15;
+                const mockDaysUntilExpiry = 12;
+                if (mockDaysUntilExpiry < 30 && mockExpiringCredits > 0) {
+                  return (
+                    <Text style={styles.creditsSubtitle}>
+                      {mockExpiringCredits} credits expire in {mockDaysUntilExpiry} days
+                    </Text>
+                  );
+                }
+                return null;
+              })()}
+            </View>
+            <View style={styles.creditsBadge}>
+              <DiamondIcon size={16} color={theme.colors.emerald[950]} />
+              <Text style={styles.creditsBadgeText}>{creditBalance?.balance || 0}</Text>
+            </View>
+          </View>
+        </View>
 
         {/* Credits Management */}
         <SettingsHeader title="Credits Management" />
@@ -293,69 +299,70 @@ export function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.zinc[50],
+    backgroundColor: '#f9fafb',
   },
   scrollView: {
     flex: 1,
+    backgroundColor: theme.colors.zinc[50],
   },
   scrollContent: {
     paddingBottom: 80,
   },
-  title: {
-    fontSize: theme.fontSize['2xl'],
-    fontWeight: theme.fontWeight.black,
-    color: theme.colors.zinc[900],
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 20,
-  },
-  avatarSection: {
+  // Compact user section (Option C style)
+  userSection: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 20,
     backgroundColor: '#fff',
-    marginBottom: 0,
-    borderRadius: 0,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    marginBottom: 16,
   },
   avatarContainer: {
     position: 'relative',
-    marginBottom: 12,
+    marginRight: 16,
   },
   avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
   },
   avatarPlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: theme.colors.emerald[500],
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarInitials: {
-    fontSize: 40,
+    fontSize: 24,
     fontWeight: theme.fontWeight.semibold,
     color: '#fff',
   },
   avatarOverlay: {
     position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    bottom: 0,
+    right: 0,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: '#fff',
+  },
+  avatarOverlayLoading: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  userInfo: {
+    flex: 1,
   },
   userName: {
     fontSize: theme.fontSize.xl,
-    fontWeight: theme.fontWeight.semibold,
+    fontWeight: theme.fontWeight.bold,
     color: theme.colors.zinc[900],
-    marginBottom: 4,
+    marginBottom: 2,
   },
   userEmail: {
     fontSize: theme.fontSize.sm,
@@ -364,17 +371,23 @@ const styles = StyleSheet.create({
   uploadStatus: {
     fontSize: theme.fontSize.xs,
     color: theme.colors.emerald[600],
-    marginTop: 4,
+    marginTop: 2,
     fontWeight: theme.fontWeight.medium,
   },
-  avatarOverlayLoading: {
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+
+  // Colored background statistics (Option A style)
+  statsCard: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderRadius: 12,
+    backgroundColor: theme.colors.sky[50],
+    borderWidth: 1,
+    borderColor: theme.colors.sky[100],
   },
-  statsContainer: {
+  statsRow: {
     flexDirection: 'row',
     paddingVertical: 20,
     paddingHorizontal: 16,
-    backgroundColor: '#fff',
   },
   statItem: {
     flex: 1,
@@ -382,19 +395,50 @@ const styles = StyleSheet.create({
   },
   statDivider: {
     width: 1,
-    backgroundColor: theme.colors.zinc[200],
+    backgroundColor: theme.colors.sky[200],
     marginHorizontal: 20,
   },
   statNumber: {
     fontSize: theme.fontSize['2xl'],
     fontWeight: theme.fontWeight.bold,
-    color: theme.colors.emerald[600],
+    color: theme.colors.sky[950],
     marginBottom: 4,
   },
   statLabel: {
     fontSize: theme.fontSize.sm,
-    color: theme.colors.zinc[600],
+    color: theme.colors.sky[700],
     textAlign: 'center',
+    fontWeight: theme.fontWeight.medium,
+  },
+
+  // Colored credits section
+  creditsCard: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderRadius: 12,
+    backgroundColor: theme.colors.emerald[50],
+    borderWidth: 1,
+    borderColor: theme.colors.emerald[100],
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+  },
+  creditsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  creditsInfo: {
+    flex: 1,
+  },
+  creditsTitle: {
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.semibold,
+    color: theme.colors.emerald[950],
+    marginBottom: 2,
+  },
+  creditsSubtitle: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.emerald[700],
   },
   logoutRow: {
     backgroundColor: '#fff',
@@ -431,7 +475,7 @@ const styles = StyleSheet.create({
   creditsBadgeText: {
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.semibold,
-    color: theme.colors.emerald[700],
+    color: theme.colors.emerald[950],
     marginLeft: 4,
   },
   statusBadge: {
@@ -454,6 +498,6 @@ const styles = StyleSheet.create({
   countBadgeText: {
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.bold,
-    color: theme.colors.sky[700],
+    color: theme.colors.sky[950],
   },
 });

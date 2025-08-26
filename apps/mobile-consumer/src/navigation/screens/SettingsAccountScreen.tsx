@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import { SettingsGroup, SettingsHeader, SettingsRow } from '../../components/Settings';
+import { StackScreenHeader } from '../../components/StackScreenHeader';
 
 export function SettingsAccountScreen() {
     return (
         <SafeAreaView style={styles.container}>
+            <StackScreenHeader />
             <View style={styles.content}>
                 <SettingsHeader title="Account" />
                 <SettingsGroup>
@@ -45,7 +47,7 @@ export function SettingsAccountScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f9fa',
+        backgroundColor: '#f9fafb',
     },
     content: {
         flex: 1,

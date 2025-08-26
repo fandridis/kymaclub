@@ -1,8 +1,9 @@
 import React from 'react';
-import { StyleSheet, View, Text, Dimensions, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, Dimensions, ScrollView, SafeAreaView } from 'react-native';
 import Carousel from 'react-native-reanimated-carousel';
 import { useTypedTranslation } from '../../i18n/typed';
 import { theme } from '../../theme';
+import { TabScreenHeader } from '../../components/TabScreenHeader';
 
 const { width: screenWidth } = Dimensions.get('window');
 const ITEM_WIDTH = screenWidth * 0.6; // 60% of screen width to show 2.5 cards
@@ -140,65 +141,63 @@ export function NewsScreen() {
     const { t } = useTypedTranslation();
 
     return (
-        <ScrollView
-            style={styles.container}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
-        >
-            <View style={styles.header}>
-                <Text style={styles.welcomeText}>{t('welcome.title')}</Text>
-                <Text style={styles.subtitleText}>Discover amazing fitness classes</Text>
-            </View>
+        <SafeAreaView style={styles.container}>
+            <TabScreenHeader title={t('welcome.title')} />
+            <ScrollView
+                style={styles.scrollContainer}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scrollContent}
+            >
+                <View style={styles.subtitleContainer}>
+                    <Text style={styles.subtitleText}>Discover amazing fitness classes</Text>
+                </View>
 
-            <WhatsNewBanner />
+                <WhatsNewBanner />
 
-            <CarouselSection
-                title="Your upcoming classes"
-                data={mockUpcomingClasses}
-                type="upcoming"
-            />
+                <CarouselSection
+                    title="Your upcoming classes"
+                    data={mockUpcomingClasses}
+                    type="upcoming"
+                />
 
-            <CarouselSection
-                title="Last minute offers"
-                data={mockLastMinuteOffers}
-                type="offers"
-            />
+                <CarouselSection
+                    title="Last minute offers"
+                    data={mockLastMinuteOffers}
+                    type="offers"
+                />
 
-            <CarouselSection
-                title="New classes"
-                data={mockNewClasses}
-                type="new"
-            />
+                <CarouselSection
+                    title="New classes"
+                    data={mockNewClasses}
+                    type="new"
+                />
 
-            <CarouselSection
-                title="Categories"
-                data={mockCategories}
-                type="categories"
-            />
-        </ScrollView>
+                <CarouselSection
+                    title="Categories"
+                    data={mockCategories}
+                    type="categories"
+                />
+            </ScrollView>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#f9fafb',
+    },
+    scrollContainer: {
+        flex: 1,
         backgroundColor: theme.colors.zinc[50],
     },
     scrollContent: {
         paddingBottom: 80,
     },
-    header: {
-        padding: 20,
-        paddingTop: 40,
+    subtitleContainer: {
+        paddingHorizontal: 20,
+        paddingBottom: 16,
         backgroundColor: theme.colors.zinc[50],
-        borderBottomWidth: 1,
-        borderBottomColor: theme.colors.zinc[200],
-    },
-    welcomeText: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: theme.colors.zinc[900],
-        marginBottom: 8,
     },
     subtitleText: {
         fontSize: 16,

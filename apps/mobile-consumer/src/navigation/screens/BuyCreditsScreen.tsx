@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { DiamondIcon } from 'lucide-react-native';
 import { theme } from '../../theme';
 import { SettingsGroup, SettingsRow, SettingsHeader } from '../../components/Settings';
+import { StackScreenHeader } from '../../components/StackScreenHeader';
 import { useAuthenticatedUser } from '../../stores/auth-store';
 import { useQuery, useAction } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
@@ -51,6 +52,7 @@ export function BuyCreditsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
+            <StackScreenHeader />
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
@@ -117,7 +119,7 @@ export function BuyCreditsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: theme.colors.zinc[50],
+        backgroundColor: '#f9fafb',
     },
     scrollView: {
         flex: 1,

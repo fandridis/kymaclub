@@ -33,9 +33,9 @@ export function PaymentSuccessScreen() {
             onPress: () => {
               // Navigate to appropriate screen based on payment type
               if (type === 'subscription') {
-                navigation.navigate('Settings');
+                navigation.navigate('Home', { screen: 'Settings' });
               } else {
-                navigation.navigate('Settings');
+                navigation.navigate('Home', { screen: 'Settings' });
               }
             },
           },

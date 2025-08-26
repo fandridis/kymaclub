@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { theme } from '../../theme';
 import { SettingsGroup, SettingsRow } from '../../components/Settings';
 import { Clock, Calendar, CreditCard } from 'lucide-react-native';
+import { StackScreenHeader } from '../../components/StackScreenHeader';
 import type { UserNotificationSettingsNotificationPreferences } from '@repo/api/types/notification';
 import { LucideIcon } from 'lucide-react-native';
 
@@ -117,6 +118,7 @@ export function SettingsNotificationsScreen() {
     if (loading) {
         return (
             <SafeAreaView style={styles.container}>
+                <StackScreenHeader />
                 <Text style={styles.loadingText}>Loading notification preferences...</Text>
             </SafeAreaView>
         );
@@ -124,6 +126,7 @@ export function SettingsNotificationsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
+            <StackScreenHeader />
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
@@ -157,7 +160,7 @@ export function SettingsNotificationsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: theme.colors.zinc[50],
+        backgroundColor: '#f9fafb',
     },
     scrollView: {
         flex: 1,

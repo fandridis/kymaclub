@@ -8,10 +8,12 @@ import { useMemo, useState, useCallback } from 'react';
 import { FlashList } from '@shopify/flash-list';
 import { api } from '@repo/api/convex/_generated/api';
 import { BookingCard } from '../../components/BookingCard';
+import { BookingsTabs, BookingTabType } from '../../components/BookingsTabs';
 import { useAuth, useAuthenticatedUser } from '../../stores/auth-store';
 import type { Doc, Id } from '@repo/api/convex/_generated/dataModel';
 import { getCancellationInfo, getCancellationMessage } from '../../utils/cancellationUtils';
 import { theme } from '../../theme';
+import { TabScreenHeader } from '../../components/TabScreenHeader';
 
 // Configuration for initial load and load more
 const INITIAL_BOOKINGS_COUNT = 100;
@@ -59,15 +61,45 @@ const formatDateHeader = (date: Date, isPast: boolean = false): string => {
     }
 };
 
-// Enhanced grouping for better mobile UX - separates future from past bookings
-const groupBookingsByDate = (bookings: Doc<"bookings">[]): Record<string, Doc<"bookings">[]> => {
+// Filter bookings based on tab type
+const filterBookingsByTab = (bookings: Doc<"bookings">[], tabType: BookingTabType): Doc<"bookings">[] => {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+    return bookings.filter((booking: Doc<"bookings">) => {
+        const startTime = booking.classInstanceSnapshot?.startTime;
+        if (!startTime) return false;
+
+        const isFuture = startTime >= todayStart;
+        const isPast = startTime < todayStart;
+
+        switch (tabType) {
+            case 'upcoming':
+                return isFuture && booking.status === 'pending';
+            case 'cancelled':
+                return isFuture && (booking.status === 'cancelled_by_consumer' ||
+                    booking.status === 'cancelled_by_business' ||
+                    booking.status === 'cancelled_by_business_rebookable');
+            case 'history':
+                return isPast; // All past bookings regardless of status
+            default:
+                return false;
+        }
+    });
+};
+
+// Enhanced grouping for better mobile UX - separates future from past bookings
+const groupBookingsByDate = (bookings: Doc<"bookings">[], tabType: BookingTabType): Record<string, Doc<"bookings">[]> => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+    // Filter bookings based on tab type first
+    const filteredBookings = filterBookingsByTab(bookings, tabType);
 
     // First, deduplicate bookings by showing only the latest booking per class instance
     const latestBookingsByClass = new Map<string, Doc<"bookings">>();
 
-    bookings.forEach((booking: Doc<"bookings">) => {
+    filteredBookings.forEach((booking: Doc<"bookings">) => {
         const classInstanceId = booking.classInstanceId;
         if (!classInstanceId) return;
 
@@ -80,7 +112,48 @@ const groupBookingsByDate = (bookings: Doc<"bookings">[]): Record<string, Doc<"b
     // Convert back to array with only latest bookings per class
     const deduplicatedBookings = Array.from(latestBookingsByClass.values());
 
-    // Separate future and past bookings
+    // For history tab, separate future and past logic is not needed
+    if (tabType === 'history') {
+        // Group by date for history
+        const historyGrouped: Record<string, Doc<"bookings">[]> = {};
+        deduplicatedBookings.forEach((booking: Doc<"bookings">) => {
+            const startTime = booking.classInstanceSnapshot?.startTime;
+            const date = new Date(startTime!);
+            const dateKey = formatDateHeader(date, true);
+
+            if (!historyGrouped[dateKey]) {
+                historyGrouped[dateKey] = [];
+            }
+            historyGrouped[dateKey].push(booking);
+        });
+
+        // Sort bookings within each day by start time (most recent first for history)
+        Object.keys(historyGrouped).forEach(dateKey => {
+            historyGrouped[dateKey].sort((a: Doc<"bookings">, b: Doc<"bookings">) => {
+                const aTime = a.classInstanceSnapshot?.startTime || 0;
+                const bTime = b.classInstanceSnapshot?.startTime || 0;
+                return bTime - aTime; // Reverse order for history
+            });
+        });
+
+        // Sort dates in reverse chronological order for history
+        const historyDateOrder = Object.keys(historyGrouped).sort((a, b) => {
+            const aFirstBooking = historyGrouped[a][0];
+            const bFirstBooking = historyGrouped[b][0];
+            const aTime = aFirstBooking.classInstanceSnapshot?.startTime || 0;
+            const bTime = bFirstBooking.classInstanceSnapshot?.startTime || 0;
+            return bTime - aTime; // Reverse order for history
+        });
+
+        const orderedHistoryResult: Record<string, Doc<"bookings">[]> = {};
+        historyDateOrder.forEach(dateKey => {
+            orderedHistoryResult[dateKey] = historyGrouped[dateKey];
+        });
+
+        return orderedHistoryResult;
+    }
+
+    // For upcoming and cancelled tabs, use the existing future/past logic
     const futureBookings: Doc<"bookings">[] = [];
     const pastBookings: Doc<"bookings">[] = [];
 
@@ -153,14 +226,8 @@ const groupBookingsByDate = (bookings: Doc<"bookings">[]): Record<string, Doc<"b
         });
     });
 
-    // Combine future and past with separator
+    // For upcoming/cancelled tabs, don't need separators since they're already filtered
     const orderedResult: Record<string, Doc<"bookings">[]> = {};
-
-    // Add "UPCOMING BOOKINGS" separator first if there are future bookings
-    const hasFutureBookings = Object.keys(futureGrouped).length > 0;
-    if (hasFutureBookings) {
-        orderedResult['UPCOMING BOOKINGS'] = []; // Empty array for separator
-    }
 
     // Add future bookings in chronological order
     const futureDateOrder = ['Today', 'Tomorrow'];
@@ -187,24 +254,8 @@ const groupBookingsByDate = (bookings: Doc<"bookings">[]): Record<string, Doc<"b
         orderedResult[dateKey] = futureGrouped[dateKey];
     });
 
-    // Add separator if there are past bookings
-    if (Object.keys(pastGrouped).length > 0) {
-        orderedResult['PAST BOOKINGS'] = []; // Empty array for separator
-    }
-
-    // Add past bookings in reverse chronological order (most recent first)
-    const pastDateOrder = Object.keys(pastGrouped).sort((a, b) => {
-        // Get the first booking from each date group to compare dates
-        const aFirstBooking = pastGrouped[a][0];
-        const bFirstBooking = pastGrouped[b][0];
-        const aTime = aFirstBooking.classInstanceSnapshot?.startTime || 0;
-        const bTime = bFirstBooking.classInstanceSnapshot?.startTime || 0;
-        return bTime - aTime; // Reverse order for past bookings
-    });
-
-    pastDateOrder.forEach(dateKey => {
-        orderedResult[dateKey] = pastGrouped[dateKey];
-    });
+    // Since we're showing only the filtered bookings for each tab,
+    // we don't need to show past bookings for upcoming/cancelled tabs
 
     return orderedResult;
 };
@@ -214,6 +265,7 @@ export function BookingsScreen() {
     const navigation = useNavigation();
     const user = useAuthenticatedUser()
 
+    const [activeTab, setActiveTab] = useState<BookingTabType>('upcoming');
     const [cancelingBookingId, setCancelingBookingId] = useState<string | null>(null);
     const [rebookingBookingId, setRebookingBookingId] = useState<string | null>(null);
 
@@ -235,16 +287,16 @@ export function BookingsScreen() {
         { initialNumItems: INITIAL_BOOKINGS_COUNT }
     );
 
-    // Group bookings by date for FlashList
+    // Group bookings by date for FlashList based on active tab
     const bookingsSections = useMemo(() => {
         if (!allBookings?.length) return [];
 
-        const grouped = groupBookingsByDate(allBookings);
+        const grouped = groupBookingsByDate(allBookings, activeTab);
         return Object.entries(grouped).map(([dateKey, bookings]) => ({
             title: dateKey,
             data: bookings,
         }));
-    }, [allBookings]);
+    }, [allBookings, activeTab]);
 
     // Build flattened list with header indices for FlashList sticky headers and load more button
     const { flattenedItems, headerIndices } = useMemo(() => {
@@ -276,6 +328,10 @@ export function BookingsScreen() {
 
         return { flattenedItems: items, headerIndices: headerIdx };
     }, [bookingsSections, status]);
+
+    const handleTabChange = useCallback((tab: BookingTabType) => {
+        setActiveTab(tab);
+    }, []);
 
     const handleCancelBooking = (booking: Doc<"bookings">) => {
         const options = ['Cancel Booking', 'Keep Booking'];
@@ -380,20 +436,9 @@ export function BookingsScreen() {
         }
     }) => {
         if (item.type === 'header') {
-            // Special styling for section separators
-            const isPastBookingsSeparator = item.title === 'PAST BOOKINGS';
-            const isUpcomingBookingsSeparator = item.title === 'UPCOMING BOOKINGS';
-            const isSectionSeparator = isPastBookingsSeparator || isUpcomingBookingsSeparator;
-
             return (
-                <View style={[
-                    styles.stickyDateHeader,
-                    isSectionSeparator && styles.sectionSeparator
-                ]}>
-                    <Text style={[
-                        styles.dateHeaderText,
-                        isSectionSeparator && styles.sectionSeparatorText
-                    ]}>
+                <View style={styles.stickyDateHeader}>
+                    <Text style={styles.dateHeaderText}>
                         {item.title}
                     </Text>
                 </View>
@@ -426,7 +471,12 @@ export function BookingsScreen() {
         );
     }, [handleCancelBooking, handleViewClass, cancelingBookingId, handleLoadMore, isLoading]);
 
-    const hasBookings = allBookings && allBookings.length > 0;
+    // Check if there are bookings for the current tab
+    const hasBookingsForCurrentTab = useMemo(() => {
+        if (!allBookings?.length) return false;
+        const filteredBookings = filterBookingsByTab(allBookings, activeTab);
+        return filteredBookings.length > 0;
+    }, [allBookings, activeTab]);
     const isInitialLoading = status === 'LoadingFirstPage';
 
     // log the statuses of all bookings, each on a separate line: bookingId : booking.status
@@ -438,7 +488,7 @@ export function BookingsScreen() {
     if (!user) {
         return (
             <SafeAreaView style={styles.container}>
-                <Text style={styles.title}>Bookings</Text>
+                <TabScreenHeader title="Bookings" />
                 <Text style={styles.emptyText}>Please sign in to view your bookings</Text>
             </SafeAreaView>
         );
@@ -446,19 +496,25 @@ export function BookingsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <Text style={styles.title}>My Bookings</Text>
+            <TabScreenHeader title="My Bookings" />
+            <BookingsTabs activeTab={activeTab} onTabChange={handleTabChange} />
 
             {isInitialLoading ? (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#ff4747" />
                     <Text style={styles.loadingText}>Loading your bookings...</Text>
                 </View>
-            ) : !hasBookings ? (
+            ) : !hasBookingsForCurrentTab ? (
                 <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyTitle}>No bookings yet</Text>
+                    <Text style={styles.emptyTitle}>
+                        {activeTab === 'upcoming' && 'No upcoming bookings'}
+                        {activeTab === 'cancelled' && 'No cancelled bookings'}
+                        {activeTab === 'history' && 'No booking history'}
+                    </Text>
                     <Text style={styles.emptyText}>
-                        When you book classes, they'll appear here.{'\n'}
-                        Explore classes to get started!
+                        {activeTab === 'upcoming' && 'When you book classes, they\'ll appear here.\nExplore classes to get started!'}
+                        {activeTab === 'cancelled' && 'Your cancelled bookings will appear here.'}
+                        {activeTab === 'history' && 'Your past bookings will appear here once you attend classes.'}
                     </Text>
                 </View>
             ) : (
@@ -484,14 +540,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#f9fafb',
-    },
-    title: {
-        fontSize: theme.fontSize['2xl'],
-        fontWeight: theme.fontWeight.black,
-        color: theme.colors.zinc[900],
-        paddingHorizontal: 20,
-        paddingTop: 16,
-        paddingBottom: 20,
     },
     loadingContainer: {
         flex: 1,
@@ -549,19 +597,7 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     },
-    sectionSeparator: {
-        paddingTop: 32,
-        paddingBottom: 16,
-        backgroundColor: '#ffffff',
-        borderBottomColor: '#d1d5db',
-        borderBottomWidth: 2,
-    },
-    sectionSeparatorText: {
-        fontSize: 16,
-        fontWeight: '800',
-        color: '#374151',
-        letterSpacing: 1,
-    },
+
     loadMoreButton: {
         backgroundColor: '#ffffff',
         marginHorizontal: 16,

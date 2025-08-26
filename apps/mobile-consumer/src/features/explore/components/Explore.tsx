@@ -1,15 +1,22 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { SafeAreaView, View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { SafeAreaView, View, ActivityIndicator, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import * as Location from 'expo-location';
-import { ExploreHeader, TabType } from './ExploreHeader';
+import { TabType } from './ExploreHeader';
 import { FilterBar, FilterOptions } from '../../../components/FilterBar';
 import { ClassesSection } from './ClassesSection';
 import { useTypedTranslation } from '../../../i18n/typed';
 import { useAllVenues } from '../hooks/useAllVenues';
 import { VenuesSection } from './VenuesSection';
+import { TabScreenHeader } from '../../../components/TabScreenHeader';
+import { useAuthenticatedUser } from '../../../stores/auth-store';
+import { useQuery } from 'convex/react';
+import { api } from '@repo/api/convex/_generated/api';
+import { DiamondIcon } from 'lucide-react-native';
+import { theme } from '../../../theme';
 
 export function Explore() {
     const { t } = useTypedTranslation();
+    const user = useAuthenticatedUser();
     const [activeTab, setActiveTab] = useState<TabType>('businesses');
     const [isMapView, setIsMapView] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
@@ -18,6 +25,9 @@ export function Explore() {
     const [mapSheetOpen, setMapSheetOpen] = useState(false);
 
     const { venues, venuesLoading, storageIdToUrl } = useAllVenues();
+
+    // Get user credit balance
+    const creditBalance = useQuery(api.queries.credits.getUserBalance, { userId: user._id });
 
     console.log('Explore component storageIdToUrl:', storageIdToUrl);
     console.log('Explore component venues:', venues?.length);
@@ -94,9 +104,36 @@ export function Explore() {
         );
     }
 
+    const renderCreditsBadge = () => (
+        <View style={styles.creditsBadge}>
+            <DiamondIcon size={16} color={theme.colors.zinc[50]} />
+            <Text style={styles.creditsBadgeText}>{creditBalance?.balance || 0}</Text>
+        </View>
+    );
+
     return (
         <SafeAreaView style={styles.container}>
-            <ExploreHeader activeTab={activeTab} onTabChange={handleTabChange} />
+            <TabScreenHeader title="Explore" renderRightSide={renderCreditsBadge} />
+            <View style={styles.tabsContainer}>
+                <View style={styles.tabContainer}>
+                    <TouchableOpacity
+                        style={[styles.tab, activeTab === 'businesses' && styles.activeTab]}
+                        onPress={() => handleTabChange('businesses')}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'businesses' && styles.activeTabText]}>
+                            {t('explore.businesses')}
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.tab, activeTab === 'classes' && styles.activeTab]}
+                        onPress={() => handleTabChange('classes')}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'classes' && styles.activeTabText]}>
+                            {t('explore.classes')}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
             <FilterBar
                 onFilterChange={handleFilterChange}
                 showCategoryFilters={true}
@@ -128,13 +165,13 @@ export function Explore() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f9fa',
+        backgroundColor: '#f9fafb',
     },
     centerContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f8f9fa',
+        backgroundColor: '#f9fafb',
     },
     content: {
         flex: 1,
@@ -150,5 +187,58 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 16,
         paddingHorizontal: 20,
+    },
+    tabsContainer: {
+        backgroundColor: 'white',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e0e0e0',
+    },
+    tabContainer: {
+        flexDirection: 'row',
+        backgroundColor: '#f5f5f5',
+        borderRadius: 8,
+        padding: 4,
+    },
+    tab: {
+        flex: 1,
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 6,
+        alignItems: 'center',
+    },
+    activeTab: {
+        backgroundColor: 'white',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 1,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    tabText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#666',
+    },
+    activeTabText: {
+        color: '#333',
+    },
+    creditsBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: theme.colors.emerald[500],
+        borderRadius: 12,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+    },
+    creditsBadgeText: {
+        fontSize: theme.fontSize.base,
+        fontWeight: theme.fontWeight.semibold,
+        color: theme.colors.zinc[50],
+        marginLeft: 4,
     },
 }); 

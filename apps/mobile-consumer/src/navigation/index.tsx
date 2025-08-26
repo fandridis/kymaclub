@@ -1,5 +1,6 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import type { NavigatorScreenParams } from '@react-navigation/native';
 import { NewsScreen } from './screens/NewsScreen';
 import { ExploreScreen } from './screens/ExploreScreen';
 import { ScanScreen } from './screens/ScanScreen';
@@ -195,16 +196,15 @@ export function RootNavigator() {
             options={{
               title: 'Profile Settings',
               animation: 'slide_from_right',
-              headerShown: true,
+              headerShown: false,
             }}
           />
           <RootStack.Screen
             name="SettingsNotifications"
             component={SettingsNotificationsScreen}
             options={{
-              title: 'Notification Settings',
               animation: 'slide_from_right',
-              headerShown: true,
+              headerShown: false,
             }}
           />
           <RootStack.Screen
@@ -213,16 +213,15 @@ export function RootNavigator() {
             options={{
               title: 'Subscription Settings',
               animation: 'slide_from_right',
-              headerShown: true,
+              headerShown: false,
             }}
           />
           <RootStack.Screen
             name="SettingsAccount"
             component={SettingsAccountScreen}
             options={{
-              title: 'Account Settings',
               animation: 'slide_from_right',
-              headerShown: true,
+              headerShown: false,
             }}
           />
           <RootStack.Screen
@@ -231,16 +230,15 @@ export function RootNavigator() {
             options={{
               title: 'Credits & Subscription',
               animation: 'slide_from_right',
-              headerShown: true,
+              headerShown: false,
             }}
           />
           <RootStack.Screen
             name="Subscription"
             component={SubscriptionScreen}
             options={{
-              title: 'Subscription Management',
               animation: 'slide_from_right',
-              headerShown: true,
+              headerShown: false,
             }}
           />
           <RootStack.Screen
@@ -249,16 +247,15 @@ export function RootNavigator() {
             options={{
               title: 'Superpowers',
               animation: 'slide_from_right',
-              headerShown: true,
+              headerShown: false,
             }}
           />
           <RootStack.Screen
             name="BuyCredits"
             component={BuyCreditsScreen}
             options={{
-              title: 'Buy Credits',
               animation: 'slide_from_right',
-              headerShown: true,
+              headerShown: false,
             }}
           />
           <RootStack.Screen
@@ -267,7 +264,7 @@ export function RootNavigator() {
             options={{
               title: 'Notification Settings',
               animation: 'slide_from_right',
-              headerShown: true,
+              headerShown: false,
             }}
           />
           <RootStack.Screen name="NotFound" component={NotFoundScreen} />
@@ -279,7 +276,7 @@ export function RootNavigator() {
             options={{
               title: 'Payment Successful',
               animation: 'slide_from_right',
-              headerShown: true,
+              headerShown: false,
             }}
           />
           <RootStack.Screen
@@ -288,7 +285,7 @@ export function RootNavigator() {
             options={{
               title: 'Payment Cancelled',
               animation: 'slide_from_right',
-              headerShown: true,
+              headerShown: false,
             }}
           />
         </>
@@ -351,7 +348,7 @@ export function RootNavigator() {
 // Type definitions
 export type RootStackParamList = {
   // Main app screens
-  Home: undefined;
+  Home: NavigatorScreenParams<TabParamList> | undefined;
   Settings: undefined;
   Profile: { user: string };
   VenueDetailsScreen: { venueId: string };
@@ -374,10 +371,10 @@ export type RootStackParamList = {
   // Payment result screens
   PaymentSuccess: {
     session_id: string;
-    type: 'subscription' | 'one-time';
+    type: 'subscription' | 'purchase';
   };
   PaymentCancel: {
-    type: 'subscription' | 'one-time';
+    type: 'subscription' | 'purchase';
   };
   // Auth screens
   Landing: undefined;
@@ -405,7 +402,7 @@ export type TabParamList = {
 };
 
 export type RootStackParamListWithNestedTabs = {
-  Home: { screen?: keyof TabParamList };
+  Home: NavigatorScreenParams<TabParamList> | undefined;
   Settings: undefined;
   Profile: { user: string };
   VenueDetailsScreen: { venueId: string };

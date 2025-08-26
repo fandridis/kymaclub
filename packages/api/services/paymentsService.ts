@@ -14,6 +14,10 @@ import {
   getOneTimeProductName,
   getOneTimeProductDescription,
 } from "../operations/payments";
+import {
+  generatePaymentSuccessLink,
+  generatePaymentCancelLink,
+} from "../utils/deep-linking";
 
 // Stripe subscription products configuration
 export const SUBSCRIPTION_PLANS = {
@@ -158,8 +162,8 @@ export const paymentsService = {
           quantity: 1,
         },
       ],
-      success_url: `kymaclub://payment/success?session_id={CHECKOUT_SESSION_ID}&type=subscription`,
-      cancel_url: `kymaclub://payment/cancel?type=subscription`,
+      success_url: generatePaymentSuccessLink("{CHECKOUT_SESSION_ID}", "subscription"),
+      cancel_url: generatePaymentCancelLink("subscription"),
       metadata: {
         convexUserId: userId,
         creditAmount: creditAmount.toString(),
@@ -245,8 +249,8 @@ export const paymentsService = {
           quantity: 1,
         },
       ],
-      success_url: `kymaclub://payment/success?session_id={CHECKOUT_SESSION_ID}&type=subscription`,
-      cancel_url: `kymaclub://payment/cancel?type=subscription`,
+      success_url: generatePaymentSuccessLink("{CHECKOUT_SESSION_ID}", "subscription"),
+      cancel_url: generatePaymentCancelLink("subscription"),
       metadata: {
         convexUserId: userId,
         planId: planId,
@@ -1147,8 +1151,8 @@ export const paymentsService = {
           quantity: 1,
         },
       ],
-      success_url: `kymaclub://payment/success?session_id={CHECKOUT_SESSION_ID}&type=purchase`,
-      cancel_url: `kymaclub://payment/cancel?type=purchase`,
+      success_url: generatePaymentSuccessLink("{CHECKOUT_SESSION_ID}", "purchase"),
+      cancel_url: generatePaymentCancelLink("purchase"),
       metadata: {
         convexUserId: userId,
         creditAmount: creditAmount.toString(),
@@ -1202,8 +1206,11 @@ export const paymentsService = {
         return result;
       } else {
         console.warn(`No payment_intent found for session ${session.id}`);
+        return null;
       }
     }
+    console.warn(`No one-time purchase found for session ${session.id}`);
+    return null;
   },
 
   /**

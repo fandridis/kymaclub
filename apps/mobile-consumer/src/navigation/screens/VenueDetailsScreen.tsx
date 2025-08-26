@@ -2,7 +2,7 @@ import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Dimensions, ActivityIndicator, Linking } from 'react-native';
 import { Image } from 'expo-image';
 import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
-import { CalendarIcon, ChevronLeftIcon, StarIcon } from 'lucide-react-native';
+import { CalendarIcon, StarIcon } from 'lucide-react-native';
 import Carousel from 'react-native-reanimated-carousel';
 import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
@@ -16,6 +16,7 @@ import * as Location from 'expo-location';
 import { formatDistance as formatDistanceMeters, calculateDistance } from '../../utils/location';
 import { useTypedTranslation } from '../../i18n/typed';
 import { getVenueCategoryDisplay } from '@repo/utils/constants';
+import { StackScreenHeader } from '../../components/StackScreenHeader';
 
 type VenueDetailsRoute = RouteProp<RootStackParamListWithNestedTabs, 'VenueDetailsScreen'>;
 
@@ -376,35 +377,21 @@ export function VenueDetailsScreen() {
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity
-
-                    onPress={() => {
-                        console.log('Back button pressed - attempting navigation');
-                        try {
-                            if (navigation.canGoBack()) {
-                                navigation.goBack();
-                            } else {
-                                navigation.navigate('Home', { screen: 'Explore' });
-                            }
-                        } catch (error) {
-                            console.error('Navigation error:', error);
+            <StackScreenHeader
+                onBackPress={() => {
+                    console.log('Back button pressed - attempting navigation');
+                    try {
+                        if (navigation.canGoBack()) {
+                            navigation.goBack();
+                        } else {
                             navigation.navigate('Home', { screen: 'Explore' });
                         }
-                    }}
-                    style={styles.backButton}
-                    activeOpacity={0.7}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                    <ChevronLeftIcon size={24} color="#111827" />
-                    <Text style={styles.backButtonText} pointerEvents="none">Back</Text>
-                </TouchableOpacity>
-                <Text style={styles.headerTitle} numberOfLines={1}>
-                    {venueName}
-                </Text>
-                <View style={styles.headerRightSpacer} />
-            </View>
+                    } catch (error) {
+                        console.error('Navigation error:', error);
+                        navigation.navigate('Home', { screen: 'Explore' });
+                    }
+                }}
+            />
 
             {/* Tab Navigation */}
             <View style={styles.tabContainer}>
@@ -445,40 +432,6 @@ const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
         backgroundColor: 'white',
-    },
-    header: {
-        height: 56,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: '#e5e7eb',
-    },
-    backButton: {
-        zIndex: 10,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        padding: 12,
-        marginLeft: -4,
-        borderRadius: 20,
-    },
-    backButtonText: {
-        fontSize: 16,
-        color: '#111827',
-        fontWeight: '500',
-    },
-    headerTitle: {
-        flex: 1,
-        textAlign: 'center',
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#111827',
-        marginLeft: -32, // Compensate for back button
-    },
-    headerRightSpacer: {
-        width: 32,
     },
     tabContainer: {
         flexDirection: 'row',

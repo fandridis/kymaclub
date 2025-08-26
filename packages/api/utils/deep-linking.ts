@@ -17,7 +17,9 @@ export type DeepLinkType =
   | 'explore'
   | 'settings'
   | 'profile'
-  | 'notifications';
+  | 'notifications'
+  | 'payment-success'
+  | 'payment-cancel';
 
 export interface DeepLinkData {
   type: DeepLinkType;
@@ -67,6 +69,20 @@ export function generateSettingsLink(): string {
 }
 
 /**
+ * Generate deep link URL for payment success screen
+ */
+export function generatePaymentSuccessLink(sessionId: string, type: 'subscription' | 'purchase'): string {
+  return `${SCHEME}payment/success?session_id=${sessionId}&type=${type}`;
+}
+
+/**
+ * Generate deep link URL for payment cancel screen
+ */
+export function generatePaymentCancelLink(type: 'subscription' | 'purchase'): string {
+  return `${SCHEME}payment/cancel?type=${type}`;
+}
+
+/**
  * Generate appropriate deep link based on notification type
  * Uses database-generated NotificationType for type safety
  */
@@ -78,7 +94,7 @@ export function generateNotificationDeepLink(
   }
 ): string {
   console.log(`[Deep Link] Generating deep link for type: "${type}", data:`, data);
-  
+
   switch (type) {
     case 'booking_cancelled_by_business':
     case 'booking_reminder':
@@ -136,6 +152,21 @@ export function generateDeepLinkFromData(data: DeepLinkData): string {
     case 'profile':
     case 'notifications':
       return generateSettingsLink();
+
+    case 'payment-success':
+      if (!data.params?.sessionId || !data.params?.type) {
+        throw new Error('sessionId and type are required for payment-success deep link');
+      }
+      return generatePaymentSuccessLink(
+        data.params.sessionId as string,
+        data.params.type as 'subscription' | 'purchase'
+      );
+
+    case 'payment-cancel':
+      if (!data.params?.type) {
+        throw new Error('type is required for payment-cancel deep link');
+      }
+      return generatePaymentCancelLink(data.params.type as 'subscription' | 'purchase');
 
     default:
       return generateHomeLink();
@@ -217,6 +248,43 @@ export function parseDeepLink(url: string): { route: string; params: Record<stri
         route: `Settings${settingsRoute.charAt(0).toUpperCase() + settingsRoute.slice(1)}`,
         params: {}
       };
+    }
+
+    if (segments[0] === 'payment') {
+      if (segments[1] === 'success') {
+        // Parse query parameters from URL
+        const queryString = cleanUrl.split('?')[1];
+        const queryParams: Record<string, string> = {};
+        if (queryString) {
+          queryString.split('&').forEach(param => {
+            const [key, value] = param.split('=');
+            if (key && value) {
+              queryParams[key] = decodeURIComponent(value);
+            }
+          });
+        }
+        return {
+          route: 'PaymentSuccess',
+          params: queryParams
+        };
+      }
+      if (segments[1] === 'cancel') {
+        // Parse query parameters from URL
+        const queryString = cleanUrl.split('?')[1];
+        const queryParams: Record<string, string> = {};
+        if (queryString) {
+          queryString.split('&').forEach(param => {
+            const [key, value] = param.split('=');
+            if (key && value) {
+              queryParams[key] = decodeURIComponent(value);
+            }
+          });
+        }
+        return {
+          route: 'PaymentCancel',
+          params: queryParams
+        };
+      }
     }
 
     return { route: 'Home', params: {} };

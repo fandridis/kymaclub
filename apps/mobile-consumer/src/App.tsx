@@ -267,13 +267,13 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
                 path: 'payment/success',
                 parse: {
                   session_id: (session_id: string) => session_id,
-                  type: (type: string) => type as 'subscription' | 'one-time',
+                  type: (type: string) => type as 'subscription' | 'purchase',
                 },
               },
               PaymentCancel: {
                 path: 'payment/cancel',
                 parse: {
-                  type: (type: string) => type as 'subscription' | 'one-time',
+                  type: (type: string) => type as 'subscription' | 'purchase',
                 },
               },
             },
