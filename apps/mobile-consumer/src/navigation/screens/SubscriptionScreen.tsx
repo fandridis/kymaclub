@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { SafeAreaView, StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, Linking } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { CrownIcon } from 'lucide-react-native';
 import Slider from '@react-native-community/slider';
 import { theme } from '../../theme';
 import { SettingsHeader, SettingsGroup } from '../../components/Settings';
 import { useAuthenticatedUser } from '../../stores/auth-store';
-import { useQuery } from 'convex/react';
+import { useQuery, useAction } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 
 type SubscriptionTier = {
@@ -16,9 +16,9 @@ type SubscriptionTier = {
     discount: number;
 };
 
-// Static subscription options with correct pricing tiers
+// Static subscription options with correct pricing tiers (5-150 credits)
 const subscriptionOptions: SubscriptionTier[] = [
-    // 5 to 40 credits: $2.00 per credit
+    // 5 to 40 credits: €2.00 per credit
     { credits: 5, price: 10.00, pricePerCredit: 2.00, discount: 0 },
     { credits: 10, price: 20.00, pricePerCredit: 2.00, discount: 0 },
     { credits: 15, price: 30.00, pricePerCredit: 2.00, discount: 0 },
@@ -28,7 +28,7 @@ const subscriptionOptions: SubscriptionTier[] = [
     { credits: 35, price: 70.00, pricePerCredit: 2.00, discount: 0 },
     { credits: 40, price: 80.00, pricePerCredit: 2.00, discount: 0 },
 
-    // 45 to 80 credits: $1.95 per credit (2.5% discount)
+    // 45 to 80 credits: €1.95 per credit (2.5% discount)
     { credits: 45, price: 87.75, pricePerCredit: 1.95, discount: 2.5 },
     { credits: 50, price: 97.50, pricePerCredit: 1.95, discount: 2.5 },
     { credits: 55, price: 107.25, pricePerCredit: 1.95, discount: 2.5 },
@@ -38,7 +38,7 @@ const subscriptionOptions: SubscriptionTier[] = [
     { credits: 75, price: 146.25, pricePerCredit: 1.95, discount: 2.5 },
     { credits: 80, price: 156.00, pricePerCredit: 1.95, discount: 2.5 },
 
-    // 85 to 120 credits: $1.90 per credit (5% discount)
+    // 85 to 120 credits: €1.90 per credit (5% discount)
     { credits: 85, price: 161.50, pricePerCredit: 1.90, discount: 5.0 },
     { credits: 90, price: 171.00, pricePerCredit: 1.90, discount: 5.0 },
     { credits: 95, price: 180.50, pricePerCredit: 1.90, discount: 5.0 },
@@ -48,7 +48,7 @@ const subscriptionOptions: SubscriptionTier[] = [
     { credits: 115, price: 218.50, pricePerCredit: 1.90, discount: 5.0 },
     { credits: 120, price: 228.00, pricePerCredit: 1.90, discount: 5.0 },
 
-    // 125 to 150 credits: $1.80 per credit (10% discount)
+    // 125 to 150 credits: €1.80 per credit (10% discount)
     { credits: 125, price: 225.00, pricePerCredit: 1.80, discount: 10.0 },
     { credits: 130, price: 234.00, pricePerCredit: 1.80, discount: 10.0 },
     { credits: 135, price: 243.00, pricePerCredit: 1.80, discount: 10.0 },
@@ -60,19 +60,31 @@ const subscriptionOptions: SubscriptionTier[] = [
 export function SubscriptionScreen() {
     const navigation = useNavigation();
     const user = useAuthenticatedUser();
-    const [selectedSubscription, setSelectedSubscription] = useState<number>(20);
+    const [selectedCredits, setSelectedCredits] = useState<number>(20);
 
-    // Mock current subscription status
-    const currentSubscription = {
-        isActive: true,
-        credits: 20,
-        nextBilling: '2025-09-25'
-    };
+    // Get current subscription status
+    const subscription = useQuery(api.queries.subscriptions.getCurrentUserSubscription);
+    // Use the new dynamic subscription action for full 5-150 credit range
+    const createDynamicCheckout = useAction(api.actions.payments.createDynamicSubscriptionCheckout);
+    const updateSubscription = useAction(api.actions.payments.updateSubscription);
+    const cancelSubscription = useAction(api.actions.payments.cancelSubscription);
+    const reactivateSubscription = useAction(api.actions.payments.reactivateSubscription);
+
+    // Initialize slider to current subscription credit amount when subscription loads
+    useEffect(() => {
+        if (subscription?.creditAmount) {
+            // Check if the current subscription credit amount is in our options
+            const validOption = subscriptionOptions.find(option => option.credits === subscription.creditAmount);
+            if (validOption) {
+                setSelectedCredits(subscription.creditAmount);
+            }
+        }
+    }, [subscription?.creditAmount]);
 
     const handleSliderChange = (value: number) => {
         // Convert slider value (0-1) to index in subscriptionOptions array
         const index = Math.round(value * (subscriptionOptions.length - 1));
-        setSelectedSubscription(subscriptionOptions[index].credits);
+        setSelectedCredits(subscriptionOptions[index].credits);
     };
 
     const getSliderValue = (credits: number) => {
@@ -82,22 +94,80 @@ export function SubscriptionScreen() {
     };
 
     const getCurrentOption = () => {
-        return subscriptionOptions.find(option => option.credits === selectedSubscription) || subscriptionOptions[3]; // Default to 20 credits
+        return subscriptionOptions.find(option => option.credits === selectedCredits) || subscriptionOptions[3]; // Default to 20 credits
+    };
+
+    const isSubscriptionActive = () => {
+        return subscription && subscription.status === 'active';
+    };
+
+    const isSubscriptionCanceling = () => {
+        return subscription && subscription.cancelAtPeriodEnd;
+    };
+
+    const getNextBillingDate = () => {
+        if (!subscription) return null;
+        const date = new Date(subscription.currentPeriodEnd);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };
 
     const handleSubscriptionChange = () => {
-        if (selectedSubscription) {
+        if (selectedCredits) {
+            const isUpdate = isSubscriptionActive();
             Alert.alert(
-                'Update Subscription',
-                `Change your subscription to ${selectedSubscription} credits/month?`,
+                isUpdate ? 'Update Subscription' : 'Start Subscription',
+                `${isUpdate ? 'Change' : 'Start'} your subscription to ${selectedCredits} credits/month for €${Math.round(getCurrentOption().price)}/month?`,
                 [
                     { text: 'Cancel', style: 'cancel' },
                     {
                         text: 'Confirm',
-                        onPress: () => {
-                            // TODO: Implement subscription update
-                            console.log('Update subscription to:', selectedSubscription);
-                            Alert.alert('Success', 'Subscription updated successfully!');
+                        onPress: async () => {
+                            if (isUpdate) {
+                                // For updates, show detailed confirmation first
+                                const currentPrice = getCurrentOption().price;
+                                const oldCredits = subscription?.creditAmount || 0;
+                                const creditDiff = selectedCredits - oldCredits;
+                                const isUpgrade = creditDiff > 0;
+                                
+                                const confirmMessage = isUpgrade 
+                                    ? `You'll be charged the prorated difference and receive ${creditDiff} additional credits immediately.`
+                                    : creditDiff < 0
+                                    ? `You'll receive a credit for the difference. Your monthly allocation will decrease starting next billing cycle.`
+                                    : 'No change in credit amount.';
+
+                                Alert.alert(
+                                    'Confirm Update',
+                                    `Update to ${selectedCredits} credits/month for €${Math.round(currentPrice)}/month?\n\n${confirmMessage}`,
+                                    [
+                                        { text: 'Cancel', style: 'cancel' },
+                                        {
+                                            text: 'Update',
+                                            onPress: async () => {
+                                                try {
+                                                    const result = await updateSubscription({ newCreditAmount: selectedCredits });
+                                                    Alert.alert('Subscription Updated!', result.message);
+                                                } catch (error) {
+                                                    console.error('Error updating subscription:', error);
+                                                    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+                                                    Alert.alert('Error', `Failed to update subscription. ${errorMessage}`);
+                                                }
+                                            }
+                                        }
+                                    ]
+                                );
+                            } else {
+                                // For new subscriptions, go directly to checkout
+                                try {
+                                    const result = await createDynamicCheckout({ creditAmount: selectedCredits });
+                                    if (result.checkoutUrl) {
+                                        await Linking.openURL(result.checkoutUrl);
+                                    }
+                                } catch (error) {
+                                    console.error('Error creating checkout:', error);
+                                    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+                                    Alert.alert('Error', `Failed to start subscription. ${errorMessage}`);
+                                }
+                            }
                         }
                     }
                 ]
@@ -105,19 +175,53 @@ export function SubscriptionScreen() {
         }
     };
 
-    const handleCancelSubscription = () => {
+    const handleCancelSubscription = async () => {
         Alert.alert(
             'Cancel Subscription',
-            'Are you sure you want to cancel your subscription? You will lose access to your monthly credits.',
+            'Are you sure you want to cancel your subscription? You\'ll continue to have access until the end of your current billing period.',
             [
                 { text: 'Keep Subscription', style: 'cancel' },
                 {
                     text: 'Cancel Subscription',
                     style: 'destructive',
-                    onPress: () => {
-                        // TODO: Implement subscription cancellation
-                        console.log('Cancel subscription');
-                        Alert.alert('Subscription Cancelled', 'Your subscription has been cancelled successfully.');
+                    onPress: async () => {
+                        try {
+                            await cancelSubscription({});
+                            Alert.alert('Subscription Cancelled', 'Your subscription will end at the end of your current billing period.');
+                        } catch (error) {
+                            console.error('Error canceling subscription:', error);
+                            Alert.alert('Error', 'Failed to cancel subscription. Please try again.');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleReactivateSubscription = async () => {
+        if (!subscription?.creditAmount || !subscription?.pricePerCycle) {
+            Alert.alert('Error', 'Unable to load subscription details. Please try again.');
+            return;
+        }
+
+        const chargeAmount = (subscription.pricePerCycle / 100).toFixed(2);
+        
+        Alert.alert(
+            'Reactivate Subscription',
+            `This will charge €${chargeAmount} now and restart your ${subscription.creditAmount} credits/month subscription immediately. Continue?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Reactivate & Pay',
+                    onPress: async () => {
+                        try {
+                            const result = await reactivateSubscription({});
+                            Alert.alert('Subscription Reactivated!', result.message);
+                        } catch (error) {
+                            console.error('Error reactivating subscription:', error);
+                            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+                            Alert.alert('Error', `Failed to reactivate subscription. ${errorMessage}`);
+                        }
                     }
                 }
             ]
@@ -131,7 +235,7 @@ export function SubscriptionScreen() {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Subscription Section */}
+                {/* Current Subscription Status */}
                 <SettingsHeader title="Monthly Subscription" />
                 <SettingsGroup>
                     <View style={styles.subscriptionHeader}>
@@ -139,18 +243,23 @@ export function SubscriptionScreen() {
                             <View style={styles.titleRow}>
                                 <CrownIcon size={20} color={theme.colors.emerald[600]} />
                                 <Text style={styles.subscriptionTitle}>
-                                    {currentSubscription.isActive
-                                        ? `${currentSubscription.credits} credits / month`
-                                        : 'Monthly subscription'
+                                    {isSubscriptionActive()
+                                        ? `${subscription?.planName || 'Active subscription'}`
+                                        : 'No active subscription'
                                     }
                                 </Text>
                             </View>
                             <Text style={styles.nextBilling}>
-                                {currentSubscription.isActive
-                                    ? `Next billing: ${currentSubscription.nextBilling}`
-                                    : 'Inactive subscription'
+                                {isSubscriptionActive()
+                                    ? `${subscription?.creditAmount} credits/month • Next billing: ${getNextBillingDate()}`
+                                    : 'Choose a plan to get started'
                                 }
                             </Text>
+                            {isSubscriptionCanceling() && (
+                                <Text style={styles.cancelingText}>
+                                    Subscription will end on {getNextBillingDate()}
+                                </Text>
+                            )}
                         </View>
                     </View>
                 </SettingsGroup>
@@ -167,21 +276,21 @@ export function SubscriptionScreen() {
                             </View>
                         )}
 
-                        <Text style={styles.selectionCredits}>{selectedSubscription}</Text>
+                        <Text style={styles.selectionCredits}>{selectedCredits}</Text>
                         <Text style={styles.selectionLabel}>credits/month</Text>
-                        <Text style={styles.selectionPrice}>${Math.round(getCurrentOption().price)}/month</Text>
-                        <Text style={styles.pricePerCredit}>${getCurrentOption().pricePerCredit?.toFixed(2)} per credit</Text>
+                        <Text style={styles.selectionPrice}>€{Math.round(getCurrentOption().price)}/month</Text>
+                        <Text style={styles.pricePerCredit}>€{getCurrentOption().pricePerCredit?.toFixed(2)} per credit</Text>
                     </View>
 
                     {/* Native Slider */}
                     <View style={styles.sliderWrapper}>
                         <Slider
                             style={styles.slider}
-                            value={getSliderValue(selectedSubscription)}
+                            value={getSliderValue(selectedCredits)}
                             onValueChange={handleSliderChange}
                             minimumValue={0}
                             maximumValue={1}
-                            step={1 / (subscriptionOptions.length - 1)} // 32 steps (5, 10, 15, ..., 150)
+                            step={1 / (subscriptionOptions.length - 1)}
                             minimumTrackTintColor={theme.colors.emerald[500]}
                             maximumTrackTintColor={theme.colors.zinc[300]}
                             thumbTintColor={theme.colors.emerald[600]}
@@ -191,28 +300,41 @@ export function SubscriptionScreen() {
                     <TouchableOpacity
                         style={[
                             styles.updateButton,
-                            selectedSubscription === currentSubscription.credits && styles.updateButtonDisabled
+                            selectedCredits === subscription?.creditAmount && styles.updateButtonDisabled
                         ]}
                         onPress={handleSubscriptionChange}
-                        disabled={selectedSubscription === currentSubscription.credits}
+                        disabled={selectedCredits === subscription?.creditAmount}
                     >
                         <Text style={[
                             styles.updateButtonText,
-                            selectedSubscription === currentSubscription.credits && styles.updateButtonTextDisabled
+                            selectedCredits === subscription?.creditAmount && styles.updateButtonTextDisabled
                         ]}>
-                            {currentSubscription.isActive ? 'Update Subscription' : 'Start Subscription'}
+                            {isSubscriptionActive() ? 'Update Subscription' : 'Start Subscription'}
                         </Text>
                     </TouchableOpacity>
 
-                    {currentSubscription.isActive && (
-                        <TouchableOpacity
-                            style={styles.cancelButton}
-                            onPress={handleCancelSubscription}
-                        >
-                            <Text style={styles.cancelButtonText}>
-                                Cancel Subscription
-                            </Text>
-                        </TouchableOpacity>
+                    {isSubscriptionActive() && (
+                        <>
+                            {isSubscriptionCanceling() ? (
+                                <TouchableOpacity
+                                    style={styles.reactivateButton}
+                                    onPress={handleReactivateSubscription}
+                                >
+                                    <Text style={styles.reactivateButtonText}>
+                                        Reactivate Subscription
+                                    </Text>
+                                </TouchableOpacity>
+                            ) : (
+                                <TouchableOpacity
+                                    style={styles.cancelButton}
+                                    onPress={handleCancelSubscription}
+                                >
+                                    <Text style={styles.cancelButtonText}>
+                                        Cancel Subscription
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+                        </>
                     )}
                 </View>
             </ScrollView>
@@ -257,6 +379,13 @@ const styles = StyleSheet.create({
         color: theme.colors.zinc[600],
         marginLeft: 28,
     },
+    cancelingText: {
+        fontSize: theme.fontSize.sm,
+        color: theme.colors.amber[600],
+        marginLeft: 28,
+        marginTop: 4,
+        fontWeight: theme.fontWeight.medium,
+    },
     sliderContainer: {
         paddingTop: 0,
         paddingBottom: 12,
@@ -267,6 +396,23 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         padding: 16,
         marginHorizontal: 20,
+        position: 'relative',
+    },
+    discountBadge: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        backgroundColor: theme.colors.emerald[100],
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: theme.colors.emerald[300],
+    },
+    discountText: {
+        fontSize: theme.fontSize.xs,
+        fontWeight: theme.fontWeight.medium,
+        color: theme.colors.emerald[700],
     },
     selectionCredits: {
         fontSize: theme.fontSize['3xl'],
@@ -317,12 +463,25 @@ const styles = StyleSheet.create({
     updateButtonTextDisabled: {
         color: theme.colors.zinc[500],
     },
+    reactivateButton: {
+        backgroundColor: theme.colors.emerald[600],
+        marginHorizontal: 20,
+        paddingVertical: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    reactivateButtonText: {
+        fontSize: theme.fontSize.base,
+        fontWeight: theme.fontWeight.semibold,
+        color: '#fff',
+    },
     cancelButton: {
         backgroundColor: 'transparent',
         borderWidth: 1,
         borderColor: theme.colors.rose[500],
         marginHorizontal: 20,
-        paddingVertical: 14,
+        paddingVertical: 16,
         borderRadius: 12,
         alignItems: 'center',
         marginBottom: 20,
@@ -331,21 +490,5 @@ const styles = StyleSheet.create({
         fontSize: theme.fontSize.base,
         fontWeight: theme.fontWeight.semibold,
         color: theme.colors.rose[500],
-    },
-    discountBadge: {
-        position: 'absolute',
-        top: 8,
-        right: 8,
-        backgroundColor: theme.colors.emerald[100],
-        paddingVertical: 4,
-        paddingHorizontal: 8,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: theme.colors.emerald[300],
-    },
-    discountText: {
-        fontSize: theme.fontSize.xs,
-        fontWeight: theme.fontWeight.medium,
-        color: theme.colors.emerald[700],
     },
 });

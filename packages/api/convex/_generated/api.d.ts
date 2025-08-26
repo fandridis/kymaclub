@@ -9,6 +9,7 @@
  */
 
 import type * as actions_email from "../actions/email.js";
+import type * as actions_payments from "../actions/payments.js";
 import type * as actions_venue from "../actions/venue.js";
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
@@ -18,6 +19,7 @@ import type * as mutations_classTemplates from "../mutations/classTemplates.js";
 import type * as mutations_core from "../mutations/core.js";
 import type * as mutations_credits from "../mutations/credits.js";
 import type * as mutations_notifications from "../mutations/notifications.js";
+import type * as mutations_payments from "../mutations/payments.js";
 import type * as mutations_pushNotifications from "../mutations/pushNotifications.js";
 import type * as mutations_uploads from "../mutations/uploads.js";
 import type * as mutations_venues from "../mutations/venues.js";
@@ -27,6 +29,8 @@ import type * as queries_classTemplates from "../queries/classTemplates.js";
 import type * as queries_core from "../queries/core.js";
 import type * as queries_credits from "../queries/credits.js";
 import type * as queries_notifications from "../queries/notifications.js";
+import type * as queries_payments from "../queries/payments.js";
+import type * as queries_subscriptions from "../queries/subscriptions.js";
 import type * as queries_uploads from "../queries/uploads.js";
 import type * as queries_venues from "../queries/venues.js";
 import type * as resendOTP from "../resendOTP.js";
@@ -52,6 +56,7 @@ import type {
  */
 declare const fullApi: ApiFromModules<{
   "actions/email": typeof actions_email;
+  "actions/payments": typeof actions_payments;
   "actions/venue": typeof actions_venue;
   auth: typeof auth;
   http: typeof http;
@@ -61,6 +66,7 @@ declare const fullApi: ApiFromModules<{
   "mutations/core": typeof mutations_core;
   "mutations/credits": typeof mutations_credits;
   "mutations/notifications": typeof mutations_notifications;
+  "mutations/payments": typeof mutations_payments;
   "mutations/pushNotifications": typeof mutations_pushNotifications;
   "mutations/uploads": typeof mutations_uploads;
   "mutations/venues": typeof mutations_venues;
@@ -70,6 +76,8 @@ declare const fullApi: ApiFromModules<{
   "queries/core": typeof queries_core;
   "queries/credits": typeof queries_credits;
   "queries/notifications": typeof queries_notifications;
+  "queries/payments": typeof queries_payments;
+  "queries/subscriptions": typeof queries_subscriptions;
   "queries/uploads": typeof queries_uploads;
   "queries/venues": typeof queries_venues;
   resendOTP: typeof resendOTP;

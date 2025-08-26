@@ -26,7 +26,10 @@ import { useTypedTranslation } from '../i18n/typed';
 import { useAuth } from '../stores/auth-store';
 import { LocationObject } from 'expo-location';
 import { SignInModalScreen } from '../features/core/screens/sign-in-modal-screen';
+import { PaymentSuccessScreen } from './screens/PaymentSuccessScreen';
+import { PaymentCancelScreen } from './screens/PaymentCancelScreen';
 import { useNavigation } from '@react-navigation/native';
+import { theme } from '../theme';
 
 const Tab = createBottomTabNavigator();
 const RootStack = createNativeStackNavigator();
@@ -82,8 +85,8 @@ function HomeTabs() {
             backgroundColor: 'tomato',
             color: 'white',
           },
-          tabBarActiveTintColor: '#ff4747',
-          tabBarInactiveTintColor: '#8E8E93',
+          tabBarActiveTintColor: theme.colors.emerald[600],
+          tabBarInactiveTintColor: theme.colors.zinc[500],
           // tabBarBackground: () => (
           //   <BlurView intensity={30} style={styles.blurContainer} />
           // ),
@@ -268,6 +271,26 @@ export function RootNavigator() {
             }}
           />
           <RootStack.Screen name="NotFound" component={NotFoundScreen} />
+
+          {/* Payment result screens */}
+          <RootStack.Screen
+            name="PaymentSuccess"
+            component={PaymentSuccessScreen}
+            options={{
+              title: 'Payment Successful',
+              animation: 'slide_from_right',
+              headerShown: true,
+            }}
+          />
+          <RootStack.Screen
+            name="PaymentCancel"
+            component={PaymentCancelScreen}
+            options={{
+              title: 'Payment Cancelled',
+              animation: 'slide_from_right',
+              headerShown: true,
+            }}
+          />
         </>
       ) : (
         <>
@@ -348,6 +371,14 @@ export type RootStackParamList = {
     };
   };
   NotFound: undefined;
+  // Payment result screens
+  PaymentSuccess: {
+    session_id: string;
+    type: 'subscription' | 'one-time';
+  };
+  PaymentCancel: {
+    type: 'subscription' | 'one-time';
+  };
   // Auth screens
   Landing: undefined;
   // Modal screens

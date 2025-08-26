@@ -1,5 +1,6 @@
 import { v, Infer } from "convex/values";
 import { mutationWithTriggers } from "../triggers";
+import { internalMutation } from "../_generated/server";
 import { coreService } from "../../services/coreService";
 import { businessesFields, venuesFields } from "../schema";
 import { omit } from "convex-helpers";
@@ -100,5 +101,33 @@ export const updateCurrentUserProfile = mutationWithTriggers({
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
         return coreService.updateCurrentUserProfile({ ctx, args, user });
+    }
+});
+
+/***************************************************************
+ * Update User Stripe Customer ID
+ ***************************************************************/
+export const updateStripeCustomerIdArgs = v.object({
+    userId: v.id("users"),
+    stripeCustomerId: v.string(),
+});
+export type UpdateStripeCustomerIdArgs = Infer<typeof updateStripeCustomerIdArgs>;
+
+export const updateStripeCustomerId = internalMutation({
+    args: updateStripeCustomerIdArgs,
+    handler: async (ctx, args) => {
+        // This is an internal mutation called by webhooks, so no auth check needed
+        // Just verify the user exists
+        const user = await ctx.db.get(args.userId);
+        if (!user) {
+            throw new Error("User not found");
+        }
+
+        await ctx.db.patch(args.userId, {
+            stripeCustomerId: args.stripeCustomerId,
+            // updatedAt: Date.now(),
+        });
+
+        return { success: true };
     }
 });

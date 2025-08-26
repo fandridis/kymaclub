@@ -1,27 +1,13 @@
 import React from 'react';
-import { SafeAreaView, StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, Linking } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { DiamondIcon } from 'lucide-react-native';
 import { theme } from '../../theme';
 import { SettingsGroup, SettingsRow, SettingsHeader } from '../../components/Settings';
 import { useAuthenticatedUser } from '../../stores/auth-store';
-import { useQuery } from 'convex/react';
+import { useQuery, useAction } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
-
-type CreditPack = {
-    credits: number;
-    price: number;
-    bonus?: number;
-};
-
-const creditPacks: CreditPack[] = [
-    { credits: 5, price: 12.5 },
-    { credits: 10, price: 25.0 },
-    { credits: 20, price: 50.0 },
-    { credits: 30, price: 75.0, bonus: 2 },
-    { credits: 40, price: 100.0, bonus: 3 },
-    { credits: 50, price: 125.0, bonus: 5 },
-];
+import { CREDIT_PACKS, type CreditPack } from '@repo/api/operations/payments';
 
 export function BuyCreditsScreen() {
     const navigation = useNavigation();
@@ -30,18 +16,33 @@ export function BuyCreditsScreen() {
     // Get user credit balance
     const creditBalance = useQuery(api.queries.credits.getUserBalance, { userId: user._id });
 
-    const handleCreditPurchase = (credits: number) => {
+    // One-time credit purchase action
+    const createOneTimeCheckout = useAction(api.actions.payments.createOneTimeCreditCheckout);
+
+    const handleCreditPurchase = async (credits: number) => {
+        const pack = CREDIT_PACKS.find(p => p.credits === credits);
+        if (!pack) return;
+
         Alert.alert(
             'Purchase Credits',
-            `Purchase ${credits} credits?`,
+            `Purchase ${credits} credits for $${pack.price.toFixed(0)}?`,
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
                     text: 'Purchase',
-                    onPress: () => {
-                        // TODO: Implement credit purchase
-                        console.log('Purchase credits:', credits);
-                        Alert.alert('Success', `${credits} credits purchased successfully!`);
+                    onPress: async () => {
+                        try {
+                            const result = await createOneTimeCheckout({
+                                creditAmount: credits
+                            });
+
+                            if (result.checkoutUrl) {
+                                await Linking.openURL(result.checkoutUrl);
+                            }
+                        } catch (error) {
+                            console.error('Error creating checkout:', error);
+                            Alert.alert('Error', 'Failed to start purchase. Please try again.');
+                        }
                     }
                 }
             ]
@@ -80,25 +81,28 @@ export function BuyCreditsScreen() {
                 {/* Credit Packs Section */}
                 <SettingsHeader title="Available Credit Packs" />
                 <View style={styles.creditPacksGrid}>
-                    {creditPacks.map((pack) => {
-                        const totalCredits = pack.credits + (pack.bonus || 0);
+                    {CREDIT_PACKS.map((pack) => {
+                        const originalPrice = pack.credits * 2.30;
                         const pricePerCredit = pack.price / pack.credits;
                         return (
                             <TouchableOpacity
                                 key={pack.credits}
                                 style={styles.creditPackCard}
-                                onPress={() => handleCreditPurchase(totalCredits)}
+                                onPress={() => handleCreditPurchase(pack.credits)}
                             >
                                 <Text style={styles.creditPackCredits}>
                                     {pack.credits}
                                 </Text>
                                 <Text style={styles.creditPackCreditsLabel}>credits</Text>
                                 <Text style={styles.creditPackPrice}>
-                                    ${pack.price.toFixed(0)}
+                                    ${pack.price.toFixed(2)}
                                 </Text>
-                                {pack.bonus && (
-                                    <View style={styles.bonusBadgeTopRight}>
-                                        <Text style={styles.bonusTextTopRight}>+{pack.bonus} credits</Text>
+                                <Text style={styles.pricePerCredit}>
+                                    ${pricePerCredit.toFixed(2)} per credit
+                                </Text>
+                                {pack.discount && (
+                                    <View style={styles.discountBadgeTopRight}>
+                                        <Text style={styles.discountTextTopRight}>{pack.discount}% OFF</Text>
                                     </View>
                                 )}
                             </TouchableOpacity>
@@ -178,17 +182,24 @@ const styles = StyleSheet.create({
         fontWeight: theme.fontWeight.semibold,
         color: theme.colors.emerald[600],
         textAlign: 'center',
+        marginBottom: 4,
     },
-    bonusBadgeTopRight: {
+    pricePerCredit: {
+        fontSize: theme.fontSize.xs,
+        color: theme.colors.zinc[500],
+        textAlign: 'center',
+    },
+
+    discountBadgeTopRight: {
         position: 'absolute',
         top: -4,
         right: -4,
-        backgroundColor: theme.colors.emerald[500],
+        backgroundColor: theme.colors.rose[500],
         paddingHorizontal: 6,
         paddingVertical: 2,
         borderRadius: 8,
     },
-    bonusTextTopRight: {
+    discountTextTopRight: {
         fontSize: theme.fontSize.xs,
         fontWeight: theme.fontWeight.bold,
         color: '#fff',

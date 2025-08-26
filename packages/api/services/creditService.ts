@@ -31,9 +31,20 @@ export const creditService = {
       classTemplateId?: Id<"classTemplates">;
       classInstanceId?: Id<"classInstances">;
       bookingId?: Id<"bookings">;
+      // Enhanced purchase tracking fields
+      stripePaymentIntentId?: string;
+      stripeCheckoutSessionId?: string;
+      packageName?: string;
+      priceInCents?: number;
+      currency?: string;
+      status?: "pending" | "completed" | "failed" | "canceled" | "refunded";
     }
   ): Promise<{ newBalance: number; transactionId: Id<"creditTransactions"> }> => {
-    const { userId, amount, type, reason, description, externalRef, businessId, venueId, classTemplateId, classInstanceId, bookingId } = args;
+    const { 
+      userId, amount, type, reason, description, externalRef, businessId, venueId, 
+      classTemplateId, classInstanceId, bookingId, stripePaymentIntentId, 
+      stripeCheckoutSessionId, packageName, priceInCents, currency, status 
+    } = args;
 
     // Validate amount is positive
     if (amount <= 0) {
@@ -76,11 +87,113 @@ export const creditService = {
       bookingId,
       description,
       externalRef,
+      // Enhanced purchase tracking
+      stripePaymentIntentId,
+      stripeCheckoutSessionId,
+      packageName,
+      priceInCents,
+      currency,
+      status: status || "completed", // Default to completed for non-purchase transactions
+      completedAt: status === "completed" || !status ? Date.now() : undefined,
       createdAt: Date.now(),
       createdBy: userId
     });
 
     return { newBalance, transactionId };
+  },
+
+  /**
+   * Create a pending credit purchase (for Stripe checkout)
+   */
+  createPendingPurchase: async (
+    ctx: MutationCtx,
+    args: {
+      userId: Id<"users">;
+      amount: number;
+      stripePaymentIntentId: string;
+      stripeCheckoutSessionId?: string;
+      packageName: string;
+      priceInCents: number;
+      currency: string;
+      description: string;
+    }
+  ): Promise<{ transactionId: Id<"creditTransactions"> }> => {
+    const transactionId = await ctx.db.insert("creditTransactions", {
+      userId: args.userId,
+      amount: args.amount,
+      type: "purchase" as const,
+      reason: "user_buy" as const,
+      description: args.description,
+      externalRef: args.stripePaymentIntentId,
+      stripePaymentIntentId: args.stripePaymentIntentId,
+      stripeCheckoutSessionId: args.stripeCheckoutSessionId,
+      packageName: args.packageName,
+      priceInCents: args.priceInCents,
+      currency: args.currency,
+      status: "pending",
+      createdAt: Date.now(),
+      createdBy: args.userId
+    });
+
+    return { transactionId };
+  },
+
+  /**
+   * Complete a pending purchase (called from webhook)
+   */
+  completePurchase: async (
+    ctx: MutationCtx,
+    args: {
+      stripePaymentIntentId: string;
+    }
+  ): Promise<{ newBalance: number; transactionId: Id<"creditTransactions"> }> => {
+    // Find the pending transaction
+    const transaction = await ctx.db
+      .query("creditTransactions")
+      .withIndex("by_stripe_payment_intent", (q) => q.eq("stripePaymentIntentId", args.stripePaymentIntentId))
+      .first();
+
+    if (!transaction) {
+      throw new ConvexError({
+        message: "Purchase transaction not found",
+        field: "stripePaymentIntentId",
+        code: "TRANSACTION_NOT_FOUND"
+      });
+    }
+
+    if (transaction.status !== "pending") {
+      throw new ConvexError({
+        message: "Transaction is not pending",
+        field: "status",
+        code: "INVALID_STATUS"
+      });
+    }
+
+    // Get user and update balance
+    const user = await ctx.db.get(transaction.userId);
+    if (!user) {
+      throw new ConvexError({
+        message: "User not found",
+        field: "userId",
+        code: "USER_NOT_FOUND"
+      });
+    }
+
+    const currentCredits = user.credits || 0;
+    const newBalance = currentCredits + transaction.amount;
+
+    // Update user balance
+    await ctx.db.patch(transaction.userId, {
+      credits: newBalance
+    });
+
+    // Mark transaction as completed
+    await ctx.db.patch(transaction._id, {
+      status: "completed",
+      completedAt: Date.now()
+    });
+
+    return { newBalance, transactionId: transaction._id };
   },
 
   /**

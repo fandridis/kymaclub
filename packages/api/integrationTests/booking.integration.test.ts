@@ -421,11 +421,10 @@ describe('Booking System Integration Tests', () => {
             const booking = bookings.page[0];
             expect(booking.userId).toBe(userId);
             expect(booking.status).toBe("pending");
-            expect(booking.classInstance).toBeDefined();
-            expect(booking.classTemplate).toBeDefined();
-            expect(booking.venue).toBeDefined();
-            expect(booking.classTemplate?.name).toBe("Morning Yoga");
-            expect(booking.venue?.name).toBe("Test Yoga Studio");
+            expect(booking.classInstanceSnapshot).toBeDefined();
+            expect(booking.venueSnapshot).toBeDefined();
+            expect(booking.classInstanceSnapshot?.name).toBe("Morning Yoga");
+            expect(booking.venueSnapshot?.name).toBe("Test Yoga Studio");
 
             // Test userSnapshot is populated for business owners
             expect(booking.userSnapshot).toBeDefined();
@@ -457,7 +456,7 @@ describe('Booking System Integration Tests', () => {
 
             expect(upcomingBookings).toHaveLength(1);
             expect(upcomingBookings[0].status).toBe("pending");
-            expect(upcomingBookings[0].classInstance?.startTime).toBeGreaterThan(Date.now());
+            expect(upcomingBookings[0].classInstanceSnapshot?.startTime).toBeGreaterThan(Date.now());
         });
 
         test('should filter bookings by status', async () => {

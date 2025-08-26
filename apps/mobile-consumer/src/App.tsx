@@ -55,7 +55,9 @@ function needsAuthentication(route: string): boolean {
     'SettingsSubscription',
     'SettingsAccount',
     'VenueDetailsScreen',
-    'QRScannerModal'
+    'QRScannerModal',
+    'PaymentSuccess',
+    'PaymentCancel'
   ];
 
   return protectedRoutes.includes(route);
@@ -260,6 +262,20 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
               SettingsSubscription: 'settings/subscription',
               SettingsAccount: 'settings/account',
               QRScannerModal: 'scanner',
+              // Payment result screens
+              PaymentSuccess: {
+                path: 'payment/success',
+                parse: {
+                  session_id: (session_id: string) => session_id,
+                  type: (type: string) => type as 'subscription' | 'one-time',
+                },
+              },
+              PaymentCancel: {
+                path: 'payment/cancel',
+                parse: {
+                  type: (type: string) => type as 'subscription' | 'one-time',
+                },
+              },
             },
           },
         }}

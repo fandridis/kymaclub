@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation } from "../_generated/server";
+import { mutation, internalMutation } from "../_generated/server";
 import { creditService } from "../../services/creditService";
 
 /**
@@ -92,5 +92,83 @@ export const refundCredits = mutation({
       newBalance: result.newBalance,
       message: `Successfully refunded ${amount} credits. New balance: ${result.newBalance}`,
     };
+  },
+});
+
+/**
+ * Add credits for subscription renewal (internal function for webhooks)
+ */
+export const addCreditsForSubscription = internalMutation({
+  args: v.object({
+    userId: v.id("users"),
+    amount: v.number(),
+    subscriptionId: v.id("subscriptions"),
+    description: v.string(),
+  }),
+  handler: async (ctx, { userId, amount, subscriptionId, description }) => {
+    const result = await creditService.addCredits(ctx, {
+      userId,
+      amount,
+      type: "purchase", // Subscription credits are purchased via monthly payment
+      reason: "subscription_renewal",
+      description,
+      externalRef: subscriptionId,
+      packageName: "Monthly Subscription Credits",
+    });
+
+    return result.transactionId;
+  },
+});
+
+/**
+ * Create pending credit purchase (for Stripe checkout)
+ */
+export const createPendingCreditPurchase = internalMutation({
+  args: v.object({
+    userId: v.id("users"),
+    amount: v.number(),
+    stripePaymentIntentId: v.string(),
+    stripeCheckoutSessionId: v.optional(v.string()),
+    packageName: v.string(),
+    priceInCents: v.number(),
+    currency: v.string(),
+    description: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    const result = await creditService.createPendingPurchase(ctx, args);
+    return result.transactionId;
+  },
+});
+
+/**
+ * Complete credit purchase (called from Stripe webhook)
+ */
+export const completeCreditPurchase = internalMutation({
+  args: v.object({
+    stripePaymentIntentId: v.string(),
+  }),
+  handler: async (ctx, { stripePaymentIntentId }) => {
+    const result = await creditService.completePurchase(ctx, {
+      stripePaymentIntentId,
+    });
+    return result;
+  },
+});
+
+/**
+ * Update credit transaction with actual payment intent ID
+ */
+export const updateCreditTransactionPaymentIntent = internalMutation({
+  args: v.object({
+    transactionId: v.id("creditTransactions"),
+    stripePaymentIntentId: v.string(),
+  }),
+  handler: async (ctx, { transactionId, stripePaymentIntentId }) => {
+    await ctx.db.patch(transactionId, {
+      stripePaymentIntentId,
+      updatedAt: Date.now(),
+    });
+    
+    return transactionId;
   },
 });

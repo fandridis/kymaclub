@@ -23,7 +23,8 @@
     "convex-helpers": "^0.1.101",
     "date-fns": "^4.1.0",
     "nanoid": "^5.1.5",
-    "resend": "^4.6.0"
+    "resend": "^4.6.0",
+    "stripe": "^17.7.0"
   },
   "devDependencies": {
     "@edge-runtime/vm": "^5.0.0",
@@ -38,6 +39,7 @@
   "exports": {
     "./types/booking": "./types/booking.ts",
     "./types/notification": "./types/notification.ts",
+    "./operations/payments": "./operations/payments.ts",
     "./utils/deep-linking": "./utils/deep-linking.ts",
     "./convex/_generated/api": {
       "import": "./convex/_generated/api.js",

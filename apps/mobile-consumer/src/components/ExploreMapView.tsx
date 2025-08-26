@@ -1,12 +1,11 @@
-import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps';
 import { StyleSheet, View, Text, ActivityIndicator, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import { runOnJS } from 'react-native-worklets';
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
-import { StarIcon, MapPinIcon, ClockIcon, X } from 'lucide-react-native';
+import { StarIcon, X } from 'lucide-react-native';
 import { useTypedTranslation } from '../i18n/typed';
 import { Image } from 'expo-image';
 import { Doc } from '@repo/api/convex/_generated/dataModel';

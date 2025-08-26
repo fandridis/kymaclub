@@ -1,5 +1,6 @@
-import { query } from "../_generated/server";
+import { query, internalQuery } from "../_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { v } from "convex/values";
 import { coreService } from "../../services/coreService";
 
 /***************************************************************
@@ -14,5 +15,15 @@ export const getCurrentUserQuery = query({
     handler: async (ctx) => {
         const userId = await getAuthUserId(ctx);
         return coreService.getCurrentUserWithBusiness({ ctx, userId });
+    },
+});
+
+/**
+ * Get user by ID (internal use only)
+ */
+export const getUserById = internalQuery({
+    args: { userId: v.id("users") },
+    handler: async (ctx, { userId }) => {
+        return await ctx.db.get(userId);
     },
 }); 

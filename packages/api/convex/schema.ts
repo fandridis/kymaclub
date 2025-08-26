@@ -59,6 +59,9 @@ export const usersFields = {
   // Consumer profile image
   consumerProfileImageStorageId: v.optional(v.id("_storage")),
 
+  // Stripe customer ID for payments
+  stripeCustomerId: v.optional(v.string()),
+
   ...softDeleteFields,
 };
 
@@ -475,6 +478,7 @@ export const creditTransactionsFields = {
     v.literal("campaign_bonus"),     // Marketing campaign
     v.literal("referral_bonus"),     // Referral bonus  
     v.literal("welcome_bonus"),      // Welcome bonus
+    v.literal("subscription_renewal"), // Monthly subscription credits
 
     // Refund reasons
     v.literal("user_cancellation"),  // User cancelled booking
@@ -495,6 +499,23 @@ export const creditTransactionsFields = {
   // Audit and reference tracking
   description: v.string(),
   externalRef: v.optional(v.string()), // payment ID, stripe ID, paypal ID, etc.
+
+  // Enhanced purchase tracking (only populated for purchase transactions)
+  stripePaymentIntentId: v.optional(v.string()),
+  stripeCheckoutSessionId: v.optional(v.string()),
+  packageName: v.optional(v.string()), // "50 Credit Pack", "20 Credits Monthly"
+  priceInCents: v.optional(v.number()),
+  currency: v.optional(v.string()),
+
+  // Transaction status (primarily for purchases, otherwise defaults to completed)
+  status: v.optional(v.union(
+    v.literal("pending"),    // Payment initiated but not confirmed
+    v.literal("completed"),  // Transaction successful
+    v.literal("failed"),     // Transaction failed
+    v.literal("canceled"),   // User canceled during checkout
+    v.literal("refunded")    // Transaction refunded
+  )),
+  completedAt: v.optional(v.number()),
 
   ...auditFields,
   ...softDeleteFields,
@@ -629,6 +650,67 @@ export const userNotificationSettingsFields = {
   ...softDeleteFields,
 };
 
+export const subscriptionsFields = {
+  userId: v.id("users"),
+
+  // Stripe integration
+  stripeCustomerId: v.string(), // Stripe customer ID
+  stripeSubscriptionId: v.string(), // Stripe subscription ID
+  stripePriceId: v.string(), // Which Stripe price/plan
+  stripeProductId: v.string(), // Stripe product ID
+
+  // Subscription details
+  status: v.union(
+    v.literal("active"),
+    v.literal("canceled"),
+    v.literal("past_due"),
+    v.literal("incomplete"),
+    v.literal("trialing"),
+    v.literal("unpaid")
+  ),
+
+  // Billing cycle (anniversary billing)
+  currentPeriodStart: v.number(), // Unix timestamp
+  currentPeriodEnd: v.number(), // Unix timestamp
+  billingCycleAnchor: v.number(), // Day of month (1-31) for anniversary billing
+
+  // Credit allocation
+  creditAmount: v.number(), // Credits awarded per billing cycle
+  pricePerCycle: v.number(), // Amount charged per cycle (in cents)
+  currency: v.string(), // "eur", "usd", etc.
+
+  // Subscription lifecycle
+  startDate: v.number(), // When subscription started
+  canceledAt: v.optional(v.number()), // When user cancelled
+  cancelAtPeriodEnd: v.optional(v.boolean()), // Cancel at end of current period
+  endedAt: v.optional(v.number()), // When subscription actually ended
+
+  // Metadata
+  planName: v.string(), // "20 Credits Monthly", "50 Credits Monthly"
+
+  ...auditFields,
+  ...softDeleteFields,
+};
+
+export const subscriptionEventsFields = {
+  subscriptionId: v.optional(v.id("subscriptions")), // Database subscription ID (null if not created yet)
+  stripeSubscriptionId: v.string(), // Stripe subscription ID
+
+  // Stripe event details
+  stripeEventId: v.string(), // Unique Stripe event ID for idempotency
+  eventType: v.string(), // "customer.subscription.created", "invoice.payment_succeeded", etc.
+
+  // Event processing
+  processedAt: v.number(),
+  creditsAllocated: v.optional(v.number()), // Credits added for this event
+  creditTransactionId: v.optional(v.string()), // Link to credit transaction
+
+  // Raw event data (for debugging)
+  eventData: v.optional(v.any()), // Raw Stripe event object
+
+  ...auditFields,
+};
+
 /***************************************************************
  * Database schema
  ***************************************************************/
@@ -706,7 +788,7 @@ export default defineSchema({
     .index("by_user_start_time", ["userId", "classInstanceSnapshot.startTime"]),
 
   /**
-   * Simple Credit Transactions - One record per credit operation
+   * Enhanced Credit Transactions - One record per credit operation (includes purchases)
    */
   creditTransactions: defineTable(creditTransactionsFields)
     .index("by_user", ["userId"])
@@ -717,7 +799,11 @@ export default defineSchema({
     .index("by_class_instance", ["classInstanceId"])
     .index("by_booking", ["bookingId"])
     .index("by_user_type", ["userId", "type"])
-    .index("by_business_type", ["businessId", "type"]),
+    .index("by_business_type", ["businessId", "type"])
+    .index("by_stripe_payment_intent", ["stripePaymentIntentId"])
+    .index("by_stripe_checkout_session", ["stripeCheckoutSessionId"])
+    .index("by_status", ["status"])
+    .index("by_user_status", ["userId", "status"]),
 
   /**
    * Notifications - Messages sent to businesses and consumers
@@ -743,4 +829,23 @@ export default defineSchema({
   userNotificationSettings: defineTable(userNotificationSettingsFields)
     .index("by_user", ["userId"])
     .index("by_global_opt_out", ["globalOptOut"]),
+
+  /**
+   * User subscriptions - Monthly credit subscriptions via Stripe
+   */
+  subscriptions: defineTable(subscriptionsFields)
+    .index("by_user", ["userId"])
+    .index("by_stripe_subscription", ["stripeSubscriptionId"])
+    .index("by_stripe_customer", ["stripeCustomerId"])
+    .index("by_status", ["status"])
+    .index("by_user_status", ["userId", "status"]),
+
+  /**
+   * Subscription events - Track Stripe webhook events for subscriptions
+   */
+  subscriptionEvents: defineTable(subscriptionEventsFields)
+    .index("by_subscription", ["subscriptionId"])
+    .index("by_stripe_event", ["stripeEventId"])
+    .index("by_event_type", ["eventType"])
+    .index("by_processed_at", ["processedAt"]),
 });

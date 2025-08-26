@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { query } from "../_generated/server";
+import { query, internalQuery } from "../_generated/server";
 import { creditService } from "../../services/creditService";
 
 /**
@@ -63,5 +63,22 @@ export const getCreditAnalytics = query({
   }),
   handler: async (ctx, args) => {
     return await creditService.getCreditAnalytics(ctx, args);
+  },
+});
+
+/**
+ * Get credit transaction by Stripe payment intent ID (internal)
+ */
+export const getCreditTransactionByStripeId = internalQuery({
+  args: v.object({
+    stripePaymentIntentId: v.string(),
+  }),
+  handler: async (ctx, { stripePaymentIntentId }) => {
+    return await ctx.db
+      .query("creditTransactions")
+      .withIndex("by_stripe_payment_intent", (q) => 
+        q.eq("stripePaymentIntentId", stripePaymentIntentId)
+      )
+      .first();
   },
 });

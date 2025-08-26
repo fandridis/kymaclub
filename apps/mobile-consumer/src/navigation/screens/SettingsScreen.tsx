@@ -21,6 +21,9 @@ export function SettingsScreen() {
   // Get user profile image URL
   const profileImageUrl = useQuery(api.queries.uploads.getUserProfileImageUrl, { userId: user._id });
 
+  // Get user subscription status
+  const subscription = useQuery(api.queries.subscriptions.getCurrentUserSubscription);
+
   // Image upload hooks and mutations
   const { status, pickAndUploadImage, takeAndUploadPhoto } = useCompressedImageUpload({
     preCompressionMaxBytes: 5 * 1024 * 1024, // 5MB
@@ -109,6 +112,30 @@ export function SettingsScreen() {
       .substring(0, 2);
   };
 
+  const getSubscriptionSubtitle = () => {
+    if (!subscription || subscription.status !== 'active') {
+      return 'Inactive subscription';
+    }
+
+    // Format next billing date
+    const nextBilling = new Date(subscription.currentPeriodEnd);
+    const formatter = new Intl.DateTimeFormat('en-US', { 
+      month: 'short', 
+      day: 'numeric' 
+    });
+    
+    // If subscription is set to cancel at period end, show cancellation message
+    if (subscription.cancelAtPeriodEnd) {
+      return `${subscription.creditAmount} credits/month • Subscription will end on ${formatter.format(nextBilling)}`;
+    }
+    
+    return `${subscription.creditAmount} credits/month • Next billing: ${formatter.format(nextBilling)}`;
+  };
+
+  const isSubscriptionActive = () => {
+    return subscription && subscription.status === 'active';
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -193,11 +220,11 @@ export function SettingsScreen() {
           <SettingsRow
             icon={CrownIcon}
             title="Monthly Subscription"
-            subtitle={true ? '20 credits/month • Next billing: Sep 25' : 'Inactive subscription'}
+            subtitle={getSubscriptionSubtitle()}
             rightElement={
-              <View style={[styles.statusBadge, { backgroundColor: true ? theme.colors.emerald[100] : theme.colors.zinc[100] }]}>
-                <Text style={[styles.statusBadgeText, { color: true ? theme.colors.emerald[700] : theme.colors.zinc[600] }]}>
-                  {true ? 'ACTIVE' : 'INACTIVE'}
+              <View style={[styles.statusBadge, { backgroundColor: isSubscriptionActive() ? theme.colors.emerald[100] : theme.colors.zinc[100] }]}>
+                <Text style={[styles.statusBadgeText, { color: isSubscriptionActive() ? theme.colors.emerald[700] : theme.colors.zinc[600] }]}>
+                  {isSubscriptionActive() ? 'ACTIVE' : 'INACTIVE'}
                 </Text>
               </View>
             }
@@ -402,7 +429,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   creditsBadgeText: {
-    fontSize: theme.fontSize.sm,
+    fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.semibold,
     color: theme.colors.emerald[700],
     marginLeft: 4,
