@@ -97,8 +97,8 @@ export function SubscriptionScreen() {
         return subscriptionOptions.find(option => option.credits === selectedCredits) || subscriptionOptions[3]; // Default to 20 credits
     };
 
-    const isSubscriptionActive = () => {
-        return subscription && subscription.status === 'active';
+    const isSubscriptionActive = (): boolean => {
+        return Boolean(subscription && subscription.status === 'active');
     };
 
     const isSubscriptionCanceling = () => {
@@ -114,47 +114,27 @@ export function SubscriptionScreen() {
     const handleSubscriptionChange = () => {
         if (selectedCredits) {
             const isUpdate = isSubscriptionActive();
+            const nextBillingDate = subscription ? new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null;
+
             Alert.alert(
                 isUpdate ? 'Update Subscription' : 'Start Subscription',
-                `${isUpdate ? 'Change' : 'Start'} your subscription to ${selectedCredits} credits/month for €${Math.round(getCurrentOption().price)}/month?`,
+                isUpdate
+                    ? `Update to ${selectedCredits} credits/month for €${getCurrentOption().price.toFixed(2)}/month?\n\nChanges will take effect on ${nextBillingDate}. No charge now.`
+                    : `Start subscription with ${selectedCredits} credits/month for €${getCurrentOption().price.toFixed(2)}/month?\n\nYou'll be charged now and receive ${selectedCredits} credits immediately.`,
                 [
                     { text: 'Cancel', style: 'cancel' },
                     {
-                        text: 'Confirm',
+                        text: isUpdate ? 'Update' : 'Start & Pay',
                         onPress: async () => {
                             if (isUpdate) {
-                                // For updates, show detailed confirmation first
-                                const currentPrice = getCurrentOption().price;
-                                const oldCredits = subscription?.creditAmount || 0;
-                                const creditDiff = selectedCredits - oldCredits;
-                                const isUpgrade = creditDiff > 0;
-                                
-                                const confirmMessage = isUpgrade 
-                                    ? `You'll be charged the prorated difference and receive ${creditDiff} additional credits immediately.`
-                                    : creditDiff < 0
-                                    ? `You'll receive a credit for the difference. Your monthly allocation will decrease starting next billing cycle.`
-                                    : 'No change in credit amount.';
-
-                                Alert.alert(
-                                    'Confirm Update',
-                                    `Update to ${selectedCredits} credits/month for €${Math.round(currentPrice)}/month?\n\n${confirmMessage}`,
-                                    [
-                                        { text: 'Cancel', style: 'cancel' },
-                                        {
-                                            text: 'Update',
-                                            onPress: async () => {
-                                                try {
-                                                    const result = await updateSubscription({ newCreditAmount: selectedCredits });
-                                                    Alert.alert('Subscription Updated!', result.message);
-                                                } catch (error) {
-                                                    console.error('Error updating subscription:', error);
-                                                    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-                                                    Alert.alert('Error', `Failed to update subscription. ${errorMessage}`);
-                                                }
-                                            }
-                                        }
-                                    ]
-                                );
+                                try {
+                                    const result = await updateSubscription({ newCreditAmount: selectedCredits });
+                                    Alert.alert('Subscription Updated!', result.message);
+                                } catch (error) {
+                                    console.error('Error updating subscription:', error);
+                                    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+                                    Alert.alert('Error', `Failed to update subscription. ${errorMessage}`);
+                                }
                             } else {
                                 // For new subscriptions, go directly to checkout
                                 try {
@@ -199,23 +179,38 @@ export function SubscriptionScreen() {
     };
 
     const handleReactivateSubscription = async () => {
-        if (!subscription?.creditAmount || !subscription?.pricePerCycle) {
-            Alert.alert('Error', 'Unable to load subscription details. Please try again.');
-            return;
+        // Check subscription status and what will happen
+        const currentOption = getCurrentOption();
+        const subscriptionExpired = subscription?.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).getTime() < Date.now() : true;
+        const nextBillingDate = subscription ? new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null;
+
+        let message: string;
+        let chargeInfo: string;
+        let buttonText: string;
+
+        if (subscriptionExpired) {
+            // Expired - start new subscription with full charge
+            message = `Start new subscription with ${selectedCredits} credits/month for €${currentOption.price.toFixed(2)}/month?`;
+            chargeInfo = `\n\nYou'll be charged €${currentOption.price.toFixed(2)} now and receive ${selectedCredits} credits immediately.`;
+            buttonText = 'Start & Pay';
+        } else {
+            // Not expired - just re-enable, no charge
+            message = `Re-enable subscription with ${selectedCredits} credits/month?`;
+            chargeInfo = `\n\nNo charge now. Your subscription will continue and charge €${currentOption.price.toFixed(2)} on ${nextBillingDate}.`;
+            buttonText = 'Re-enable';
         }
 
-        const chargeAmount = (subscription.pricePerCycle / 100).toFixed(2);
-        
         Alert.alert(
             'Reactivate Subscription',
-            `This will charge €${chargeAmount} now and restart your ${subscription.creditAmount} credits/month subscription immediately. Continue?`,
+            `${message}${chargeInfo}`,
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
-                    text: 'Reactivate & Pay',
+                    text: buttonText,
                     onPress: async () => {
                         try {
-                            const result = await reactivateSubscription({});
+                            // Pass the selected credit amount to the reactivation
+                            const result = await reactivateSubscription({ newCreditAmount: selectedCredits });
                             Alert.alert('Subscription Reactivated!', result.message);
                         } catch (error) {
                             console.error('Error reactivating subscription:', error);
@@ -278,7 +273,7 @@ export function SubscriptionScreen() {
 
                         <Text style={styles.selectionCredits}>{selectedCredits}</Text>
                         <Text style={styles.selectionLabel}>credits/month</Text>
-                        <Text style={styles.selectionPrice}>€{Math.round(getCurrentOption().price)}/month</Text>
+                        <Text style={styles.selectionPrice}>€{getCurrentOption().price.toFixed(2)}/month</Text>
                         <Text style={styles.pricePerCredit}>€{getCurrentOption().pricePerCredit?.toFixed(2)} per credit</Text>
                     </View>
 
@@ -297,34 +292,38 @@ export function SubscriptionScreen() {
                         />
                     </View>
 
-                    <TouchableOpacity
-                        style={[
-                            styles.updateButton,
-                            selectedCredits === subscription?.creditAmount && styles.updateButtonDisabled
-                        ]}
-                        onPress={handleSubscriptionChange}
-                        disabled={selectedCredits === subscription?.creditAmount}
-                    >
-                        <Text style={[
-                            styles.updateButtonText,
-                            selectedCredits === subscription?.creditAmount && styles.updateButtonTextDisabled
-                        ]}>
-                            {isSubscriptionActive() ? 'Update Subscription' : 'Start Subscription'}
-                        </Text>
-                    </TouchableOpacity>
-
-                    {isSubscriptionActive() && (
+                    {/* Show different buttons based on subscription state */}
+                    {isSubscriptionCanceling() ? (
+                        // When subscription is cancelled/canceling, only show Reactivate button
+                        <TouchableOpacity
+                            style={styles.reactivateButton}
+                            onPress={handleReactivateSubscription}
+                        >
+                            <Text style={styles.reactivateButtonText}>
+                                Reactivate Subscription
+                            </Text>
+                        </TouchableOpacity>
+                    ) : (
+                        // When subscription is active or doesn't exist, show Update/Start button
                         <>
-                            {isSubscriptionCanceling() ? (
-                                <TouchableOpacity
-                                    style={styles.reactivateButton}
-                                    onPress={handleReactivateSubscription}
-                                >
-                                    <Text style={styles.reactivateButtonText}>
-                                        Reactivate Subscription
-                                    </Text>
-                                </TouchableOpacity>
-                            ) : (
+                            <TouchableOpacity
+                                style={[
+                                    styles.updateButton,
+                                    isSubscriptionActive() && selectedCredits === (subscription?.creditAmount ?? 0) && styles.updateButtonDisabled
+                                ]}
+                                onPress={handleSubscriptionChange}
+                                disabled={isSubscriptionActive() && selectedCredits === (subscription?.creditAmount ?? 0)}
+                            >
+                                <Text style={[
+                                    styles.updateButtonText,
+                                    isSubscriptionActive() && selectedCredits === (subscription?.creditAmount ?? 0) && styles.updateButtonTextDisabled
+                                ]}>
+                                    {isSubscriptionActive() ? 'Update Subscription' : 'Start Subscription'}
+                                </Text>
+                            </TouchableOpacity>
+
+                            {/* Only show cancel button if subscription is active and not canceling */}
+                            {isSubscriptionActive() && (
                                 <TouchableOpacity
                                     style={styles.cancelButton}
                                     onPress={handleCancelSubscription}
@@ -402,17 +401,17 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 8,
         right: 8,
-        backgroundColor: theme.colors.emerald[100],
+        backgroundColor: theme.colors.rose[50],
         paddingVertical: 4,
         paddingHorizontal: 8,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: theme.colors.emerald[300],
+        borderColor: theme.colors.rose[300],
     },
     discountText: {
         fontSize: theme.fontSize.xs,
         fontWeight: theme.fontWeight.medium,
-        color: theme.colors.emerald[700],
+        color: theme.colors.rose[950],
     },
     selectionCredits: {
         fontSize: theme.fontSize['3xl'],

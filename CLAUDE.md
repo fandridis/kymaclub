@@ -157,6 +157,11 @@ React Native mobile application for iOS and Android consumers.
   - **`screens/Map.tsx`**: Interactive map screen for business and venue discovery.
   - **`screens/Settings.tsx`**: User settings and preferences management.
   - **`screens/News.tsx`**: Updates and announcements feed.
+  - **`screens/BuyCreditsScreen.tsx`**: One-time credit purchase interface with pack selection (5, 10, 20, 30, 50 credits).
+  - **`screens/SubscriptionScreen.tsx`**: Dynamic subscription management with slider (5-150 credits) and tiered pricing.
+  - **`screens/PaymentSuccessScreen.tsx`**: Post-payment confirmation with deep-link handling.
+  - **`screens/PaymentCancelScreen.tsx`**: Payment cancellation handling and recovery options.
+  - **`screens/SettingsSubscriptionScreen.tsx`**: Subscription management with cancel/reactivate options.
 - **`src/features/core/`**: Core application features including authentication, location gating, and user registration.
   - **`components/auth-guard.tsx`**: Authentication protection component. Exports: `AuthGuard`.
   - **`components/auth-sync.tsx`**: Authentication state synchronization. Exports: `AuthSync`.
@@ -193,9 +198,9 @@ Convex backend API providing real-time database and serverless functions.
 - **`vitest.config.mts`**: Vitest testing configuration for backend tests.
 
 **Convex Backend (`convex/`):**
-- **`schema.ts`**: Complete database schema with multi-tenant architecture. Key entities: users, businesses, venues, classTemplates, classInstances, bookings, customers.
+- **`schema.ts`**: Complete database schema with multi-tenant architecture. Key entities: users, businesses, venues, classTemplates, classInstances, bookings, customers, subscriptions, creditTransactions.
 - **`auth.config.ts`**: Authentication configuration with GitHub OAuth and email/OTP.
-- **`http.ts`**: HTTP endpoints for webhooks and external integrations.
+- **`http.ts`**: HTTP endpoints for webhooks and external integrations including Stripe webhook processing.
 
 **Core System (`convex/core/`):**
 - **`helpers.ts`**: Common database and validation utilities. Exports: `createAuthenticatedMutation`, `throwIfError`.
@@ -246,6 +251,7 @@ Convex backend API providing real-time database and serverless functions.
 **Services Layer (`packages/api/services/`):**
 - **`bookingService.ts`**: Complete booking management service with pagination and cancellation. Exports: `getCurrentUserBookings`, `cancelBooking`, `getBookingHistory`.
 - **`creditService.ts`**: Sophisticated credit management system. Exports: `addCredits`, `spendCredits`, `getUserBalance`, `getTransactionHistory`.
+- **`paymentsService.ts`**: Complete Stripe integration service. Exports: `createSubscription`, `updateSubscription`, `cancelSubscription`, `handleStripeWebhook`, `createOneTimePayment`.
 - **`classTemplateService.ts`**: Class template management operations.
 - **`classInstanceService.ts`**: Individual class instance operations.
 - **`venueService.ts`**: Venue management and operations.
@@ -260,6 +266,8 @@ Convex backend API providing real-time database and serverless functions.
 - **`classDiscount.ts`**: Discount calculation and application logic.
 - **`venue.ts`**: Venue operations and category management.
 - **`pricing.ts`**: Dynamic pricing calculations and rules.
+- **`payments.ts`**: Stripe payment processing and subscription logic.
+- **`notifications.ts`**: Notification routing and deep-link generation.
 
 **Type Definitions (`packages/api/types/`):**
 - **`booking.ts`**: Comprehensive booking types including `BookingWithDetails`. Exports: booking status enums, cancellation policies.
@@ -289,6 +297,7 @@ Shared utility functions and constants across the monorepo.
 - **`src/crypto-utils.ts`**: Cryptographic utilities. Exports: crypto helpers.
 - **`src/i18n-typed.ts`**: Type-safe internationalization utilities. Exports: i18n types.
 - **`src/types.ts`**: Common TypeScript type definitions. Exports: shared types.
+- **`src/deep-linking.ts`**: Deep-linking utilities for mobile apps. Exports: `generateDeepLink`, `parseDeepLink`, `DEEP_LINK_SCHEME`.
 
 #### **`packages/eslint-config/`** - ESLint Configurations
 - **`base.js`**: Base ESLint configuration for all environments.
@@ -375,6 +384,8 @@ Shared utility functions and constants across the monorepo.
 ### Key Technologies
 - **Frontend**: React 19, Vite, TanStack Router, Tailwind CSS 4.x, shadcn/ui, Radix UI
 - **Backend**: Convex, @convex-dev/auth, date-fns/tz for timezone handling, rrule for recurrence
+- **Payments**: Stripe (API version 2025-02-24.acacia) for subscriptions and one-time payments, EUR currency only
+- **Mobile**: React Native, Expo, React Navigation, Deep-linking with custom scheme
 - **Deployment**: Cloudflare Workers with wrangler
 - **Monorepo**: Turborepo with pnpm workspaces
 - **Code Quality**: ESLint 9, TypeScript 5.8, Prettier
@@ -384,9 +395,11 @@ Shared utility functions and constants across the monorepo.
 - Class system: `classTemplates` → `classInstances` (generated from templates)
 - Booking flow: `users` → `bookings` → `classInstances` (customer table deprecated in favor of direct user credits)
 - Credit System: Double-entry ledger with `creditLedger`, `creditTransactions`, and `businessPayouts` tables
+- Subscription System: `subscriptions` table with Stripe integration, `subscriptionEvents` for audit trail
 - Scheduling: Uses rrule for recurrence, timezone-aware with date-fns-tz
 - Venue Management: Categorized venues with `primaryCategory` field and image storage support
 - Pricing: Dynamic pricing rules, credit system with expiration, discount templates
+- Payment Processing: Complete Stripe integration with webhook handling and idempotency
 - Image Storage: Support for multiple images per venue/template with automatic cleanup
 - Audit trail: All entities have created/updated fields and soft delete support
 
@@ -620,11 +633,53 @@ The platform implements a sophisticated double-entry accounting system for credi
 - **Reconciliation**: `reconcileUserCredits()` ensures user balance consistency
 - **Business Payouts**: Automated payout processing with `businessPayouts` table tracking
 
+### Payment Safety
+- **Credits After Payment**: All credit allocations happen only after payment confirmation
+- **Webhook-Based**: Most allocations via Stripe webhooks (only fire after successful payment)
+- **Status Checks**: Immediate operations verify payment/subscription status before allocating
+- **No Pre-allocation**: Never give credits before payment succeeds (except intentional admin gifts/refunds)
+
 ### Key Features
 - **Real-time Balance Updates**: User and business credit balances updated atomically
 - **Audit Trail**: Complete transaction history with external references
 - **Fee Management**: Dynamic transaction fee calculation based on business settings
-- **Credit Value Tracking**: Each credit purchase includes value (€2 per credit default)
+- **Credit Value Tracking**: Each credit purchase includes value (€2.00 per credit base)
+
+## Complete Stripe Payment System
+
+The platform features a comprehensive Stripe integration for payments and subscriptions:
+
+### Subscription Management
+- **Dynamic Subscriptions**: 5-150 credits/month with slider interface
+- **Tiered Pricing**: 
+  - 5-44 credits: €2.00/credit (no discount)
+  - 45-84 credits: €1.95/credit (2.5% discount)
+  - 85-124 credits: €1.90/credit (5% discount)
+  - 125-150 credits: €1.80/credit (10% discount)
+- **Simplified Updates**: Changes take effect at next billing cycle (no immediate charges/credits)
+- **Smart Reactivation**:
+  - Not expired: Re-enable without charge, optional credit amount change for next billing
+  - Expired: Create new subscription with immediate payment and credits
+
+### One-Time Purchases
+- **Credit Packs**: 5-50 credits with predefined options
+- **Fixed Pricing**: €2.30/credit base with pack-based discounts
+- **Instant Delivery**: Credits available immediately upon successful payment via webhook
+- **Mobile Optimized**: Dedicated purchase screens with pack selection (5, 10, 20, 30, 50 credits)
+- **Safe Allocation**: Credits only allocated after `checkout.session.completed` webhook
+
+### Webhook Processing
+- **Event Handling**: Complete Stripe webhook integration for all payment events
+- **Subscription Events**: `customer.subscription.created`, `.updated`, `.deleted`
+- **Payment Events**: `checkout.session.completed`, `payment_intent.succeeded`
+- **Error Recovery**: Automatic retry and error handling for failed webhooks
+- **Audit Trail**: `subscriptionEvents` table tracks all subscription changes
+
+### Payment Architecture
+- **Customer Management**: Automatic Stripe customer creation with deduplication
+- **Session Creation**: Secure checkout sessions with metadata tracking
+- **Currency**: EUR (€) for all transactions
+- **Test Mode**: Dedicated test credit purchase endpoints for development
 
 ## Venue Category System
 
@@ -723,6 +778,14 @@ The mobile consumer app has been significantly enhanced with comprehensive authe
 The database schema has been expanded with comprehensive business management capabilities:
 
 #### New Tables Added:
+- **Subscriptions**: Complete subscription lifecycle with Stripe integration
+  - Fields: `userId`, `stripeSubscriptionId`, `status`, `currentPeriodEnd`, `creditsPerMonth`
+  - Statuses: `active`, `canceled`, `past_due`, `incomplete`
+- **Subscription Events**: Audit trail for all subscription changes
+  - Tracks: creation, updates, cancellations, reactivations
+- **Credit Transactions**: Enhanced with purchase types and Stripe references
+  - Purchase types: `user_buy`, `subscription_renewal`, `gift`, `refund`
+  - Includes `stripePaymentIntentId` for payment tracking
 - **Business Invitations**: Complete invitation system for team member onboarding
 - **Onboarding Progress**: Step-by-step progress tracking for different user types
 - **System Settings**: Global configuration management with key-value storage
@@ -748,6 +811,24 @@ All venue and template entities now support multiple images:
 
 ## Latest Features and Enhancements (August 2025)
 
+### Simplified Subscription System
+The subscription system has been refactored for clarity and reliability:
+
+#### Subscription Updates:
+- **No Immediate Charges**: Updates take effect at next billing cycle only
+- **No Proration**: Removed complex proration logic to avoid confusion
+- **Clear Messaging**: Users know exactly when changes take effect
+
+#### Subscription Reactivation:
+- **Not Expired**: Re-enable without charge, can change amount for next billing
+- **Expired**: Create new subscription with immediate payment and credits
+- **Safe Payment**: Credits only allocated after successful payment (`payment_behavior: 'error_if_incomplete'`)
+
+#### Pricing Display:
+- **Accurate Pricing**: All prices shown with `.toFixed(2)` for exact amounts (€97.50, not €98)
+- **EUR Only**: Consistent EUR currency throughout the system
+- **Clear Tiers**: 5-44 (€2.00), 45-84 (€1.95), 85-124 (€1.90), 125-150 (€1.80) per credit
+
 ### Complete Booking System Implementation
 A comprehensive booking management system has been implemented across the platform:
 
@@ -763,6 +844,7 @@ A comprehensive booking management system has been implemented across the platfo
 - **Booking Service**: `packages/api/services/bookingService.ts` manages booking lifecycle with pagination and cancellation
 - **Discount Integration**: Automatic best discount calculation during booking flow
 - **Refund Processing**: Intelligent refund calculation based on cancellation timing and policies
+- **Payment Safety**: Credits only allocated after payment confirmation via webhooks
 
 #### Enhanced Class Discovery:
 - **Class Cards**: Rich class display cards with booking actions and availability information
@@ -779,9 +861,39 @@ A comprehensive booking management system has been implemented across the platfo
 ### Mobile App Feature Completeness:
 - **Authentication Flow**: Complete sign-in, registration, and location gating system
 - **Booking Management**: Full booking lifecycle from discovery to cancellation
-- **Credit Display**: Real-time credit balance and transaction history
+- **Payment Integration**: Complete Stripe payment flows with dedicated screens
+- **Credit Management**: Real-time balance display with expiration warnings
+- **Subscription Management**: View, cancel, and reactivate subscriptions in-app
+- **Deep-Linking**: Custom `kymaclub://` scheme for navigation from notifications
 - **QR Scanner**: Advanced QR code scanning for quick class check-ins
 - **Timezone Consistency**: All times displayed in Europe/Athens timezone for consistency
+
+## Deep-Linking System
+
+The mobile app implements a comprehensive deep-linking architecture:
+
+### URL Scheme
+- **Custom Scheme**: `kymaclub://` for app-specific links
+- **Web Fallback**: `https://kymaclub.gr` for universal links
+
+### Supported Routes
+- **Class Details**: `kymaclub://class/:classId` - Opens specific class view
+- **Venue Details**: `kymaclub://venue/:venueId` - Opens venue information
+- **Booking Details**: `kymaclub://booking/:bookingId` - Opens booking management
+- **Payment Success**: `kymaclub://payment/success` - Post-payment confirmation
+- **Payment Cancel**: `kymaclub://payment/cancel` - Payment cancellation handling
+- **Subscription Management**: `kymaclub://subscription` - Opens subscription settings
+
+### Integration Points
+- **Push Notifications**: Deep links embedded in notification payloads
+- **Stripe Redirects**: Return URLs for payment success/failure
+- **Email Links**: Direct navigation to specific app screens
+- **QR Codes**: Encoded deep links for quick actions
+
+### Implementation
+- **URL Parsing**: `parseDeepLink()` utility for route extraction
+- **Link Generation**: `generateDeepLink()` for creating typed links
+- **Navigation Handler**: Automatic routing to appropriate screens
 
 ### Service Layer Architecture:
 - **Modular Services**: Each domain (booking, credit, class, venue) has dedicated service modules

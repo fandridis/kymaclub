@@ -38,7 +38,14 @@ export type SubscriptionPlan = keyof typeof SUBSCRIPTION_PLANS;
 
 /**
  * Get or create a Stripe customer for a user
- * This utility function prevents creating duplicate customers
+ * This utility function prevents creating duplicate customers by checking for existing customers first
+ * 
+ * @param stripe - Initialized Stripe client instance
+ * @param userEmail - User's email address for customer creation/lookup
+ * @param userId - Convex user ID for metadata and database updates
+ * @param ctx - Convex action context for running mutations
+ * @returns Promise resolving to customer object and boolean indicating if customer was newly created
+ * @throws Error if Stripe operations fail
  */
 async function getOrCreateStripeCustomer(
   stripe: Stripe,
@@ -55,8 +62,6 @@ async function getOrCreateStripeCustomer(
 
     if (existingCustomers.data.length > 0) {
       const existingCustomer = existingCustomers.data[0];
-      console.log(`Found existing Stripe customer: ${existingCustomer?.id} for user: ${userId}`);
-
       // Update the user's stripeCustomerId if it's not set
       await ctx.runMutation(internal.mutations.core.updateStripeCustomerId, {
         userId,
@@ -74,8 +79,6 @@ async function getOrCreateStripeCustomer(
       },
     });
 
-    console.log(`Created new Stripe customer: ${newCustomer.id} for user: ${userId}`);
-
     // Update the user's stripeCustomerId
     await ctx.runMutation(internal.mutations.core.updateStripeCustomerId, {
       userId,
@@ -84,7 +87,6 @@ async function getOrCreateStripeCustomer(
 
     return { customer: newCustomer, isNew: true };
   } catch (error) {
-    console.error("Error in getOrCreateStripeCustomer:", error);
     throw new Error(`Failed to get or create Stripe customer: ${(error as Error).message}`);
   }
 }
@@ -94,7 +96,13 @@ async function getOrCreateStripeCustomer(
  */
 export const paymentsService = {
   /**
-   * Create dynamic subscription checkout for 5-150 credits
+   * Create dynamic subscription checkout session for 5-150 credits
+   * Uses centralized pricing logic with tiered discounts based on credit amount
+   * 
+   * @param ctx - Convex action context
+   * @param args - Object containing creditAmount (5-150), userId, and userEmail
+   * @returns Promise resolving to checkout URL and session ID
+   * @throws Error for invalid parameters, missing environment variables, or Stripe failures
    */
   async createDynamicSubscriptionCheckout(
     ctx: ActionCtx,
@@ -102,12 +110,20 @@ export const paymentsService = {
   ) {
     const { creditAmount, userId, userEmail } = args;
 
-    // Validate credit amount
+    // Validate input parameters
+    if (!creditAmount || !userId || !userEmail) {
+      throw new Error("Missing required parameters: creditAmount, userId, and userEmail are required");
+    }
+
     if (!validateCreditAmount(creditAmount)) {
       throw new Error("Invalid credit amount. Must be between 5-150 credits in increments of 5.");
     }
 
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error("Stripe secret key not configured");
+    }
+
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: "2025-02-24.acacia",
     });
 
@@ -129,7 +145,7 @@ export const paymentsService = {
       line_items: [
         {
           price_data: {
-            currency: "usd",
+            currency: "eur",
             product_data: {
               name: getSubscriptionProductName(creditAmount),
               description: getSubscriptionProductDescription(creditAmount),
@@ -167,7 +183,13 @@ export const paymentsService = {
   },
 
   /**
-   * Create predefined plan subscription checkout
+   * Create predefined plan subscription checkout session
+   * Uses pre-configured subscription plans (basic, standard, premium)
+   * 
+   * @param ctx - Convex action context
+   * @param args - Object containing planId, userId, and userEmail
+   * @returns Promise resolving to checkout URL and session ID
+   * @throws Error for invalid plan ID, missing parameters, or Stripe failures
    */
   async createPredefinedSubscriptionCheckout(
     ctx: ActionCtx,
@@ -175,7 +197,20 @@ export const paymentsService = {
   ) {
     const { planId, userId, userEmail } = args;
 
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    // Validate input parameters
+    if (!planId || !userId || !userEmail) {
+      throw new Error("Missing required parameters: planId, userId, and userEmail are required");
+    }
+
+    if (!SUBSCRIPTION_PLANS[planId]) {
+      throw new Error(`Invalid plan ID: ${planId}`);
+    }
+
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error("Stripe secret key not configured");
+    }
+
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: "2025-02-24.acacia",
     });
 
@@ -197,7 +232,7 @@ export const paymentsService = {
       line_items: [
         {
           price_data: {
-            currency: "usd",
+            currency: "eur",
             product_data: {
               name: plan.planName,
               description: `${plan.credits} credits every month`,
@@ -235,19 +270,39 @@ export const paymentsService = {
   },
 
   /**
-   * Get current user subscription
+   * Get current user subscription information
+   * 
+   * @param ctx - Convex action context
+   * @param userId - Convex user ID
+   * @returns Promise resolving to subscription object or null if not found
+   * @throws Error for missing user ID
    */
   async getCurrentSubscription(ctx: ActionCtx, userId: Id<"users">): Promise<any> {
+    if (!userId) {
+      throw new Error("User ID is required");
+    }
+
     return await ctx.runQuery(internal.queries.payments.getUserSubscription, {
       userId,
     });
   },
 
   /**
-   * Cancel subscription at period end
+   * Cancel user subscription at the end of current billing period
+   * Does not immediately cancel - allows user to use credits until period ends
+   * 
+   * @param ctx - Convex action context
+   * @param args - Object containing userId
+   * @returns Promise resolving to success object
+   * @throws Error for missing user ID, no active subscription, or Stripe failures
    */
   async cancelSubscription(ctx: ActionCtx, args: { userId: Id<"users"> }) {
     const { userId } = args;
+
+    // Validate input parameters
+    if (!userId) {
+      throw new Error("User ID is required");
+    }
 
     const subscription = await ctx.runQuery(
       internal.queries.payments.getUserSubscription,
@@ -258,7 +313,11 @@ export const paymentsService = {
       throw new Error("No active subscription found");
     }
 
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error("Stripe secret key not configured");
+    }
+
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: "2025-02-24.acacia",
     });
 
@@ -276,16 +335,31 @@ export const paymentsService = {
   },
 
   /**
-   * Reactivate a canceled subscription with immediate full charge and new billing cycle
+   * Reactivate a canceled subscription with simplified billing:
+   * - If not expired: Just re-enable, no charge, no credits (can update amount for next billing)
+   * - If expired: Create new subscription with full charge and credits
+   * 
+   * @param ctx - Convex action context
+   * @param args - Object containing userId and newCreditAmount
+   * @returns Promise resolving to object with success status, charge amount, credits allocated, billing date, and message
+   * @throws Error for missing user ID, no subscription to reactivate, or Stripe failures
    */
-  async reactivateSubscription(ctx: ActionCtx, args: { userId: Id<"users"> }): Promise<{
+  async reactivateSubscription(ctx: ActionCtx, args: { userId: Id<"users">, newCreditAmount: number }): Promise<{
     success: boolean;
     chargeAmount: number;
     creditsAllocated: number;
     newBillingDate: string;
     message: string;
   }> {
-    const { userId } = args;
+    const { userId, newCreditAmount } = args;
+
+    // Validate input parameters
+    if (!userId) {
+      throw new Error("User ID is required");
+    }
+    if (!newCreditAmount || !validateCreditAmount(newCreditAmount)) {
+      throw new Error("Valid credit amount is required (5-150 in increments of 5)");
+    }
 
     const subscription = await ctx.runQuery(
       internal.queries.payments.getUserSubscription,
@@ -293,117 +367,215 @@ export const paymentsService = {
     );
 
     if (!subscription || !subscription.cancelAtPeriodEnd) {
-      throw new Error("No subscription to reactivate");
+      throw new Error("No cancelled subscription to reactivate");
     }
 
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error("Stripe secret key not configured");
+    }
+
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: "2025-02-24.acacia",
     });
 
-    // Cancel the old subscription and create a completely new one
-    // This ensures we charge the full amount without Stripe's proration logic interfering
-
     const now = Date.now();
-    const newPeriodEnd = now + (30 * 24 * 60 * 60 * 1000); // 30 days from now
+    const subscriptionExpired = subscription.currentPeriodEnd < now;
+    const creditsDifference = newCreditAmount - subscription.creditAmount;
+    const isChangingCredits = creditsDifference !== 0;
 
-    // Step 1: Get the original subscription details from Stripe to recreate it
+    // Get the original subscription details from Stripe
     const stripeSubscriptionDetails = await stripe.subscriptions.retrieve(subscription.stripeSubscriptionId);
-    const priceId = stripeSubscriptionDetails.items.data[0]!.price!.id;
 
-    // Step 2: Cancel the existing subscription immediately (no proration)
-    await stripe.subscriptions.cancel(subscription.stripeSubscriptionId, {
-      prorate: false, // Don't prorate the cancellation
-    });
+    // Calculate pricing for the NEW credit amount
+    const newPricing = calculateSubscriptionPricing(newCreditAmount);
 
-    // Step 3: Create a completely new subscription with immediate billing
-    const newStripeSubscription = await stripe.subscriptions.create({
-      customer: stripeSubscriptionDetails.customer as string,
-      items: [{ price: priceId }],
-      // Start billing immediately
-      billing_cycle_anchor: Math.floor(now / 1000),
-      // Ensure immediate invoice
-      collection_method: 'charge_automatically',
-      // Copy over the metadata from old subscription
-      metadata: {
-        convexUserId: subscription.userId,
-        creditAmount: subscription.creditAmount.toString(),
-        priceInCents: subscription.pricePerCycle.toString(),
-        dynamicSubscription: "true",
-        reactivation: "true", // Flag this as a reactivation
-      },
-    });
+    // CASE 1: Subscription hasn't expired yet - just re-enable with new amount for next billing
+    if (!subscriptionExpired) {
+      // If changing credits, create a new price
+      if (isChangingCredits) {
+        const newStripePrice = await stripe.prices.create({
+          product_data: {
+            name: `Monthly Subscription - ${newCreditAmount} Credits`,
+          },
+          unit_amount: newPricing.priceInCents,
+          currency: "eur",
+          recurring: {
+            interval: "month",
+            interval_count: 1,
+          },
+          metadata: {
+            creditAmount: newCreditAmount.toString(),
+            pricePerCredit: newPricing.pricePerCredit.toString(),
+            dynamicSubscription: "true",
+          },
+        });
 
-    // Update our database with the new subscription ID and billing period
-    await ctx.runMutation(internal.mutations.payments.updateSubscription, {
-      stripeSubscriptionId: subscription.stripeSubscriptionId, // Update the old record
-      status: "canceled", // Mark old subscription as canceled
-    });
+        // Update the subscription with new price and re-enable
+        await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+          cancel_at_period_end: false, // Re-enable
+          items: [{
+            id: stripeSubscriptionDetails.items.data[0]!.id,
+            price: newStripePrice.id,
+          }],
+          proration_behavior: 'none', // No proration - changes apply next billing
+        });
 
-    // Create a new subscription record for the new Stripe subscription
-    const newDatabaseSubscriptionId = await ctx.runMutation(internal.mutations.payments.createSubscription, {
-      userId: subscription.userId,
-      stripeCustomerId: stripeSubscriptionDetails.customer as string,
-      stripeSubscriptionId: newStripeSubscription.id,
-      stripePriceId: priceId,
-      stripeProductId: stripeSubscriptionDetails.items.data[0]!.price!.product as string,
-      status: "active",
-      currentPeriodStart: now,
-      currentPeriodEnd: newPeriodEnd,
-      billingCycleAnchor: now,
-      creditAmount: subscription.creditAmount,
-      pricePerCycle: subscription.pricePerCycle,
-      currency: subscription.currency || "usd",
-      planName: subscription.planName,
-      startDate: now,
-    });
+        // Update our database
+        await ctx.runMutation(internal.mutations.payments.updateSubscription, {
+          stripeSubscriptionId: subscription.stripeSubscriptionId,
+          creditAmount: newCreditAmount,
+          pricePerCycle: newPricing.priceInCents,
+          cancelAtPeriodEnd: false,
+          planName: `Monthly Subscription - ${newCreditAmount} Credits`,
+        });
+      } else {
+        // Just re-enable without changing anything
+        await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+          cancel_at_period_end: false,
+        });
 
-    // Allocate credits immediately since user is paying full amount now
-    const creditTransactionId = await ctx.runMutation(
-      internal.mutations.credits.addCreditsForSubscription,
-      {
-        userId,
-        amount: subscription.creditAmount,
-        subscriptionId: newDatabaseSubscriptionId,
-        description: `Subscription reactivated - ${subscription.planName}`,
+        // Update our database
+        await ctx.runMutation(internal.mutations.payments.updateSubscription, {
+          stripeSubscriptionId: subscription.stripeSubscriptionId,
+          cancelAtPeriodEnd: false,
+        });
       }
-    );
 
-    // Record the reactivation event for the NEW subscription
-    await ctx.runMutation(internal.mutations.payments.recordSubscriptionEvent, {
-      stripeEventId: `reactivation_${now}`, // Generate unique event ID
-      eventType: "subscription.reactivated",
-      stripeSubscriptionId: newStripeSubscription.id, // Use NEW subscription ID
-      subscriptionId: newDatabaseSubscriptionId, // Use NEW database ID
-      userId,
-      creditsAllocated: subscription.creditAmount,
-      creditTransactionId,
-      eventData: {
-        reactivatedAt: now,
-        newPeriodStart: now,
-        newPeriodEnd: newPeriodEnd,
-        chargeAmount: subscription.pricePerCycle,
-        oldStripeSubscriptionId: subscription.stripeSubscriptionId, // Track the old one
-        newStripeSubscriptionId: newStripeSubscription.id,
-        manuallyProcessed: true, // Flag to indicate we handled credit allocation
-      },
-    });
+      const nextBillingDate = new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric'
+      });
 
-    const newBillingDate = new Date(newPeriodEnd).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
-    });
+      return {
+        success: true,
+        chargeAmount: 0,
+        creditsAllocated: 0,
+        newBillingDate: nextBillingDate,
+        message: isChangingCredits
+          ? `Subscription re-enabled with ${newCreditAmount} credits/month for €${(newPricing.priceInCents / 100).toFixed(2)}/month. Changes take effect on ${nextBillingDate}.`
+          : `Subscription re-enabled! No charge needed. Next billing: ${nextBillingDate}`,
+      };
+    }
 
-    return {
-      success: true,
-      chargeAmount: subscription.pricePerCycle / 100, // Convert cents to euros
-      creditsAllocated: subscription.creditAmount,
-      newBillingDate,
-      message: `Subscription reactivated! You've been charged $${(subscription.pricePerCycle / 100).toFixed(2)} and received ${subscription.creditAmount} credits. Next billing: ${newBillingDate}`,
-    };
+    // CASE 2: Subscription has expired - create a new subscription with full charge
+    else {
+      // Create new product and price
+      const newStripeProduct = await stripe.products.create({
+        name: `Monthly Subscription - ${newCreditAmount} Credits`,
+        description: `${newCreditAmount} credits every month at €${newPricing.pricePerCredit.toFixed(2)} per credit`,
+        metadata: {
+          creditAmount: newCreditAmount.toString(),
+          dynamicSubscription: "true",
+        },
+      });
+
+      const newStripePrice = await stripe.prices.create({
+        product: newStripeProduct.id,
+        unit_amount: newPricing.priceInCents,
+        currency: "eur",
+        recurring: {
+          interval: "month",
+          interval_count: 1,
+        },
+        metadata: {
+          creditAmount: newCreditAmount.toString(),
+          pricePerCredit: newPricing.pricePerCredit.toString(),
+          dynamicSubscription: "true",
+        },
+      });
+
+      // Cancel the old expired subscription completely
+      await stripe.subscriptions.cancel(subscription.stripeSubscriptionId, {
+        prorate: false,
+        invoice_now: false,
+      });
+
+      // Cancel the old expired subscription completely
+      await stripe.subscriptions.cancel(subscription.stripeSubscriptionId, {
+        prorate: false,
+        invoice_now: false,
+      });
+
+      // Create a brand new subscription with immediate payment
+      const newStripeSubscription = await stripe.subscriptions.create({
+        customer: stripeSubscriptionDetails.customer as string,
+        items: [{ price: newStripePrice.id }],
+        payment_behavior: 'error_if_incomplete', // This ensures payment is collected immediately
+        metadata: {
+          convexUserId: subscription.userId,
+          creditAmount: newCreditAmount.toString(),
+          priceInCents: newPricing.priceInCents.toString(),
+          dynamicSubscription: "true",
+        },
+      });
+
+      const newPeriodEnd = now + (30 * 24 * 60 * 60 * 1000); // 30 days from now
+
+      // Update our database - mark old subscription as canceled
+      await ctx.runMutation(internal.mutations.payments.updateSubscription, {
+        stripeSubscriptionId: subscription.stripeSubscriptionId,
+        status: "canceled",
+      });
+
+      // Only create new record and allocate credits if payment succeeded
+      if (newStripeSubscription.status === 'active') {
+        // Create a new subscription record
+        const newDatabaseSubscriptionId = await ctx.runMutation(internal.mutations.payments.createSubscription, {
+          userId: subscription.userId,
+          stripeCustomerId: stripeSubscriptionDetails.customer as string,
+          stripeSubscriptionId: newStripeSubscription.id,
+          stripePriceId: newStripePrice.id,
+          stripeProductId: newStripeProduct.id,
+          status: "active",
+          currentPeriodStart: now,
+          currentPeriodEnd: newPeriodEnd,
+          billingCycleAnchor: now,
+          creditAmount: newCreditAmount,
+          pricePerCycle: newPricing.priceInCents,
+          currency: "eur",
+          planName: `Monthly Subscription - ${newCreditAmount} Credits`,
+          startDate: now,
+        });
+
+        // Allocate credits immediately since payment succeeded
+        await ctx.runMutation(
+          internal.mutations.credits.addCreditsForSubscription,
+          {
+            userId,
+            amount: newCreditAmount,
+            subscriptionId: newDatabaseSubscriptionId,
+            description: `New subscription - ${newCreditAmount} credits`,
+          }
+        );
+
+        const newBillingDate = new Date(newPeriodEnd).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric'
+        });
+
+        return {
+          success: true,
+          chargeAmount: newPricing.priceInCents / 100,
+          creditsAllocated: newCreditAmount,
+          newBillingDate,
+          message: `New subscription started! You've been charged €${(newPricing.priceInCents / 100).toFixed(2)} and received ${newCreditAmount} credits.`,
+        };
+      } else {
+        // Payment failed or requires further action
+        throw new Error("Payment failed. Please update your payment method and try again.");
+      }
+    }
   },
 
   /**
    * Update existing subscription to new credit amount
+   * Simple update - changes take effect at next billing cycle
+   * No immediate charges or credits
+   * 
+   * @param ctx - Convex action context
+   * @param args - Object containing userId and newCreditAmount (5-150)
+   * @returns Promise resolving to object with success status, new amount, price, and message
+   * @throws Error for missing parameters, invalid credit amount, no active subscription, or Stripe failures
    */
   async updateSubscription(ctx: ActionCtx, args: { userId: Id<"users">; newCreditAmount: number }): Promise<{
     success: boolean;
@@ -414,9 +586,13 @@ export const paymentsService = {
   }> {
     const { userId, newCreditAmount } = args;
 
-    // Validate credit amount (same validation as dynamic subscriptions)
-    if (newCreditAmount < 5 || newCreditAmount > 150) {
-      throw new Error("Credit amount must be between 5 and 150 credits");
+    // Validate input parameters
+    if (!newCreditAmount || !userId) {
+      throw new Error("Missing required parameters: newCreditAmount and userId are required");
+    }
+
+    if (!validateCreditAmount(newCreditAmount)) {
+      throw new Error("Credit amount must be between 5 and 150 credits in increments of 5");
     }
 
     const subscription = await ctx.runQuery(
@@ -433,39 +609,16 @@ export const paymentsService = {
       throw new Error("New credit amount is the same as current subscription");
     }
 
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error("Stripe secret key not configured");
+    }
+
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: "2025-02-24.acacia",
     });
 
-    // Calculate new pricing
-    const calculateDynamicPricing = (creditAmount: number): {
-      priceInCents: number;
-      pricePerCredit: number;
-      creditAmount: number;
-    } => {
-      if (creditAmount < 5 || creditAmount > 150) {
-        throw new Error("Credit amount must be between 5 and 150");
-      }
-
-      let pricePerCredit: number;
-      if (creditAmount <= 40) {
-        pricePerCredit = 2.00; // €2.00 per credit for 5-40 credits
-      } else if (creditAmount <= 80) {
-        pricePerCredit = 1.95; // €1.95 per credit for 41-80 credits (2.5% discount)
-      } else if (creditAmount <= 120) {
-        pricePerCredit = 1.90; // €1.90 per credit for 81-120 credits (5% discount)
-      } else {
-        pricePerCredit = 1.80; // €1.80 per credit for 121-150 credits (10% discount)
-      }
-
-      return {
-        priceInCents: Math.round(creditAmount * pricePerCredit * 100),
-        pricePerCredit,
-        creditAmount,
-      };
-    };
-
-    const pricing = calculateDynamicPricing(newCreditAmount);
+    // Calculate new pricing using centralized pricing logic
+    const pricing = calculateSubscriptionPricing(newCreditAmount);
 
     // Create a new Stripe price for the new credit amount
     const stripePrice = await stripe.prices.create({
@@ -485,34 +638,20 @@ export const paymentsService = {
       },
     });
 
-    // Update the subscription in Stripe
+    // Get the current subscription to find the item ID
+    const currentStripeSubscription = await stripe.subscriptions.retrieve(subscription.stripeSubscriptionId);
+
+    // Update the subscription in Stripe - changes take effect next billing cycle
     const updatedStripeSubscription = await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
       items: [
         {
-          id: (await stripe.subscriptions.retrieve(subscription.stripeSubscriptionId)).items.data[0]!.id,
+          id: currentStripeSubscription.items.data[0]!.id,
           price: stripePrice.id,
         },
       ],
-      // Prorate the billing - user will be charged/credited the difference immediately
-      proration_behavior: 'always_invoice',
+      // No proration - changes apply at next billing cycle
+      proration_behavior: 'none',
     });
-
-    // Calculate credit difference for immediate allocation
-    const creditDifference = newCreditAmount - subscription.creditAmount;
-    let creditTransactionId = null;
-
-    // If user is upgrading (more credits), allocate the difference immediately
-    if (creditDifference > 0) {
-      creditTransactionId = await ctx.runMutation(
-        internal.mutations.credits.addCreditsForSubscription,
-        {
-          userId,
-          amount: creditDifference,
-          subscriptionId: subscription._id,
-          description: `Subscription upgrade - additional ${creditDifference} credits for ${subscription.planName}`,
-        }
-      );
-    }
 
     // Update our database subscription
     await ctx.runMutation(internal.mutations.payments.updateSubscription, {
@@ -529,36 +668,39 @@ export const paymentsService = {
       stripeSubscriptionId: subscription.stripeSubscriptionId,
       subscriptionId: subscription._id,
       userId,
-      creditsAllocated: creditDifference > 0 ? creditDifference : undefined,
-      creditTransactionId: creditTransactionId || undefined,
       eventData: {
         updatedAt: Date.now(),
         oldCreditAmount: subscription.creditAmount,
         newCreditAmount,
         oldPrice: subscription.pricePerCycle,
         newPrice: pricing.priceInCents,
-        creditDifference,
-        manuallyProcessed: true, // Flag to indicate we handled credit allocation
+        effectiveNextBilling: true, // Indicate changes apply next billing
       },
     });
 
-    const upgradeMessage = creditDifference > 0
-      ? ` You've received ${creditDifference} additional credits immediately.`
-      : creditDifference < 0
-        ? ` Your credit allocation will decrease to ${newCreditAmount} starting next billing cycle.`
-        : '';
+    const nextBillingDate = new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
+    });
 
     return {
       success: true,
       newCreditAmount,
       newPrice: pricing.priceInCents / 100, // Return price in euros
-      creditsAllocated: creditDifference > 0 ? creditDifference : 0,
-      message: `Subscription updated to ${newCreditAmount} credits per month.${upgradeMessage}`,
+      creditsAllocated: 0, // No immediate credits
+      message: `Subscription updated to ${newCreditAmount} credits/month for €${(pricing.priceInCents / 100).toFixed(2)}/month. Changes take effect on ${nextBillingDate}.`,
     };
   },
 
   /**
    * Process all Stripe webhook events (unified endpoint)
+   * Handles subscription lifecycle, payment events, and one-time purchases
+   * Includes duplicate event protection and proper error handling
+   * 
+   * @param ctx - Convex action context
+   * @param args - Object containing webhook signature and payload
+   * @returns Promise resolving to success/error status
+   * @throws Error for missing webhook secret, invalid signature, or processing failures
    */
   async processWebhook(
     ctx: ActionCtx,
@@ -566,54 +708,27 @@ export const paymentsService = {
   ) {
     const { signature, payload } = args;
 
-    console.log("Processing webhook");
-
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
       apiVersion: "2025-02-24.acacia",
     });
 
-    console.log("Stripe instance created");
-
-    console.log("USING THE SECRET", process.env.STRIPE_WEBHOOK_SECRET);
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
-    // Debug logging
-    console.log(`[WEBHOOK DEBUG] ===== Webhook Processing Start =====`);
-    console.log(`[WEBHOOK DEBUG] Webhook secret (first 10 chars): ${webhookSecret?.substring(0, 10)}...`);
-    console.log(`[WEBHOOK DEBUG] Signature (first 20 chars): ${signature?.substring(0, 20)}...`);
-    console.log(`[WEBHOOK DEBUG] Payload length: ${payload?.length} bytes`);
-    console.log(`[WEBHOOK DEBUG] Payload preview: ${payload?.substring(0, 100)}...`);
-    console.log(`[WEBHOOK DEBUG] Full signature: ${signature}`);
-
-    // Check if webhook secret exists
+    // Validate webhook requirements
     if (!webhookSecret) {
-      console.error(`[WEBHOOK DEBUG] ERROR: STRIPE_WEBHOOK_SECRET is not defined!`);
       return { success: false, error: "Webhook secret not configured" };
     }
 
-    // Check if signature exists
     if (!signature) {
-      console.error(`[WEBHOOK DEBUG] ERROR: No signature provided!`);
       return { success: false, error: "No signature provided" };
     }
 
-    // Check if payload exists
     if (!payload) {
-      console.error(`[WEBHOOK DEBUG] ERROR: No payload provided!`);
       return { success: false, error: "No payload provided" };
     }
 
     try {
-      console.log(`[WEBHOOK DEBUG] Attempting to construct Stripe event...`);
       const event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
-
-      console.log(`[WEBHOOK DEBUG] ✅ Event constructed successfully!`);
-      console.log(`[WEBHOOK DEBUG] Processing Stripe event: ${event.type}`);
-
-      // Debug: List all events we're receiving 
-      if (event.type.includes('subscription') || event.type.includes('customer')) {
-        console.log(`[WEBHOOK DEBUG] 🎯 Subscription/Customer event detected: ${event.type}`);
-      }
 
       // Check for duplicate events
       const existingEvent = await ctx.runQuery(
@@ -622,7 +737,6 @@ export const paymentsService = {
       );
 
       if (existingEvent) {
-        console.log(`Event ${event.id} already processed, skipping`);
         return { success: true };
       }
 
@@ -630,7 +744,6 @@ export const paymentsService = {
       switch (event.type) {
         // Subscription events
         case "customer.subscription.created":
-          console.log(`[WEBHOOK DEBUG] 🎉 Received customer.subscription.created event`);
           await this.handleSubscriptionCreated(ctx, event);
           break;
 
@@ -643,7 +756,6 @@ export const paymentsService = {
           break;
 
         case "invoice.payment_succeeded":
-          console.log(`[WEBHOOK DEBUG] 🎯 Subscription/Customer event detected: invoice.payment_succeeded`);
           await this.handlePaymentSucceeded(ctx, event);
           break;
 
@@ -663,12 +775,11 @@ export const paymentsService = {
         // Charge events (can be from both subscriptions and one-time payments)
         case "charge.succeeded":
         case "charge.updated":
-          console.log(`Charge event ${event.type} processed successfully (no action needed)`);
+          // No action needed for charge events
           break;
 
         // Invoice events (different variations Stripe sends)
         case "invoice.paid":
-          console.log(`[WEBHOOK DEBUG] 🎯 Invoice paid event detected - treating as invoice.payment_succeeded`);
           await this.handlePaymentSucceeded(ctx, event);
           break;
 
@@ -679,12 +790,12 @@ export const paymentsService = {
         //   break;
 
         default:
-          console.log(`Unhandled Stripe event type: ${event.type}`);
+          // Unhandled event types are logged but don't cause errors
+          break;
       }
 
       return { success: true };
     } catch (error) {
-      console.error("Stripe webhook error:", error);
       return { success: false, error: (error as Error).message };
     }
   },
@@ -697,50 +808,31 @@ export const paymentsService = {
     const userId = subscription.metadata?.convexUserId;
     const isDynamicSubscription = subscription.metadata?.dynamicSubscription === "true";
 
-    console.log(`[SUBSCRIPTION DEBUG] ===== Processing subscription created =====`);
-    console.log(`[SUBSCRIPTION DEBUG] Subscription ID: ${subscription.id}`);
-    console.log(`[SUBSCRIPTION DEBUG] User ID from metadata: ${userId}`);
-    console.log(`[SUBSCRIPTION DEBUG] Is dynamic subscription: ${isDynamicSubscription}`);
-    console.log(`[SUBSCRIPTION DEBUG] Full metadata:`, JSON.stringify(subscription.metadata, null, 2));
 
     if (!userId) {
-      console.error("[SUBSCRIPTION DEBUG] ERROR: Missing userId in subscription created event metadata");
-      return;
+      throw new Error("Missing userId in subscription created event metadata");
     }
 
     let creditAmount: number;
     let pricePerCycle: number;
     let planName: string;
 
-    console.log(`[SUBSCRIPTION DEBUG] Parsing subscription data...`);
 
     if (isDynamicSubscription) {
-      console.log(`[SUBSCRIPTION DEBUG] Processing dynamic subscription`);
       // Handle dynamic subscription
       creditAmount = parseInt(subscription.metadata?.creditAmount || "0");
       pricePerCycle = parseInt(subscription.metadata?.priceInCents || "0");
       planName = getSubscriptionProductName(creditAmount);
 
-      console.log(`[SUBSCRIPTION DEBUG] Dynamic subscription data:`, {
-        creditAmount,
-        pricePerCycle,
-        planName
-      });
 
       if (!creditAmount || !pricePerCycle) {
-        console.error("[SUBSCRIPTION DEBUG] ERROR: Missing dynamic subscription metadata", {
-          creditAmount,
-          pricePerCycle
-        });
-        return;
+        throw new Error(`Missing dynamic subscription metadata: creditAmount=${creditAmount}, pricePerCycle=${pricePerCycle}`);
       }
     } else {
-      console.log(`[SUBSCRIPTION DEBUG] Processing predefined plan subscription`);
       // Handle predefined plan subscription
       const planId = subscription.metadata?.planId as SubscriptionPlan;
       if (!planId) {
-        console.error("[SUBSCRIPTION DEBUG] ERROR: Missing planId in predefined subscription metadata");
-        return;
+        throw new Error("Missing planId in predefined subscription metadata");
       }
 
       const plan = SUBSCRIPTION_PLANS[planId];
@@ -748,31 +840,8 @@ export const paymentsService = {
       pricePerCycle = plan.priceInCents;
       planName = plan.planName;
 
-      console.log(`[SUBSCRIPTION DEBUG] Predefined plan data:`, {
-        planId,
-        creditAmount,
-        pricePerCycle,
-        planName
-      });
     }
 
-    console.log(`[SUBSCRIPTION DEBUG] About to create subscription in database...`);
-    console.log(`[SUBSCRIPTION DEBUG] Subscription creation args:`, {
-      userId,
-      stripeCustomerId: subscription.customer,
-      stripeSubscriptionId: subscription.id,
-      stripePriceId: subscription.items.data[0]!.price!.id,
-      stripeProductId: subscription.items.data[0]!.price!.product,
-      status: subscription.status,
-      currentPeriodStart: subscription.current_period_start * 1000,
-      currentPeriodEnd: subscription.current_period_end * 1000,
-      billingCycleAnchor: new Date(subscription.current_period_start * 1000).getDate(),
-      creditAmount,
-      pricePerCycle,
-      currency: "eur",
-      planName,
-      startDate: Date.now(),
-    });
 
     let databaseSubscriptionId: Id<"subscriptions">;
     try {
@@ -793,10 +862,8 @@ export const paymentsService = {
         startDate: Date.now(),
       });
 
-      console.log(`[SUBSCRIPTION DEBUG] ✅ Successfully created subscription record in database: ${databaseSubscriptionId}`);
     } catch (error) {
-      console.error(`[SUBSCRIPTION DEBUG] ❌ ERROR creating subscription in database:`, error);
-      throw error;
+      throw new Error(`Failed to create subscription in database: ${(error as Error).message}`);
     }
 
     // Record the event
@@ -823,9 +890,8 @@ export const paymentsService = {
     );
 
     if (!existingSubscription) {
-      console.warn(`Subscription ${subscription.id} not found during update webhook. This might be an out-of-order webhook.`);
-      console.warn(`Skipping subscription update - will be handled when created event arrives.`);
-      return; // Skip this update, let the created event handle it
+      // Subscription not found - might be out-of-order webhook, skip silently
+      return;
     }
 
     try {
@@ -839,8 +905,7 @@ export const paymentsService = {
         endedAt: subscription.ended_at ? subscription.ended_at * 1000 : undefined,
       });
     } catch (error) {
-      console.error(`Error updating subscription ${subscription.id}:`, error);
-      throw error;
+      throw new Error(`Failed to update subscription ${subscription.id}: ${(error as Error).message}`);
     }
 
     // Record the event
@@ -867,9 +932,8 @@ export const paymentsService = {
     );
 
     if (!existingSubscription) {
-      console.warn(`Subscription ${subscription.id} not found during delete webhook. This might be an out-of-order webhook.`);
-      console.warn(`Skipping subscription deletion - will be handled when created event arrives.`);
-      return; // Skip this update, let the created event handle it
+      // Subscription not found - might be out-of-order webhook, skip silently
+      return;
     }
 
     try {
@@ -879,8 +943,7 @@ export const paymentsService = {
         endedAt: Date.now(),
       });
     } catch (error) {
-      console.error(`Error updating subscription ${subscription.id}:`, error);
-      throw error;
+      throw new Error(`Failed to delete subscription ${subscription.id}: ${(error as Error).message}`);
     }
 
     // Record the event
@@ -898,11 +961,7 @@ export const paymentsService = {
    * Handle payment succeeded webhook
    */
   async handlePaymentSucceeded(ctx: ActionCtx, event: Stripe.Event) {
-    console.log(`[PAYMENT DEBUG] ===== Processing payment succeeded =====`);
     const invoice = event.data.object as Stripe.Invoice;
-
-    console.log(`[PAYMENT DEBUG] Invoice billing reason: ${invoice.billing_reason}`);
-    console.log(`[PAYMENT DEBUG] Invoice subscription ID: ${invoice.subscription}`);
 
     if (invoice.subscription && (
       invoice.billing_reason === "subscription_cycle" ||
@@ -914,7 +973,6 @@ export const paymentsService = {
         { stripeSubscriptionId: invoice.subscription as string }
       );
 
-      console.log(`[PAYMENT DEBUG] Found subscription:`, subscription ? `${subscription._id}` : 'null');
 
       if (subscription) {
         // Check if this payment was already processed manually (to prevent double allocation)
@@ -923,7 +981,6 @@ export const paymentsService = {
         });
 
         if (recentEvents) {
-          console.log(`[PAYMENT DEBUG] Event ${event.id} already processed - skipping`);
           return;
         }
 
@@ -932,7 +989,6 @@ export const paymentsService = {
 
         // Update subscription status to active if it was incomplete
         if (subscription.status === "incomplete") {
-          console.log(`[PAYMENT DEBUG] Updating subscription status from incomplete to active`);
           await ctx.runMutation(internal.mutations.payments.updateSubscription, {
             stripeSubscriptionId: subscription.stripeSubscriptionId,
             status: "active",
@@ -951,7 +1007,6 @@ export const paymentsService = {
             ? `Initial subscription payment - ${subscription.planName}`
             : `Monthly subscription renewal - ${subscription.planName}`;
 
-          console.log(`[PAYMENT DEBUG] Allocating ${subscription.creditAmount} credits for user ${subscription.userId}`);
 
           const creditTransactionId = await ctx.runMutation(
             internal.mutations.credits.addCreditsForSubscription,
@@ -975,8 +1030,6 @@ export const paymentsService = {
             eventData: event.data.object,
           });
         } else {
-          console.log(`[PAYMENT DEBUG] Skipping credit allocation - likely manual operation`);
-
           // Record the event without credit allocation
           await ctx.runMutation(internal.mutations.payments.recordSubscriptionEvent, {
             stripeEventId: event.id,
@@ -992,7 +1045,6 @@ export const paymentsService = {
     } else if (invoice.subscription && invoice.billing_reason === "subscription_update") {
       // This is a subscription update payment (proration) - DO NOT allocate credits
       // Credits are already allocated by the update service logic
-      console.log(`[PAYMENT DEBUG] Subscription update detected - logging event only (no credit allocation)`);
 
       const subscription = await ctx.runQuery(
         internal.queries.payments.getSubscriptionByStripeId,
@@ -1011,7 +1063,6 @@ export const paymentsService = {
           eventData: event.data.object,
         });
 
-        console.log(`[PAYMENT DEBUG] Subscription update event logged (no credits allocated)`);
       }
     }
   },
@@ -1039,16 +1090,19 @@ export const paymentsService = {
           userId: subscription.userId,
           eventData: event.data.object,
         });
-      } else {
-        console.warn(`Subscription ${invoice.subscription} not found for payment failed event`);
       }
-    } else {
-      console.warn(`Payment failed event has no subscription ID`);
     }
   },
 
   /**
-   * Create one-time credit purchase checkout
+   * Create one-time credit purchase checkout session
+   * Allows purchasing 1-200 credits as a one-time payment (not subscription)
+   * Uses centralized pricing with discounts for larger packs
+   * 
+   * @param ctx - Convex action context
+   * @param args - Object containing creditAmount (1-200), userId, and userEmail
+   * @returns Promise resolving to checkout URL and session ID
+   * @throws Error for invalid parameters, missing environment variables, or Stripe failures
    */
   async createOneTimeCreditCheckout(
     ctx: ActionCtx,
@@ -1061,13 +1115,9 @@ export const paymentsService = {
       throw new Error("Invalid credit amount. Must be between 1-200 credits.");
     }
 
-    console.log("Creating one-time credit checkout for user", userId, "with credit amount", creditAmount);
-
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
       apiVersion: "2025-02-24.acacia",
     });
-
-    console.log("Stripe instance created");
 
     const pricing = calculateOneTimePricing(creditAmount);
 
@@ -1087,7 +1137,7 @@ export const paymentsService = {
       line_items: [
         {
           price_data: {
-            currency: "usd",
+            currency: "eur",
             product_data: {
               name: getOneTimeProductName(creditAmount),
               description: getOneTimeProductDescription(creditAmount),

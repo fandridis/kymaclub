@@ -106,11 +106,16 @@ export const cancelSubscription = action({
 });
 
 /**
- * Reactivate a canceled subscription with immediate billing
+ * Reactivate a canceled subscription with smart billing
+ * - If subscription hasn't expired and credits unchanged: just re-enable, no charge
+ * - If subscription hasn't expired and credits changed: charge/credit the difference
+ * - If subscription has expired: treat as new subscription
  */
 export const reactivateSubscription = action({
-  args: {},
-  handler: async (ctx): Promise<{
+  args: {
+    newCreditAmount: v.number(), // The credit amount to reactivate with
+  },
+  handler: async (ctx, { newCreditAmount }): Promise<{
     success: boolean;
     chargeAmount: number;
     creditsAllocated: number;
@@ -122,7 +127,7 @@ export const reactivateSubscription = action({
       throw new Error("Must be authenticated");
     }
 
-    return await paymentsService.reactivateSubscription(ctx, { userId });
+    return await paymentsService.reactivateSubscription(ctx, { userId, newCreditAmount });
   },
 });
 

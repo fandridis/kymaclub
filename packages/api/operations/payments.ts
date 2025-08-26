@@ -33,24 +33,25 @@ export const CREDIT_PACKS: CreditPack[] = [
  * Calculate pricing for any credit amount based on tiered pricing
  */
 export function calculateSubscriptionPricing(credits: number): PricingTier {
+  const basePrice = 2.00; // €2.00 base price per credit
   let pricePerCredit: number;
   let discount: number;
 
-  if (credits <= 40) {
-    // 5 to 40 credits: $2.30 per credit
-    pricePerCredit = 2.30;
+  if (credits < 45) {
+    // 5 to 40 credits: €2.00 per credit (no discount)
+    pricePerCredit = basePrice;
     discount = 0;
-  } else if (credits <= 80) {
-    // 45 to 80 credits: $2.30 per credit (2.5% discount)
-    pricePerCredit = 2.30;
+  } else if (credits < 85) {
+    // 45 to 84 credits: €1.95 per credit (2.5% discount)
+    pricePerCredit = 1.95;
     discount = 2.5;
-  } else if (credits <= 120) {
-    // 85 to 120 credits: $2.30 per credit (5% discount)
-    pricePerCredit = 2.30;
+  } else if (credits < 125) {
+    // 85 to 124 credits: €1.90 per credit (5% discount)
+    pricePerCredit = 1.90;
     discount = 5.0;
   } else {
-    // 125 to 150 credits: $2.30 per credit (10% discount)
-    pricePerCredit = 2.30;
+    // 125 to 150 credits: €1.80 per credit (10% discount)
+    pricePerCredit = 1.80;
     discount = 10.0;
   }
 
@@ -84,7 +85,7 @@ export function getSubscriptionProductName(credits: number): string {
  */
 export function getSubscriptionProductDescription(credits: number): string {
   const pricing = calculateSubscriptionPricing(credits);
-  return `${credits} credits every month at $${pricing.pricePerCredit.toFixed(2)} per credit${pricing.discount > 0 ? ` (${pricing.discount}% discount)` : ''}`;
+  return `${credits} credits every month at €${pricing.pricePerCredit.toFixed(2)} per credit${pricing.discount > 0 ? ` (${pricing.discount}% discount)` : ''}`;
 }
 
 /**
