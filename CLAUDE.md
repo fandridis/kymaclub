@@ -189,7 +189,7 @@ React Native mobile application for iOS and Android consumers.
 Shared libraries, utilities, and configurations used across all applications.
 
 #### **`packages/api/`** - Convex Backend API
-Convex backend API providing real-time database and serverless functions.
+Convex backend API providing real-time database and serverless functions with service-layer architecture.
 
 **Tech Stack**: Convex, TypeScript, Vitest, @convex-dev/auth
 
@@ -201,82 +201,96 @@ Convex backend API providing real-time database and serverless functions.
 - **`schema.ts`**: Complete database schema with multi-tenant architecture. Key entities: users, businesses, venues, classTemplates, classInstances, bookings, customers, subscriptions, creditTransactions.
 - **`auth.config.ts`**: Authentication configuration with GitHub OAuth and email/OTP.
 - **`http.ts`**: HTTP endpoints for webhooks and external integrations including Stripe webhook processing.
+- **`utils.ts`**: Core authentication utilities including `getAuthenticatedUserOrThrow`.
 
-**Core System (`convex/core/`):**
-- **`helpers.ts`**: Common database and validation utilities. Exports: `createAuthenticatedMutation`, `throwIfError`.
-- **`domain/errorCodes.ts`**: Centralized error code constants. Exports: `ERROR_CODES`.
-- **`mutations.ts`**: Core business operations. Exports: `createBusiness`, `createBusinessWithVenue`, `updateBusinessSocial`, `updateBusinessDetails`, `updateCurrentUserProfile`.
-- **`mutationHandlers.ts`**: Pure business logic handlers for core operations.
-- **`queries.ts`**: Core data fetching operations.
-- **`utils.ts`**: Core authentication and utility functions.
+**API Layer Structure:**
+- **`mutations/`**: Convex mutation endpoints with argument validation that delegate to services
+  - **`core.ts`**: Business and user profile mutations
+  - **`venues.ts`**: Venue management mutations
+  - **`classTemplates.ts`**: Class template mutations
+  - **`classInstances.ts`**: Class instance mutations
+  - **`bookings.ts`**: Booking management mutations
+  - **`credits.ts`**: Credit system mutations
+  - **`payments.ts`**: Payment processing mutations
+  - **`uploads.ts`**: File upload mutations
+  - **`notifications.ts`**: Notification mutations
 
-**Class Management (`convex/classes/`):**
+- **`queries/`**: Convex query endpoints that delegate to services
+  - **`core.ts`**: User and business queries
+  - **`venues.ts`**: Venue data queries
+  - **`classTemplates.ts`**: Template queries
+  - **`classInstances.ts`**: Instance queries
+  - **`bookings.ts`**: Booking queries
+  - **`credits.ts`**: Credit and transaction queries
+  - **`payments.ts`**: Payment and subscription queries
+  - **`uploads.ts`**: Upload queries
+  - **`notifications.ts`**: Notification queries
 
-- **`templates/`**: Class template management for recurring class types.
-  - **`mutations.ts`**: Template CRUD operations. Exports: `createTemplate`, `updateTemplate`, `deleteTemplate`.
-  - **`mutationHandlers.ts`**: Pure business logic handlers for template operations.
-  - **`queries.ts`**: Template data fetching. Exports: `getTemplates`, `getTemplateById`.
-  - **`domain/operations.ts`**: Template business rule validation. Exports: `prepareCreateTemplate`.
-  - **`domain/validations.ts`**: Template field validation. Exports: `validateName`, `validateCapacity`.
-  - **`domain/rules.ts`**: Template business rules. Exports: `areTemplatesSimilar`.
+- **`actions/`**: External integrations and complex operations
+  - **`payments.ts`**: Stripe integration actions
+  - **`email.ts`**: Email service actions
+  - **`venue.ts`**: External venue operations
 
-- **`instances/`**: Individual class instance management.
-  - **`mutations.ts`**: Instance CRUD operations. Exports: `createInstance`, `updateInstance`.
-  - **`queries.ts`**: Instance queries with calendar integration. Exports: `getInstances`.
-  - **`domain/operations.ts`**: Instance generation and pattern matching. Exports: `generateInstanceTimes`.
-
-**Venue Management (`convex/venues/`):**
-- **`mutations.ts`**: Venue CRUD operations. Exports: `createVenue`, `updateVenue`.
-- **`queries.ts`**: Venue data fetching. Exports: `getVenues`, `getVenueById`.
-- **`domain/operations.ts`**: Venue business logic. Exports: `prepareCreateVenue`.
-
-**Upload Management (`convex/uploads/`):**
-- **`mutations.ts`**: File upload operations. Exports: `generateUploadUrl`, `addVenueImage`, `removeVenueImage`, `addTemplateImage`, `removeTemplateImage`.
-- **`queries.ts`**: Upload-related queries and file access operations.
-- **`uploads.integration.test.ts`**: Integration tests for upload functionality.
-
-**Credit System (`convex/credits/`):**
-- **`mutations.ts`**: Credit purchase and booking operations. Exports: `buyCreditsTest`, `bookClassTest`.
-- **`mutationHelpers.ts`**: Credit ledger and transaction helpers. Exports: `recordCreditPurchase`, `recordBookingLedgerEntries`, `reconcileUserCredits`.
-- **`utils.ts`**: Credit system utilities and exports.
-- **`domain/idempotency.ts`**: Idempotency key generation for transaction safety.
-- **`domain/utils.ts`**: Core credit calculation utilities. Exports: `calculateTransactionFee`.
-- **`expiration.ts`**: Credit expiration handling logic.
-- **`payouts.ts`**: Business payout processing functionality.
-
-**Booking System (`convex/bookings/`):**
-- **`mutations.ts`**: Booking operations and class reservations. Exports: `bookClassTest`.
-- **`domain/`**: Booking business logic and validation rules.
-
-**Services Layer (`packages/api/services/`):**
-- **`bookingService.ts`**: Complete booking management service with pagination and cancellation. Exports: `getCurrentUserBookings`, `cancelBooking`, `getBookingHistory`.
+**Service Layer Architecture (`services/`):**
+- **`coreService.ts`**: Core business operations including business creation and user management. Exports: `createBusinessWithVenue`, `updateBusinessDetails`, `updateCurrentUserProfile`.
+- **`venueService.ts`**: Venue management operations including CRUD and image handling.
+- **`classTemplateService.ts`**: Class template operations with validation and business rules.
+- **`classInstanceService.ts`**: Individual class instance management and calendar integration.
+- **`bookingService.ts`**: Complete booking management with pagination and cancellation. Exports: `getCurrentUserBookings`, `cancelBooking`, `getBookingHistory`.
 - **`creditService.ts`**: Sophisticated credit management system. Exports: `addCredits`, `spendCredits`, `getUserBalance`, `getTransactionHistory`.
 - **`paymentsService.ts`**: Complete Stripe integration service. Exports: `createSubscription`, `updateSubscription`, `cancelSubscription`, `handleStripeWebhook`, `createOneTimePayment`.
-- **`classTemplateService.ts`**: Class template management operations.
-- **`classInstanceService.ts`**: Individual class instance operations.
-- **`venueService.ts`**: Venue management and operations.
 - **`uploadService.ts`**: File upload and image management service.
-- **`coreService.ts`**: Core business operations and user management.
 - **`userService.ts`**: User profile and account management.
+- **`notificationService.ts`**: Notification routing and delivery management.
+- **`emailService.ts`**: Email service integration and template management.
 
-**Operations Layer (`packages/api/operations/`):**
-- **`business.ts`**: Business entity operations and validations.
-- **`classTemplate.ts`**: Class template business logic and rules.
-- **`classInstance.ts`**: Class instance scheduling and management.
+**Business Logic Layer (`operations/`):**
+- **`business.ts`**: Pure business operations for business entity management. Exports: `prepareCreateBusiness`, `createDefaultBusiness`.
+- **`classTemplate.ts`**: Class template business logic and operations.
+- **`classInstance.ts`**: Class instance scheduling and management operations.
 - **`classDiscount.ts`**: Discount calculation and application logic.
-- **`venue.ts`**: Venue operations and category management.
-- **`pricing.ts`**: Dynamic pricing calculations and rules.
-- **`payments.ts`**: Stripe payment processing and subscription logic.
-- **`notifications.ts`**: Notification routing and deep-link generation.
+- **`venue.ts`**: Venue operations and category management logic.
+- **`pricing.ts`**: Dynamic pricing calculations and tiered pricing rules.
+- **`payments.ts`**: Payment pricing operations and validation. Exports: `calculateSubscriptionPricing`, `calculateOneTimePricing`, `validateCreditAmount`.
+- **`notifications.ts`**: Notification routing and deep-link generation logic.
 
-**Type Definitions (`packages/api/types/`):**
+**Business Rules Layer (`rules/`):**
+- **`business.ts`**: Business-level rule validation. Exports: `canOnlyCreateBusinessOnce`.
+- **`classTemplate.ts`**: Template business rule enforcement.
+- **`venue.ts`**: Venue business rule validation.
+- **`booking.ts`**: Booking business rules and constraints.
+- **`core.ts`**: Core system business rules.
+
+**Validation Layer (`validations/`):**
+- **`core.ts`**: Core validation functions returning ValidationResult. Exports: `validateBusinessName`, `validateEmail`, `validateStreet`.
+- **`class.ts`**: Class-related validation functions.
+- **`venue.ts`**: Venue validation functions. Exports: `validateName`, `validateDescription`.
+- **`credit.ts`**: Credit system validation functions.
+
+**Type Definitions (`types/`):**
 - **`booking.ts`**: Comprehensive booking types including `BookingWithDetails`. Exports: booking status enums, cancellation policies.
 - **`credit.ts`**: Credit system types. Exports: `CreditTransactionType`, `CreditTransactionReason`.
 - **`classDiscount.ts`**: Discount system type definitions.
-- **`cancellationPolicy.ts`**: Cancellation policy and refund calculations.
+- **`business.ts`**: Business entity types and configuration.
 - **`businessInvitation.ts`**: Team invitation system types.
 - **`systemSettings.ts`**: Global configuration management types.
 - **`instructor.ts`**: Instructor profile and specialties types.
+- **`classTemplate.ts`**: Class template types and recurrence patterns.
+- **`classInstance.ts`**: Class instance types and scheduling.
+- **`venue.ts`**: Venue types and category definitions.
+- **`user.ts`**: User profile and role types.
+- **`customer.ts`**: Customer profile types.
+- **`notification.ts`**: Notification system types.
+- **`core.ts`**: Core system types including ValidationResult.
+
+**Utility Layer (`utils/`):**
+- **`core.ts`**: Core utility functions. Exports: `throwIfError`.
+- **`errorCodes.ts`**: Centralized error code constants. Exports: `ERROR_CODES`.
+- **`deep-linking.ts`**: Deep-linking utilities for mobile apps. Exports: `generateDeepLink`, `parseDeepLink`.
+- **`pricing.ts`**: Pricing calculation utilities.
+- **`classDiscount.ts`**: Discount calculation utilities.
+- **`timeGeneration.ts`**: Time and scheduling utilities.
+- **`reconciliation.ts`**: Data reconciliation utilities.
 
 **Generated Files (`convex/_generated/`):**
 - **`api.d.ts`**: Auto-generated TypeScript API definitions.
@@ -337,7 +351,13 @@ Shared utility functions and constants across the monorepo.
 
 ### Testing
 - **Backend**: Comprehensive Vitest unit and integration tests in `packages/api`
+  - **Unit Tests**: `packages/api/operations/*.test.ts` for pure business logic testing
+    - **`payments.test.ts`**: Payment pricing calculations and validation logic
+    - **`business.test.ts`**: Business entity operations and validation
+    - **`classTemplate.test.ts`**: Template creation and validation logic
+    - **`venue.test.ts`**: Venue operations and category management
   - **Integration Tests**: `packages/api/integrationTests/` with complete workflow testing
+    - **`payment.integration.test.ts`**: End-to-end payment workflows with Stripe integration
     - **`booking.integration.test.ts`**: End-to-end booking workflows with cancellation and refunds
     - **`credit.integration.test.ts`**: Credit system testing with transaction validation
     - **`classInstance.integration.test.ts`**: Class scheduling and instance management tests
@@ -347,7 +367,7 @@ Shared utility functions and constants across the monorepo.
     - **`helpers.ts`**: Test utilities and shared setup functions for integration testing
 - **Frontend**: Playwright E2E tests for critical user journeys in `apps/web-business/tests`
 - **Mobile**: Maestro test automation for mobile consumer app workflows in `apps/mobile-consumer/maestro-tests`
-- **Testing Strategy**: E2E focus (not component testing) - business logic tested in backend, UI tested end-to-end
+- **Testing Strategy**: Multi-layer approach - unit tests for operations, integration tests for workflows, E2E tests for user journeys
 - When implementing features, verify functionality through manual testing and appropriate test level
 
 ## Architecture Overview
@@ -366,9 +386,9 @@ Shared utility functions and constants across the monorepo.
   - Customer management with emergency contacts and waivers
   - Business payouts and transaction fee processing
   - Upload management with automatic image compression and cleanup
-- API functions organized by domain: `/convex/bookings/`, `/convex/classes/`, `/convex/venues/`, etc.
+- API functions organized by type: `/convex/mutations/`, `/convex/queries/`, `/convex/actions/` with service layer orchestration
 - Schema in `packages/api/convex/schema.ts` with audit fields (`createdAt`, `createdBy`, `updatedAt`, `updatedBy`) and soft deletes (`deleted`, `deletedAt`, `deletedBy`)
-- Follow Convex best practices from `packages/api/.cursor/rules/convex_rules.mdc`
+- Follow Convex best practices with service-layer architecture pattern
 
 ### Frontend Architecture
 - **Business App**: React 19 + Vite + TanStack Router with Cloudflare Workers deployment
@@ -425,13 +445,14 @@ Shared utility functions and constants across the monorepo.
 - Always use the new function syntax with explicit `args` and `returns` validators
 - Use `internalQuery`, `internalMutation`, `internalAction` for private functions
 - Database queries should use indexes defined in schema, avoid `.filter()`
-- Follow the **Handler-Based Architecture Pattern** for all new API endpoints:
-  - **Mutations**: `mutations.ts` exports arg schemas and thin wrapper functions
-  - **Handlers**: `mutationHandlers.ts` contains pure business logic functions  
-  - **Validations**: `validations.ts` has field validation and authorization helpers
-  - **Queries**: `queries.ts` exports arg schemas and thin wrapper functions
-  - **Query Handlers**: `queryHandlers.ts` contains data fetching logic
-  - Use centralized `ERROR_CODES` from `core/errorCodes.ts` for consistent error handling
+- Follow the **Service-Layer Architecture Pattern** for all new API endpoints:
+  - **Mutations**: Define argument schemas and delegate to services (`convex/mutations/`)
+  - **Queries**: Define query schemas and delegate to services (`convex/queries/`)  
+  - **Services**: Orchestrate business logic, call operations and rules (`services/`)
+  - **Operations**: Pure business logic operations and transformations (`operations/`)
+  - **Rules**: Business rule validation that throws ConvexError (`rules/`)
+  - **Validations**: Input validation returning ValidationResult (`validations/`)
+  - Use centralized `ERROR_CODES` from `utils/errorCodes.ts` for consistent error handling
 - Type safety: Export TypeScript types using `Infer<typeof argSchema>` pattern
 
 ### Frontend Development
@@ -459,12 +480,13 @@ Shared utility functions and constants across the monorepo.
 - **Date-fns v4 Implementation**: Uses `format(date, pattern, { in: tz('Europe/Athens') })` for consistent timezone display
 - **No User Preference**: Timezone is not configurable - always shows Greek local time
 
-### Domain Architecture 
-- Pure business logic separated in domain-specific folders within API endpoints (e.g., `classes/templates/domain/`)
-- Use cases return command objects rather than executing side effects (e.g., `prepareCreateBooking()`)
-- Domain functions are pure and testable with no external dependencies
-- Business rules implement complex pricing, cancellation policies, and booking validation
-- Handler-based architecture separates API concerns from business logic
+### Service-Layer Architecture 
+- Business logic orchestrated through dedicated service layer (`services/`)
+- Pure operations separated into testable functions (`operations/`)
+- Business rules enforced through validation layer (`rules/`)
+- Input validation handled separately from business logic (`validations/`)
+- Clear separation between API layer (mutations/queries) and business logic
+- Services coordinate between operations, rules, and validations for complex workflows
 
 ## Calendar and Event Handling
 - Calendar uses FullCalendar with drag-drop, resize, and real-time updates via Convex subscriptions
@@ -481,95 +503,137 @@ Shared utility functions and constants across the monorepo.
 - Colors fallback to '#3B82F6' (blue) if not specified
 - Colors applied to both backgroundColor and borderColor in FullCalendar events
 
-## Handler-Based Architecture Pattern
+## Service-Layer Architecture Pattern
 
-The codebase follows a sophisticated handler-based architecture for API endpoints that separates concerns and improves testability. **All new API endpoints must follow this pattern**:
+The codebase follows a service-layer architecture that provides clear separation of concerns and improved maintainability. **All new API endpoints must follow this pattern**:
 
-### File Structure (Example: `classes/templates/`)
+### Architecture Layers:
+
 ```
-templates/
-├── mutations.ts          # Argument schemas & thin mutation wrappers
-├── mutationHandlers.ts   # Pure business logic handlers  
-├── mutationHelpers.ts    # Reusable mutation utilities
-├── queries.ts           # Argument schemas & thin query wrappers
-├── queryHandlers.ts     # Data fetching logic
-├── validations.ts       # Field validation & authorization
-└── utils.ts            # Domain-specific utilities
+API Layer (convex/)
+├── mutations/           # Argument schemas & thin wrappers that delegate to services
+├── queries/             # Query schemas & thin wrappers that delegate to services  
+├── actions/             # External integrations and complex operations
+└── utils.ts            # Authentication utilities
+
+Service Layer (services/)
+├── coreService.ts       # Business operations orchestration
+├── venueService.ts      # Venue management operations
+├── bookingService.ts    # Booking workflow orchestration
+└── ...                 # Other domain services
+
+Business Logic (operations/)
+├── business.ts         # Pure business operations and transformations
+├── payments.ts         # Payment calculations and pricing logic
+├── venue.ts            # Venue business logic
+└── ...                 # Other domain operations
+
+Validation Layers:
+├── rules/              # Business rule validation (throws ConvexError)
+├── validations/        # Input validation (returns ValidationResult)
+├── types/              # TypeScript type definitions
+└── utils/              # Utility functions and error codes
 ```
 
 ### Key Principles:
 
-#### 1. **Mutations Structure**
-- Export argument schemas using Convex validators: `v.object({})`
-- Export TypeScript types: `export type CreateArgsType = Infer<typeof createArgs>`
-- Thin wrapper functions that validate auth and delegate to handlers
-- Use `createAuthenticatedMutation()` helper for consistent auth handling
-
-#### 2. **Handlers (Business Logic)**
-- Pure functions that take `(args, ctx, auth)` parameters
-- Contain all business logic, validation calls, and database operations
-- Use structured error handling with `ConvexError` and `ERROR_CODES`
-- Return consistent result objects (e.g., `{ createdTemplateId }`)
-
-#### 3. **Validations**
-- Field-specific validation functions (e.g., `validateName`, `validateCapacity`)
-- Main validation functions (e.g., `validateCreateTemplate`) 
-- Authorization helpers (e.g., `ensureCanUpdateTemplate`)
-- **Critical**: Always use `ERROR_CODES` constants, never hardcoded strings
-
-#### 4. **Error Handling**
-- Use centralized `ERROR_CODES` from `core/errorCodes.ts`
-- Structured errors: `ConvexError({ message, field, code })`
-- Field-specific error attribution for better UX
-- Consistent error messages across the application
-
-#### 5. **Type Safety**
-- Export argument types using `Infer<typeof schema>` pattern
-- Strong typing for handler functions and parameters
-- `AuthContext` interface for authenticated handlers
-
-### Example Implementation:
+#### 1. **API Layer Pattern**
 ```typescript
-// mutations.ts - Argument schema & thin wrapper
-export const createTemplateArgs = v.object({
-  template: v.object({ name: v.string(), ... })  
-});
-export type CreateTemplateArgs = Infer<typeof createTemplateArgs>;
-
-export const createTemplate = mutation({
-  args: createTemplateArgs,
-  handler: createAuthenticatedMutation(createTemplateHandler)
+// convex/mutations/core.ts - Thin wrapper with argument validation
+export const createBusinessWithVenueArgs = v.object({
+  business: v.object({ name: v.string(), ... }),
+  venue: v.object({ name: v.string(), ... })
 });
 
-// mutationHandlers.ts - Pure business logic
-export async function createTemplateHandler(
-  args: CreateTemplateArgs,
-  ctx: MutationCtx, 
-  auth: AuthContext
-) {
-  const { cleanTemplate } = validateCreateTemplate(args.template);
-  const templateId = await ctx.db.insert("templates", {
-    ...cleanTemplate,
-    businessId: auth.business._id,
-    createdBy: auth.user._id,
-    createdAt: Date.now(),
-  });
-  return { createdTemplateId: templateId };
-}
+export const createBusinessWithVenue = mutationWithTriggers({
+  args: createBusinessWithVenueArgs,
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUserOrThrow(ctx);
+    return coreService.createBusinessWithVenue({ ctx, args, user });
+  }
+});
 ```
 
-This pattern ensures consistent error handling, better testability, and clear separation of concerns throughout the API.
+#### 2. **Service Layer Pattern**
+```typescript
+// services/coreService.ts - Business logic orchestration
+export const coreService = {
+  createBusinessWithVenue: async ({ ctx, args, user }) => {
+    canOnlyCreateBusinessOnce(user); // Rule validation
+    const cleanArgs = prepareCreateBusiness(args); // Operation
+    
+    const businessId = await ctx.db.insert("businesses", {
+      ...createDefaultBusiness(user._id),
+      ...cleanArgs.business,
+    });
+    
+    return { createdBusinessId: businessId };
+  }
+};
+```
+
+#### 3. **Operations Layer Pattern**
+```typescript
+// operations/business.ts - Pure business logic
+export const prepareCreateBusiness = (args: CreateBusinessWithVenueArgs) => {
+  const cleanBusiness = {
+    business: {
+      name: throwIfError(coreValidations.validateBusinessName(args.business.name), 'name'),
+      email: throwIfError(coreValidations.validateEmail(args.business.email), 'email'),
+      // ... other validations
+    }
+  };
+  return cleanBusiness;
+};
+```
+
+#### 4. **Rules Layer Pattern**
+```typescript
+// rules/business.ts - Business rule validation
+export const canOnlyCreateBusinessOnce = (user: Doc<"users">) => {
+  if (user.businessId) {
+    throw new ConvexError({
+      message: "User already belongs to a business",
+      code: ERROR_CODES.USER_ALREADY_ASSOCIATED_WITH_BUSINESS
+    });
+  }
+};
+```
+
+#### 5. **Validation Layer Pattern**
+```typescript
+// validations/core.ts - Input validation
+export const validateBusinessName = (name: string): ValidationResult<string> => {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    return { success: false, error: "Business name is required" };
+  }
+  if (trimmed.length > 100) {
+    return { success: false, error: "Business name cannot exceed 100 characters" };
+  }
+  return { success: true, value: trimmed };
+};
+```
+
+### Error Handling:
+- Use centralized `ERROR_CODES` from `utils/errorCodes.ts`
+- Rules layer throws `ConvexError` with structured error codes
+- Validation layer returns `ValidationResult<T>` objects
+- Operations use `throwIfError()` utility to convert ValidationResult to errors
+
+This architecture ensures clear separation of concerns, improved testability, and consistent error handling throughout the API.
 
 ## Key Architecture Patterns
 
-### Handler-Based Architecture
-All API endpoints follow a consistent pattern:
-- **`mutations.ts`**: Argument schemas and thin wrapper functions  
-- **`mutationHandlers.ts`**: Pure business logic handlers
-- **`validations.ts`**: Field validation and authorization helpers
-- **`domain/operations.ts`**: Complex business operations and rule preparation
-- **`domain/rules.ts`**: Business rule validation and logic
-- Centralized error handling with `ERROR_CODES` constants
+### Service-Layer Architecture
+All API endpoints follow a consistent layered pattern:
+- **API Layer** (`convex/mutations/`, `convex/queries/`): Argument schemas and thin wrapper functions that delegate to services
+- **Service Layer** (`services/`): Business logic orchestration and workflow management
+- **Operations Layer** (`operations/`): Pure business logic operations and data transformations
+- **Rules Layer** (`rules/`): Business rule validation that throws ConvexError
+- **Validation Layer** (`validations/`): Input validation returning ValidationResult
+- **Types Layer** (`types/`): TypeScript type definitions
+- **Utils Layer** (`utils/`): Utility functions and centralized error codes
 
 ### Multi-Tenant Data Model
 - All entities include `businessId` for proper tenant isolation
@@ -583,11 +647,12 @@ All API endpoints follow a consistent pattern:
 - Booking status updates propagate immediately across clients
 - Dashboard metrics update in real-time for business intelligence
 
-### Feature-Based Organization
-- Each major feature (dashboard, calendar, venues, templates) has its own directory
-- Components, hooks, and utilities co-located within feature directories
-- Domain-driven design with separate business logic modules
-- Clear separation between UI components and business logic
+### File-Type Based Organization
+- Backend organized by function type (mutations, queries, services, operations, rules, validations)
+- Clear separation between API layer, service layer, and business logic
+- Type definitions centralized in dedicated types folder
+- Utilities and shared functions organized by purpose
+- Frontend organized by feature (dashboard, calendar, venues, templates) with co-located components
 
 ### Timezone Management
 - Business timezone is the source of truth for all scheduling
@@ -608,7 +673,8 @@ All API endpoints follow a consistent pattern:
 - ESLint 9 with custom configurations per environment
 - Prettier for consistent code formatting
 - Centralized error handling with structured error codes
-- Handler-based architecture for maintainable API endpoints
+- Service-layer architecture for maintainable and testable API endpoints
+- Comprehensive testing strategy with unit tests for operations and integration tests for workflows
 
 ### Performance Considerations
 - Real-time subscriptions optimized for calendar views
