@@ -233,20 +233,11 @@ export function SubscriptionScreen() {
                 showsVerticalScrollIndicator={false}
             >
                 {/* Current Subscription Status */}
-                <SettingsHeader title="Monthly Subscription" />
-                <SettingsGroup>
-                    <View style={styles.subscriptionHeader}>
+                <View style={styles.subscriptionCard}>
+                    <View style={styles.subscriptionRow}>
                         <View style={styles.subscriptionInfo}>
-                            <View style={styles.titleRow}>
-                                <CrownIcon size={20} color={theme.colors.emerald[600]} />
-                                <Text style={styles.subscriptionTitle}>
-                                    {isSubscriptionActive()
-                                        ? `${subscription?.planName || 'Active subscription'}`
-                                        : 'No active subscription'
-                                    }
-                                </Text>
-                            </View>
-                            <Text style={styles.nextBilling}>
+                            <Text style={styles.subscriptionTitle}>Monthly Subscription</Text>
+                            <Text style={styles.subscriptionSubtitle}>
                                 {isSubscriptionActive()
                                     ? `${subscription?.creditAmount} credits/month • Next billing: ${getNextBillingDate()}`
                                     : 'Choose a plan to get started'
@@ -258,8 +249,14 @@ export function SubscriptionScreen() {
                                 </Text>
                             )}
                         </View>
+                        <View style={styles.subscriptionBadge}>
+                            <CrownIcon size={16} color={theme.colors.emerald[950]} />
+                            <Text style={styles.subscriptionBadgeText}>
+                                {isSubscriptionActive() ? 'ACTIVE' : 'INACTIVE'}
+                            </Text>
+                        </View>
                     </View>
-                </SettingsGroup>
+                </View>
 
                 <View style={styles.sliderContainer}>
                     {/* Current Selection Display */}
@@ -354,36 +351,52 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingBottom: 60,
     },
-    subscriptionHeader: {
+    // Subscription card styled like credits card
+    subscriptionCard: {
+        marginHorizontal: 20,
+        marginBottom: 16,
+        borderRadius: 12,
+        backgroundColor: theme.colors.emerald[50],
+        borderWidth: 1,
+        borderColor: theme.colors.emerald[100],
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+    },
+    subscriptionRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 16,
-        backgroundColor: '#fff',
+        justifyContent: 'space-between',
     },
     subscriptionInfo: {
         flex: 1,
     },
-    titleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 4,
-    },
     subscriptionTitle: {
         fontSize: theme.fontSize.base,
-        fontWeight: theme.fontWeight.medium,
-        color: theme.colors.zinc[900],
-        marginLeft: 8,
+        fontWeight: theme.fontWeight.semibold,
+        color: theme.colors.emerald[950],
+        marginBottom: 2,
     },
-    nextBilling: {
+    subscriptionSubtitle: {
         fontSize: theme.fontSize.sm,
-        color: theme.colors.zinc[600],
-        marginLeft: 28,
+        color: theme.colors.emerald[700],
+    },
+    subscriptionBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: theme.colors.emerald[50],
+        borderRadius: 12,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+    },
+    subscriptionBadgeText: {
+        fontSize: theme.fontSize.xs,
+        fontWeight: theme.fontWeight.bold,
+        color: theme.colors.emerald[950],
+        marginLeft: 4,
     },
     cancelingText: {
         fontSize: theme.fontSize.sm,
         color: theme.colors.amber[600],
-        marginLeft: 28,
         marginTop: 4,
         fontWeight: theme.fontWeight.medium,
     },
