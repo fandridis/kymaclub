@@ -4,12 +4,20 @@ This file provides essential guidance for AI agents working with this comprehens
 
 ## 🤖 AI Agent Workflow - MANDATORY READING ORDER
 
-### **1. FIRST: Read Business Context**
-Before writing any code, AI agents MUST read these files to understand the business domain:
+### **1. FIRST: Read Application Context**
+Before writing any code, AI agents MUST read the appropriate START_HERE.md file:
 
-1. **`packages/api/BUSINESS_RULES.md`** - Complete business rules reference with 75+ documented rules
-2. **Architectural Decision Records (ADRs)** - Found inline in operations files as comments starting with `// ADR-XXX:`
-3. **Function Documentation** - JSDoc comments in operations files with real-world examples
+**For Backend Work:**
+- **`packages/api/START_HERE.md`** - Complete business rules, backend architecture, and 75+ documented rules
+
+**For Frontend Work:**
+- **`apps/web-business/START_HERE.md`** - Business dashboard tech stack and patterns
+- **`apps/web-consumer/START_HERE.md`** - Consumer app architecture and UX patterns  
+- **`apps/mobile-consumer/START_HERE.md`** - Mobile app stack and React Native patterns
+
+**For All Work:**
+- **Architectural Decision Records (ADRs)** - Found inline in operations files as comments starting with `// ADR-XXX:`
+- **Function Documentation** - JSDoc comments in operations files with real-world examples
 
 ### **2. THEN: Understand the Codebase Structure**
 - Multi-tenant booking platform with businesses, venues, class templates, and instances
@@ -31,7 +39,7 @@ Turborepo monorepo with pnpm workspaces for a comprehensive class/venue booking 
 ## Essential File Structure
 
 ### **Backend (`packages/api/`)**
-- **`BUSINESS_RULES.md`** 📚 **READ FIRST** - Complete business context
+- **`START_HERE.md`** 📚 **READ FIRST** - Complete business rules, backend architecture, and tech stack
 - **`operations/`** - Business logic with comprehensive JSDoc and ADRs
   - **`pricing.ts`** - Dynamic pricing with discount hierarchy
   - **`classInstance.ts`** - Class scheduling and template operations
@@ -43,9 +51,9 @@ Turborepo monorepo with pnpm workspaces for a comprehensive class/venue booking 
 - **`validations/`** - Field-level validation with error attribution
 
 ### **Frontend Applications**
-- **`apps/web-business/`** - Business management dashboard (React 19 + TanStack Router)
-- **`apps/web-consumer/`** - Customer booking interface
-- **`apps/mobile-consumer/`** - React Native mobile app with deep-linking
+- **`apps/web-business/START_HERE.md`** 💼 **READ FOR BUSINESS DASHBOARD** - React 19 + TanStack Router management interface
+- **`apps/web-consumer/START_HERE.md`** 🌐 **READ FOR CONSUMER WEB** - Customer booking interface with mobile-first design
+- **`apps/mobile-consumer/START_HERE.md`** 📱 **READ FOR MOBILE APP** - React Native app with deep-linking and real-time booking
 
 ### **Shared Packages**
 - **`packages/ui/`** - Shared React components
@@ -128,7 +136,7 @@ Operations organized by file type, not domain handlers:
 - Idempotency keys prevent duplicate transactions
 - Credits never allocated before payment confirmation
 
-## Business Rule Examples (See BUSINESS_RULES.md for complete list)
+## Business Rule Examples (See packages/api/START_HERE.md for complete list)
 
 ### **PR-001: Discount Hierarchy**
 ```typescript
@@ -204,33 +212,33 @@ graph TB
 
 ## 🚨 CRITICAL REMINDERS for AI Agents
 
-1. **Read `BUSINESS_RULES.md` FIRST** - Contains 75+ documented business rules with code references
+1. **Read appropriate `START_HERE.md` FIRST** - Each app/package has comprehensive context and business rules
 2. **Check ADR comments** - Understand architectural decisions before making changes
 3. **Use comprehensive JSDoc** - All operations files have detailed examples and usage patterns
 4. **Safety-first approach** - Financial operations must be bulletproof
 5. **Test your changes** - Run relevant tests to ensure business logic integrity
 6. **Follow existing patterns** - Use established validation, error handling, and data structures
 7. **🔄 UPDATE DOCUMENTATION** - After implementing changes, update relevant documentation:
-   - Add new business rules to `BUSINESS_RULES.md` with code references
+   - Add new business rules to `packages/api/START_HERE.md` with code references
    - Add ADR comments for architectural decisions (format: `// ADR-XXX: Decision - Rationale`)
    - Update JSDoc examples if function behavior changes
-   - Update this `CLAUDE.md` if new patterns or critical files are introduced
+   - Update relevant `START_HERE.md` files if new patterns are introduced
 
 ## 📋 Documentation Update Checklist
 
 After implementing any feature or change, AI agents MUST review and update:
 
-- [ ] **New business rules?** → Add to `BUSINESS_RULES.md` with code references and tests
+- [ ] **New business rules?** → Add to `packages/api/START_HERE.md` with code references and tests
 - [ ] **Architectural decision made?** → Add ADR comment in code with rationale and alternatives considered  
 - [ ] **Function behavior changed?** → Update JSDoc examples and parameter descriptions
-- [ ] **New critical patterns introduced?** → Update this `CLAUDE.md` with examples
+- [ ] **New critical patterns introduced?** → Update relevant `START_HERE.md` files with examples
 - [ ] **Error codes added?** → Update centralized error handling documentation
 - [ ] **Integration points changed?** → Update API documentation and integration test references
 
 When in doubt about any business rule, check the documentation in this order:
-1. `BUSINESS_RULES.md` for business context
-2. ADR comments in code for architectural decisions  
-3. JSDoc examples for implementation patterns
-4. Integration tests for expected behavior
+1. **Appropriate `START_HERE.md`** for business context and technical architecture
+2. **ADR comments in code** for architectural decisions  
+3. **JSDoc examples** for implementation patterns
+4. **Integration tests** for expected behavior
 
 **Remember**: Documentation is code. Keep it accurate, current, and comprehensive for future AI agents.

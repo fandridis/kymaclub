@@ -1,6 +1,82 @@
+# 🔧 Backend API - START HERE
+
+**Before working on the backend, AI agents must read this guide for complete business context and technical architecture.**
+
+## 🚀 Quick Start
+
+This is the **Convex backend API** providing real-time database and serverless functions for the booking platform. Contains all business logic, payment processing, and data management with comprehensive business rules documentation.
+
+## 🛠 Tech Stack & Key Libraries
+
+### **Core Backend**
+- **Convex 1.23** - Real-time database with serverless functions
+- **@convex-dev/auth 0.0.81** - Authentication with GitHub OAuth + email/phone OTP
+- **TypeScript 5.8** - Strict typing throughout backend operations
+- **Vitest** - Comprehensive unit and integration testing framework
+
+### **Payment Integration**  
+- **Stripe API 2025-02-24.acacia** - Payment processing for subscriptions and one-time purchases
+- **EUR/USD currency handling** - EUR for subscriptions, USD for one-time purchases
+- **Webhook processing** - Secure payment confirmation workflows
+- **Idempotency keys** - Transaction safety and duplicate prevention
+
+### **Date & Time Management**
+- **date-fns 4.1** + **@date-fns/tz** - Timezone-aware date calculations
+- **Business timezone priority** - All scheduling based on business local time
+- **rrule support** - Recurring class scheduling with exception handling
+
+### **Validation & Safety**
+- **Zod validation** - Schema validation throughout API layers
+- **Centralized error codes** - Consistent error handling with field attribution
+- **Double-entry ledger** - Financial transaction safety with audit trails
+
+## 📁 Backend Folder Structure
+
+```
+packages/api/
+├── START_HERE.md              # This comprehensive backend guide
+├── convex/                    # Convex backend functions
+│   ├── schema.ts             # Complete database schema
+│   ├── auth.config.ts        # Authentication configuration
+│   ├── http.ts               # HTTP endpoints and webhooks
+│   ├── classes/              # Class management domain
+│   │   ├── templates/        # Class template operations
+│   │   └── instances/        # Class instance operations
+│   ├── venues/               # Venue management
+│   ├── bookings/             # Booking system
+│   ├── credits/              # Credit system with double-entry ledger
+│   ├── uploads/              # File upload and image management
+│   └── core/                 # Core business operations
+├── operations/               # Pure business logic (COMPREHENSIVE JSDOC)
+│   ├── pricing.ts           # Dynamic pricing with discount hierarchy
+│   ├── classInstance.ts     # Class scheduling operations
+│   ├── payments.ts          # Stripe integration and credit pricing
+│   ├── venue.ts             # Venue management operations
+│   ├── business.ts          # Business entity operations
+│   └── notifications.ts     # Notification routing and deep-links
+├── services/                 # Service layer integrating operations
+│   ├── bookingService.ts    # Complete booking management
+│   ├── creditService.ts     # Credit system with expiration
+│   ├── paymentsService.ts   # Stripe integration service
+│   └── [other services]     # Domain-specific service layers
+├── validations/              # Field validation with error attribution
+│   ├── class.ts             # Class-related field validation
+│   ├── venue.ts             # Venue field validation
+│   └── core.ts              # Common validation utilities
+├── types/                    # TypeScript type definitions
+│   ├── booking.ts           # Booking system types
+│   ├── credit.ts            # Credit system types
+│   └── payments.ts          # Payment processing types
+├── utils/                    # Utility functions and helpers
+├── integrationTests/         # End-to-end workflow testing
+└── [domain].test.ts         # Unit tests for operations
+```
+
+---
+
 # Business Rules Reference
 
-This document provides a complete reference of all business rules, constraints, and operational logic within the booking platform. Each rule includes direct code references, test coverage, and business rationale to enable AI agents to understand and work with the system effectively.
+Complete reference of all business rules, constraints, and operational logic within the booking platform. Each rule includes direct code references, test coverage, and business rationale.
 
 ## Table of Contents
 
