@@ -1,7 +1,3 @@
-import { Email } from "@convex-dev/auth/providers/Email";
-import { Resend as ResendAPI } from "resend";
-import { generateOTP8 } from "@repo/utils/crypto-utils";
-
 // Email template system inspired by your flowing logo
 // emails/createEmailTemplate.ts
 export const createEmailTemplate = ({

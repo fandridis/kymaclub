@@ -153,7 +153,7 @@ describe('Booking System Integration Tests', () => {
                 description: "A small class",
                 duration: 60,
                 capacity: 1, // Only 1 spot
-                baseCredits: 10
+                price: 1000 // 10 euros in cents
             });
 
             const startTime = Date.now() + (4 * 60 * 60 * 1000);
@@ -217,7 +217,7 @@ describe('Booking System Integration Tests', () => {
                 description: "A future yoga class",
                 duration: 60,
                 capacity: 20,
-                baseCredits: 15
+                price: 750 // 15.00 in business currency (15 credits * 50 cents/credit)
             });
 
             const startTime = Date.now() + (48 * 60 * 60 * 1000); // 48 hours from now
@@ -285,7 +285,7 @@ describe('Booking System Integration Tests', () => {
                 description: "A soon yoga class",
                 duration: 60,
                 capacity: 20,
-                baseCredits: 20
+                price: 1000 // 20.00 in business currency (20 credits * 50 cents/credit)
             });
 
             // 8 hours from now - we are late!

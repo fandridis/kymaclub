@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { EuroPriceInput } from "@/components/euro-price-input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     Select,
@@ -55,7 +56,10 @@ const editInstanceSchema = z.object({
 
     // Booking Rules
     capacity: z.string().min(1, "Capacity is required").refine((val) => parseInt(val) > 0, "Capacity must be greater than 0"),
-    baseCredits: z.string().min(1, "Base credits is required").refine((val) => parseInt(val) > 0, "Base credits must be greater than 0"),
+    price: z.string().min(1, "Price is required").refine((val) => {
+        const priceInCents = parseInt(val);
+        return priceInCents >= 100 && priceInCents <= 10000;
+    }, "Price must be between €1.00 and €100.00"),
     bookingWindowMinHours: z.string().min(1, "Minimum booking hours is required").refine((val) => parseInt(val) >= 0, "Minimum booking hours must be 0 or greater"),
     bookingWindowMaxHours: z.string().min(1, "Maximum booking hours is required").refine((val) => parseInt(val) > 0, "Maximum booking hours must be greater than 0"),
     cancellationWindowHours: z.string().optional(),
@@ -121,7 +125,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
             startTime: "",
             duration: "60", // Default to 60 minutes
             capacity: "15",
-            baseCredits: "10",
+            price: "1000", // 10 euros in cents
             bookingWindowMinHours: "2",
             bookingWindowMaxHours: "168",
             cancellationWindowHours: "2",
@@ -146,7 +150,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                 startTime: format(startTimeInBusinessTz, "yyyy-MM-dd'T'HH:mm"),
                 duration: durationInMinutes.toString(),
                 capacity: instance.capacity?.toString() || "15",
-                baseCredits: instance.baseCredits?.toString() || "10",
+                price: instance.price?.toString() || "1000", // Default to 10 euros in cents
                 bookingWindowMinHours: (instance.bookingWindow?.minHours || 2).toString(),
                 bookingWindowMaxHours: (instance.bookingWindow?.maxHours || 168).toString(),
                 cancellationWindowHours: instance.cancellationWindowHours?.toString() || "2",
@@ -205,7 +209,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                     description: data.description?.trim(),
                     instructor: data.instructor.trim(),
                     capacity: parseInt(data.capacity),
-                    baseCredits: parseInt(data.baseCredits),
+                    price: parseInt(data.price),
                     bookingWindow: {
                         minHours: parseInt(data.bookingWindowMinHours),
                         maxHours: parseInt(data.bookingWindowMaxHours)
@@ -246,7 +250,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                     description: data.description?.trim(),
                     instructor: data.instructor.trim(),
                     capacity: parseInt(data.capacity),
-                    baseCredits: parseInt(data.baseCredits),
+                    price: parseInt(data.price),
                     bookingWindow: {
                         minHours: parseInt(data.bookingWindowMinHours),
                         maxHours: parseInt(data.bookingWindowMaxHours)
@@ -435,16 +439,18 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                                 </FormItem>
                                             )} />
 
-                                            <FormField control={form.control} name="baseCredits" render={({ field }) => (
+                                            <FormField control={form.control} name="price" render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel className="flex items-center gap-2">
-                                                        <CreditCard className="h-4 w-4" />
-                                                        Credits <span className="text-red-500">*</span>
-                                                    </FormLabel>
                                                     <FormControl>
-                                                        <Input type="number" min="1" placeholder="Credits to book" {...field} />
+                                                        <EuroPriceInput
+                                                            value={field.value}
+                                                            onChange={field.onChange}
+                                                            onBlur={field.onBlur}
+                                                            name={field.name}
+                                                            required
+                                                            error={form.formState.errors.price?.message}
+                                                        />
                                                     </FormControl>
-                                                    <FormMessage />
                                                 </FormItem>
                                             )} />
                                         </div>

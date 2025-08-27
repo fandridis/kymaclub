@@ -1,4 +1,4 @@
-import { ValidationResult } from "../types/core";
+import type { ValidationResult } from "../types/core";
 
 const validateStartTime = (startTime: number): ValidationResult<number> => {
     if (!Number.isInteger(startTime) || startTime <= 0) {
@@ -168,6 +168,16 @@ const validateWaitlistCapacity = (capacity: number): ValidationResult<number> =>
     return { success: true, value: capacity };
 };
 
+const validatePrice = (priceInCents: number): ValidationResult<number> => {
+    if (!Number.isInteger(priceInCents) || priceInCents < 100) {
+        return { success: false, error: "Price must be at least 1.00 in business currency (100 cents)" };
+    }
+    if (priceInCents > 10000) {
+        return { success: false, error: "Price cannot exceed 100.00 in business currency (10000 cents)" };
+    }
+    return { success: true, value: priceInCents };
+};
+
 export const classValidations = {
     validateStartTime,
     validateEndTime,
@@ -176,7 +186,7 @@ export const classValidations = {
     validateDescription,
     validateTags,
     validateCapacity,
-    validateBaseCredits,
+    validatePrice,
     validateBookingWindow,
     validateCancellationWindowHours,
     validateFrequency,

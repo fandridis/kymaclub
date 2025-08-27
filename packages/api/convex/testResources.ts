@@ -57,7 +57,7 @@ export const classTemplate = {
     instructor: "John Doe",
     duration: 60,
     capacity: 20,
-    baseCredits: 10,
+    price: 500, // 10.00 in business currency (10 credits * 50 cents/credit)
     allowWaitlist: true,
     isActive: true,
     tags: ["yoga", "wellness"],
@@ -125,7 +125,7 @@ export const classInstance = {
     name: "Yoga Class",
     instructor: "John Doe",
     capacity: 20,
-    baseCredits: 10,
+    price: 500, // 10.00 in business currency (10 credits * 50 cents/credit)
     bookedCount: 0,
     waitlistCount: 0,
     discountRules: undefined, // No default instance discounts - tests will set this explicitly when needed

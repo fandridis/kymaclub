@@ -136,7 +136,7 @@ describe('Class Instance Operations - Safety Tests', () => {
       instructor: "Jane Doe",
       duration: 60, // 60 minutes
       capacity: 15,
-      baseCredits: 12,
+      price: 1200, // 12 euros in cents
       bookingWindow: { minHours: 1, maxHours: 48 },
       cancellationWindowHours: 24,
       tags: ["yoga", "relaxation"],
@@ -208,7 +208,7 @@ describe('Class Instance Operations - Safety Tests', () => {
       expect(instance.description).toBe(mockTemplate.description);
       expect(instance.instructor).toBe(mockTemplate.instructor);
       expect(instance.capacity).toBe(mockTemplate.capacity);
-      expect(instance.baseCredits).toBe(mockTemplate.baseCredits);
+      expect(instance.price).toBe(mockTemplate.price);
       expect(instance.bookingWindow).toBe(mockTemplate.bookingWindow);
       expect(instance.cancellationWindowHours).toBe(mockTemplate.cancellationWindowHours);
       expect(instance.tags).toEqual(mockTemplate.tags);

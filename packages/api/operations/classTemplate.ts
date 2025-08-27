@@ -23,7 +23,7 @@ const prepareCreateTemplate = (args: CreateClassTemplateArgs): CreateClassTempla
         instructor: throwIfError(classValidations.validateInstructor(t.instructor), 'instructor'),
         duration: throwIfError(classValidations.validateDuration(t.duration), 'duration'),
         capacity: throwIfError(classValidations.validateCapacity(t.capacity), 'capacity'),
-        baseCredits: throwIfError(classValidations.validateBaseCredits(t.baseCredits), 'baseCredits'),
+        price: throwIfError(classValidations.validatePrice(t.price), 'price'),
 
         // Optional fields
         ...(t.description !== undefined && { description: throwIfError(classValidations.validateDescription(t.description), 'description') }),
@@ -58,7 +58,7 @@ const prepareUpdateTemplate = (
         ...(t.tags !== undefined && { tags: throwIfError(classValidations.validateTags(t.tags), 'tags') }),
         ...(t.duration !== undefined && { duration: throwIfError(classValidations.validateDuration(t.duration), 'duration') }),
         ...(t.capacity !== undefined && { capacity: throwIfError(classValidations.validateCapacity(t.capacity), 'capacity') }),
-        ...(t.baseCredits !== undefined && { baseCredits: throwIfError(classValidations.validateBaseCredits(t.baseCredits), 'baseCredits') }),
+        ...(t.price !== undefined && { price: throwIfError(classValidations.validatePrice(t.price), 'price') }),
         ...(t.bookingWindow !== undefined && { bookingWindow: throwIfError(classValidations.validateBookingWindow(t.bookingWindow), 'bookingWindow') }),
         ...(t.cancellationWindowHours !== undefined && { cancellationWindowHours: throwIfError(classValidations.validateCancellationWindowHours(t.cancellationWindowHours), 'cancellationWindowHours') }),
         ...(t.waitlistCapacity !== undefined && { waitlistCapacity: throwIfError(classValidations.validateWaitlistCapacity(t.waitlistCapacity), 'waitlistCapacity') }),
@@ -107,7 +107,7 @@ const validateTemplateForInstanceCreation = (
     if (!template.instructor?.trim()) missingFields.push("instructor");
     if (!template.duration || template.duration <= 0) missingFields.push("duration");
     if (!template.capacity || template.capacity <= 0) missingFields.push("capacity");
-    if (template.baseCredits === undefined || template.baseCredits < 0) missingFields.push("baseCredits");
+    if (template.price === undefined || template.price < 0) missingFields.push("price");
 
     return {
         isValid: missingFields.length === 0,

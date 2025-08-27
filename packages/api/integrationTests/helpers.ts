@@ -62,7 +62,7 @@ export async function createTestClassTemplate(
         instructor?: Id<"users">;
         duration?: number;
         capacity?: number;
-        baseCredits?: number;
+        price?: number;
         tags?: string[];
         color?: string;
     } = {}
@@ -78,7 +78,7 @@ export async function createTestClassTemplate(
             instructor: template.instructor || userId,
             duration: template.duration || 60,
             capacity: template.capacity || 20,
-            baseCredits: template.baseCredits || 1,
+            price: template.price || 750, // 15.00 in business currency (default)
             tags: template.tags || ["test", "fitness"],
             color: template.color || "#3B82F6",
         }
@@ -110,7 +110,7 @@ export async function setupClassForBooking(asUser: TestConvexForDataModel<Generi
         description: "A peaceful morning yoga class",
         duration: 60,
         capacity: 20,
-        baseCredits: 10,
+        price: 500, // 10.00 in business currency (10 credits * 50 cents/credit)
     });
 
     // Create class instance (2 hours from now)
@@ -207,15 +207,15 @@ export async function setupCompleteBookingScenario(
         className?: string;
         venueName?: string;
         credits?: number;
-        baseCredits?: number;
+        price?: number;
         hoursFromNow?: number;
     } = {}
 ) {
     const {
         className = "Test Class",
         venueName = "Test Venue",
-        credits = 50,
-        baseCredits = 15,
+        credits = 5000, // Increased to 5000 credits (50 euros) to cover most test scenarios
+        price = 750, // 15.00 in business currency (15 credits * 50 cents/credit)
         hoursFromNow = 24
     } = options;
 
@@ -232,7 +232,7 @@ export async function setupCompleteBookingScenario(
         description: `A test ${className.toLowerCase()}`,
         duration: 60,
         capacity: 20,
-        baseCredits: baseCredits,
+        price: price,
     });
 
     // Create class instance

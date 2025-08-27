@@ -5,10 +5,7 @@ import {
     Bell,
     Palette,
     Settings,
-    Wrench,
-    UserCog,
     BookmarkMinusIcon,
-    Building2Icon,
     CalendarHeartIcon,
     BookTemplateIcon,
 } from 'lucide-react'

@@ -141,7 +141,7 @@ export const prepareUpdateInstance = (args: UpdateSingleInstanceArgs['instance']
         // Decision: Only validate endTime when both startTime + endTime provided together
         // Rationale: Allows partial updates while ensuring complete updates are validated
         // Alternative considered: Always validate endTime against existing startTime, rejected due to DB read complexity
-        
+
         // Time fields with special business logic - validate as pair or individually
         ...(i.startTime !== undefined && i.endTime !== undefined && {
             startTime: throwIfError(classValidations.validateStartTime(i.startTime), 'startTime'),
@@ -157,7 +157,7 @@ export const prepareUpdateInstance = (args: UpdateSingleInstanceArgs['instance']
         ...(i.description !== undefined && { description: throwIfError(classValidations.validateDescription(i.description), 'description') }),
         ...(i.tags !== undefined && { tags: throwIfError(classValidations.validateTags(i.tags), 'tags') }),
         ...(i.capacity !== undefined && { capacity: throwIfError(classValidations.validateCapacity(i.capacity), 'capacity') }),
-        ...(i.baseCredits !== undefined && { baseCredits: throwIfError(classValidations.validateBaseCredits(i.baseCredits), 'baseCredits') }),
+        ...(i.price !== undefined && { price: throwIfError(classValidations.validatePrice(i.price), 'price') }),
         ...(i.bookingWindow !== undefined && { bookingWindow: throwIfError(classValidations.validateBookingWindow(i.bookingWindow), 'bookingWindow') }),
         ...(i.cancellationWindowHours !== undefined && { cancellationWindowHours: throwIfError(classValidations.validateCancellationWindowHours(i.cancellationWindowHours), 'cancellationWindowHours') }),
         ...(i.color !== undefined && { color: i.color }),
@@ -211,7 +211,7 @@ export const prepareInstanceUpdatesFromTemplateChanges = (
     // Rationale: Instance fields for current behavior, snapshot for historical audit trail
     // Date: 2024-08, Context: Need to track template evolution while maintaining instance independence
     // Alternative considered: Only update snapshot, rejected due to performance implications
-    
+
     return instances.map(instance => ({
         instanceId: instance._id,
         changes: {
@@ -282,7 +282,7 @@ export const prepareInstanceUpdatesFromVenueChanges = (
     // Rationale: Venues are reference data, instances need historical point-in-time snapshots
     // Date: 2024-08, Context: Customer booking confirmations must show venue as it was when booked
     // Alternative considered: Update instance.venueId references, rejected due to data integrity concerns
-    
+
     return instances.map(instance => ({
         instanceId: instance._id,
         changes: {
@@ -324,7 +324,7 @@ export const prepareInstanceUpdatesFromVenueChanges = (
  * @example
  * // Create yoga class instance
  * const template = {
- *   name: "Yoga Flow", duration: 60, baseCredits: 12,
+ *   name: "Yoga Flow", duration: 60, price: 1200,
  *   capacity: 15, instructor: "Jane Doe"
  * };
  * const venue = {
@@ -371,7 +371,7 @@ export const createInstanceFromTemplate = (
     // Rationale: Ensures data consistency and prevents invalid time ranges
     // Date: 2024-08, Context: Manual endTime entry was causing booking conflicts
     // Alternative considered: Accept both start/end times, rejected due to user error potential
-    
+
     // Validate startTime using business rules (not too far future, valid timestamp)
     const validatedStartTime = throwIfError(classValidations.validateStartTime(startTime), 'startTime');
 
@@ -396,7 +396,7 @@ export const createInstanceFromTemplate = (
         description: template.description,
         instructor: template.instructor,
         capacity: template.capacity,
-        baseCredits: template.baseCredits,
+        price: template.price,
         bookingWindow: template.bookingWindow,
         cancellationWindowHours: template.cancellationWindowHours,
         tags: template.tags,
@@ -411,7 +411,7 @@ export const createInstanceFromTemplate = (
         // Rationale: Booking confirmations must show accurate info as it was when booked
         // Date: 2024-08, Context: Template/venue changes were affecting historical bookings
         // Alternative considered: Live references, rejected due to customer confusion
-        
+
         // Template snapshot - captures template state at instance creation
         templateSnapshot: {
             name: template.name,

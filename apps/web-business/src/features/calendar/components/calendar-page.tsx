@@ -240,7 +240,7 @@ export const transformClassInstancesToCalendarEvents = (classInstances: ClassIns
                 classInstance: instance,
                 instructor: instance.instructor,
                 capacity: instance.capacity,
-                baseCredits: instance.baseCredits,
+                price: instance.price,
                 description: instance.description,
                 bookedCount: instance.bookedCount || 0,
             },

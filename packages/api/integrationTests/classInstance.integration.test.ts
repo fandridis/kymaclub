@@ -57,7 +57,7 @@ describe('Class Instances Integration Tests', () => {
                     capacity: 20,
                     description: 'A relaxing yoga class',
                     instructor: 'Test Instructor',
-                    baseCredits: 1,
+                    price: 100, // 1 euro in cents
                     cancellationWindowHours: 24,
                 }
             });
@@ -97,7 +97,7 @@ describe('Class Instances Integration Tests', () => {
                     capacity: 20,
                     description: 'A relaxing yoga class',
                     instructor: 'Test Instructor',
-                    baseCredits: 1,
+                    price: 100, // 1 euro in cents
                     cancellationWindowHours: 24,
                 }
             });
@@ -149,7 +149,7 @@ describe('Class Instances Integration Tests', () => {
                     capacity: 20,
                     description: 'A relaxing yoga class',
                     instructor: 'Test Instructor',
-                    baseCredits: 1,
+                    price: 100, // 1 euro in cents
                     cancellationWindowHours: 24,
                 }
             });
@@ -215,7 +215,7 @@ describe('Class Instances Integration Tests', () => {
                     capacity: 20,
                     description: 'A relaxing yoga class',
                     instructor: 'Test Instructor',
-                    baseCredits: 1,
+                    price: 100, // 1 euro in cents
                     cancellationWindowHours: 24,
                 }
             });

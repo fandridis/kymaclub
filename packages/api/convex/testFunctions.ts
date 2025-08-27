@@ -174,7 +174,7 @@ export const createTestClassTemplate = internalMutation({
             instructor: v.id("users"),
             duration: v.number(),
             capacity: v.number(),
-            baseCredits: v.number(),
+            price: v.number(),
             tags: v.array(v.string()),
             color: v.string(),
         })
@@ -189,7 +189,7 @@ export const createTestClassTemplate = internalMutation({
             instructor: args.template.instructor,
             duration: args.template.duration,
             capacity: args.template.capacity,
-            baseCredits: args.template.baseCredits,
+            price: args.template.price,
             tags: args.template.tags,
             color: args.template.color,
             allowWaitlist: true,
@@ -817,18 +817,18 @@ export const testDeepLinkGeneration = internalMutation({
     }),
     handler: async (ctx, args) => {
         const { generateNotificationDeepLink } = await import("../utils/deep-linking");
-        
+
         const data = {
             classInstanceId: args.classInstanceId,
             venueId: args.venueId,
         };
-        
+
         const deepLink = generateNotificationDeepLink(args.type, data);
-        
+
         console.log(`Test deep link generation for type: ${args.type}`);
         console.log(`Data:`, data);
         console.log(`Result: ${deepLink}`);
-        
+
         return {
             type: args.type,
             deepLink,

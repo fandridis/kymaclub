@@ -30,7 +30,7 @@ export type DiscountRule = {
   };
   discount: {
     type: DiscountType;
-    value: number; // Credits off
+    value: number; // Credits off (for consumers)
   };
   createdAt: number;
   createdBy: string;
@@ -42,7 +42,7 @@ export type AppliedDiscount = {
   source: "template_rule" | "instance_rule";
   discountType: DiscountType;
   discountValue: number;
-  creditsSaved: number;
+  creditsSaved: number; // Credits saved (consumer-facing)
   ruleName: string;
   reason?: string;
   appliedBy?: Id<"users">;
@@ -120,8 +120,10 @@ export function calculateBestDiscount(
     bookingTime: number;
   }
 ): DiscountCalculationResult {
-  // Get the original price (instance override or template default)
-  const originalPrice = classInstance.baseCredits ?? template.baseCredits;
+  // Get the original price in cents (instance override or template default)
+  const priceInCents = classInstance.price ?? template.price ?? 1000; // Default 10.00 in business currency (cents)
+  // Convert from currency cents to credits for user-facing operations (1 credit = 50 cents)
+  const originalPrice = priceInCents / 50; // Convert cents to credits for consumers
   const hoursUntilClass = (classInstance.startTime - context.bookingTime) / (1000 * 60 * 60);
 
   // 1. Check instance-specific discount rules (override template rules)

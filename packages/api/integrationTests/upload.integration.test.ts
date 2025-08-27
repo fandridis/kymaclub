@@ -103,7 +103,7 @@ describe('Uploads Integration Tests', () => {
                     capacity: 20,
                     description: 'A test class',
                     instructor: 'Test Instructor',
-                    baseCredits: 1,
+                    price: 100, // 1 euro in cents
                     cancellationWindowHours: 24,
                 }
             });

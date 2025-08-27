@@ -8,7 +8,10 @@ import { StackScreenHeader } from '../../components/StackScreenHeader';
 import { useAuthenticatedUser } from '../../stores/auth-store';
 import { useQuery, useAction } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
-import { CREDIT_PACKS, type CreditPack } from '@repo/api/operations/payments';
+import { CREDIT_PACKS } from '@repo/api/operations/payments';
+
+// Simple currency formatter - can be made configurable later
+const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
 
 export function BuyCreditsScreen() {
     const navigation = useNavigation();
@@ -26,7 +29,7 @@ export function BuyCreditsScreen() {
 
         Alert.alert(
             'Purchase Credits',
-            `Purchase ${credits} credits for $${pack.price.toFixed(0)}?`,
+            `Purchase ${credits} credits for ${formatCurrency(pack.price)}?`,
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
@@ -58,7 +61,16 @@ export function BuyCreditsScreen() {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Current Balance */}
+                {/* Header Section */}
+                <View style={styles.headerSection}>
+                    <Text style={styles.title}>Buy Credits</Text>
+                    <Text style={styles.description}>
+                        Purchase credits if you're running low or don't want to start a subscription.
+                        Credits will expire 90 days after purchase.
+                    </Text>
+                </View>
+
+                {/* Current Balance
                 <SettingsGroup>
                     <SettingsRow
                         title="Credits Balance"
@@ -78,13 +90,12 @@ export function BuyCreditsScreen() {
                         }
                         showChevron={false}
                     />
-                </SettingsGroup>
+                </SettingsGroup> */}
 
                 {/* Credit Packs Section */}
                 <SettingsHeader title="Available Credit Packs" />
                 <View style={styles.creditPacksGrid}>
                     {CREDIT_PACKS.map((pack) => {
-                        const originalPrice = pack.credits * 2.30;
                         const pricePerCredit = pack.price / pack.credits;
                         return (
                             <TouchableOpacity
@@ -97,10 +108,10 @@ export function BuyCreditsScreen() {
                                 </Text>
                                 <Text style={styles.creditPackCreditsLabel}>credits</Text>
                                 <Text style={styles.creditPackPrice}>
-                                    ${pack.price.toFixed(2)}
+                                    {formatCurrency(pack.price)}
                                 </Text>
                                 <Text style={styles.pricePerCredit}>
-                                    ${pricePerCredit.toFixed(2)} per credit
+                                    {formatCurrency(pricePerCredit)} per credit
                                 </Text>
                                 {pack.discount && (
                                     <View style={styles.discountBadgeTopRight}>
@@ -126,6 +137,23 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingBottom: 60,
+    },
+    headerSection: {
+        paddingHorizontal: 20,
+        paddingVertical: 24,
+        backgroundColor: '#fff',
+        marginBottom: 20,
+    },
+    title: {
+        fontSize: theme.fontSize['2xl'],
+        fontWeight: theme.fontWeight.bold,
+        color: theme.colors.zinc[900],
+        marginBottom: 8,
+    },
+    description: {
+        fontSize: theme.fontSize.base,
+        color: theme.colors.zinc[600],
+        lineHeight: 22,
     },
     creditsHeaderContainer: {
         flexDirection: 'row',

@@ -64,7 +64,7 @@ Turborepo monorepo with pnpm workspaces for a comprehensive class/venue booking 
 ### **1. Pricing System** 
 - Dynamic discounts: Early bird (10%) > Low capacity (5%)
 - Tiered subscription pricing: 5-150 credits/month with volume discounts
-- Base price chain: `instance.baseCredits → template.baseCredits → default(10)`
+- Base price chain: `instance.price → template.price → default(15)`
 
 ### **2. Class Scheduling**
 - Templates create instances with calculated endTime from duration

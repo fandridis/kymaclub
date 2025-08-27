@@ -33,7 +33,7 @@ describe('Class Templates Integration Tests', () => {
                         capacity: 20,
                         description: 'A relaxing yoga class',
                         instructor: 'Test Instructor',
-                        baseCredits: 1,
+                        price: 100, // 1 euro in cents
                         cancellationWindowHours: 24,
                     }
                 })
@@ -53,7 +53,7 @@ describe('Class Templates Integration Tests', () => {
                     capacity: 20,
                     description: 'A relaxing yoga class',
                     instructor: 'Test Instructor',
-                    baseCredits: 1,
+                    price: 100, // 1 euro in cents
                     cancellationWindowHours: 24,
                 }
             });
@@ -85,7 +85,7 @@ describe('Class Templates Integration Tests', () => {
                     capacity: 15,
                     description: 'A core strengthening class',
                     instructor: 'Test Instructor',
-                    baseCredits: 1,
+                    price: 100, // 1 euro in cents
                     cancellationWindowHours: 24,
                 }
             });
@@ -127,7 +127,7 @@ describe('Class Templates Integration Tests', () => {
                     capacity: 20,
                     description: 'Business 1 class',
                     instructor: 'Instructor 1',
-                    baseCredits: 1,
+                    price: 100, // 1 euro in cents
                     cancellationWindowHours: 24,
                 }
             });
@@ -142,7 +142,7 @@ describe('Class Templates Integration Tests', () => {
                     capacity: 15,
                     description: 'Business 2 class',
                     instructor: 'Instructor 2',
-                    baseCredits: 1,
+                    price: 100, // 1 euro in cents
                     cancellationWindowHours: 24,
                 }
             });
@@ -188,7 +188,7 @@ describe('Class Templates Integration Tests', () => {
                     capacity: 20,
                     description: 'A class template',
                     instructor: 'Test Instructor',
-                    baseCredits: 1,
+                    price: 100, // 1 euro in cents
                     cancellationWindowHours: 24,
                 }
             });
@@ -219,7 +219,7 @@ describe('Class Templates Integration Tests', () => {
                 capacity: 25,
                 description: 'An advanced yoga practice',
                 instructor: 'Master Yogi',
-                baseCredits: 2,
+                price: 200, // 2 euros in cents
                 cancellationWindowHours: 48,
                 tags: ['yoga', 'advanced', 'flexibility'],
             };
@@ -239,7 +239,7 @@ describe('Class Templates Integration Tests', () => {
             expect(template?.capacity).toBe(templateData.capacity);
             expect(template?.description).toBe(templateData.description);
             expect(template?.instructor).toBe(templateData.instructor);
-            expect(template?.baseCredits).toBe(templateData.baseCredits);
+            expect(template?.price).toBe(templateData.price);
             expect(template?.cancellationWindowHours).toBe(templateData.cancellationWindowHours);
             expect(template?.tags).toEqual(templateData.tags);
             expect(template?.isActive).toBe(true); // Should default to active
@@ -266,7 +266,7 @@ describe('Class Templates Integration Tests', () => {
                     capacity: 10,
                     description: 'A basic class',
                     instructor: 'Basic Instructor',
-                    baseCredits: 1,
+                    price: 100, // 1 euro in cents
                     cancellationWindowHours: 24,
                 }
             });
@@ -297,7 +297,7 @@ describe('Class Templates Integration Tests', () => {
                     capacity: 20,
                     description: 'Original description',
                     instructor: 'Original Instructor',
-                    baseCredits: 1,
+                    price: 100, // 1 euro in cents
                     cancellationWindowHours: 24,
                 }
             });
@@ -342,7 +342,7 @@ describe('Class Templates Integration Tests', () => {
                     capacity: 20,
                     description: 'A template to be deleted',
                     instructor: 'Test Instructor',
-                    baseCredits: 1,
+                    price: 100, // 1 euro in cents
                     cancellationWindowHours: 24,
                 }
             });
@@ -376,7 +376,7 @@ describe('Class Templates Integration Tests', () => {
                     capacity: 20,
                     description: 'A valid template',
                     instructor: 'Test Instructor',
-                    baseCredits: 1,
+                    price: 100, // 1 euro in cents
                     cancellationWindowHours: 24,
                 }
             });

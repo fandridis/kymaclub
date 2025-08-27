@@ -188,49 +188,49 @@ describe('Class Validations', () => {
         });
     });
 
-    describe('validateBaseCredits', () => {
-        it('should accept valid credit amount', () => {
-            const result = classValidations.validateBaseCredits(5);
+    describe('validatePrice', () => {
+        it('should accept valid price', () => {
+            const result = classValidations.validatePrice(500); // 5 euros in cents
             
             expect(result).toEqual({
                 success: true,
-                value: 5
+                value: 500
             });
         });
 
-        it('should accept zero credits', () => {
-            const result = classValidations.validateBaseCredits(0);
-            
-            expect(result).toEqual({
-                success: true,
-                value: 0
-            });
-        });
-
-        it('should reject negative credits', () => {
-            const result = classValidations.validateBaseCredits(-1);
+        it('should reject price below minimum (100 cents)', () => {
+            const result = classValidations.validatePrice(50); // 50 cents, below 1 euro minimum
             
             expect(result).toEqual({
                 success: false,
-                error: 'Credits must be a non-negative number'
+                error: 'Price must be at least 1.00 in business currency (100 cents)'
             });
         });
 
-        it('should reject credits exceeding 100', () => {
-            const result = classValidations.validateBaseCredits(101);
+        it('should reject negative prices', () => {
+            const result = classValidations.validatePrice(-100);
             
             expect(result).toEqual({
                 success: false,
-                error: 'Credits cannot exceed 100'
+                error: 'Price must be at least 1.00 in business currency (100 cents)'
             });
         });
 
-        it('should reject infinite credits', () => {
-            const result = classValidations.validateBaseCredits(Infinity);
+        it('should reject prices exceeding maximum (10000 cents)', () => {
+            const result = classValidations.validatePrice(15000); // 150 euros, above 100 euro maximum
             
             expect(result).toEqual({
                 success: false,
-                error: 'Credits must be a non-negative number'
+                error: 'Price cannot exceed 100.00 in business currency (10000 cents)'
+            });
+        });
+
+        it('should reject non-integer prices', () => {
+            const result = classValidations.validatePrice(199.5); // Should be integer cents
+            
+            expect(result).toEqual({
+                success: false,
+                error: 'Price must be at least 1.00 in business currency (100 cents)'
             });
         });
     });

@@ -29,11 +29,12 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { EuroPriceInput } from "@/components/euro-price-input";
 import { useEffect } from 'react';
 import { getDurationOptions } from '@/features/calendar/utils/duration';
 import { ConvexError } from 'convex/values';
 import { useVenues } from '@/features/venues/hooks/use-venues';
-import { TEMPLATE_COLORS, type TemplateColorType, TEMPLATE_COLORS_ARRAY } from '@repo/utils/colors';
+import { TEMPLATE_COLORS, TEMPLATE_COLORS_ARRAY } from '@repo/utils/colors';
 import { cn } from '@/lib/utils';
 import { TEMPLATE_COLORS_MAP } from '@/utils/colors';
 
@@ -53,7 +54,10 @@ const createTemplateSchema = z.object({
 
     // Booking Rules
     capacity: z.string().min(1, "Capacity is required").refine((val) => parseInt(val) > 0, "Capacity must be greater than 0"),
-    baseCredits: z.string().min(1, "Base credits is required").refine((val) => parseInt(val) > 0, "Base credits must be greater than 0"),
+    price: z.string().min(1, "Price is required").refine((val) => {
+        const priceInCents = parseInt(val);
+        return priceInCents >= 100 && priceInCents <= 10000;
+    }, "Price must be between €1.00 and €100.00"),
     allowWaitlist: z.boolean(),
     waitlistCapacity: z.string().optional(),
     bookingWindowMinHours: z.string().min(1, "Minimum booking hours is required").refine((val) => parseInt(val) >= 0, "Minimum booking hours must be 0 or greater"),
@@ -98,7 +102,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
             color: TEMPLATE_COLORS.Green,
             duration: '60',
             capacity: "15",
-            baseCredits: "10",
+            price: "1500", // 15 euros in cents
             allowWaitlist: false,
             waitlistCapacity: "5",
             bookingWindowMinHours: "2",
@@ -125,7 +129,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                 color: classTemplate!.color || TEMPLATE_COLORS.Green,
                 duration: classTemplate!.duration.toString(),
                 capacity: classTemplate!.capacity.toString(),
-                baseCredits: classTemplate!.baseCredits.toString(),
+                price: classTemplate!.price?.toString() || "1500", // Default to 15 euros in cents
                 allowWaitlist: classTemplate!.allowWaitlist || false,
                 waitlistCapacity: classTemplate!.waitlistCapacity?.toString() || "5",
                 bookingWindowMinHours: (classTemplate!.bookingWindow?.minHours || 2).toString(),
@@ -179,7 +183,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                 instructor: data.instructor.trim(),
                 duration: parseInt(data.duration),
                 capacity: parseInt(data.capacity),
-                baseCredits: parseInt(data.baseCredits),
+                price: parseInt(data.price),
                 allowWaitlist: data.allowWaitlist,
                 waitlistCapacity: data.allowWaitlist && data.waitlistCapacity
                     ? parseInt(data.waitlistCapacity)
@@ -388,13 +392,18 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                         </FormItem>
                                     )} />
 
-                                    <FormField control={form.control} name="baseCredits" render={({ field }) => (
+                                    <FormField control={form.control} name="price" render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Base Credits <span className="text-red-500">*</span></FormLabel>
                                             <FormControl>
-                                                <Input type="number" min="1" placeholder="Credits to book" {...field} />
+                                                <EuroPriceInput
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                    onBlur={field.onBlur}
+                                                    name={field.name}
+                                                    required
+                                                    error={form.formState.errors.price?.message}
+                                                />
                                             </FormControl>
-                                            <FormMessage />
                                         </FormItem>
                                     )} />
                                 </div>

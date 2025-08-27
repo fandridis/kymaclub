@@ -12,53 +12,53 @@ import { PricingResult } from '../types/pricing';
  * Calculates final price for a class booking with dynamic discount application
  * 
  * @description Applies discount hierarchy: Early bird (10%) takes precedence over low capacity (5%).
- * Base price selection follows: instance.baseCredits → template.baseCredits → default(10)
+ * Base price selection follows: instance.price → template.price → default(1000 cents)
  * 
- * @param instance - Class instance containing startTime, bookedCount, capacity, and optional baseCredits
+ * @param instance - Class instance containing startTime, bookedCount, capacity, and optional price
  * @param template - Class template providing fallback values for missing instance fields
- * @returns Promise<PricingResult> with originalPrice, finalPrice, discountPercentage, discountAmount
+ * @returns Promise<PricingResult> with originalPrice, finalPrice, discountPercentage, discountAmount (in cents)
  * 
  * @example
  * // Early bird discount (>48 hours advance booking)
  * const instance = { 
  *   startTime: Date.now() + (72 * 60 * 60 * 1000), // 72 hours future
- *   baseCredits: 20 
+ *   price: 2000 // 20 business currency units in cents
  * };
- * const template = { baseCredits: 15 };
+ * const template = { price: 1500 }; // 15 business currency units in cents
  * const result = await calculateFinalPrice(instance, template);
- * // Returns: { originalPrice: 20, finalPrice: 18, discountPercentage: 0.1, discountAmount: 2 }
+ * // Returns: { originalPrice: 2000, finalPrice: 1800, discountPercentage: 0.1, discountAmount: 200 }
  * 
  * @example
  * // Low capacity discount (<50% booked, within 48h)
  * const instance = { 
  *   startTime: Date.now() + (24 * 60 * 60 * 1000), // 24 hours future
- *   baseCredits: 20,
+ *   price: 2000, // 20 euros in cents
  *   bookedCount: 3,
  *   capacity: 10 // 30% utilization
  * };
  * const result = await calculateFinalPrice(instance, template);
- * // Returns: { originalPrice: 20, finalPrice: 19, discountPercentage: 0.05, discountAmount: 1 }
+ * // Returns: { originalPrice: 2000, finalPrice: 1900, discountPercentage: 0.05, discountAmount: 100 }
  * 
  * @example
  * // No discount (well-booked class within 48h)
  * const instance = { 
  *   startTime: Date.now() + (24 * 60 * 60 * 1000),
- *   baseCredits: 20,
+ *   price: 2000, // 20 euros in cents
  *   bookedCount: 8,
  *   capacity: 10 // 80% utilization
  * };
  * const result = await calculateFinalPrice(instance, template);
- * // Returns: { originalPrice: 20, finalPrice: 20, discountPercentage: 0, discountAmount: 0 }
+ * // Returns: { originalPrice: 2000, finalPrice: 2000, discountPercentage: 0, discountAmount: 0 }
  * 
  * @example
  * // Base price fallback chain
- * const instance = { startTime: Date.now() + (72 * 60 * 60 * 1000) }; // No baseCredits
- * const template = {}; // No baseCredits  
+ * const instance = { startTime: Date.now() + (72 * 60 * 60 * 1000) }; // No price
+ * const template = {}; // No price  
  * const result = await calculateFinalPrice(instance, template);
- * // Returns: { originalPrice: 10, finalPrice: 9, discountPercentage: 0.1, discountAmount: 1 }
+ * // Returns: { originalPrice: 1000, finalPrice: 900, discountPercentage: 0.1, discountAmount: 100 }
  * 
  * @throws Never throws - all edge cases handled gracefully
- * @safety Zero capacity handled via fallback to default (10), prevents division by zero
+ * @safety Zero capacity handled via fallback to default (1000 cents), prevents division by zero
  * @safety Negative prices impossible - minimum result is 0
  * @safety Past classes can still receive capacity discounts (intentional business rule)
  */
@@ -68,17 +68,17 @@ export const calculateFinalPrice = async (
 ): Promise<PricingResult> => {
   console.log("💰 PRICING: calculateFinalPrice - Starting price calculation");
 
-  // Get base price (instance overrides template)
-  const basePrice = (instance as any).baseCredits || (template as any).baseCredits || 10;
-  console.log(`💰 PRICING: Base price: ${basePrice} credits`);
+  // Get base price in cents (instance overrides template)
+  const basePrice = instance.price || template.price || 1000; // Default 10.00 in business currency (cents)
+  console.log(`💰 PRICING: Base price: ${basePrice} cents (${(basePrice/100).toFixed(2)} in business currency)`);
 
   // Check for discounts
   const discountPercentage = await calculateDiscount(instance, template);
-  const discountAmount = basePrice * discountPercentage;
+  const discountAmount = Math.round(basePrice * discountPercentage);
   const finalPrice = basePrice - discountAmount;
 
-  console.log(`💰 PRICING: Discount: ${(discountPercentage * 100).toFixed(1)}% (${discountAmount} credits)`);
-  console.log(`💰 PRICING: Final price: ${finalPrice} credits`);
+  console.log(`💰 PRICING: Discount: ${(discountPercentage * 100).toFixed(1)}% (${discountAmount} cents)`);
+  console.log(`💰 PRICING: Final price: ${finalPrice} cents (${(finalPrice/100).toFixed(2)} in business currency`);
 
   return {
     originalPrice: basePrice,

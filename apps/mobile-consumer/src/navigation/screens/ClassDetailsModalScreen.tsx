@@ -12,6 +12,7 @@ import { tz } from '@date-fns/tz';
 import type { RootStackParamList } from '..';
 import { useActionSheet } from '@expo/react-native-action-sheet';
 import { useAuth } from '../../stores/auth-store';
+import { centsToCredits } from '@repo/utils/credits';
 
 type ClassDetailsRoute = RouteProp<RootStackParamList, 'ClassDetailsModal'>;
 
@@ -86,7 +87,7 @@ export function ClassDetailsModalScreen() {
     const onPress = () => {
         if (!finalClassInstance) return;
 
-        const options = [`Spend ${price} credits`, 'Cancel'];
+        const options = [`Spend ${priceCredits} credits`, 'Cancel'];
         const cancelButtonIndex = 1;
 
         showActionSheetWithOptions({
@@ -219,7 +220,7 @@ export function ClassDetailsModalScreen() {
     const description = finalClassInstance.description ?? template?.description ?? '';
     const instructor = finalClassInstance.instructor ?? template?.instructor ?? 'TBD';
     const capacity = finalClassInstance.capacity ?? template?.capacity ?? 0;
-    const baseCredits = finalClassInstance.baseCredits ?? template?.baseCredits ?? 0;
+    const price = finalClassInstance.price ?? template?.price ?? 0;
 
     // Venue info
     const businessName = venue?.name ?? 'Unknown Venue';
@@ -246,7 +247,7 @@ export function ClassDetailsModalScreen() {
         : null;
 
     const duration = Math.round((finalClassInstance.endTime - finalClassInstance.startTime) / (1000 * 60));
-    const price = baseCredits; // Show in credits instead of euros
+    const priceCredits = centsToCredits(price);
     const spotsLeft = Math.max(0, capacity - (finalClassInstance.bookedCount ?? 0));
     // const typeLabel = finalClassInstance.tags?.[0] ?? (className ? className.split(' ')[0] : 'Class');
 
@@ -337,11 +338,10 @@ export function ClassDetailsModalScreen() {
                             </View>
                         )}
 
-                        {/* Price and Available Spots - Moved up */}
                         <View style={styles.priceInfoSection}>
                             <View style={styles.priceContainer}>
                                 <Text style={styles.priceLabel}>Price</Text>
-                                <Text style={styles.priceValue}>{price} credits</Text>
+                                <Text style={styles.priceValue}>{priceCredits} credits</Text>
 
                             </View>
                             <View style={styles.spotsContainer}>
@@ -498,7 +498,7 @@ export function ClassDetailsModalScreen() {
                                 {spotsLeft > 0 && (
                                     <View style={styles.bookButtonPriceContainer}>
                                         <DiamondIcon size={18} color="rgba(255, 255, 255, 0.9)" />
-                                        <Text style={styles.bookButtonSubtext}>{price}</Text>
+                                        <Text style={styles.bookButtonSubtext}>{priceCredits}</Text>
                                     </View>
                                 )}
                             </TouchableOpacity>

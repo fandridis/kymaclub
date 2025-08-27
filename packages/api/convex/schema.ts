@@ -261,7 +261,7 @@ export const classTemplatesFields = {
   waitlistCapacity: v.optional(v.number()),
 
   // Booking rules
-  baseCredits: v.number(),
+  price: v.number(), // Price in business currency (100-10000 IN CENTS, no decimals) - currency from business.currency
   bookingWindow: v.optional(v.object({
     minHours: v.number(), // Can't book closer than this
     maxHours: v.number(), // Can't book further than this
@@ -302,7 +302,7 @@ export const classInstancesFields = {
   description: v.optional(v.string()),
   instructor: v.optional(v.string()),
   capacity: v.optional(v.number()),
-  baseCredits: v.optional(v.number()),
+  price: v.optional(v.number()), // Price in business currency (100-10000 IN CENTS, no decimals) - currency from business.currency
   bookingWindow: v.optional(v.object({
     minHours: v.number(),
     maxHours: v.number(),
@@ -421,7 +421,7 @@ export const bookingsFields = {
   cancelReason: v.optional(v.string()),
 
   // Simple pricing tracking (links to credit ledger)
-  originalPrice: v.number(),           // Template baseCredits (before any discount)
+  originalPrice: v.number(),           // Template price (before any discount)
   finalPrice: v.number(),             // What they actually paid
   creditsUsed: v.number(),            // Same as finalPrice (for consistency)
   creditTransactionId: v.string(),    // Links to creditLedger entries

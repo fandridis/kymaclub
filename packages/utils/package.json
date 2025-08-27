@@ -21,6 +21,6 @@
     "./crypto-utils": "./src/crypto-utils.ts",
     "./i18n-typed": "./src/i18n-typed.ts",
     "./colors": "./src/colors.ts",
-    ".": "./src/index.ts"
+    "./credits": "./src/credits.ts"
   }
 }

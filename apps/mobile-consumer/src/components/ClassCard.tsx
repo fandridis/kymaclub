@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { ClockIcon, DiamondIcon, UserIcon } from 'lucide-react-native';
 import { useTypedTranslation } from '../i18n/typed';
 import type { ClassInstance } from '../hooks/use-class-instances';
+import { centsToCredits } from '@repo/utils/credits';
 
 interface ClassCardProps {
   classInstance: ClassInstance;
@@ -20,7 +21,7 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
     hour12: false,
   });
   const duration = Math.round((classInstance.endTime - classInstance.startTime) / (1000 * 60));
-  const price = classInstance.baseCredits
+  const price = classInstance.price;
   const spotsLeft = Math.max(0, (classInstance.capacity ?? 0) - (classInstance.bookedCount ?? 0));
   const isSoldOut = spotsLeft === 0;
 
@@ -52,7 +53,7 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
           </Text>
           <View style={styles.priceContainer}>
             <DiamondIcon size={16} color="#222" />
-            <Text style={styles.priceText}>{price}</Text>
+            <Text style={styles.priceText}>{centsToCredits(price ?? 0)}</Text>
           </View>
         </View>
 

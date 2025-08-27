@@ -9,8 +9,10 @@
  * - Subscriptions: Monthly recurring credits with volume discounts (5-150 credits)
  * - One-time purchases: Single credit purchases with pack-based pricing (1-200 credits)
  * - Tiered discounts: Larger volumes get better per-credit pricing
- * - Currency: All prices in EUR (€) with cent-based calculations for precision
+ * - Base pricing: Uses shared credit conversion constants for consistency
  */
+
+import { CREDITS_TO_CENTS_RATIO } from '@repo/utils/credits';
 
 /**
  * Pricing tier result containing credits, pricing, and discount information
@@ -45,78 +47,80 @@ export type CreditPack = {
 /**
  * Centralized credit pack definitions - single source of truth for all pricing
  * Used by both mobile app UI and backend pricing calculations
+ * 
+ * Base calculation: 1 credit costs 50 cents to provide (CREDITS_TO_CENTS_RATIO)
+ * Purchase price includes business markup (typically 1.3x the base cost = $0.65 per credit)
  */
+const calculatePackPrice = (credits: number, discount: number = 0): number => {
+  const basePricePerCredit = 0.65; // $0.65 per credit base price
+  const priceBeforeDiscount = credits * basePricePerCredit;
+  return Number((priceBeforeDiscount * (1 - discount / 100)).toFixed(2));
+};
+
 export const CREDIT_PACKS: CreditPack[] = [
-  { credits: 5, price: 11.5 },   // $2.30 per credit
-  { credits: 10, price: 23.0 },  // $2.30 per credit
-  { credits: 20, price: 46.0 },  // $2.30 per credit
-  { credits: 30, price: 67, discount: 3 },   // $2.23 per credit with 3% discount
-  { credits: 40, price: 87, discount: 5 },   // $2.175 per credit with 5% discount
-  { credits: 50, price: 103, discount: 10 }, // $2.06 per credit with 10% discount
+  { credits: 10, price: calculatePackPrice(10) },     // $0.65 per credit
+  { credits: 25, price: calculatePackPrice(25) },     // $0.65 per credit
+  { credits: 50, price: calculatePackPrice(50) },     // $0.65 per credit
+  { credits: 100, price: calculatePackPrice(100, 2.5), discount: 2.5 },   // $0.634 per credit with 2.5% discount
+  { credits: 150, price: calculatePackPrice(150, 5), discount: 5 },       // $0.618 per credit with 5% discount
+  { credits: 200, price: calculatePackPrice(200, 10), discount: 10 },     // $0.585 per credit with 10% discount
+  { credits: 300, price: calculatePackPrice(300, 10), discount: 10 },     // $0.585 per credit with 10% discount
+  { credits: 500, price: calculatePackPrice(500, 15), discount: 15 },     // $0.585 per credit with 10% discount
+
 ];
 
 /**
  * Calculates subscription pricing with tiered volume discounts
  * 
- * @description Implements 4-tier discount structure for monthly subscriptions:
- * Tier 1 (5-44): €2.00/credit (0% discount)
- * Tier 2 (45-84): €1.95/credit (2.5% discount)  
- * Tier 3 (85-124): €1.90/credit (5% discount)
- * Tier 4 (125-150): €1.80/credit (10% discount)
+ * @description Implements tiered discount structure for monthly subscriptions:
+ * - Up to 95 credits: no discount
+ * - 100-195 credits: 3% discount  
+ * - 200-295 credits: 5% discount
+ * - 300-445 credits: 7% discount
+ * - 450-500 credits: 10% discount
  * 
- * @param credits - Number of credits per month (5-150)
+ * @param credits - Number of credits per month (5-500)
  * @returns PricingTier with credits, priceInCents, pricePerCredit, discount
  * 
  * @example
- * // Tier 1 pricing (no discount)
- * const tier1 = calculateSubscriptionPricing(30);
- * // Returns: { credits: 30, priceInCents: 6000, pricePerCredit: 2.00, discount: 0 }
+ * // No discount tier
+ * const tier1 = calculateSubscriptionPricing(50);
+ * // Returns: { credits: 50, priceInCents: 2500, pricePerCredit: 0.50, discount: 0 }
  * 
  * @example
- * // Tier 2 pricing (2.5% discount)
- * const tier2 = calculateSubscriptionPricing(60);
- * // Returns: { credits: 60, priceInCents: 11700, pricePerCredit: 1.95, discount: 2.5 }
+ * // 3% discount tier
+ * const tier2 = calculateSubscriptionPricing(150);
+ * // Returns: { credits: 150, priceInCents: 7275, pricePerCredit: 0.485, discount: 3 }
  * 
- * @example
- * // Tier 4 pricing (maximum 10% discount)
- * const tier4 = calculateSubscriptionPricing(140);
- * // Returns: { credits: 140, priceInCents: 25200, pricePerCredit: 1.80, discount: 10.0 }
- * 
- * @business_rule Tier boundaries: 5-44, 45-84, 85-124, 125-150 credits
- * @business_rule Base price: €2.00 per credit before discounts
- * @business_rule Currency: EUR (€) for all transactions
- * @precision Prices converted to cents using Math.round() to prevent floating point issues
+ * @business_rule Base cost: 50 cents per credit (CREDITS_TO_CENTS_RATIO)
+ * @business_rule Discounts start at 100 credits and increase every 50 credits
  */
 export function calculateSubscriptionPricing(credits: number): PricingTier {
-  const basePrice = 2.00; // €2.00 base price per credit
-  let pricePerCredit: number;
-  let discount: number;
+  const basePricePerCredit = 0.50; // Base price per credit
+  let discount = 0;
 
-  if (credits < 45) {
-    // 5 to 40 credits: €2.00 per credit (no discount)
-    pricePerCredit = basePrice;
-    discount = 0;
-  } else if (credits < 85) {
-    // 45 to 84 credits: €1.95 per credit (2.5% discount)
-    pricePerCredit = 1.95;
-    discount = 2.5;
-  } else if (credits < 125) {
-    // 85 to 124 credits: €1.90 per credit (5% discount)
-    pricePerCredit = 1.90;
-    discount = 5.0;
+  // Determine discount tier based on credit amount
+  if (credits >= 450) {
+    discount = 10; // 450-500 credits: 10% discount
+  } else if (credits >= 300) {
+    discount = 7;  // 300-445 credits: 7% discount
+  } else if (credits >= 200) {
+    discount = 5;  // 200-295 credits: 5% discount
+  } else if (credits >= 100) {
+    discount = 3;  // 100-195 credits: 3% discount
   } else {
-    // 125 to 150 credits: €1.80 per credit (10% discount)
-    pricePerCredit = 1.80;
-    discount = 10.0;
+    discount = 0;  // Up to 95 credits: no discount
   }
 
+  // Calculate discounted price per credit
+  const pricePerCredit = basePricePerCredit * (1 - discount / 100);
   const totalPrice = credits * pricePerCredit;
-  const priceInCents = Math.round(totalPrice * 100); // Convert to cents
+  const priceInCents = Math.round(totalPrice * 100);
 
   return {
     credits,
     priceInCents,
-    pricePerCredit,
+    pricePerCredit: Number(pricePerCredit.toFixed(3)), // 3 decimal places for precision
     discount
   };
 }
@@ -126,7 +130,7 @@ export function calculateSubscriptionPricing(credits: number): PricingTier {
  * 
  * @description Ensures credit amount meets subscription constraints:
  * - Minimum: 5 credits (prevents micro-subscriptions)
- * - Maximum: 150 credits (reasonable business limit)
+ * - Maximum: 500 credits (supports new discount tiers)
  * - Increment: Must be divisible by 5 (UI slider constraint)
  * 
  * @param credits - Number of credits to validate
@@ -136,14 +140,14 @@ export function calculateSubscriptionPricing(credits: number): PricingTier {
  * validateCreditAmount(30); // Returns: true (valid)
  * validateCreditAmount(3);  // Returns: false (below minimum)
  * validateCreditAmount(33); // Returns: false (not divisible by 5)
- * validateCreditAmount(200); // Returns: false (above maximum)
+ * validateCreditAmount(600); // Returns: false (above maximum)
  * 
  * @business_rule Minimum 5 credits prevents administrative overhead
- * @business_rule Maximum 150 credits prevents excessive monthly charges
+ * @business_rule Maximum 500 credits supports all discount tiers
  * @business_rule Increment of 5 matches mobile app slider UI
  */
 export function validateCreditAmount(credits: number): boolean {
-  return credits >= 5 && credits <= 150 && credits % 5 === 0;
+  return credits >= 5 && credits <= 500 && credits % 5 === 0;
 }
 
 /**
@@ -190,7 +194,7 @@ export function getSubscriptionProductName(credits: number): string {
  */
 export function getSubscriptionProductDescription(credits: number): string {
   const pricing = calculateSubscriptionPricing(credits);
-  return `${credits} credits every month at €${pricing.pricePerCredit.toFixed(2)} per credit${pricing.discount > 0 ? ` (${pricing.discount}% discount)` : ''}`;
+  return `${credits} credits every month at ${pricing.pricePerCredit.toFixed(2)} per credit${pricing.discount > 0 ? ` (${pricing.discount}% discount)` : ''}`;
 }
 
 /**
@@ -217,20 +221,20 @@ export function getSubscriptionProductDescription(credits: number): string {
  * const custom = calculateOneTimePricing(15);
  * // Returns: { credits: 15, priceInCents: 3450, pricePerCredit: 2.30, discount: 0 }
  * 
- * @business_rule Predefined packs: 5, 10, 20, 30, 40, 50 credits
- * @business_rule Pack discounts: 0%, 0%, 0%, 3%, 5%, 10% respectively
- * @business_rule Fallback rate: $2.30 per credit for non-pack amounts
+ * @business_rule Predefined packs: 5, 10, 20, 30, 40, 50 credits  
+ * @business_rule Pack pricing: Based on CREDITS_TO_CENTS_RATIO with markup
+ * @business_rule Fallback rate: 2.5x markup over base cost for non-pack amounts
  * @precision All prices calculated in cents to avoid floating point issues
  * @data_source CREDIT_PACKS constant provides single source of truth for pack pricing
  */
 export function calculateOneTimePricing(credits: number): PricingTier {
   // First, try to find exact match in predefined credit packs
   const pack = CREDIT_PACKS.find(p => p.credits === credits);
-  
+
   if (pack) {
-    const actualPricePerCredit = pack.price / pack.credits;
+    const actualPricePerCredit = Number((pack.price / pack.credits).toFixed(2));
     const priceInCents = Math.round(pack.price * 100);
-    
+
     return {
       credits,
       priceInCents,
@@ -238,9 +242,11 @@ export function calculateOneTimePricing(credits: number): PricingTier {
       discount: pack.discount || 0
     };
   }
-  
-  // For amounts not in predefined packs, use standard $2.30 per credit
-  const basePricePerCredit = 2.30;
+
+  // For amounts not in predefined packs, use standard pricing based on base cost + markup
+  const baseCostPerCredit = CREDITS_TO_CENTS_RATIO / 100; // Convert to currency units
+  const standardMarkup = 2.5; // 2.5x markup for non-pack purchases
+  const basePricePerCredit = baseCostPerCredit * standardMarkup;
   const totalPrice = credits * basePricePerCredit;
   const priceInCents = Math.round(totalPrice * 100);
 
@@ -262,19 +268,19 @@ export function calculateOneTimePricing(credits: number): PricingTier {
  * @returns boolean - true if within valid range, false otherwise
  * 
  * @example
- * validateOneTimeCreditAmount(1);   // Returns: true (minimum)
+ * validateOneTimeCreditAmount(10);   // Returns: true (minimum)
  * validateOneTimeCreditAmount(37);  // Returns: true (any amount allowed)
  * validateOneTimeCreditAmount(200); // Returns: true (maximum)
  * validateOneTimeCreditAmount(0);   // Returns: false (below minimum)
- * validateOneTimeCreditAmount(250); // Returns: false (above maximum)
+ * validateOneTimeCreditAmount(501); // Returns: false (above maximum)
  * 
- * @business_rule Minimum: 1 credit (allows micro-purchases)
- * @business_rule Maximum: 200 credits (reasonable one-time purchase limit)
+ * @business_rule Minimum: 10 credits (allows micro-purchases)
+ * @business_rule Maximum: 500 credits (reasonable one-time purchase limit)
  * @business_rule No increment restriction (unlike subscriptions)
  * @rationale One-time purchases need flexibility for specific credit needs
  */
 export function validateOneTimeCreditAmount(credits: number): boolean {
-  return credits >= 1 && credits <= 200; // More flexible for one-time purchases
+  return credits >= 10 && credits <= 500; // More flexible for one-time purchases
 }
 
 /**

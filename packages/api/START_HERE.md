@@ -104,7 +104,7 @@ Complete reference of all business rules, constraints, and operational logic wit
   - Early bird wins if both conditions met
 
 ### PR-002: Base Price Selection Chain
-- **Rule**: `instance.baseCredits → template.baseCredits → default(10)` priority chain
+- **Rule**: `instance.price → template.price → default(15)` priority chain
 - **Code**: `operations/pricing.ts:15` 
 - **Tests**: `operations/pricing.test.ts:19-80` (Base Price Selection tests)
 - **Edge Case**: Zero credits (0) is falsy in JavaScript, falls back to template/default
@@ -359,7 +359,7 @@ Complete reference of all business rules, constraints, and operational logic wit
 - **Code**: Safety checks throughout operations (zero capacity, missing fields, etc.)
 - **Tests**: Edge case tests in all operation test suites  
 - **Philosophy**: Better to provide fallback behavior than fail completely
-- **Examples**: Zero capacity → fallback to 10, missing baseCredits → use template/default
+- **Examples**: Zero capacity → fallback to 10, missing price → use template/default
 
 ---
 

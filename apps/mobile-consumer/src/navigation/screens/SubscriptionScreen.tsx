@@ -9,6 +9,10 @@ import { StackScreenHeader } from '../../components/StackScreenHeader';
 import { useAuthenticatedUser } from '../../stores/auth-store';
 import { useQuery, useAction } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
+import { calculateSubscriptionPricing } from '@repo/api/operations/payments';
+
+// Simple currency formatter - can be made configurable later
+const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
 
 type SubscriptionTier = {
     credits: number;
@@ -17,46 +21,25 @@ type SubscriptionTier = {
     discount: number;
 };
 
-// Static subscription options with correct pricing tiers (5-150 credits)
-const subscriptionOptions: SubscriptionTier[] = [
-    // 5 to 40 credits: €2.00 per credit
-    { credits: 5, price: 10.00, pricePerCredit: 2.00, discount: 0 },
-    { credits: 10, price: 20.00, pricePerCredit: 2.00, discount: 0 },
-    { credits: 15, price: 30.00, pricePerCredit: 2.00, discount: 0 },
-    { credits: 20, price: 40.00, pricePerCredit: 2.00, discount: 0 },
-    { credits: 25, price: 50.00, pricePerCredit: 2.00, discount: 0 },
-    { credits: 30, price: 60.00, pricePerCredit: 2.00, discount: 0 },
-    { credits: 35, price: 70.00, pricePerCredit: 2.00, discount: 0 },
-    { credits: 40, price: 80.00, pricePerCredit: 2.00, discount: 0 },
+// Generate subscription options using backend pricing logic (5-150 credits)
+const generateSubscriptionOptions = (): SubscriptionTier[] => {
+    const options: SubscriptionTier[] = [];
 
-    // 45 to 80 credits: €1.95 per credit (2.5% discount)
-    { credits: 45, price: 87.75, pricePerCredit: 1.95, discount: 2.5 },
-    { credits: 50, price: 97.50, pricePerCredit: 1.95, discount: 2.5 },
-    { credits: 55, price: 107.25, pricePerCredit: 1.95, discount: 2.5 },
-    { credits: 60, price: 117.00, pricePerCredit: 1.95, discount: 2.5 },
-    { credits: 65, price: 126.75, pricePerCredit: 1.95, discount: 2.5 },
-    { credits: 70, price: 136.50, pricePerCredit: 1.95, discount: 2.5 },
-    { credits: 75, price: 146.25, pricePerCredit: 1.95, discount: 2.5 },
-    { credits: 80, price: 156.00, pricePerCredit: 1.95, discount: 2.5 },
+    // Generate options every 5 credits from 20 to 500
+    for (let credits = 20; credits <= 500; credits += 5) {
+        const pricing = calculateSubscriptionPricing(credits);
+        options.push({
+            credits: credits,
+            price: pricing.priceInCents / 100, // Convert cents to base currency units
+            pricePerCredit: pricing.pricePerCredit,
+            discount: pricing.discount
+        });
+    }
 
-    // 85 to 120 credits: €1.90 per credit (5% discount)
-    { credits: 85, price: 161.50, pricePerCredit: 1.90, discount: 5.0 },
-    { credits: 90, price: 171.00, pricePerCredit: 1.90, discount: 5.0 },
-    { credits: 95, price: 180.50, pricePerCredit: 1.90, discount: 5.0 },
-    { credits: 100, price: 190.00, pricePerCredit: 1.90, discount: 5.0 },
-    { credits: 105, price: 199.50, pricePerCredit: 1.90, discount: 5.0 },
-    { credits: 110, price: 209.00, pricePerCredit: 1.90, discount: 5.0 },
-    { credits: 115, price: 218.50, pricePerCredit: 1.90, discount: 5.0 },
-    { credits: 120, price: 228.00, pricePerCredit: 1.90, discount: 5.0 },
+    return options;
+};
 
-    // 125 to 150 credits: €1.80 per credit (10% discount)
-    { credits: 125, price: 225.00, pricePerCredit: 1.80, discount: 10.0 },
-    { credits: 130, price: 234.00, pricePerCredit: 1.80, discount: 10.0 },
-    { credits: 135, price: 243.00, pricePerCredit: 1.80, discount: 10.0 },
-    { credits: 140, price: 252.00, pricePerCredit: 1.80, discount: 10.0 },
-    { credits: 145, price: 261.00, pricePerCredit: 1.80, discount: 10.0 },
-    { credits: 150, price: 270.00, pricePerCredit: 1.80, discount: 10.0 },
-];
+const subscriptionOptions: SubscriptionTier[] = generateSubscriptionOptions();
 
 export function SubscriptionScreen() {
     const navigation = useNavigation();
@@ -120,8 +103,8 @@ export function SubscriptionScreen() {
             Alert.alert(
                 isUpdate ? 'Update Subscription' : 'Start Subscription',
                 isUpdate
-                    ? `Update to ${selectedCredits} credits/month for €${getCurrentOption().price.toFixed(2)}/month?\n\nChanges will take effect on ${nextBillingDate}. No charge now.`
-                    : `Start subscription with ${selectedCredits} credits/month for €${getCurrentOption().price.toFixed(2)}/month?\n\nYou'll be charged now and receive ${selectedCredits} credits immediately.`,
+                    ? `Update to ${selectedCredits} credits/month for ${formatCurrency(getCurrentOption().price)}/month?\n\nChanges will take effect on ${nextBillingDate}. No charge now.`
+                    : `Start subscription with ${selectedCredits} credits/month for ${formatCurrency(getCurrentOption().price)}/month?\n\nYou'll be charged now and receive ${selectedCredits} credits immediately.`,
                 [
                     { text: 'Cancel', style: 'cancel' },
                     {
@@ -191,13 +174,13 @@ export function SubscriptionScreen() {
 
         if (subscriptionExpired) {
             // Expired - start new subscription with full charge
-            message = `Start new subscription with ${selectedCredits} credits/month for €${currentOption.price.toFixed(2)}/month?`;
-            chargeInfo = `\n\nYou'll be charged €${currentOption.price.toFixed(2)} now and receive ${selectedCredits} credits immediately.`;
+            message = `Start new subscription with ${selectedCredits} credits/month for ${formatCurrency(currentOption.price)}/month?`;
+            chargeInfo = `\n\nYou'll be charged ${formatCurrency(currentOption.price)} now and receive ${selectedCredits} credits immediately.`;
             buttonText = 'Start & Pay';
         } else {
             // Not expired - just re-enable, no charge
             message = `Re-enable subscription with ${selectedCredits} credits/month?`;
-            chargeInfo = `\n\nNo charge now. Your subscription will continue and charge €${currentOption.price.toFixed(2)} on ${nextBillingDate}.`;
+            chargeInfo = `\n\nNo charge now. Your subscription will continue and charge ${formatCurrency(currentOption.price)} on ${nextBillingDate}.`;
             buttonText = 'Re-enable';
         }
 
@@ -272,8 +255,8 @@ export function SubscriptionScreen() {
 
                         <Text style={styles.selectionCredits}>{selectedCredits}</Text>
                         <Text style={styles.selectionLabel}>credits/month</Text>
-                        <Text style={styles.selectionPrice}>€{getCurrentOption().price.toFixed(2)}/month</Text>
-                        <Text style={styles.pricePerCredit}>€{getCurrentOption().pricePerCredit?.toFixed(2)} per credit</Text>
+                        <Text style={styles.selectionPrice}>{formatCurrency(getCurrentOption().price)}/month</Text>
+                        <Text style={styles.pricePerCredit}>{formatCurrency(getCurrentOption().pricePerCredit)} per credit</Text>
                     </View>
 
                     {/* Native Slider */}

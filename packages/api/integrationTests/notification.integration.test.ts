@@ -149,7 +149,7 @@ describe('Notification System Integration Tests', () => {
                 description: "A challenging flow class",
                 duration: 90,
                 capacity: 15,
-                baseCredits: 15,
+                price: 750, // 15.00 in business currency (15 credits * 50 cents/credit)
             });
 
             const startTime = Date.now() + (24 * 60 * 60 * 1000); // 24 hours from now
