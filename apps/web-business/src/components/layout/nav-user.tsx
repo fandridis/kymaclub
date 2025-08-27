@@ -78,13 +78,13 @@ export function NavUser({
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuGroup>
+                        {/* <DropdownMenuGroup>
                             <DropdownMenuItem>
                                 <Sparkles />
                                 Upgrade to Pro
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
-                        <DropdownMenuSeparator />
+                        <DropdownMenuSeparator /> */}
                         <DropdownMenuGroup>
                             <DropdownMenuItem asChild>
                                 <Link to='/settings'>
@@ -92,7 +92,7 @@ export function NavUser({
                                     Settings
                                 </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
+                            {/* <DropdownMenuItem asChild>
                                 <Link to='/dashboard'>
                                     <CreditCard />
                                     Billing
@@ -103,14 +103,14 @@ export function NavUser({
                                     <Bell />
                                     Notifications
                                 </Link>
-                            </DropdownMenuItem>
+                            </DropdownMenuItem> */}
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => {
+                        <DropdownMenuItem className='text-red-500' onClick={() => {
                             logout();
                             signOut();
                         }}>
-                            <LogOut />
+                            <LogOut className='text-red-500' />
                             Log out
                         </DropdownMenuItem>
                     </DropdownMenuContent>

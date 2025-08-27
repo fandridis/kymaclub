@@ -104,12 +104,13 @@ Complete reference of all business rules, constraints, and operational logic wit
   - Early bird wins if both conditions met
 
 ### PR-002: Base Price Selection Chain
-- **Rule**: `instance.price → template.price → default(15)` priority chain
+- **Rule**: `instance.price → template.price → default(1000 cents)` priority chain
 - **Code**: `operations/pricing.ts:15` 
 - **Tests**: `operations/pricing.test.ts:19-80` (Base Price Selection tests)
 - **Edge Case**: Zero credits (0) is falsy in JavaScript, falls back to template/default
 - **Safety**: Minimum final price is 0 (never negative), tested in `pricing.test.ts:225-238`
-- **Example**: Instance with 0 credits + template with 5 credits = 5 credits base price
+- **Example**: Instance with 0 price + template with 500 cents = 500 cents base price
+- **Conversion**: 1000 cents = 20 credits at 50 cents per credit ratio
 
 ### PR-003: Pricing Calculation Safety
 - **Rule**: All pricing calculations must handle floating point arithmetic safely
@@ -196,6 +197,30 @@ Complete reference of all business rules, constraints, and operational logic wit
 - **Tests**: `integrationTests/payment.integration.test.ts` (payment safety tests)
 - **Safety**: No pre-allocation, prevents loss from failed payments
 - **Webhook Dependency**: Uses Stripe `checkout.session.completed` event
+
+### CR-005: Credit Conversion Ratio (ADR-009)
+- **Rule**: 1 credit = 50 cents spending value (CREDITS_TO_CENTS_RATIO = 50)
+- **Code**: `packages/utils/src/credits.ts:10` (CREDITS_TO_CENTS_RATIO constant)
+- **Tests**: All payment tests use this ratio for consistency
+- **Business Logic**: Spending value vs. purchase price are separate concepts
+- **Example**: Customer pays $0.65 to buy 1 credit worth 50 cents when booking
+- **Rationale**: Provides business markup while maintaining simple credit math
+
+### CR-006: Subscription Pricing Tiers (ADR-010)
+- **Rule**: 5-tier discount structure: 0% (5-99), 3% (100-199), 5% (200-299), 7% (300-449), 10% (450-500)
+- **Code**: `operations/payments.ts:99-127` (calculateSubscriptionPricing)
+- **Tests**: `operations/payments.test.ts` (subscription pricing tests)
+- **Base Price**: $0.50 per credit before discounts
+- **Business Logic**: Volume discounts incentivize larger subscriptions
+- **Maximum**: 500 credits per month (increased from 150 to support enterprise users)
+
+### CR-007: One-Time Credit Packs (ADR-011)
+- **Rule**: 8 predefined packs: 10, 25, 50, 100, 150, 200, 300, 500 credits
+- **Code**: `operations/payments.ts:61-71` (CREDIT_PACKS constant)
+- **Tests**: `operations/payments.test.ts` (one-time pricing tests)
+- **Base Price**: $0.65 per credit with discount tiers (0%, 2.5%, 5%, 10%, 15%)
+- **Minimum**: 10 credits (prevents micro-transactions)
+- **Maximum**: 500 credits (reasonable one-time purchase limit)
 
 ---
 

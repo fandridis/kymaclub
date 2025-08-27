@@ -99,9 +99,10 @@ src/
 
 ### **Credit & Payment System**
 - **Credit balance** - Real-time balance display with expiration warnings
-- **One-time purchases** - Credit packs (5, 10, 20, 30, 50 credits) with Stripe
-- **Subscription management** - Dynamic monthly subscriptions (5-150 credits)
+- **One-time purchases** - Credit packs (10, 25, 50, 100, 150, 200, 300, 500 credits) with Stripe
+- **Subscription management** - Dynamic monthly subscriptions (5-500 credits) with 5-tier discounts
 - **Payment handling** - Stripe integration with success/cancel screens
+- **Credit value** - 1 credit = 50 cents spending value, purchase prices include business markup
 
 ### **Advanced Features**
 - **QR Scanner** - Quick class check-ins with camera integration

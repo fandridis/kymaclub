@@ -6,13 +6,19 @@
  * UI and provide consistent pricing across all platforms.
  * 
  * Key Concepts:
- * - Subscriptions: Monthly recurring credits with volume discounts (5-150 credits)
- * - One-time purchases: Single credit purchases with pack-based pricing (1-200 credits)
+ * - Subscriptions: Monthly recurring credits with volume discounts (5-500 credits)
+ * - One-time purchases: Single credit purchases with pack-based pricing (10-500 credits)
  * - Tiered discounts: Larger volumes get better per-credit pricing
  * - Base pricing: Uses shared credit conversion constants for consistency
  */
 
 import { CREDITS_TO_CENTS_RATIO } from '@repo/utils/credits';
+
+// ADR-009: Credit Conversion Ratio
+// Decision: Use 1 credit = 50 cents spending value (CREDITS_TO_CENTS_RATIO = 50)
+// Rationale: Simple math for users while allowing business markup on purchase prices
+// Alternative considered: 100 cents per credit (rejected - too expensive for users)
+// Impact: Spending value separate from purchase price allows flexible pricing tiers
 
 /**
  * Pricing tier result containing credits, pricing, and discount information
@@ -57,6 +63,11 @@ const calculatePackPrice = (credits: number, discount: number = 0): number => {
   return Number((priceBeforeDiscount * (1 - discount / 100)).toFixed(2));
 };
 
+// ADR-011: One-Time Credit Pack Structure
+// Decision: 8 predefined packs with volume-based discounts (10-500 credits)
+// Rationale: Covers casual users (10) to enterprise users (500) with clear savings
+// Alternative considered: Continuous pricing (rejected - too complex for UI)
+// Business logic: Minimum 10 credits prevents micro-transactions
 export const CREDIT_PACKS: CreditPack[] = [
   { credits: 10, price: calculatePackPrice(10) },     // $0.65 per credit
   { credits: 25, price: calculatePackPrice(25) },     // $0.65 per credit
@@ -95,6 +106,11 @@ export const CREDIT_PACKS: CreditPack[] = [
  * @business_rule Base cost: 50 cents per credit (CREDITS_TO_CENTS_RATIO)
  * @business_rule Discounts start at 100 credits and increase every 50 credits
  */
+// ADR-010: Subscription Pricing Tier Structure
+// Decision: 5-tier discount system with increasing benefits (0%, 3%, 5%, 7%, 10%)
+// Rationale: Encourages larger subscriptions while keeping base tier affordable
+// Alternative considered: Linear discount (rejected - less incentive for volume)
+// Business impact: 500 credit limit supports enterprise users
 export function calculateSubscriptionPricing(credits: number): PricingTier {
   const basePricePerCredit = 0.50; // Base price per credit
   let discount = 0;
@@ -262,7 +278,7 @@ export function calculateOneTimePricing(credits: number): PricingTier {
  * Validates one-time credit purchase amount within business constraints
  * 
  * @description More flexible than subscription validation - allows any amount
- * from 1-200 credits without increment restrictions.
+ * from 10-500 credits without increment restrictions.
  * 
  * @param credits - Number of credits to validate
  * @returns boolean - true if within valid range, false otherwise

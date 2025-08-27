@@ -100,11 +100,11 @@ async function getOrCreateStripeCustomer(
  */
 export const paymentsService = {
   /**
-   * Create dynamic subscription checkout session for 5-150 credits
+   * Create dynamic subscription checkout session for 5-500 credits
    * Uses centralized pricing logic with tiered discounts based on credit amount
    * 
    * @param ctx - Convex action context
-   * @param args - Object containing creditAmount (5-150), userId, and userEmail
+   * @param args - Object containing creditAmount (5-500), userId, and userEmail
    * @returns Promise resolving to checkout URL and session ID
    * @throws Error for invalid parameters, missing environment variables, or Stripe failures
    */
@@ -120,7 +120,7 @@ export const paymentsService = {
     }
 
     if (!validateCreditAmount(creditAmount)) {
-      throw new Error("Invalid credit amount. Must be between 5-150 credits in increments of 5.");
+      throw new Error("Invalid credit amount. Must be between 5-500 credits in increments of 5.");
     }
 
     if (!process.env.STRIPE_SECRET_KEY) {
@@ -577,7 +577,7 @@ export const paymentsService = {
    * No immediate charges or credits
    * 
    * @param ctx - Convex action context
-   * @param args - Object containing userId and newCreditAmount (5-150)
+   * @param args - Object containing userId and newCreditAmount (5-500)
    * @returns Promise resolving to object with success status, new amount, price, and message
    * @throws Error for missing parameters, invalid credit amount, no active subscription, or Stripe failures
    */
@@ -596,7 +596,7 @@ export const paymentsService = {
     }
 
     if (!validateCreditAmount(newCreditAmount)) {
-      throw new Error("Credit amount must be between 5 and 150 credits in increments of 5");
+      throw new Error("Credit amount must be between 5 and 500 credits in increments of 5");
     }
 
     const subscription = await ctx.runQuery(
@@ -1100,7 +1100,7 @@ export const paymentsService = {
 
   /**
    * Create one-time credit purchase checkout session
-   * Allows purchasing 1-200 credits as a one-time payment (not subscription)
+   * Allows purchasing 10-500 credits as a one-time payment (not subscription)
    * Uses centralized pricing with discounts for larger packs
    * 
    * @param ctx - Convex action context
@@ -1116,7 +1116,7 @@ export const paymentsService = {
 
     // Validate credit amount
     if (!validateOneTimeCreditAmount(creditAmount)) {
-      throw new Error("Invalid credit amount. Must be between 1-200 credits.");
+      throw new Error("Invalid credit amount. Must be between 10-500 credits.");
     }
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {

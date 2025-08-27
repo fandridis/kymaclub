@@ -54,45 +54,45 @@ export const sidebarData: SidebarData = {
                     url: '/templates',
                     icon: BookTemplateIcon,
                 },
-                {
-                    title: 'Bookings',
-                    url: '/bookings',
-                    icon: BookmarkMinusIcon,
-                },
+                // {
+                //     title: 'Bookings',
+                //     url: '/bookings',
+                //     icon: BookmarkMinusIcon,
+                // },
 
             ],
         },
 
-        {
-            title: 'System',
-            items: [
-                {
-                    title: 'Settings',
-                    icon: Settings,
-                    items: [
-                        {
-                            title: 'Appearance',
-                            url: '/about',
-                            icon: Palette,
-                        },
-                        {
-                            title: 'Notifications',
-                            url: '/about',
-                            icon: Bell,
-                        },
-                        {
-                            title: 'Display',
-                            url: '/about',
-                            icon: Monitor,
-                        },
-                    ],
-                },
-                {
-                    title: 'Help Center',
-                    url: '/about',
-                    icon: HelpCircle,
-                },
-            ],
-        },
+        // {
+        //     title: 'System',
+        //     items: [
+        //         {
+        //             title: 'Settings',
+        //             icon: Settings,
+        //             items: [
+        //                 {
+        //                     title: 'Appearance',
+        //                     url: '/about',
+        //                     icon: Palette,
+        //                 },
+        //                 {
+        //                     title: 'Notifications',
+        //                     url: '/about',
+        //                     icon: Bell,
+        //                 },
+        //                 {
+        //                     title: 'Display',
+        //                     url: '/about',
+        //                     icon: Monitor,
+        //                 },
+        //             ],
+        //         },
+        //         {
+        //             title: 'Help Center',
+        //             url: '/about',
+        //             icon: HelpCircle,
+        //         },
+        //     ],
+        // },
     ],
 }

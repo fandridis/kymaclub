@@ -215,52 +215,71 @@ export function SubscriptionScreen() {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Current Subscription Status */}
-                <View style={styles.subscriptionCard}>
-                    <View style={styles.subscriptionRow}>
-                        <View style={styles.subscriptionInfo}>
-                            <Text style={styles.subscriptionTitle}>Monthly Subscription</Text>
-                            <Text style={styles.subscriptionSubtitle}>
-                                {isSubscriptionActive()
-                                    ? `${subscription?.creditAmount} credits/month • Next billing: ${getNextBillingDate()}`
-                                    : 'Choose a plan to get started'
-                                }
-                            </Text>
-                            {isSubscriptionCanceling() && (
-                                <Text style={styles.cancelingText}>
-                                    Subscription will end on {getNextBillingDate()}
-                                </Text>
-                            )}
-                        </View>
-                        <View style={styles.subscriptionBadge}>
-                            <CrownIcon size={16} color={theme.colors.emerald[950]} />
-                            <Text style={styles.subscriptionBadgeText}>
-                                {isSubscriptionActive() ? 'ACTIVE' : 'INACTIVE'}
-                            </Text>
-                        </View>
-                    </View>
+                {/* Header Section */}
+                <View style={styles.headerSection}>
+                    <Text style={styles.screenTitle}>Monthly Subscription</Text>
+                    <Text style={styles.screenSubtitle}>
+                        {isSubscriptionActive()
+                            ? 'Manage your current subscription'
+                            : 'Get access to unlimited classes with credits every month'
+                        }
+                    </Text>
                 </View>
 
-                <View style={styles.sliderContainer}>
-                    {/* Current Selection Display */}
+                {/* Current Subscription Status Card */}
+                <View style={styles.statusCard}>
+                    <View style={styles.statusHeader}>
+                        <CrownIcon size={20} color={theme.colors.emerald[600]} />
+                        <Text style={styles.statusTitle}>
+                            {isSubscriptionActive() ? 'Active Plan' : 'No Active Plan'}
+                        </Text>
+                    </View>
+                    <Text style={styles.statusDescription}>
+                        {isSubscriptionActive()
+                            ? `${subscription?.creditAmount} credits/month • Next billing: ${getNextBillingDate()}`
+                            : 'Choose a plan to get started with your fitness journey'
+                        }
+                    </Text>
+                    {isSubscriptionCanceling() && (
+                        <Text style={styles.cancelingText}>
+                            ⚠️ Subscription will end on {getNextBillingDate()}
+                        </Text>
+                    )}
+                </View>
+
+                {/* Plan Selection Card */}
+                <View style={styles.planCard}>
+                    <View style={styles.planHeader}>
+                        <Text style={styles.planTitle}>Choose Your Plan</Text>
+                        <Text style={styles.planSubtitle}>Adjust the slider to find the perfect fit</Text>
+                    </View>
+
+                    {/* Selection Display */}
                     <View style={styles.selectionDisplay}>
                         {/* Discount Badge */}
                         {getCurrentOption().discount > 0 && (
                             <View style={styles.discountBadge}>
                                 <Text style={styles.discountText}>
-                                    {getCurrentOption().discount}% discount
+                                    {getCurrentOption().discount}% off
                                 </Text>
                             </View>
                         )}
 
                         <Text style={styles.selectionCredits}>{selectedCredits}</Text>
-                        <Text style={styles.selectionLabel}>credits/month</Text>
-                        <Text style={styles.selectionPrice}>{formatCurrency(getCurrentOption().price)}/month</Text>
+                        <Text style={styles.selectionLabel}>credits per month</Text>
+                        <View style={styles.priceRow}>
+                            <Text style={styles.selectionPrice}>{formatCurrency(getCurrentOption().price)}</Text>
+                            <Text style={styles.priceUnit}>/month</Text>
+                        </View>
                         <Text style={styles.pricePerCredit}>{formatCurrency(getCurrentOption().pricePerCredit)} per credit</Text>
                     </View>
 
-                    {/* Native Slider */}
-                    <View style={styles.sliderWrapper}>
+                    {/* Slider Section */}
+                    <View style={styles.sliderSection}>
+                        <View style={styles.sliderLabels}>
+                            <Text style={styles.sliderLabelText}>20</Text>
+                            <Text style={styles.sliderLabelText}>500</Text>
+                        </View>
                         <Slider
                             style={styles.slider}
                             value={getSliderValue(selectedCredits)}
@@ -269,54 +288,64 @@ export function SubscriptionScreen() {
                             maximumValue={1}
                             step={1 / (subscriptionOptions.length - 1)}
                             minimumTrackTintColor={theme.colors.emerald[500]}
-                            maximumTrackTintColor={theme.colors.zinc[300]}
+                            maximumTrackTintColor={theme.colors.zinc[200]}
                             thumbTintColor={theme.colors.emerald[600]}
                         />
                     </View>
 
-                    {/* Show different buttons based on subscription state */}
-                    {isSubscriptionCanceling() ? (
-                        // When subscription is cancelled/canceling, only show Reactivate button
-                        <TouchableOpacity
-                            style={styles.reactivateButton}
-                            onPress={handleReactivateSubscription}
-                        >
-                            <Text style={styles.reactivateButtonText}>
-                                Reactivate Subscription
-                            </Text>
-                        </TouchableOpacity>
-                    ) : (
-                        // When subscription is active or doesn't exist, show Update/Start button
-                        <>
+                    {/* Action Buttons */}
+                    <View style={styles.actionSection}>
+                        {isSubscriptionCanceling() ? (
                             <TouchableOpacity
-                                style={[
-                                    styles.updateButton,
-                                    isSubscriptionActive() && selectedCredits === (subscription?.creditAmount ?? 0) && styles.updateButtonDisabled
-                                ]}
-                                onPress={handleSubscriptionChange}
-                                disabled={isSubscriptionActive() && selectedCredits === (subscription?.creditAmount ?? 0)}
+                                style={styles.primaryButton}
+                                onPress={handleReactivateSubscription}
                             >
-                                <Text style={[
-                                    styles.updateButtonText,
-                                    isSubscriptionActive() && selectedCredits === (subscription?.creditAmount ?? 0) && styles.updateButtonTextDisabled
-                                ]}>
-                                    {isSubscriptionActive() ? 'Update Subscription' : 'Start Subscription'}
+                                <Text style={styles.primaryButtonText}>
+                                    Reactivate Subscription
                                 </Text>
                             </TouchableOpacity>
-
-                            {/* Only show cancel button if subscription is active and not canceling */}
-                            {isSubscriptionActive() && (
+                        ) : (
+                            <>
                                 <TouchableOpacity
-                                    style={styles.cancelButton}
-                                    onPress={handleCancelSubscription}
+                                    style={[
+                                        styles.primaryButton,
+                                        isSubscriptionActive() && selectedCredits === (subscription?.creditAmount ?? 0) && styles.primaryButtonDisabled
+                                    ]}
+                                    onPress={handleSubscriptionChange}
+                                    disabled={isSubscriptionActive() && selectedCredits === (subscription?.creditAmount ?? 0)}
                                 >
-                                    <Text style={styles.cancelButtonText}>
-                                        Cancel Subscription
+                                    <Text style={[
+                                        styles.primaryButtonText,
+                                        isSubscriptionActive() && selectedCredits === (subscription?.creditAmount ?? 0) && styles.primaryButtonTextDisabled
+                                    ]}>
+                                        {isSubscriptionActive() ? 'Update Plan' : 'Start Subscription'}
                                     </Text>
                                 </TouchableOpacity>
-                            )}
-                        </>
-                    )}
+
+                                {isSubscriptionActive() && (
+                                    <TouchableOpacity
+                                        style={styles.secondaryButton}
+                                        onPress={handleCancelSubscription}
+                                    >
+                                        <Text style={styles.secondaryButtonText}>
+                                            Cancel Subscription
+                                        </Text>
+                                    </TouchableOpacity>
+                                )}
+                            </>
+                        )}
+                    </View>
+                </View>
+
+                {/* Info Section */}
+                <View style={styles.infoSection}>
+                    <Text style={styles.infoTitle}>How it works</Text>
+                    <Text style={styles.infoText}>
+                        • Credits are added to your account each month{'\n'}
+                        • Use credits to book classes at any partner studio{'\n'}
+                        • Unused credits roll over for up to 3 months{'\n'}
+                        • Cancel anytime - no commitment required
+                    </Text>
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -326,166 +355,246 @@ export function SubscriptionScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f9fafb',
+        backgroundColor: theme.colors.zinc[50],
     },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
-        paddingBottom: 60,
+        paddingBottom: theme.spacing['2xl'],
     },
-    // Subscription card styled like credits card
-    subscriptionCard: {
-        marginHorizontal: 20,
-        marginBottom: 16,
-        borderRadius: 12,
-        backgroundColor: theme.colors.emerald[50],
-        borderWidth: 1,
-        borderColor: theme.colors.emerald[100],
-        paddingVertical: 16,
-        paddingHorizontal: 20,
+
+    // Header Section
+    headerSection: {
+        paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.md,
+        paddingBottom: theme.spacing.lg,
     },
-    subscriptionRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    subscriptionInfo: {
-        flex: 1,
-    },
-    subscriptionTitle: {
-        fontSize: theme.fontSize.base,
-        fontWeight: theme.fontWeight.semibold,
-        color: theme.colors.emerald[950],
-        marginBottom: 2,
-    },
-    subscriptionSubtitle: {
-        fontSize: theme.fontSize.sm,
-        color: theme.colors.emerald[700],
-    },
-    subscriptionBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: theme.colors.emerald[50],
-        borderRadius: 12,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-    },
-    subscriptionBadgeText: {
-        fontSize: theme.fontSize.xs,
+    screenTitle: {
+        fontSize: theme.fontSize['2xl'],
         fontWeight: theme.fontWeight.bold,
-        color: theme.colors.emerald[950],
-        marginLeft: 4,
+        color: theme.colors.zinc[900],
+        marginBottom: theme.spacing.xs,
+    },
+    screenSubtitle: {
+        fontSize: theme.fontSize.base,
+        color: theme.colors.zinc[600],
+        lineHeight: theme.fontSize.base * 1.4,
+    },
+
+    // Status Card
+    statusCard: {
+        marginHorizontal: theme.spacing.lg,
+        marginBottom: theme.spacing.lg,
+        borderRadius: 16,
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: theme.colors.zinc[100],
+        padding: theme.spacing.lg,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+    },
+    statusHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: theme.spacing.xs,
+    },
+    statusTitle: {
+        fontSize: theme.fontSize.lg,
+        fontWeight: theme.fontWeight.semibold,
+        color: theme.colors.zinc[900],
+        marginLeft: theme.spacing.sm,
+    },
+    statusDescription: {
+        fontSize: theme.fontSize.sm,
+        color: theme.colors.zinc[600],
+        lineHeight: theme.fontSize.sm * 1.4,
     },
     cancelingText: {
         fontSize: theme.fontSize.sm,
         color: theme.colors.amber[600],
-        marginTop: 4,
+        marginTop: theme.spacing.xs,
         fontWeight: theme.fontWeight.medium,
     },
-    sliderContainer: {
-        paddingTop: 0,
-        paddingBottom: 12,
+
+    // Plan Card
+    planCard: {
+        marginHorizontal: theme.spacing.lg,
+        marginBottom: theme.spacing.lg,
+        borderRadius: 16,
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: theme.colors.zinc[100],
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
     },
+    planHeader: {
+        padding: theme.spacing.lg,
+        paddingBottom: theme.spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.zinc[100],
+    },
+    planTitle: {
+        fontSize: theme.fontSize.lg,
+        fontWeight: theme.fontWeight.semibold,
+        color: theme.colors.zinc[900],
+        marginBottom: theme.spacing.xs,
+    },
+    planSubtitle: {
+        fontSize: theme.fontSize.sm,
+        color: theme.colors.zinc[600],
+    },
+
+    // Selection Display
     selectionDisplay: {
         alignItems: 'center',
-        marginBottom: 20,
-        backgroundColor: '#fff',
-        padding: 16,
-        marginHorizontal: 20,
+        padding: theme.spacing.lg,
+        paddingBottom: theme.spacing.md,
         position: 'relative',
     },
     discountBadge: {
         position: 'absolute',
-        top: 8,
-        right: 8,
-        backgroundColor: theme.colors.rose[50],
-        paddingVertical: 4,
-        paddingHorizontal: 8,
-        borderRadius: 8,
+        top: theme.spacing.md,
+        right: theme.spacing.md,
+        backgroundColor: theme.colors.emerald[50],
+        paddingVertical: theme.spacing.xs,
+        paddingHorizontal: theme.spacing.sm,
+        borderRadius: 12,
         borderWidth: 1,
-        borderColor: theme.colors.rose[300],
+        borderColor: theme.colors.emerald[200],
     },
     discountText: {
         fontSize: theme.fontSize.xs,
-        fontWeight: theme.fontWeight.medium,
-        color: theme.colors.rose[950],
+        fontWeight: theme.fontWeight.semibold,
+        color: theme.colors.emerald[700],
     },
     selectionCredits: {
-        fontSize: theme.fontSize['3xl'],
-        fontWeight: theme.fontWeight.bold,
+        fontSize: theme.fontSize['4xl'],
+        fontWeight: theme.fontWeight.extrabold,
         color: theme.colors.emerald[600],
+        marginBottom: theme.spacing.xs,
     },
     selectionLabel: {
         fontSize: theme.fontSize.sm,
         color: theme.colors.zinc[600],
-        marginBottom: 8,
+        marginBottom: theme.spacing.md,
+        fontWeight: theme.fontWeight.medium,
+    },
+    priceRow: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        marginBottom: theme.spacing.xs,
     },
     selectionPrice: {
-        fontSize: theme.fontSize.lg,
-        fontWeight: theme.fontWeight.semibold,
+        fontSize: theme.fontSize['2xl'],
+        fontWeight: theme.fontWeight.bold,
         color: theme.colors.zinc[900],
+    },
+    priceUnit: {
+        fontSize: theme.fontSize.base,
+        fontWeight: theme.fontWeight.medium,
+        color: theme.colors.zinc[600],
+        marginLeft: 2,
     },
     pricePerCredit: {
         fontSize: theme.fontSize.sm,
         color: theme.colors.emerald[600],
         fontWeight: theme.fontWeight.medium,
-        marginTop: 4,
     },
-    sliderWrapper: {
-        marginBottom: 20,
-        paddingHorizontal: 20,
+
+    // Slider Section
+    sliderSection: {
+        paddingHorizontal: theme.spacing.lg,
+        paddingBottom: theme.spacing.lg,
+    },
+    sliderLabels: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: theme.spacing.sm,
+    },
+    sliderLabelText: {
+        fontSize: theme.fontSize.xs,
+        color: theme.colors.zinc[500],
+        fontWeight: theme.fontWeight.medium,
     },
     slider: {
         width: '100%',
         height: 40,
-        marginBottom: 10,
     },
-    updateButton: {
+
+    // Action Section
+    actionSection: {
+        padding: theme.spacing.lg,
+        paddingTop: 0,
+        gap: theme.spacing.md,
+    },
+    primaryButton: {
         backgroundColor: theme.colors.emerald[600],
-        marginHorizontal: 20,
-        paddingVertical: 14,
+        paddingVertical: theme.spacing.md,
         borderRadius: 12,
         alignItems: 'center',
-        marginBottom: 12,
+        justifyContent: 'center',
+        minHeight: 48,
     },
-    updateButtonText: {
+    primaryButtonText: {
         fontSize: theme.fontSize.base,
         fontWeight: theme.fontWeight.semibold,
         color: '#fff',
     },
-    updateButtonDisabled: {
+    primaryButtonDisabled: {
         backgroundColor: theme.colors.zinc[300],
     },
-    updateButtonTextDisabled: {
+    primaryButtonTextDisabled: {
         color: theme.colors.zinc[500],
     },
-    reactivateButton: {
-        backgroundColor: theme.colors.emerald[600],
-        marginHorizontal: 20,
-        paddingVertical: 16,
-        borderRadius: 12,
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    reactivateButtonText: {
-        fontSize: theme.fontSize.base,
-        fontWeight: theme.fontWeight.semibold,
-        color: '#fff',
-    },
-    cancelButton: {
+    secondaryButton: {
         backgroundColor: 'transparent',
-        borderWidth: 1,
-        borderColor: theme.colors.rose[500],
-        marginHorizontal: 20,
-        paddingVertical: 16,
+        borderWidth: 1.5,
+        borderColor: theme.colors.rose[300],
+        paddingVertical: theme.spacing.md,
         borderRadius: 12,
         alignItems: 'center',
-        marginBottom: 20,
+        justifyContent: 'center',
+        minHeight: 48,
     },
-    cancelButtonText: {
+    secondaryButtonText: {
         fontSize: theme.fontSize.base,
         fontWeight: theme.fontWeight.semibold,
-        color: theme.colors.rose[500],
+        color: theme.colors.rose[600],
+    },
+
+    // Info Section
+    infoSection: {
+        marginHorizontal: theme.spacing.lg,
+        marginBottom: theme.spacing.lg,
+        padding: theme.spacing.lg,
+        backgroundColor: theme.colors.zinc[50],
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: theme.colors.zinc[100],
+    },
+    infoTitle: {
+        fontSize: theme.fontSize.base,
+        fontWeight: theme.fontWeight.semibold,
+        color: theme.colors.zinc[900],
+        marginBottom: theme.spacing.md,
+    },
+    infoText: {
+        fontSize: theme.fontSize.sm,
+        color: theme.colors.zinc[600],
+        lineHeight: theme.fontSize.sm * 1.5,
     },
 });

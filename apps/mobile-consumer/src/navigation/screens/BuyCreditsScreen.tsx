@@ -63,64 +63,69 @@ export function BuyCreditsScreen() {
             >
                 {/* Header Section */}
                 <View style={styles.headerSection}>
-                    <Text style={styles.title}>Buy Credits</Text>
-                    <Text style={styles.description}>
+                    <Text style={styles.screenTitle}>Buy Credits</Text>
+                    <Text style={styles.screenSubtitle}>
                         Purchase credits if you're running low or don't want to start a subscription.
                         Credits will expire 90 days after purchase.
                     </Text>
                 </View>
 
-                {/* Current Balance
-                <SettingsGroup>
-                    <SettingsRow
-                        title="Credits Balance"
-                        subtitle={(() => {
-                            const mockExpiringCredits = 15;
-                            const mockDaysUntilExpiry = 12;
-                            if (mockDaysUntilExpiry < 30 && mockExpiringCredits > 0) {
-                                return `${mockExpiringCredits} credits expire in ${mockDaysUntilExpiry} days`;
-                            }
-                            return undefined;
-                        })()}
-                        rightElement={
-                            <View style={styles.creditsBadge}>
-                                <DiamondIcon size={16} color={theme.colors.emerald[600]} />
-                                <Text style={styles.creditsBadgeText}>{creditBalance?.balance || 0}</Text>
-                            </View>
-                        }
-                        showChevron={false}
-                    />
-                </SettingsGroup> */}
+                {/* Current Balance Card */}
+                <View style={styles.balanceCard}>
+                    <View style={styles.balanceHeader}>
+                        <DiamondIcon size={20} color={theme.colors.emerald[600]} />
+                        <Text style={styles.balanceTitle}>Current Balance</Text>
+                    </View>
+                    <View style={styles.balanceDisplay}>
+                        <Text style={styles.balanceCredits}>{creditBalance?.balance || 0}</Text>
+                        <Text style={styles.balanceLabel}>credits available</Text>
+                    </View>
+                </View>
 
                 {/* Credit Packs Section */}
-                <SettingsHeader title="Available Credit Packs" />
-                <View style={styles.creditPacksGrid}>
-                    {CREDIT_PACKS.map((pack) => {
-                        const pricePerCredit = pack.price / pack.credits;
-                        return (
-                            <TouchableOpacity
-                                key={pack.credits}
-                                style={styles.creditPackCard}
-                                onPress={() => handleCreditPurchase(pack.credits)}
-                            >
-                                <Text style={styles.creditPackCredits}>
-                                    {pack.credits}
-                                </Text>
-                                <Text style={styles.creditPackCreditsLabel}>credits</Text>
-                                <Text style={styles.creditPackPrice}>
-                                    {formatCurrency(pack.price)}
-                                </Text>
-                                <Text style={styles.pricePerCredit}>
-                                    {formatCurrency(pricePerCredit)} per credit
-                                </Text>
-                                {pack.discount && (
-                                    <View style={styles.discountBadgeTopRight}>
-                                        <Text style={styles.discountTextTopRight}>{pack.discount}% OFF</Text>
-                                    </View>
-                                )}
-                            </TouchableOpacity>
-                        );
-                    })}
+                <View style={styles.packsSection}>
+                    <Text style={styles.packsTitle}>Available Credit Packs</Text>
+                    <Text style={styles.packsSubtitle}>Choose the pack that fits your needs</Text>
+
+                    <View style={styles.creditPacksGrid}>
+                        {CREDIT_PACKS.map((pack) => {
+                            const pricePerCredit = pack.price / pack.credits;
+                            return (
+                                <TouchableOpacity
+                                    key={pack.credits}
+                                    style={styles.creditPackCard}
+                                    onPress={() => handleCreditPurchase(pack.credits)}
+                                >
+                                    {pack.discount && (
+                                        <View style={styles.discountBadge}>
+                                            <Text style={styles.discountText}>{pack.discount}% off</Text>
+                                        </View>
+                                    )}
+
+                                    <Text style={styles.creditPackCredits}>
+                                        {pack.credits}
+                                    </Text>
+                                    <Text style={styles.creditPackCreditsLabel}>credits</Text>
+                                    <Text style={styles.creditPackPrice}>
+                                        {formatCurrency(pack.price)}
+                                    </Text>
+                                    <Text style={styles.pricePerCredit}>
+                                        {formatCurrency(pricePerCredit)} per credit
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                </View>
+
+                {/* Info Section */}
+                <View style={styles.infoSection}>
+                    <Text style={styles.infoTitle}>Credit Information</Text>
+                    <Text style={styles.infoText}>
+                        • Credits are valid for 90 days from purchase date{'\n'}
+                        • Use credits to book classes at any partner studio{'\n'}
+                        • If attending many classes, consider a subscription
+                    </Text>
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -130,108 +135,179 @@ export function BuyCreditsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f9fafb',
+        backgroundColor: theme.colors.zinc[50],
     },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
-        paddingBottom: 60,
+        paddingBottom: theme.spacing['2xl'],
     },
+
+    // Header Section
     headerSection: {
-        paddingHorizontal: 20,
-        paddingVertical: 24,
-        backgroundColor: '#fff',
-        marginBottom: 20,
+        paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.md,
+        paddingBottom: theme.spacing.lg,
     },
-    title: {
+    screenTitle: {
         fontSize: theme.fontSize['2xl'],
         fontWeight: theme.fontWeight.bold,
         color: theme.colors.zinc[900],
-        marginBottom: 8,
+        marginBottom: theme.spacing.xs,
     },
-    description: {
+    screenSubtitle: {
         fontSize: theme.fontSize.base,
         color: theme.colors.zinc[600],
-        lineHeight: 22,
+        lineHeight: theme.fontSize.base * 1.4,
     },
-    creditsHeaderContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+
+    // Balance Card
+    balanceCard: {
+        marginHorizontal: theme.spacing.lg,
+        marginBottom: theme.spacing.lg,
+        borderRadius: 16,
         backgroundColor: '#fff',
-        marginBottom: 8,
+        borderWidth: 1,
+        borderColor: theme.colors.zinc[100],
+        padding: theme.spacing.lg,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
     },
-    creditsBadge: {
+    balanceHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: theme.colors.emerald[50],
-        borderRadius: 12,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
+        marginBottom: theme.spacing.md,
     },
-    creditsBadgeText: {
-        fontSize: theme.fontSize.sm,
+    balanceTitle: {
+        fontSize: theme.fontSize.lg,
         fontWeight: theme.fontWeight.semibold,
+        color: theme.colors.zinc[900],
+        marginLeft: theme.spacing.sm,
+    },
+    balanceDisplay: {
+        alignItems: 'center',
+    },
+    balanceCredits: {
+        fontSize: theme.fontSize['4xl'],
+        fontWeight: theme.fontWeight.extrabold,
         color: theme.colors.emerald[600],
-        marginLeft: 4,
+        marginBottom: theme.spacing.xs,
+    },
+    balanceLabel: {
+        fontSize: theme.fontSize.sm,
+        color: theme.colors.zinc[600],
+        fontWeight: theme.fontWeight.medium,
+    },
+
+    // Packs Section
+    packsSection: {
+        marginHorizontal: theme.spacing.lg,
+        marginBottom: theme.spacing.lg,
+    },
+    packsTitle: {
+        fontSize: theme.fontSize.lg,
+        fontWeight: theme.fontWeight.semibold,
+        color: theme.colors.zinc[900],
+        marginBottom: theme.spacing.xs,
+    },
+    packsSubtitle: {
+        fontSize: theme.fontSize.sm,
+        color: theme.colors.zinc[600],
+        marginBottom: theme.spacing.lg,
     },
     creditPacksGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 12,
-        paddingHorizontal: 20,
-        marginBottom: 20,
+        gap: theme.spacing.md,
     },
     creditPackCard: {
         width: '47%',
         backgroundColor: '#fff',
-        padding: 16,
-        borderRadius: 12,
+        padding: theme.spacing.lg,
+        borderRadius: 16,
         alignItems: 'center',
-        borderWidth: 2,
-        borderColor: 'transparent',
+        borderWidth: 1,
+        borderColor: theme.colors.zinc[100],
         position: 'relative',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
     },
     creditPackCredits: {
-        fontSize: theme.fontSize['2xl'],
+        fontSize: theme.fontSize['3xl'],
         fontWeight: theme.fontWeight.bold,
-        color: theme.colors.zinc[900],
+        color: theme.colors.zinc[950],
         textAlign: 'center',
+        marginBottom: theme.spacing.xs,
     },
     creditPackCreditsLabel: {
-        fontSize: theme.fontSize.xs,
-        color: theme.colors.zinc[600],
-        marginBottom: 8,
+        fontSize: theme.fontSize.sm,
+        color: theme.colors.zinc[500],
+        marginBottom: theme.spacing.md,
         textAlign: 'center',
+        fontWeight: theme.fontWeight.medium,
     },
     creditPackPrice: {
         fontSize: theme.fontSize.base,
-        fontWeight: theme.fontWeight.semibold,
-        color: theme.colors.emerald[600],
+        fontWeight: theme.fontWeight.bold,
+        color: theme.colors.zinc[800],
         textAlign: 'center',
-        marginBottom: 4,
+        marginBottom: theme.spacing.xs,
     },
     pricePerCredit: {
         fontSize: theme.fontSize.xs,
-        color: theme.colors.zinc[500],
+        color: theme.colors.emerald[600],
         textAlign: 'center',
+        fontWeight: theme.fontWeight.medium,
+    },
+    discountBadge: {
+        position: 'absolute',
+        top: theme.spacing.xs,
+        right: theme.spacing.xs,
+        backgroundColor: theme.colors.emerald[50],
+        paddingVertical: theme.spacing.xs,
+        paddingHorizontal: theme.spacing.sm,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: theme.colors.emerald[200],
+    },
+    discountText: {
+        fontSize: theme.fontSize.xs,
+        fontWeight: theme.fontWeight.semibold,
+        color: theme.colors.emerald[700],
     },
 
-    discountBadgeTopRight: {
-        position: 'absolute',
-        top: -4,
-        right: -4,
-        backgroundColor: theme.colors.rose[500],
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 8,
+    // Info Section
+    infoSection: {
+        marginHorizontal: theme.spacing.md,
+        marginBottom: theme.spacing.lg,
+        padding: theme.spacing.lg,
+        backgroundColor: theme.colors.zinc[50],
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: theme.colors.zinc[100],
     },
-    discountTextTopRight: {
-        fontSize: theme.fontSize.xs,
-        fontWeight: theme.fontWeight.bold,
-        color: '#fff',
+    infoTitle: {
+        fontSize: theme.fontSize.base,
+        fontWeight: theme.fontWeight.semibold,
+        color: theme.colors.zinc[900],
+        marginBottom: theme.spacing.md,
+    },
+    infoText: {
+        fontSize: theme.fontSize.sm,
+        color: theme.colors.zinc[600],
+        lineHeight: theme.fontSize.sm * 1.5,
     },
 });

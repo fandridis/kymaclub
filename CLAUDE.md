@@ -63,8 +63,9 @@ Turborepo monorepo with pnpm workspaces for a comprehensive class/venue booking 
 
 ### **1. Pricing System** 
 - Dynamic discounts: Early bird (10%) > Low capacity (5%)
-- Tiered subscription pricing: 5-150 credits/month with volume discounts
-- Base price chain: `instance.price → template.price → default(15)`
+- Tiered subscription pricing: 5-500 credits/month with volume discounts (0%, 3%, 5%, 7%, 10%)
+- Base price chain: `instance.price → template.price → default(1000 cents)`
+- Credit conversion: 1 credit = 50 cents spending value
 
 ### **2. Class Scheduling**
 - Templates create instances with calculated endTime from duration
@@ -199,8 +200,9 @@ graph TB
 - **Webhook Events**: `checkout.session.completed`, subscription lifecycle events
 
 ### **Credit Pricing**
-- **Subscriptions**: €1.80-€2.00 per credit with tiered discounts
-- **One-time**: $2.06-$2.30 per credit with pack-based discounts
+- **Subscriptions**: $0.45-$0.50 per credit with 5-tier discount structure
+- **One-time**: $0.55-$0.65 per credit with pack-based discounts (10-500 credits)
+- **Base value**: 1 credit = 50 cents when booking classes
 
 ## Mobile Deep-linking
 

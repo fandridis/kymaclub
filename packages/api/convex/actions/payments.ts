@@ -8,7 +8,7 @@ import { paymentsService } from "../../services/paymentsService";
 import { Id, Doc } from "../_generated/dataModel";
 
 /**
- * Create dynamic subscription checkout for 5-150 credits
+ * Create dynamic subscription checkout for 5-500 credits
  */
 export const createDynamicSubscriptionCheckout = action({
   args: { 
