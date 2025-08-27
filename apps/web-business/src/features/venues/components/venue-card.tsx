@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -166,7 +165,7 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
     };
 
     return (
-        <Card className="w-full max-w-md hover:shadow-lg transition-shadow duration-200">
+        <Card className="w-full max-w-md hover:shadow-lg transition-shadow duration-200 flex flex-col h-full">
             <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                     <CardTitle className="text-xl font-semibold leading-tight">
@@ -218,11 +217,12 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
                 )}
 
             </CardHeader>
-            <CardContent className="space-y-4">
+
+            <CardContent className="flex flex-col flex-1 gap-4">
                 {/* Amenities */}
-                {availableAmenities.length > 0 && (
-                    <div className="space-y-2">
-                        <h4 className="text-sm font-medium">Amenities</h4>
+                <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Amenities</h4>
+                    {availableAmenities.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                             {availableAmenities.map((amenity) => (
                                 <Badge key={amenity} variant="outline" className="flex items-center gap-1">
@@ -231,8 +231,10 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
                                 </Badge>
                             ))}
                         </div>
-                    </div>
-                )}
+                    ) : (
+                        <p className="text-sm text-muted-foreground">No amenities found</p>
+                    )}
+                </div>
 
                 {/* Services */}
                 {venue.services && Object.entries(venue.services).some(([_, value]) => value) && (
@@ -250,12 +252,39 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
                     </div>
                 )}
 
-                <Separator />
-
-                {/* Images Section */}
-                <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Venue Images ({imageStorageIds.length}/{MAX_IMAGES})</h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {/* Images Section - Takes available space */}
+                <div className="flex-1 flex flex-col">
+                    <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-medium">Venue Images ({imageStorageIds.length}/{MAX_IMAGES})</h4>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleImageUpload}
+                            className="hidden"
+                            accept="image/*"
+                            disabled={status !== "idle" || imageStorageIds.length >= MAX_IMAGES}
+                        />
+                        <Button
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={status !== "idle" || imageStorageIds.length >= MAX_IMAGES}
+                            size="sm"
+                            variant="outline"
+                            className="h-8"
+                        >
+                            {status !== "idle" ? (
+                                <>
+                                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                    {status === "uploading" ? "Uploading..." : "Preparing..."}
+                                </>
+                            ) : (
+                                <>
+                                    <UploadCloud className="mr-1 h-3 w-3" />
+                                    Add Image
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 flex-1">
                         {imageStorageIds.length > 0 ? (
                             imageStorageIds.map((sid) => {
                                 const url = storageIdToUrl.get(sid as unknown as string) ?? null;
@@ -296,44 +325,17 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
                                 );
                             })
                         ) : (
-                            <p className="text-sm text-muted-foreground col-span-full">
-                                No images uploaded yet.
-                            </p>
+                            <div className="col-span-full flex items-center justify-center min-h-[120px] border-2 border-dashed border-muted-foreground/20 rounded-lg">
+                                <p className="text-sm text-muted-foreground">
+                                    No images uploaded yet.
+                                </p>
+                            </div>
                         )}
-                    </div>
-                    <div className="mt-4">
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleImageUpload}
-                            className="hidden"
-                            accept="image/*"
-                            disabled={status !== "idle" || imageStorageIds.length >= MAX_IMAGES}
-                        />
-                        <Button
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={status !== "idle" || imageStorageIds.length >= MAX_IMAGES}
-                            className="w-full"
-                        >
-                            {status !== "idle" ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    {status === "uploading" ? "Uploading..." : "Preparing..."}
-                                </>
-                            ) : (
-                                <>
-                                    <UploadCloud className="mr-2 h-4 w-4" />
-                                    Add Image
-                                </>
-                            )}
-                        </Button>
                     </div>
                 </div>
 
-                <Separator />
-
-                {/* Address */}
-                <div className="space-y-2">
+                {/* Address - Always at bottom */}
+                <div className="mt-auto pt-4 border-t">
                     <div className="flex items-start gap-2">
                         <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                         <div className="text-sm text-muted-foreground leading-relaxed">

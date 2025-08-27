@@ -3,6 +3,7 @@ import { SafeAreaView, StyleSheet, Text, View, ScrollView, TouchableOpacity, Swi
 import { useNavigation } from '@react-navigation/native';
 import { theme } from '../../theme';
 import { SettingsHeader } from '../../components/Settings';
+import { StackScreenHeader } from '../../components/StackScreenHeader';
 
 type Superpower = {
     id: string;
@@ -66,6 +67,7 @@ export function SuperpowersScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
+            <StackScreenHeader />
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}

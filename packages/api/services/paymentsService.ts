@@ -1004,6 +1004,8 @@ export const paymentsService = {
         const shouldAllocateCredits = invoice.billing_reason === "subscription_cycle" ||
           (invoice.billing_reason === "subscription_create" && subscription.status === "incomplete");
 
+        let creditTransactionId: Id<"creditTransactions"> | undefined;
+
         if (shouldAllocateCredits) {
           // Allocate credits for the payment
           const isInitialPayment = invoice.billing_reason === "subscription_create";
@@ -1011,8 +1013,7 @@ export const paymentsService = {
             ? `Initial subscription payment - ${subscription.planName}`
             : `Monthly subscription renewal - ${subscription.planName}`;
 
-
-          const creditTransactionId = await ctx.runMutation(
+          creditTransactionId = await ctx.runMutation(
             internal.mutations.credits.addCreditsForSubscription,
             {
               userId: subscription.userId,
@@ -1021,30 +1022,21 @@ export const paymentsService = {
               description,
             }
           );
+        }
 
-          // Record the event with credit allocation
-          await ctx.runMutation(internal.mutations.payments.recordSubscriptionEvent, {
-            stripeEventId: event.id,
-            eventType: event.type,
-            stripeSubscriptionId: subscription.stripeSubscriptionId,
-            subscriptionId: subscription._id,
-            userId: subscription.userId,
+        // Record the event with conditional credit allocation data
+        await ctx.runMutation(internal.mutations.payments.recordSubscriptionEvent, {
+          stripeEventId: event.id,
+          eventType: event.type,
+          stripeSubscriptionId: subscription.stripeSubscriptionId,
+          subscriptionId: subscription._id,
+          userId: subscription.userId,
+          ...(shouldAllocateCredits && {
             creditsAllocated: subscription.creditAmount,
             creditTransactionId,
-            eventData: event.data.object,
-          });
-        } else {
-          // Record the event without credit allocation
-          await ctx.runMutation(internal.mutations.payments.recordSubscriptionEvent, {
-            stripeEventId: event.id,
-            eventType: event.type,
-            stripeSubscriptionId: subscription.stripeSubscriptionId,
-            subscriptionId: subscription._id,
-            userId: subscription.userId,
-            // NO creditsAllocated field
-            eventData: event.data.object,
-          });
-        }
+          }),
+          eventData: event.data.object,
+        });
       }
     } else if (invoice.subscription && invoice.billing_reason === "subscription_update") {
       // This is a subscription update payment (proration) - DO NOT allocate credits

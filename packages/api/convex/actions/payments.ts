@@ -11,7 +11,7 @@ import { Id, Doc } from "../_generated/dataModel";
  * Create dynamic subscription checkout for 5-500 credits
  */
 export const createDynamicSubscriptionCheckout = action({
-  args: { 
+  args: {
     creditAmount: v.number(),
   },
   handler: async (ctx, { creditAmount }): Promise<{ checkoutUrl: string | null; sessionId: string }> => {
@@ -23,16 +23,16 @@ export const createDynamicSubscriptionCheckout = action({
     // Try to get email from auth identity first, fallback to database user record
     const authUser = await ctx.auth.getUserIdentity();
     let userEmail = authUser?.email;
-    
+
     if (!userEmail) {
       const dbUser: Doc<"users"> | null = await ctx.runQuery(internal.queries.core.getUserById, { userId });
       userEmail = dbUser?.email;
     }
-    
+
     if (!userEmail) {
       throw new Error("User email is required for subscription. Please update your profile.");
     }
-    
+
     return await paymentsService.createDynamicSubscriptionCheckout(ctx, {
       creditAmount,
       userId,
@@ -45,7 +45,7 @@ export const createDynamicSubscriptionCheckout = action({
  * Create predefined plan subscription checkout
  */
 export const createSubscriptionCheckout = action({
-  args: { 
+  args: {
     planId: v.union(v.literal("basic"), v.literal("standard"), v.literal("premium")),
   },
   handler: async (ctx, { planId }): Promise<{ checkoutUrl: string | null; sessionId: string }> => {
@@ -57,16 +57,16 @@ export const createSubscriptionCheckout = action({
     // Try to get email from auth identity first, fallback to database user record
     const authUser = await ctx.auth.getUserIdentity();
     let userEmail = authUser?.email;
-    
+
     if (!userEmail) {
       const dbUser: Doc<"users"> | null = await ctx.runQuery(internal.queries.core.getUserById, { userId });
       userEmail = dbUser?.email;
     }
-    
+
     if (!userEmail) {
       throw new Error("User email is required for subscription. Please update your profile.");
     }
-    
+
     return await paymentsService.createPredefinedSubscriptionCheckout(ctx, {
       planId,
       userId,
@@ -171,7 +171,7 @@ export const processWebhook = internalAction({
  * Create one-time credit purchase checkout
  */
 export const createOneTimeCreditCheckout = action({
-  args: { 
+  args: {
     creditAmount: v.number(),
   },
   handler: async (ctx, { creditAmount }): Promise<{ checkoutUrl: string | null; sessionId: string }> => {
@@ -183,17 +183,17 @@ export const createOneTimeCreditCheckout = action({
     // Try to get email from auth identity first
     const authUser = await ctx.auth.getUserIdentity();
     let userEmail = authUser?.email;
-    
+
     // If no email in auth identity, get it from the database user record
     if (!userEmail) {
       const dbUser: Doc<"users"> | null = await ctx.runQuery(internal.queries.core.getUserById, { userId });
       userEmail = dbUser?.email;
     }
-    
+
     if (!userEmail) {
       throw new Error("User email is required for checkout. Please update your profile.");
     }
-    
+
     return await paymentsService.createOneTimeCreditCheckout(ctx, {
       creditAmount,
       userId,
