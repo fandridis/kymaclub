@@ -28,6 +28,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { EuroPriceInput } from "@/components/euro-price-input";
 import { useEffect } from 'react';
@@ -281,259 +282,260 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                 }
                 setOpen(isOpen);
             }}>
-                <DrawerContent className="w-full px-2 sm:max-w-lg overflow-y-auto">
-                    <DrawerHeader className="pb-4">
-                        <DrawerTitle className="text-left">
+                <DrawerContent className="flex flex-col h-screen data-[vaul-drawer-direction=right]:sm:max-w-md">
+                    <DrawerHeader className="h-[64px] border-b">
+                        <DrawerTitle className="text-xl">
                             {isEditMode ? 'Edit Template' : 'Create Template'}
                         </DrawerTitle>
-                        <DrawerDescription>
-                            {isEditMode ? `Editing "${classTemplate!.name}" template` : 'Create a new class template that can be used to schedule recurring classes.'}
-                        </DrawerDescription>
                     </DrawerHeader>
 
-                    <Form {...form}>
-                        <div className="space-y-6 pb-6">
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField control={form.control} name="name" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="flex items-center gap-2">
-                                                <BookOpen className="h-4 w-4" />
-                                                Class Name <span className="text-red-500">*</span>
-                                            </FormLabel>
-                                            <FormControl>
-                                                <Input autoFocus placeholder="e.g., Beginner Yoga" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
-
-                                    <FormField control={form.control} name="instructor" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="flex items-center gap-2">
-                                                <User className="h-4 w-4" />
-                                                Instructor <span className="text-red-500">*</span>
-                                            </FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="Instructor name" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField control={form.control} name="venueId" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="flex items-center gap-2">
-                                                <BookOpen className="h-4 w-4" />
-                                                Venue <span className="text-red-500">*</span>
-                                            </FormLabel>
-                                            <FormControl>
-                                                <Select onValueChange={field.onChange} value={field.value || ''}>
+                    <div className="flex-1 overflow-y-auto">
+                        <ScrollArea className="h-full p-4">
+                            <Form {...form}>
+                                <div className="space-y-6 pb-6">
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FormField control={form.control} name="name" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="flex items-center gap-2">
+                                                        <BookOpen className="h-4 w-4" />
+                                                        Class Name <span className="text-red-500">*</span>
+                                                    </FormLabel>
                                                     <FormControl>
-                                                        <SelectTrigger className="w-full">
-                                                            <SelectValue placeholder="Select venue" />
-                                                        </SelectTrigger>
+                                                        <Input autoFocus placeholder="e.g., Beginner Yoga" {...field} />
                                                     </FormControl>
-                                                    <SelectContent>
-                                                        {venues.map((venue) => (
-                                                            <SelectItem key={venue._id} value={venue._id}>
-                                                                {venue.name}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
 
-                                    <FormField control={form.control} name="duration" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="flex items-center gap-2">
-                                                <Clock className="h-4 w-4" />
-                                                Duration <span className="text-red-500">*</span>
-                                            </FormLabel>
-                                            <Select onValueChange={field.onChange} value={field.value || ''}>
+                                            <FormField control={form.control} name="instructor" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="flex items-center gap-2">
+                                                        <User className="h-4 w-4" />
+                                                        Instructor <span className="text-red-500">*</span>
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="Instructor name" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FormField control={form.control} name="venueId" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="flex items-center gap-2">
+                                                        <BookOpen className="h-4 w-4" />
+                                                        Venue <span className="text-red-500">*</span>
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                                                            <FormControl>
+                                                                <SelectTrigger className="w-full">
+                                                                    <SelectValue placeholder="Select venue" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                {venues.map((venue) => (
+                                                                    <SelectItem key={venue._id} value={venue._id}>
+                                                                        {venue.name}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+
+                                            <FormField control={form.control} name="duration" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="flex items-center gap-2">
+                                                        <Clock className="h-4 w-4" />
+                                                        Duration <span className="text-red-500">*</span>
+                                                    </FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                                                        <FormControl>
+                                                            <SelectTrigger className="w-full">
+                                                                <SelectValue placeholder="Select duration" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            {getDurationOptions().map(option => (
+                                                                <SelectItem key={option.value} value={option.value}>
+                                                                    {option.label}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        </div>
+
+
+
+                                        <FormField control={form.control} name="description" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Description</FormLabel>
                                                 <FormControl>
-                                                    <SelectTrigger className="w-full">
-                                                        <SelectValue placeholder="Select duration" />
-                                                    </SelectTrigger>
+                                                    <Textarea placeholder="Describe the class..." rows={3} {...field} />
                                                 </FormControl>
-                                                <SelectContent>
-                                                    {getDurationOptions().map(option => (
-                                                        <SelectItem key={option.value} value={option.value}>
-                                                            {option.label}
-                                                        </SelectItem>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+
+                                        <div className="space-y-2">
+                                            <Label className="flex items-center gap-2">
+                                                <Tag className="h-4 w-4" />
+                                                Tags
+                                            </Label>
+                                            <Input
+                                                value={currentTag}
+                                                onChange={(e) => setCurrentTag(e.target.value)}
+                                                onKeyPress={handleTagKeyPress}
+                                                placeholder="Type a tag and press Enter"
+                                            />
+                                            {formData.tags.length > 0 && (
+                                                <div className="flex flex-wrap gap-2 pt-2">
+                                                    {formData.tags.map((tag, index) => (
+                                                        <span key={index} className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-md text-sm">
+                                                            {tag}
+                                                            <button type="button" onClick={() => removeTag(tag)} className="hover:bg-primary/20 rounded-full p-0.5">
+                                                                <X className="h-3 w-3" />
+                                                            </button>
+                                                        </span>
                                                     ))}
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
-                                </div>
-
-
-
-                                <FormField control={form.control} name="description" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Description</FormLabel>
-                                        <FormControl>
-                                            <Textarea placeholder="Describe the class..." rows={3} {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )} />
-
-                                <div className="space-y-2">
-                                    <Label className="flex items-center gap-2">
-                                        <Tag className="h-4 w-4" />
-                                        Tags
-                                    </Label>
-                                    <Input
-                                        value={currentTag}
-                                        onChange={(e) => setCurrentTag(e.target.value)}
-                                        onKeyPress={handleTagKeyPress}
-                                        placeholder="Type a tag and press Enter"
-                                    />
-                                    {formData.tags.length > 0 && (
-                                        <div className="flex flex-wrap gap-2 pt-2">
-                                            {formData.tags.map((tag, index) => (
-                                                <span key={index} className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-md text-sm">
-                                                    {tag}
-                                                    <button type="button" onClick={() => removeTag(tag)} className="hover:bg-primary/20 rounded-full p-0.5">
-                                                        <X className="h-3 w-3" />
-                                                    </button>
-                                                </span>
-                                            ))}
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
 
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField control={form.control} name="capacity" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="flex items-center gap-2">
-                                                <Users className="h-4 w-4" />
-                                                Capacity <span className="text-red-500">*</span>
-                                            </FormLabel>
-                                            <FormControl>
-                                                <Input type="number" min="1" placeholder="Max participants" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FormField control={form.control} name="capacity" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="flex items-center gap-2">
+                                                        <Users className="h-4 w-4" />
+                                                        Capacity <span className="text-red-500">*</span>
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input type="number" min="1" placeholder="Max participants" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
 
-                                    <FormField control={form.control} name="price" render={({ field }) => (
-                                        <FormItem>
-                                            <FormControl>
-                                                <EuroPriceInput
-                                                    value={field.value}
-                                                    onChange={field.onChange}
-                                                    onBlur={field.onBlur}
-                                                    name={field.name}
-                                                    required
-                                                    error={form.formState.errors.price?.message}
-                                                />
-                                            </FormControl>
-                                        </FormItem>
-                                    )} />
-                                </div>
-
-                                <FormField control={form.control} name="allowWaitlist" render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                                        <FormControl>
-                                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                        </FormControl>
-                                        <FormLabel>Allow Waitlist</FormLabel>
-                                    </FormItem>
-                                )} />
-
-                                {formData.allowWaitlist && (
-                                    <FormField control={form.control} name="waitlistCapacity" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Waitlist Capacity</FormLabel>
-                                            <FormControl>
-                                                <Input type="number" min="1" placeholder="Max waitlist spots" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
-                                )}
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField control={form.control} name="bookingWindowMinHours" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Min Hours <span className="text-red-500">*</span></FormLabel>
-                                            <FormControl>
-                                                <Input type="number" min="0" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
-
-                                    <FormField control={form.control} name="bookingWindowMaxHours" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Max Hours <span className="text-red-500">*</span></FormLabel>
-                                            <FormControl>
-                                                <Input type="number" min="1" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
-                                </div>
-
-                                <FormField control={form.control} name="cancellationWindowHours" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Cancellation Window (Hours)</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" min="0" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )} />
-
-                                <FormField control={form.control} name="color" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="flex items-center gap-2">
-                                            <Palette className="h-4 w-4" />
-                                            Color Theme
-                                        </FormLabel>
-                                        <div className="flex flex-wrap gap-3">
-                                            {TEMPLATE_COLORS_ARRAY.map((color) => (
-                                                <button
-                                                    key={color}
-                                                    type="button"
-                                                    onClick={() => field.onChange(color)}
-                                                    className={cn(
-                                                        TEMPLATE_COLORS_MAP[color]?.default,
-                                                        "w-8 h-8 rounded-full transition-all",
-                                                        field.value === color && 'border-2 border-gray-900 scale-120'
-                                                    )}
-                                                    title={color}
-                                                />
-                                            ))}
+                                            <FormField control={form.control} name="price" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormControl>
+                                                        <EuroPriceInput
+                                                            value={field.value}
+                                                            onChange={field.onChange}
+                                                            onBlur={field.onBlur}
+                                                            name={field.name}
+                                                            required
+                                                            error={form.formState.errors.price?.message}
+                                                        />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )} />
                                         </div>
-                                    </FormItem>
-                                )} />
 
-                                {/* Discount Rules Section */}
-                                <div className="space-y-4 mt-8">
-                                    <ClassDiscountRulesForm
-                                        discountRules={discountRules}
-                                        onChange={setDiscountRules}
-                                        currency="EUR"
-                                        price={parseInt(formData.price)}
-                                    />
+                                        <FormField control={form.control} name="allowWaitlist" render={({ field }) => (
+                                            <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                                <FormControl>
+                                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                                </FormControl>
+                                                <FormLabel>Allow Waitlist</FormLabel>
+                                            </FormItem>
+                                        )} />
+
+                                        {formData.allowWaitlist && (
+                                            <FormField control={form.control} name="waitlistCapacity" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Waitlist Capacity</FormLabel>
+                                                    <FormControl>
+                                                        <Input type="number" min="1" placeholder="Max waitlist spots" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        )}
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FormField control={form.control} name="bookingWindowMinHours" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Min Hours <span className="text-red-500">*</span></FormLabel>
+                                                    <FormControl>
+                                                        <Input type="number" min="0" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+
+                                            <FormField control={form.control} name="bookingWindowMaxHours" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Max Hours <span className="text-red-500">*</span></FormLabel>
+                                                    <FormControl>
+                                                        <Input type="number" min="1" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        </div>
+
+                                        <FormField control={form.control} name="cancellationWindowHours" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Cancellation Window (Hours)</FormLabel>
+                                                <FormControl>
+                                                    <Input type="number" min="0" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+
+                                        <FormField control={form.control} name="color" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2">
+                                                    <Palette className="h-4 w-4" />
+                                                    Color Theme
+                                                </FormLabel>
+                                                <div className="pl-1 flex flex-wrap gap-2">
+                                                    {TEMPLATE_COLORS_ARRAY.map((color) => (
+                                                        <button
+                                                            key={color}
+                                                            type="button"
+                                                            onClick={() => field.onChange(color)}
+                                                            className={cn(
+                                                                TEMPLATE_COLORS_MAP[color]?.default,
+                                                                "w-8 h-8 rounded-full transition-all",
+                                                                field.value === color && 'border-2 border-gray-900 scale-120'
+                                                            )}
+                                                            title={color}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </FormItem>
+                                        )} />
+
+                                        {/* Discount Rules Section */}
+                                        <div className="space-y-4 mt-8">
+                                            <ClassDiscountRulesForm
+                                                discountRules={discountRules}
+                                                onChange={setDiscountRules}
+                                                currency="EUR"
+                                                price={parseInt(formData.price)}
+                                            />
+                                        </div>
+
+                                    </div>
                                 </div>
+                            </Form>
+                        </ScrollArea>
+                    </div>
 
-                            </div>
-                        </div>
-                    </Form>
-
-                    <DrawerFooter className="flex-col gap-2 pt-4 border-t">
+                    <DrawerFooter className="flex-col gap-2 pt-4 border-t flex-shrink-0">
                         <Button
                             onClick={form.handleSubmit(handleSubmit)}
                             disabled={loading}

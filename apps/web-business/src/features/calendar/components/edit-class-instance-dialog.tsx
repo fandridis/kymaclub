@@ -41,6 +41,22 @@ import { dbTimestampToBusinessDate, businessDateToDbTimestamp } from '@/lib/time
 import { TEMPLATE_COLORS, TEMPLATE_COLORS_ARRAY } from '@repo/utils/colors';
 import { cn } from '@/lib/utils';
 import { TEMPLATE_COLORS_MAP } from '@/utils/colors';
+import { ClassDiscountRulesForm } from '@/components/class-discount-rules-form';
+
+// Define the discount rule schema for form validation
+const discountRuleSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    condition: z.object({
+        type: z.union([z.literal("hours_before_min"), z.literal("hours_before_max"), z.literal("always")]),
+        hours: z.number().optional(),
+    }),
+    discount: z.object({
+        type: z.literal("fixed_amount"),
+        value: z.number(),
+    }),
+    // Note: createdAt, createdBy, updatedAt, updatedBy will be set on the server
+});
 
 const editInstanceSchema = z.object({
     // Class Details
@@ -63,6 +79,9 @@ const editInstanceSchema = z.object({
     bookingWindowMinHours: z.string().min(1, "Minimum booking hours is required").refine((val) => parseInt(val) >= 0, "Minimum booking hours must be 0 or greater"),
     bookingWindowMaxHours: z.string().min(1, "Maximum booking hours is required").refine((val) => parseInt(val) > 0, "Maximum booking hours must be greater than 0"),
     cancellationWindowHours: z.string().optional(),
+
+    // Discount Rules
+    discountRules: z.array(discountRuleSchema).optional(),
 }).refine((data) => {
     const minHours = parseInt(data.bookingWindowMinHours);
     const maxHours = parseInt(data.bookingWindowMaxHours);
@@ -78,6 +97,8 @@ const editInstanceSchema = z.object({
     path: ["duration"],
 });
 
+type DiscountRule = z.infer<typeof discountRuleSchema>;
+
 export type FormData = z.infer<typeof editInstanceSchema>;
 
 interface EditClassInstanceDialogProps {
@@ -91,6 +112,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
     const [isSubmittingSingle, setIsSubmittingSingle] = useState(false);
     const [isSubmittingMultiple, setIsSubmittingMultiple] = useState(false);
     const [currentTag, setCurrentTag] = useState("");
+    const [discountRules, setDiscountRules] = useState<DiscountRule[]>([]);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [pendingFormData, setPendingFormData] = useState<FormData | null>(null);
     const [applyToAll, setApplyToAll] = useState(false);
@@ -129,6 +151,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
             bookingWindowMinHours: "2",
             bookingWindowMaxHours: "168",
             cancellationWindowHours: "2",
+            discountRules: [],
         },
     });
 
@@ -154,13 +177,17 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                 bookingWindowMinHours: (instance.bookingWindow?.minHours || 2).toString(),
                 bookingWindowMaxHours: (instance.bookingWindow?.maxHours || 168).toString(),
                 cancellationWindowHours: instance.cancellationWindowHours?.toString() || "2",
+                discountRules: instance.discountRules || [],
             });
+            // Also update the discount rules state
+            setDiscountRules(instance.discountRules || []);
         }
     }, [instance, form, businessTimezone]);
 
     const resetForm = () => {
         form.reset();
         setCurrentTag("");
+        setDiscountRules([]);
         setIsSubmittingSingle(false);
         setIsSubmittingMultiple(false);
         setApplyToAll(false);
@@ -217,6 +244,12 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                     cancellationWindowHours: data.cancellationWindowHours ? parseInt(data.cancellationWindowHours) : undefined,
                     tags: data.tags.length > 0 ? data.tags : undefined,
                     color: data.color,
+                    discountRules: discountRules.length > 0 ? discountRules.map(rule => ({
+                        id: rule.id,
+                        name: rule.name,
+                        condition: rule.condition,
+                        discount: rule.discount,
+                    })) : undefined,
                 }
             });
 
@@ -258,6 +291,12 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                     cancellationWindowHours: data.cancellationWindowHours ? parseInt(data.cancellationWindowHours) : undefined,
                     tags: data.tags.length > 0 ? data.tags : undefined,
                     color: data.color,
+                    discountRules: discountRules.length > 0 ? discountRules.map(rule => ({
+                        id: rule.id,
+                        name: rule.name,
+                        condition: rule.condition,
+                        discount: rule.discount,
+                    })) : undefined,
                 }
             });
             toast.success(`Updated ${result.totalUpdated} similar classes successfully!`);
@@ -305,13 +344,13 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                     onClose();
                 }
             }}>
-                <DrawerContent className={`flex flex-col h-screen`}>
+                <DrawerContent className="flex flex-col h-screen data-[vaul-drawer-direction=right]:sm:max-w-md">
                     <DrawerHeader className="h-[64px] border-b">
                         <DrawerTitle className="text-xl">Edit Class</DrawerTitle>
                     </DrawerHeader>
 
                     <div className="flex-1 overflow-y-auto">
-                        <ScrollArea className="h-full p-2">
+                        <ScrollArea className="h-full p-4">
                             <Form {...form}>
                                 <div className="space-y-6 pb-6">
                                     {/* Basic Information Section */}
@@ -494,7 +533,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                                 <Palette className="h-4 w-4" />
                                                 Color Theme
                                             </FormLabel>
-                                            <div className="flex flex-wrap gap-3">
+                                            <div className="pl-1 flex flex-wrap gap-2">
                                                 {TEMPLATE_COLORS_ARRAY.map((color) => (
                                                     <button
                                                         key={color}
@@ -511,6 +550,16 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                             </div>
                                         </FormItem>
                                     )} />
+
+                                    {/* Discount Rules Section */}
+                                    <div className="space-y-4 mt-8">
+                                        <ClassDiscountRulesForm
+                                            discountRules={discountRules}
+                                            onChange={setDiscountRules}
+                                            currency="EUR"
+                                            price={parseInt(formData.price)}
+                                        />
+                                    </div>
 
                                 </div>
                             </Form>
