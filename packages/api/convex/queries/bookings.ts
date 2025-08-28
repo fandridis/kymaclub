@@ -105,3 +105,137 @@ export const getBookingsForClassInstance = query({
   },
 });
 
+/***************************************************************
+ * 🆕 OPTIMIZED BOOKING QUERIES WITH COMPOUND INDEXES
+ * Eliminate expensive filter operations for better performance
+ ***************************************************************/
+
+/**
+ * Get user bookings with status filtering - OPTIMIZED
+ * Uses compound index to avoid expensive filter operations
+ */
+export const getUserBookingsOptimized = query({
+  args: {
+    userId: v.id("users"),
+    status: v.optional(v.union(
+      v.literal("pending"),
+      v.literal("completed"),
+      v.literal("cancelled_by_consumer"),
+      v.literal("cancelled_by_business"),
+      v.literal("cancelled_by_business_rebookable"),
+      v.literal("no_show")
+    )),
+    includeDeleted: v.optional(v.boolean()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    let query;
+
+    if (args.status) {
+      if (args.includeDeleted) {
+        // Use status-specific index
+        query = ctx.db
+          .query("bookings")
+          .withIndex("by_user_status_created", (q) =>
+            q.eq("userId", args.userId).eq("status", args.status!)
+          );
+      } else {
+        // 🔥 OPTIMIZED: Use compound index for user + status + deleted
+        query = ctx.db
+          .query("bookings")
+          .withIndex("by_user_status_deleted", (q) =>
+            q.eq("userId", args.userId)
+              .eq("status", args.status!)
+              .eq("deleted", false)
+          );
+      }
+    } else {
+      query = ctx.db
+        .query("bookings")
+        .withIndex("by_user", (q) => q.eq("userId", args.userId));
+
+      if (!args.includeDeleted) {
+        query = query.filter(q => q.neq(q.field("deleted"), true));
+      }
+    }
+
+    return query
+      .order("desc")
+      .take(args.limit || 50);
+  },
+});
+
+/**
+ * Get business bookings with date range - OPTIMIZED
+ * Uses compound index for efficient date range queries
+ */
+export const getBusinessBookingsOptimized = query({
+  args: {
+    businessId: v.id("businesses"),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+    status: v.optional(v.union(
+      v.literal("pending"),
+      v.literal("completed"),
+      v.literal("cancelled_by_consumer"),
+      v.literal("cancelled_by_business"),
+      v.literal("cancelled_by_business_rebookable"),
+      v.literal("no_show")
+    )),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    let query;
+
+    if (args.startDate) {
+      // 🔥 OPTIMIZED: Use compound index for business + date
+      query = ctx.db
+        .query("bookings")
+        .withIndex("by_business_created", (q) =>
+          q.eq("businessId", args.businessId)
+            .gte("createdAt", args.startDate!)
+        );
+    } else {
+      query = ctx.db
+        .query("bookings")
+        .withIndex("by_business", (q) => q.eq("businessId", args.businessId));
+    }
+
+    // Apply additional filters
+    if (args.endDate) {
+      query = query.filter(q => q.lte(q.field("createdAt"), args.endDate!));
+    }
+
+    if (args.status) {
+      query = query.filter(q => q.eq(q.field("status"), args.status!));
+    }
+
+    // Exclude deleted bookings
+    query = query.filter(q => q.neq(q.field("deleted"), true));
+
+    return query
+      .order("desc")
+      .take(args.limit || 100);
+  },
+});
+
+/**
+ * Get active bookings for class instance - OPTIMIZED
+ * Uses compound index to quickly find pending bookings
+ */
+export const getActiveBookingsForClass = query({
+  args: {
+    classInstanceId: v.id("classInstances"),
+  },
+  handler: async (ctx, args) => {
+    // 🔥 OPTIMIZED: Use compound index for instance + status
+    return await ctx.db
+      .query("bookings")
+      .withIndex("by_class_instance_status", (q) =>
+        q.eq("classInstanceId", args.classInstanceId)
+          .eq("status", "pending")
+      )
+      .collect();
+  },
+});
+

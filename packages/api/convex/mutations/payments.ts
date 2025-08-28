@@ -153,3 +153,219 @@ export const recordSubscriptionEvent = internalMutation({
     });
   },
 });
+
+/***************************************************************
+ * 🆕 ATOMIC WEBHOOK TRANSACTION MUTATIONS
+ * Consolidate multiple operations into single transactions
+ ***************************************************************/
+
+/**
+ * Atomic payment succeeded transaction
+ * Consolidates: subscription update + credit allocation + event recording
+ */
+export const handlePaymentSucceededTransaction = internalMutation({
+  args: v.object({
+    stripeEventId: v.string(),
+    subscriptionUpdate: v.object({
+      stripeSubscriptionId: v.string(),
+      status: v.union(v.literal("active"), v.literal("incomplete"), v.literal("past_due")),
+    }),
+    creditAllocation: v.optional(v.object({
+      userId: v.id("users"),
+      amount: v.number(),
+      subscriptionId: v.id("subscriptions"),
+      description: v.string(),
+    })),
+    eventData: v.object({
+      eventType: v.string(),
+      subscriptionId: v.optional(v.id("subscriptions")),
+      creditsAllocated: v.optional(v.number()),
+    }),
+  }),
+  handler: async (ctx, args) => {
+    let creditTransactionId: Id<"creditTransactions"> | undefined;
+
+    // 1. Update subscription status
+    const subscription = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_stripe_subscription", q => 
+        q.eq("stripeSubscriptionId", args.subscriptionUpdate.stripeSubscriptionId)
+      )
+      .first();
+
+    if (!subscription) {
+      throw new Error(`Subscription not found: ${args.subscriptionUpdate.stripeSubscriptionId}`);
+    }
+
+    await ctx.db.patch(subscription._id, {
+      status: args.subscriptionUpdate.status,
+      updatedAt: Date.now(),
+      updatedBy: subscription.userId,
+    });
+
+    // 2. Allocate credits if specified
+    if (args.creditAllocation) {
+      creditTransactionId = await ctx.db.insert("creditTransactions", {
+        userId: args.creditAllocation.userId,
+        amount: args.creditAllocation.amount,
+        type: "gift",
+        reason: "subscription_renewal",
+        description: args.creditAllocation.description,
+        externalRef: args.stripeEventId,
+        status: "completed",
+        completedAt: Date.now(),
+        createdAt: Date.now(),
+        createdBy: args.creditAllocation.userId,
+      });
+
+      // Update user's credit balance
+      const user = await ctx.db.get(args.creditAllocation.userId);
+      if (user) {
+        await ctx.db.patch(args.creditAllocation.userId, {
+          credits: (user.credits || 0) + args.creditAllocation.amount,
+        });
+      }
+    }
+
+    // 3. Record audit event
+    await ctx.db.insert("subscriptionEvents", {
+      subscriptionId: args.eventData.subscriptionId || subscription._id,
+      stripeSubscriptionId: args.subscriptionUpdate.stripeSubscriptionId,
+      stripeEventId: args.stripeEventId,
+      eventType: args.eventData.eventType,
+      processedAt: Date.now(),
+      creditsAllocated: args.eventData.creditsAllocated,
+      creditTransactionId: creditTransactionId ? `${creditTransactionId}` : undefined,
+      createdAt: Date.now(),
+      createdBy: subscription.userId,
+    });
+
+    return {
+      success: true,
+      subscriptionId: subscription._id,
+      creditTransactionId,
+      creditsAllocated: args.creditAllocation?.amount || 0,
+    };
+  },
+});
+
+/**
+ * Atomic subscription creation transaction
+ * Consolidates: subscription creation + event recording
+ */
+export const createSubscriptionWithEvent = internalMutation({
+  args: v.object({
+    stripeEventId: v.string(),
+    subscription: v.object({
+      userId: v.id("users"),
+      stripeCustomerId: v.string(),
+      stripeSubscriptionId: v.string(),
+      stripePriceId: v.string(),
+      stripeProductId: v.string(),
+      status: v.union(
+        v.literal("active"),
+        v.literal("canceled"),
+        v.literal("incomplete"),
+        v.literal("past_due"),
+        v.literal("trialing"),
+        v.literal("unpaid")
+      ),
+      currentPeriodStart: v.number(),
+      currentPeriodEnd: v.number(),
+      billingCycleAnchor: v.number(),
+      creditAmount: v.number(),
+      pricePerCycle: v.number(),
+      currency: v.string(),
+      planName: v.string(),
+      startDate: v.number(),
+    }),
+  }),
+  handler: async (ctx, args) => {
+    // 1. Create subscription record
+    const subscriptionId = await ctx.db.insert("subscriptions", {
+      ...args.subscription,
+      createdAt: Date.now(),
+      createdBy: args.subscription.userId,
+    });
+
+    // 2. Record creation event
+    await ctx.db.insert("subscriptionEvents", {
+      subscriptionId,
+      stripeSubscriptionId: args.subscription.stripeSubscriptionId,
+      stripeEventId: args.stripeEventId,
+      eventType: "customer.subscription.created",
+      processedAt: Date.now(),
+      createdAt: Date.now(),
+      createdBy: args.subscription.userId,
+    });
+
+    return {
+      success: true,
+      subscriptionId,
+    };
+  },
+});
+
+/**
+ * Atomic subscription update transaction
+ * Consolidates: subscription update + event recording
+ */
+export const updateSubscriptionWithEvent = internalMutation({
+  args: v.object({
+    stripeEventId: v.string(),
+    stripeSubscriptionId: v.string(),
+    updates: v.object({
+      status: v.optional(v.union(
+        v.literal("active"),
+        v.literal("canceled"),
+        v.literal("incomplete"),
+        v.literal("past_due"),
+        v.literal("trialing"),
+        v.literal("unpaid")
+      )),
+      currentPeriodStart: v.optional(v.number()),
+      currentPeriodEnd: v.optional(v.number()),
+      creditAmount: v.optional(v.number()),
+      pricePerCycle: v.optional(v.number()),
+      cancelAtPeriodEnd: v.optional(v.boolean()),
+      canceledAt: v.optional(v.number()),
+      endedAt: v.optional(v.number()),
+    }),
+    eventType: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    // 1. Find and update subscription
+    const subscription = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_stripe_subscription", q => 
+        q.eq("stripeSubscriptionId", args.stripeSubscriptionId)
+      )
+      .first();
+
+    if (!subscription) {
+      throw new Error(`Subscription not found: ${args.stripeSubscriptionId}`);
+    }
+
+    await ctx.db.patch(subscription._id, {
+      ...args.updates,
+      updatedAt: Date.now(),
+      updatedBy: subscription.userId,
+    });
+
+    // 2. Record update event
+    await ctx.db.insert("subscriptionEvents", {
+      subscriptionId: subscription._id,
+      stripeSubscriptionId: args.stripeSubscriptionId,
+      stripeEventId: args.stripeEventId,
+      eventType: args.eventType,
+      processedAt: Date.now(),
+      createdAt: Date.now(),
+      createdBy: subscription.userId,
+    });
+
+    return {
+      success: true,
+      subscriptionId: subscription._id,
+    };
+  },
+});

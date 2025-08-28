@@ -847,38 +847,38 @@ export const paymentsService = {
     }
 
 
+    // 🆕 ATOMIC TRANSACTION: Create subscription and record event atomically
     let databaseSubscriptionId: Id<"subscriptions">;
     try {
-      databaseSubscriptionId = await ctx.runMutation(internal.mutations.payments.createSubscription, {
-        userId: userId as Id<"users">,
-        stripeCustomerId: subscription.customer as string,
-        stripeSubscriptionId: subscription.id,
-        stripePriceId: subscription.items.data[0]!.price!.id,
-        stripeProductId: subscription.items.data[0]!.price!.product as string,
-        status: subscription.status as any,
-        currentPeriodStart: subscription.current_period_start * 1000,
-        currentPeriodEnd: subscription.current_period_end * 1000,
-        billingCycleAnchor: new Date(subscription.current_period_start * 1000).getDate(),
-        creditAmount,
-        pricePerCycle,
-        currency: "eur",
-        planName,
-        startDate: Date.now(),
+      const result = await ctx.runMutation(internal.mutations.payments.createSubscriptionWithEvent, {
+        stripeEventId: event.id,
+        subscription: {
+          userId: userId as Id<"users">,
+          stripeCustomerId: subscription.customer as string,
+          stripeSubscriptionId: subscription.id,
+          stripePriceId: subscription.items.data[0]!.price!.id,
+          stripeProductId: subscription.items.data[0]!.price!.product as string,
+          status: subscription.status as any,
+          currentPeriodStart: subscription.current_period_start * 1000,
+          currentPeriodEnd: subscription.current_period_end * 1000,
+          billingCycleAnchor: new Date(subscription.current_period_start * 1000).getDate(),
+          creditAmount,
+          pricePerCycle,
+          currency: "eur",
+          planName,
+          startDate: Date.now(),
+        },
       });
 
+      databaseSubscriptionId = result.subscriptionId;
+      console.log(`✅ Subscription created atomically: ${databaseSubscriptionId}`);
+
     } catch (error) {
-      throw new Error(`Failed to create subscription in database: ${(error as Error).message}`);
+      throw new Error(`Failed to create subscription atomically: ${(error as Error).message}`);
     }
 
-    // Record the event
-    await ctx.runMutation(internal.mutations.payments.recordSubscriptionEvent, {
-      stripeEventId: event.id,
-      eventType: event.type,
-      stripeSubscriptionId: subscription.id,
-      subscriptionId: databaseSubscriptionId, // Pass the database subscription ID
-      userId: userId as Id<"users">,
-      eventData: event.data.object,
-    });
+    // Note: Event recording now handled atomically above
+    return databaseSubscriptionId;
   },
 
   /**
@@ -898,29 +898,26 @@ export const paymentsService = {
       return;
     }
 
+    // 🆕 ATOMIC TRANSACTION: Update subscription and record event atomically
     try {
-      await ctx.runMutation(internal.mutations.payments.updateSubscription, {
+      const result = await ctx.runMutation(internal.mutations.payments.updateSubscriptionWithEvent, {
+        stripeEventId: event.id,
         stripeSubscriptionId: subscription.id,
-        status: subscription.status as any,
-        currentPeriodStart: subscription.current_period_start * 1000,
-        currentPeriodEnd: subscription.current_period_end * 1000,
-        cancelAtPeriodEnd: subscription.cancel_at_period_end,
-        canceledAt: subscription.canceled_at ? subscription.canceled_at * 1000 : undefined,
-        endedAt: subscription.ended_at ? subscription.ended_at * 1000 : undefined,
+        updates: {
+          status: subscription.status as any,
+          currentPeriodStart: subscription.current_period_start * 1000,
+          currentPeriodEnd: subscription.current_period_end * 1000,
+          cancelAtPeriodEnd: subscription.cancel_at_period_end,
+          canceledAt: subscription.canceled_at ? subscription.canceled_at * 1000 : undefined,
+          endedAt: subscription.ended_at ? subscription.ended_at * 1000 : undefined,
+        },
+        eventType: event.type,
       });
-    } catch (error) {
-      throw new Error(`Failed to update subscription ${subscription.id}: ${(error as Error).message}`);
-    }
 
-    // Record the event
-    await ctx.runMutation(internal.mutations.payments.recordSubscriptionEvent, {
-      stripeEventId: event.id,
-      eventType: event.type,
-      stripeSubscriptionId: subscription.id,
-      subscriptionId: existingSubscription._id, // Pass the database subscription ID
-      userId: existingSubscription.userId,
-      eventData: event.data.object,
-    });
+      console.log(`✅ Subscription updated atomically: ${result.subscriptionId}`);
+    } catch (error) {
+      throw new Error(`Failed to update subscription atomically ${subscription.id}: ${(error as Error).message}`);
+    }
   },
 
   /**
@@ -940,25 +937,22 @@ export const paymentsService = {
       return;
     }
 
+    // 🆕 ATOMIC TRANSACTION: Cancel subscription and record event atomically
     try {
-      await ctx.runMutation(internal.mutations.payments.updateSubscription, {
+      const result = await ctx.runMutation(internal.mutations.payments.updateSubscriptionWithEvent, {
+        stripeEventId: event.id,
         stripeSubscriptionId: subscription.id,
-        status: "canceled",
-        endedAt: Date.now(),
+        updates: {
+          status: "canceled",
+          endedAt: Date.now(),
+        },
+        eventType: event.type,
       });
-    } catch (error) {
-      throw new Error(`Failed to delete subscription ${subscription.id}: ${(error as Error).message}`);
-    }
 
-    // Record the event
-    await ctx.runMutation(internal.mutations.payments.recordSubscriptionEvent, {
-      stripeEventId: event.id,
-      eventType: event.type,
-      stripeSubscriptionId: subscription.id,
-      subscriptionId: existingSubscription._id, // Pass the database subscription ID
-      userId: existingSubscription.userId,
-      eventData: event.data.object,
-    });
+      console.log(`✅ Subscription canceled atomically: ${result.subscriptionId}`);
+    } catch (error) {
+      throw new Error(`Failed to cancel subscription atomically ${subscription.id}: ${(error as Error).message}`);
+    }
   },
 
   /**
@@ -991,52 +985,38 @@ export const paymentsService = {
         // Check for recent manual operations (reactivation/update) within last 5 minutes
         const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
 
-        // Update subscription status to active if it was incomplete
-        if (subscription.status === "incomplete") {
-          await ctx.runMutation(internal.mutations.payments.updateSubscription, {
-            stripeSubscriptionId: subscription.stripeSubscriptionId,
-            status: "active",
-          });
-        }
-
-        // Only allocate credits for genuine renewals and new subscriptions
-        // Skip if this was triggered by a manual reactivation or update
+        // 🆕 ATOMIC TRANSACTION: Handle payment success in single operation
         const shouldAllocateCredits = invoice.billing_reason === "subscription_cycle" ||
           (invoice.billing_reason === "subscription_create" && subscription.status === "incomplete");
 
-        let creditTransactionId: Id<"creditTransactions"> | undefined;
+        const isInitialPayment = invoice.billing_reason === "subscription_create";
+        const description = isInitialPayment
+          ? `Initial subscription payment - ${subscription.planName}`
+          : `Monthly subscription renewal - ${subscription.planName}`;
 
-        if (shouldAllocateCredits) {
-          // Allocate credits for the payment
-          const isInitialPayment = invoice.billing_reason === "subscription_create";
-          const description = isInitialPayment
-            ? `Initial subscription payment - ${subscription.planName}`
-            : `Monthly subscription renewal - ${subscription.planName}`;
-
-          creditTransactionId = await ctx.runMutation(
-            internal.mutations.credits.addCreditsForSubscription,
-            {
+        const result = await ctx.runMutation(
+          internal.mutations.payments.handlePaymentSucceededTransaction,
+          {
+            stripeEventId: event.id,
+            subscriptionUpdate: {
+              stripeSubscriptionId: subscription.stripeSubscriptionId,
+              status: subscription.status === "incomplete" ? "active" : subscription.status as any,
+            },
+            creditAllocation: shouldAllocateCredits ? {
               userId: subscription.userId,
               amount: subscription.creditAmount,
               subscriptionId: subscription._id,
               description,
-            }
-          );
-        }
+            } : undefined,
+            eventData: {
+              eventType: event.type,
+              subscriptionId: subscription._id,
+              creditsAllocated: shouldAllocateCredits ? subscription.creditAmount : undefined,
+            },
+          }
+        );
 
-        // Record the event with conditional credit allocation data
-        await ctx.runMutation(internal.mutations.payments.recordSubscriptionEvent, {
-          stripeEventId: event.id,
-          eventType: event.type,
-          stripeSubscriptionId: subscription.stripeSubscriptionId,
-          subscriptionId: subscription._id,
-          userId: subscription.userId,
-          ...(shouldAllocateCredits && {
-            creditsAllocated: subscription.creditAmount,
-            creditTransactionId,
-          }),
-          eventData: event.data.object,
-        });
+        console.log(`✅ Payment processed atomically: Credits ${result.creditsAllocated}, Transaction ${result.creditTransactionId}`);
       }
     } else if (invoice.subscription && invoice.billing_reason === "subscription_update") {
       // This is a subscription update payment (proration) - DO NOT allocate credits

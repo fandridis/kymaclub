@@ -756,7 +756,9 @@ export default defineSchema({
   venues: defineTable(venuesFields)
     .index("by_business", ["businessId"])
     .index("by_city", ["address.city"])
-    .index("by_deleted", ["deleted"]),
+    .index("by_deleted", ["deleted"])
+    // 🆕 PERFORMANCE INDEXES FOR DELETED ITEM FILTERING
+    .index("by_business_deleted", ["businessId", "deleted"]),
 
   /** 
    * Class templates - blueprints for creating class instances
@@ -779,7 +781,12 @@ export default defineSchema({
     .index("by_start_time", ["startTime"])
     .index("by_business_start_time", ["businessId", "startTime"])
     .index("by_template_and_start_time", ["templateId", "startTime"])
-    .index("by_business_name_timepattern_dayofweek", ["businessId", "name", "timePattern", "dayOfWeek"]),
+    .index("by_business_name_timepattern_dayofweek", ["businessId", "name", "timePattern", "dayOfWeek"])
+    // 🆕 CRITICAL PERFORMANCE INDEXES FOR EFFICIENT FILTERING
+    .index("by_business_deleted_start_time", ["businessId", "deleted", "startTime"])
+    .index("by_business_status_start_time", ["businessId", "status", "startTime"])
+    .index("by_template_deleted", ["templateId", "deleted"])
+    .index("by_venue_deleted_start_time", ["venueId", "deleted", "startTime"]),
 
   /** 
    * Bookings - customer reservations for class instances (simplified)
@@ -792,7 +799,13 @@ export default defineSchema({
     .index("by_business_status", ["businessId", "status"])
     .index("by_credit_transaction", ["creditTransactionId"])
     .index("by_discount_source", ["appliedDiscount.source"])
-    .index("by_user_start_time", ["userId", "classInstanceSnapshot.startTime"]),
+    .index("by_user_start_time", ["userId", "classInstanceSnapshot.startTime"])
+    // 🆕 CRITICAL PERFORMANCE INDEXES FOR COMMON QUERY PATTERNS
+    .index("by_user_status_deleted", ["userId", "status", "deleted"])
+    .index("by_business_created", ["businessId", "createdAt"])
+    .index("by_user_status_created", ["userId", "status", "createdAt"])
+    .index("by_class_instance_status", ["classInstanceId", "status"])
+    .index("by_user_status_start_time", ["userId", "status", "classInstanceSnapshot.startTime"]),
 
   /**
    * Enhanced Credit Transactions - One record per credit operation (includes purchases)
@@ -810,7 +823,12 @@ export default defineSchema({
     .index("by_stripe_payment_intent", ["stripePaymentIntentId"])
     .index("by_stripe_checkout_session", ["stripeCheckoutSessionId"])
     .index("by_status", ["status"])
-    .index("by_user_status", ["userId", "status"]),
+    .index("by_user_status", ["userId", "status"])
+    // 🆕 CRITICAL PERFORMANCE INDEXES FOR DATE RANGE QUERIES
+    .index("by_user_created", ["userId", "createdAt"])
+    .index("by_business_created", ["businessId", "createdAt"])
+    .index("by_user_type_created", ["userId", "type", "createdAt"])
+    .index("by_business_type_created", ["businessId", "type", "createdAt"]),
 
   /**
    * Notifications - Messages sent to businesses and consumers
