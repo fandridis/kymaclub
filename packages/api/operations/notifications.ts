@@ -8,5 +8,6 @@ export const getDefaultUserNotificationSettings = () => {
         booking_cancelled_by_business: { email: false, web: false, push: false },
         payment_receipt: { email: false, web: false, push: false },
         class_rebookable: { email: false, web: false, push: false },
+        credits_received_subscription: { email: true, web: true, push: true },
     } satisfies UserNotificationSettingsNotificationPreferences;
 }

@@ -26,6 +26,7 @@ const defaultPreferences: UserNotificationSettingsNotificationPreferences = {
     booking_cancelled_by_business: { email: false, web: false, push: false },
     payment_receipt: { email: false, web: false, push: false },
     class_rebookable: { email: false, web: false, push: false },
+    credits_received_subscription: { email: true, web: true, push: true },
 };
 
 // Grouped notification types with their underlying notification keys
@@ -46,10 +47,10 @@ const notificationGroups: NotificationGroup[] = [
     },
     {
         id: 'subscriptions',
-        title: 'Subscriptions',
-        description: 'Payment receipts and subscription updates.',
+        title: 'Subscriptions & Credits',
+        description: 'Payment receipts, subscription updates, and credit notifications.',
         icon: CreditCard,
-        notificationKeys: ['payment_receipt'] as const
+        notificationKeys: ['payment_receipt', 'credits_received_subscription'] as const
     }
 ];
 

@@ -146,3 +146,48 @@ export const sendTestEmail = internalAction({
         }
     }
 });
+
+/**
+ * Send credits received email to customer
+ */
+export const sendCreditsReceivedEmail = internalAction({
+    args: v.object({
+        customerEmail: v.string(),
+        customerName: v.string(),
+        creditsReceived: v.number(),
+        planName: v.string(),
+        isRenewal: v.boolean(),
+        totalCredits: v.number(),
+    }),
+    handler: async (ctx, args) => {
+        try {
+            const result = await emailService.sendCreditsReceivedEmail({
+                ctx,
+                args: {
+                    customerEmail: args.customerEmail,
+                    customerName: args.customerName,
+                    creditsReceived: args.creditsReceived,
+                    planName: args.planName,
+                    isRenewal: args.isRenewal,
+                    totalCredits: args.totalCredits,
+                }
+            });
+
+            console.log(`✅ Credits received email queued successfully - EmailId: ${result.emailId}`);
+            return {
+                success: true,
+                emailSent: true,
+                emailId: result.emailId,
+                reason: "Email sent successfully"
+            };
+
+        } catch (error) {
+            console.error("Failed to send credits received email:", error);
+            return {
+                success: false,
+                emailSent: false,
+                reason: error instanceof Error ? error.message : "Unknown error"
+            };
+        }
+    }
+});

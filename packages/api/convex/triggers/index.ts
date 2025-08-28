@@ -178,3 +178,41 @@ triggers.register("bookings", async (ctx, change) => {
         });
     }
 });
+
+/***************************************************************
+ * SUBSCRIPTION EVENTS TRIGGERS
+ ***************************************************************/
+triggers.register("subscriptionEvents", async (ctx, change) => {
+    const { id, oldDoc, newDoc, operation } = change;
+
+    console.log(`🔥 🔥 🔥 🔥 🔥 🔥 SUBSCRIPTION EVENTS TRIGGER ${operation} 🔥 🔥 🔥 🔥 🔥 🔥`)
+
+    if (operation === 'insert' && newDoc && newDoc.creditsAllocated && newDoc.creditsAllocated > 0) {
+        console.log('🔥🔥🔥 Credits allocated in subscription event, triggering notification', {
+            subscriptionEventId: id,
+            creditsAllocated: newDoc.creditsAllocated,
+            eventType: newDoc.eventType
+        });
+
+        // Get subscription details to find user ID
+        if (newDoc.subscriptionId) {
+            const subscription = await ctx.db.get(newDoc.subscriptionId);
+            if (subscription) {
+                await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleSubscriptionCreditsReceivedEvent, {
+                    payload: {
+                        subscriptionEventId: id,
+                        subscriptionId: newDoc.subscriptionId,
+                        userId: subscription.userId,
+                        creditsAllocated: newDoc.creditsAllocated,
+                        eventType: newDoc.eventType,
+                        planName: subscription.planName
+                    },
+                });
+            } else {
+                console.warn('Subscription not found for subscription event', { subscriptionId: newDoc.subscriptionId });
+            }
+        } else {
+            console.warn('No subscriptionId in subscription event', { subscriptionEventId: id });
+        }
+    }
+});

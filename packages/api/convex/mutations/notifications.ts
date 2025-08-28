@@ -186,3 +186,24 @@ export const handleRebookableBookingEvent = internalMutation({
         return await notificationService.handleBookingBecameRebookableEvent({ ctx, payload: args.payload });
     }
 });
+
+/***************************************************************
+ * Handle Subscription Credits Received Event
+ ***************************************************************/
+export const handleSubscriptionCreditsReceivedEvent = internalMutation({
+    args: v.object({
+        payload: v.object({
+            subscriptionEventId: v.id("subscriptionEvents"),
+            subscriptionId: v.id("subscriptions"),
+            userId: v.id("users"),
+            creditsAllocated: v.number(),
+            eventType: v.string(),
+            planName: v.string(),
+        })
+    }),
+    handler: async (ctx, args) => {
+        console.log('----- [mutations/notifications] handleSubscriptionCreditsReceivedEvent -----');
+        console.log('args: ', args);
+        return await notificationService.handleSubscriptionCreditsReceivedEvent({ ctx, payload: args.payload });
+    }
+});

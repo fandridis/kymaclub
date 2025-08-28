@@ -956,4 +956,133 @@ export const notificationService = {
 
         return { success: true };
     },
+
+    /**
+     * Handle subscription credits received event
+     */
+    handleSubscriptionCreditsReceivedEvent: async ({
+        ctx,
+        payload,
+    }: {
+        ctx: MutationCtx;
+        payload: {
+            subscriptionEventId: Id<"subscriptionEvents">;
+            subscriptionId: Id<"subscriptions">;
+            userId: Id<"users">;
+            creditsAllocated: number;
+            eventType: string;
+            planName: string;
+        };
+    }): Promise<{ success: boolean }> => {
+        const { subscriptionEventId, subscriptionId, userId, creditsAllocated, eventType, planName } = payload;
+
+        console.log('🔥🔥🔥 [notificationService] handleSubscriptionCreditsReceivedEvent', {
+            subscriptionEventId,
+            subscriptionId,
+            userId,
+            creditsAllocated,
+            eventType,
+            planName
+        });
+
+        // Fetch user and subscription
+        const [user, subscription] = await Promise.all([
+            ctx.db.get(userId),
+            ctx.db.get(subscriptionId),
+        ]);
+
+        if (!user || !subscription) {
+            throw new ConvexError({
+                message: "User or subscription not found",
+                field: "userId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND
+            });
+        }
+
+        // Get user notification settings
+        const userNotificationSettings = await ctx.db
+            .query("userNotificationSettings")
+            .withIndex("by_user", q => q.eq("userId", userId))
+            .filter(q => q.neq(q.field("deleted"), true))
+            .first();
+
+        console.log("User notification settings for subscription credits received:", {
+            userId,
+            userName: user.name,
+            settings: userNotificationSettings,
+            notificationType: "credits_received_subscription"
+        });
+
+        // Determine if this is an initial subscription or renewal
+        const isRenewal = eventType === "invoice.payment_succeeded" || eventType === "invoice.paid";
+        const title = isRenewal ? "Monthly credits renewed!" : "Welcome credits received!";
+        const message = `You've received ${creditsAllocated} credits from your ${planName} subscription.`;
+
+        // We don't need businessId for consumer notifications, but the schema requires it
+        // Let's use a dummy business ID or make it optional in the schema - for now we'll skip it
+        // Since this is a consumer notification about their credits, we can use businessId as the platform
+
+        // Send web notification if user has opted in (or use defaults if no settings exist)
+        const shouldSendWeb = userNotificationSettings?.notificationPreferences?.credits_received_subscription?.web ?? true;
+        console.log('Checking if user has opted in for web notifications for credits_received_subscription:', shouldSendWeb);
+        
+        if (shouldSendWeb) {
+            console.log('Sending web notification to user for credits_received_subscription');
+            // Note: For consumer credit notifications, we don't have a specific business context
+            // We'll create a dummy businessId or handle this differently
+            // For now, let's skip the web notification or find a way to handle consumer-only notifications
+        }
+
+        // Send email notification if user has opted in
+        const shouldSendEmail = userNotificationSettings?.notificationPreferences?.credits_received_subscription?.email ?? true;
+        console.log('Checking if user has opted in for email notifications for credits_received_subscription:', shouldSendEmail);
+        
+        if (shouldSendEmail && process.env.NODE_ENV === "production" && user.email) {
+            console.log('Sending email notification to user for credits_received_subscription');
+            try {
+                await ctx.scheduler.runAfter(0, internal.actions.email.sendCreditsReceivedEmail, {
+                    customerEmail: user.email,
+                    customerName: user.name || user.email || "Valued Customer",
+                    creditsReceived: creditsAllocated,
+                    planName: planName,
+                    isRenewal: isRenewal,
+                    totalCredits: (user.credits || 0) + creditsAllocated,
+                });
+            } catch (error) {
+                console.error('Error sending credits received email notification:', error);
+            }
+        } else {
+            console.log('User has not opted in for email notifications for credits_received_subscription or not in production');
+        }
+
+        // Send push notification if user has opted in
+        const shouldSendPush = userNotificationSettings?.notificationPreferences?.credits_received_subscription?.push ?? true;
+        console.log('Checking if user has opted in for push notifications for credits_received_subscription:', shouldSendPush);
+        
+        if (shouldSendPush) {
+            console.log('Sending push notification to user for credits_received_subscription');
+            const notificationContent = createNotificationWithDeepLink(
+                'credits_received_subscription',
+                title,
+                message,
+                {
+                    additionalData: {
+                        creditsReceived: creditsAllocated,
+                        planName: planName,
+                        isRenewal: isRenewal,
+                        subscriptionId: subscriptionId,
+                    }
+                }
+            );
+
+            await pushNotifications.sendPushNotification(ctx, {
+                userId: userId,
+                notification: notificationContent,
+            });
+        } else {
+            console.log('User has not opted in for push notifications for credits_received_subscription');
+        }
+
+        return { success: true };
+    },
 };

@@ -116,6 +116,10 @@ export function generateNotificationDeepLink(
       console.log(`[Deep Link] Matched booking-related type: ${type}, generating bookings link`);
       return generateBookingsLink();
 
+    case 'credits_received_subscription':
+      console.log(`[Deep Link] Matched credits-related type: ${type}, generating settings link`);
+      return generateSettingsLink();
+
     default:
       console.log(`[Deep Link] Unmatched type: "${type}", falling back to home link`);
       return generateHomeLink();

@@ -643,6 +643,11 @@ export const createTestUserNotificationSettings = internalMutation({
                     web: true,
                     push: true,
                 },
+                credits_received_subscription: {
+                    email: true,
+                    web: true,
+                    push: true,
+                },
             },
             createdAt: args.settings.createdAt || Date.now(),
             createdBy: user._id,

@@ -256,4 +256,93 @@ export const emailService = {
             });
         }
     },
+
+    /**
+     * Send credits received email to customer
+     */
+    sendCreditsReceivedEmail: async ({
+        ctx,
+        args,
+    }: {
+        ctx: ActionCtx;
+        args: {
+            customerEmail: string;
+            customerName: string;
+            creditsReceived: number;
+            planName: string;
+            isRenewal: boolean;
+            totalCredits: number;
+        };
+    }): Promise<{ emailId: string; success: boolean }> => {
+        try {
+            const subject = args.isRenewal 
+                ? `Your monthly credits have arrived! 🎉`
+                : `Welcome! Your subscription credits are ready 🚀`;
+
+            const htmlContent = createEmailTemplate({
+                title: subject,
+                content: `
+                    <div style="text-align: center; margin-bottom: 32px;">
+                        <h1 style="color: #059669; font-size: 28px; margin-bottom: 16px;">${args.isRenewal ? '🎉 Monthly Credits Renewed!' : '🚀 Welcome Credits!'}</h1>
+                        <p style="font-size: 18px; color: #4B5563; margin: 0;">Hi ${args.customerName}!</p>
+                    </div>
+
+                    <div style="background: linear-gradient(135deg, #059669, #10B981); border-radius: 16px; padding: 32px; text-align: center; margin-bottom: 32px;">
+                        <div style="background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+                            <h2 style="color: #059669; font-size: 48px; font-weight: bold; margin: 0 0 8px 0;">${args.creditsReceived}</h2>
+                            <p style="color: #4B5563; font-size: 18px; margin: 0; font-weight: 500;">Credits Added</p>
+                        </div>
+                        <p style="color: white; font-size: 16px; margin: 0; opacity: 0.95;">From your ${args.planName}</p>
+                    </div>
+
+                    <div style="background: #F9FAFB; border-radius: 12px; padding: 24px; margin-bottom: 32px;">
+                        <h3 style="color: #059669; font-size: 20px; margin: 0 0 16px 0;">📊 Your Credit Balance</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: white; border-radius: 8px; padding: 16px;">
+                            <span style="color: #4B5563; font-size: 16px;">Total Credits Available</span>
+                            <span style="color: #059669; font-size: 20px; font-weight: bold;">${args.totalCredits}</span>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin: 32px 0;">
+                        <a href="https://app.orcavo.com" style="background: #059669; color: white; padding: 16px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; display: inline-block;">Book Your Next Class</a>
+                    </div>
+
+                    <div style="background: #EFF6FF; border-left: 4px solid #3B82F6; padding: 20px; margin: 24px 0; border-radius: 4px;">
+                        <h4 style="color: #1E40AF; margin: 0 0 8px 0; font-size: 16px;">💡 Pro Tip</h4>
+                        <p style="color: #1E40AF; margin: 0; font-size: 14px;">
+                            ${args.isRenewal 
+                                ? 'Your credits renew monthly, so make sure to use them before your next billing cycle!'
+                                : 'Welcome to KymaClub! Use your credits to book amazing fitness classes across the city.'
+                            }
+                        </p>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 40px; padding-top: 24px; border-top: 1px solid #E5E7EB;">
+                        <p style="color: #6B7280; font-size: 14px; margin: 0;">
+                            Questions? We're here to help! Contact us at 
+                            <a href="mailto:support@orcavo.com" style="color: #059669; text-decoration: none;">support@orcavo.com</a>
+                        </p>
+                    </div>
+                `
+            });
+
+            const emailId = await resend.sendEmail(ctx, {
+                from: "KymaClub <credits@app.orcavo.com>",
+                to: args.customerEmail,
+                subject: subject,
+                html: htmlContent,
+                replyTo: ["support@orcavo.com"],
+            });
+
+            console.log(`✅ Credits received email sent - EmailId: ${emailId}`);
+            return { emailId, success: true };
+
+        } catch (error) {
+            console.error("Failed to send credits received email:", error);
+            throw new ConvexError({
+                message: "Failed to send credits received email",
+                code: ERROR_CODES.UNKNOWN_ERROR
+            });
+        }
+    },
 };

@@ -3,7 +3,9 @@ import { View, Text, StyleSheet, Alert, SafeAreaView, TouchableOpacity } from 'r
 import { useUserNotificationSettings } from '../../hooks/use-user-notification-settings';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { SettingsGroup, SettingsHeader, SettingsRow } from '../../components/Settings';
+import { StackScreenHeader } from '../../components/StackScreenHeader';
 import { getDefaultUserNotificationSettings } from '../../../../../packages/api/operations/notifications';
+import { theme } from '../../theme';
 
 type NotificationChannels = { email: boolean; web: boolean; push: boolean; };
 
@@ -80,6 +82,7 @@ export function SettingsNotificationsPreferenceScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
+            <StackScreenHeader title={notificationType.title} />
             <View style={styles.content}>
                 <Text style={styles.description}>{notificationType.description}</Text>
 
@@ -110,24 +113,24 @@ export function SettingsNotificationsPreferenceScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f9fa',
+        backgroundColor: theme.colors.zinc[50],
     },
     content: {
         flex: 1,
-        padding: 20,
+        padding: theme.spacing.lg,
     },
     description: {
-        fontSize: 16,
-        color: '#666',
-        marginBottom: 30,
-        paddingHorizontal: 20,
+        fontSize: theme.fontSize.base,
+        color: theme.colors.zinc[600],
+        marginBottom: theme.spacing.xl,
+        paddingHorizontal: theme.spacing.lg,
     },
     disabledNote: {
-        fontSize: 14,
-        color: '#999',
+        fontSize: theme.fontSize.sm,
+        color: theme.colors.zinc[500],
         fontStyle: 'italic',
         textAlign: 'center',
-        marginTop: 16,
-        paddingHorizontal: 20,
+        marginTop: theme.spacing.lg,
+        paddingHorizontal: theme.spacing.lg,
     },
 });
