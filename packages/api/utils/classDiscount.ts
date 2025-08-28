@@ -25,8 +25,7 @@ export type DiscountConditionType = "hours_before_min" | "hours_before_max" | "a
 export type AppliedDiscount = {
   source: "template_rule" | "instance_rule";
   discountType: DiscountType;
-  discountValue: number;
-  creditsSaved: number; // Credits saved (consumer-facing)
+  creditsSaved: number; // Credits saved (consumer-facing) - the actual benefit to the user
   ruleName: string;
   reason?: string;
   appliedBy?: Id<"users">;
@@ -43,10 +42,10 @@ export type DiscountCalculationResult = {
  */
 function applyDiscountToPrice(
   originalPrice: number,
-  discountValue: number
+  discountAmount: number
 ): number {
-  // originalPrice - discountValue (e.g., 10 - 2 = 8)
-  return Math.max(0, originalPrice - discountValue);
+  // originalPrice - discountAmount (e.g., 10 - 2 = 8)
+  return Math.max(0, originalPrice - discountAmount);
 }
 
 /**
@@ -116,8 +115,8 @@ export function calculateBestDiscount(
 
     if (bestInstanceRule) {
       // Convert discount value from cents to credits (1 credit = 50 cents)
-      const discountValueInCredits = bestInstanceRule.rule.discount.value / 50;
-      const finalPrice = applyDiscountToPrice(originalPrice, discountValueInCredits);
+      const discountAmountInCredits = bestInstanceRule.rule.discount.value / 50;
+      const finalPrice = applyDiscountToPrice(originalPrice, discountAmountInCredits);
       const creditsSaved = originalPrice - finalPrice;
 
       return {
@@ -126,7 +125,6 @@ export function calculateBestDiscount(
         appliedDiscount: {
           source: "instance_rule",
           discountType: "fixed_amount",
-          discountValue: discountValueInCredits,
           creditsSaved,
           ruleName: bestInstanceRule.ruleName,
         },
@@ -140,8 +138,8 @@ export function calculateBestDiscount(
 
     if (bestTemplateRule) {
       // Convert discount value from cents to credits (1 credit = 50 cents)
-      const discountValueInCredits = bestTemplateRule.rule.discount.value / 50;
-      const finalPrice = applyDiscountToPrice(originalPrice, discountValueInCredits);
+      const discountAmountInCredits = bestTemplateRule.rule.discount.value / 50;
+      const finalPrice = applyDiscountToPrice(originalPrice, discountAmountInCredits);
       const creditsSaved = originalPrice - finalPrice;
 
       return {
@@ -150,7 +148,6 @@ export function calculateBestDiscount(
         appliedDiscount: {
           source: "template_rule",
           discountType: "fixed_amount",
-          discountValue: discountValueInCredits,
           creditsSaved,
           ruleName: bestTemplateRule.ruleName,
         },

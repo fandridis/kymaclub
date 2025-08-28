@@ -15,7 +15,7 @@ describe("Flexible Discount System", () => {
                 },
                 discount: {
                     type: "fixed_amount",
-                    value: 2, // 2 credits off
+                    value: 100, // 2 credits off (100 cents = 2 credits)
                 },
                 createdAt: Date.now(),
                 createdBy: "user1" as any,
@@ -29,7 +29,7 @@ describe("Flexible Discount System", () => {
                 },
                 discount: {
                     type: "fixed_amount",
-                    value: 1, // 1 credit off
+                    value: 50, // 1 credit off (50 cents = 1 credit)
                 },
                 createdAt: Date.now(),
                 createdBy: "user1" as any,
@@ -43,7 +43,7 @@ describe("Flexible Discount System", () => {
                 },
                 discount: {
                     type: "fixed_amount",
-                    value: 3, // 3 credits off
+                    value: 150, // 3 credits off (150 cents = 3 credits)
                 },
                 createdAt: Date.now(),
                 createdBy: "user1" as any,
@@ -64,7 +64,7 @@ describe("Flexible Discount System", () => {
             expect(result.appliedDiscount).toBeTruthy();
             expect(result.appliedDiscount?.source).toBe("template_rule");
             expect(result.appliedDiscount?.discountType).toBe("fixed_amount");
-            expect(result.appliedDiscount?.discountValue).toBe(2);
+            // discountValue was redundant with creditsSaved, so we only check creditsSaved
             expect(result.appliedDiscount?.ruleName).toBe("2-Day Early Bird");
             expect(result.originalPrice).toBe(10);
             expect(result.finalPrice).toBe(8); // 10 - 2
@@ -83,7 +83,7 @@ describe("Flexible Discount System", () => {
             expect(result.appliedDiscount).toBeTruthy();
             expect(result.appliedDiscount?.source).toBe("template_rule");
             expect(result.appliedDiscount?.discountType).toBe("fixed_amount");
-            expect(result.appliedDiscount?.discountValue).toBe(1);
+            // discountValue was redundant with creditsSaved, so we only check creditsSaved
             expect(result.appliedDiscount?.ruleName).toBe("12h Early Bird");
             expect(result.originalPrice).toBe(10);
             expect(result.finalPrice).toBe(9); // 10 - 1
@@ -102,7 +102,7 @@ describe("Flexible Discount System", () => {
             expect(result.appliedDiscount).toBeTruthy();
             expect(result.appliedDiscount?.source).toBe("template_rule");
             expect(result.appliedDiscount?.discountType).toBe("fixed_amount");
-            expect(result.appliedDiscount?.discountValue).toBe(3);
+            // discountValue was redundant with creditsSaved, so we only check creditsSaved
             expect(result.appliedDiscount?.ruleName).toBe("Last Minute Rush");
             expect(result.originalPrice).toBe(10);
             expect(result.finalPrice).toBe(7); // 10 - 3
@@ -135,7 +135,7 @@ describe("Flexible Discount System", () => {
             expect(result.appliedDiscount).toBeTruthy();
             expect(result.appliedDiscount?.source).toBe("template_rule");
             expect(result.appliedDiscount?.discountType).toBe("fixed_amount");
-            expect(result.appliedDiscount?.discountValue).toBe(2); // 48h discount (2 credits) is higher than 12h discount (1 credit)
+            // discountValue was redundant with creditsSaved, so we only check creditsSaved // 48h discount (2 credits) is higher than 12h discount (1 credit)
             expect(result.appliedDiscount?.ruleName).toBe("2-Day Early Bird");
             expect(result.originalPrice).toBe(10);
             expect(result.finalPrice).toBe(8); // 10 - 2
@@ -154,7 +154,7 @@ describe("Flexible Discount System", () => {
                         },
                         discount: {
                             type: "fixed_amount",
-                            value: 2,
+                            value: 100, // 2 credits (100 cents)
                         },
                         createdAt: Date.now(),
                         createdBy: "user1" as any,
@@ -174,7 +174,7 @@ describe("Flexible Discount System", () => {
             expect(result.appliedDiscount).toBeTruthy();
             expect(result.appliedDiscount?.source).toBe("template_rule");
             expect(result.appliedDiscount?.discountType).toBe("fixed_amount");
-            expect(result.appliedDiscount?.discountValue).toBe(2);
+            // discountValue was redundant with creditsSaved, so we only check creditsSaved
             expect(result.appliedDiscount?.ruleName).toBe("24h Early Bird");
             expect(result.originalPrice).toBe(10);
             expect(result.finalPrice).toBe(8); // 10 - 2
@@ -193,7 +193,7 @@ describe("Flexible Discount System", () => {
                         },
                         discount: {
                             type: "fixed_amount",
-                            value: 4, // Higher than template rule
+                            value: 200, // 4 credits (200 cents) - Higher than template rule
                         },
                         createdAt: Date.now(),
                         createdBy: "user1" as any,
@@ -209,7 +209,7 @@ describe("Flexible Discount System", () => {
             expect(result.appliedDiscount).toBeTruthy();
             expect(result.appliedDiscount?.source).toBe("instance_rule");
             expect(result.appliedDiscount?.discountType).toBe("fixed_amount");
-            expect(result.appliedDiscount?.discountValue).toBe(4);
+            // discountValue was redundant with creditsSaved, so we only check creditsSaved
             expect(result.appliedDiscount?.ruleName).toBe("Instance Special");
             expect(result.originalPrice).toBe(10);
             expect(result.finalPrice).toBe(6); // 10 - 4
@@ -227,7 +227,7 @@ describe("Flexible Discount System", () => {
                         },
                         discount: {
                             type: "fixed_amount",
-                            value: 1,
+                            value: 50, // 1 credit (50 cents)
                         },
                         createdAt: Date.now(),
                         createdBy: "user1" as any,
@@ -246,7 +246,7 @@ describe("Flexible Discount System", () => {
             expect(result.appliedDiscount).toBeTruthy();
             expect(result.appliedDiscount?.source).toBe("template_rule");
             expect(result.appliedDiscount?.discountType).toBe("fixed_amount");
-            expect(result.appliedDiscount?.discountValue).toBe(1);
+            // discountValue was redundant with creditsSaved, so we only check creditsSaved
             expect(result.appliedDiscount?.ruleName).toBe("Member Discount");
             expect(result.originalPrice).toBe(10);
             expect(result.finalPrice).toBe(9); // 10 - 1
@@ -323,7 +323,7 @@ describe("Flexible Discount System", () => {
                         },
                         discount: {
                             type: "fixed_amount",
-                            value: 5,
+                            value: 250, // 5 credits (250 cents)
                         },
                         createdAt: Date.now(),
                         createdBy: "user1" as any,
@@ -342,7 +342,7 @@ describe("Flexible Discount System", () => {
 
             const superEarlyBird = instanceRules[0];
             expect(superEarlyBird.ruleName).toBe("Super Early Bird");
-            expect(superEarlyBird.value).toBe(5);
+            expect(superEarlyBird.value).toBe(250); // Raw value in cents
             expect(superEarlyBird.applies).toBe(true);
             expect(superEarlyBird.ruleDetails?.conditionType).toBe("hours_before_min");
             expect(superEarlyBird.ruleDetails?.hours).toBe(72);

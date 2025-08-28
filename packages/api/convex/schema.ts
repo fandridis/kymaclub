@@ -434,7 +434,7 @@ export const bookingsFields = {
       v.literal("instance_rule")    // Manual instance override
     ),
     discountType: v.union(v.literal("percentage"), v.literal("fixed_amount")),
-    discountValue: v.number(),        // The discount value used
+    // Note: discountValue removed as it was redundant with creditsSaved
     creditsSaved: v.number(),         // originalPrice - finalPrice
     ruleName: v.string(),             // Name of the discount rule
     reason: v.optional(v.string()),   // Reason for the discount
