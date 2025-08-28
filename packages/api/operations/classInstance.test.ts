@@ -141,7 +141,14 @@ describe('Class Instance Operations - Safety Tests', () => {
       cancellationWindowHours: 24,
       tags: ["yoga", "relaxation"],
       color: "#blue",
-      imageStorageIds: ["img_1", "img_2"] as any
+      imageStorageIds: ["img_1", "img_2"] as any,
+      discountRules: [
+        {
+          type: "early_bird" as const,
+          hoursBeforeClass: 48,
+          discountPercentage: 10
+        }
+      ]
     } as Doc<"classTemplates">;
 
     const mockVenue: Doc<"venues"> = {
@@ -230,7 +237,8 @@ describe('Class Instance Operations - Safety Tests', () => {
         name: mockTemplate.name,
         description: mockTemplate.description,
         instructor: mockTemplate.instructor,
-        imageStorageIds: mockTemplate.imageStorageIds
+        imageStorageIds: mockTemplate.imageStorageIds,
+        discountRules: mockTemplate.discountRules
       });
     });
 
@@ -312,6 +320,39 @@ describe('Class Instance Operations - Safety Tests', () => {
       expect(instance.createdBy).toBe(mockUser._id);
       expect(instance.createdAt).toBeGreaterThanOrEqual(beforeCreation);
       expect(instance.createdAt).toBeLessThanOrEqual(afterCreation);
+    });
+
+    it('should handle templates with discountRules correctly', () => {
+      const startTime = new Date('2024-01-08T10:00:00').getTime();
+
+      const instance = createInstanceFromTemplate(
+        mockTemplate,
+        mockVenue,
+        mockBusiness,
+        mockUser,
+        startTime
+      );
+
+      // Verify discountRules are copied to both instance and templateSnapshot
+      expect(instance.discountRules).toBeUndefined(); // Instance should not get template discountRules directly
+      expect(instance.templateSnapshot.discountRules).toEqual(mockTemplate.discountRules);
+    });
+
+    it('should handle templates without discountRules correctly', () => {
+      const templateWithoutDiscounts = { ...mockTemplate, discountRules: undefined };
+      const startTime = new Date('2024-01-08T10:00:00').getTime();
+
+      const instance = createInstanceFromTemplate(
+        templateWithoutDiscounts,
+        mockVenue,
+        mockBusiness,
+        mockUser,
+        startTime
+      );
+
+      // Verify undefined discountRules are handled correctly
+      expect(instance.discountRules).toBeUndefined();
+      expect(instance.templateSnapshot.discountRules).toBeUndefined();
     });
 
     it('should validate startTime through validation layer', async () => {

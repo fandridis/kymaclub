@@ -29,8 +29,8 @@ export const classDiscountRuleFields = {
     type: v.literal("fixed_amount"),
     value: v.number(),
   }),
-  createdAt: v.number(),
-  createdBy: v.id("users"),
+  createdAt: v.optional(v.number()),
+  createdBy: v.optional(v.id("users")),
   updatedAt: v.optional(v.number()),
   updatedBy: v.optional(v.id("users")),
 };
@@ -330,6 +330,7 @@ export const classInstancesFields = {
     instructor: v.string(),
     imageStorageIds: v.optional(v.array(v.id("_storage"))),
     deleted: v.optional(v.boolean()),
+    discountRules: v.optional(v.array(v.object(classDiscountRuleFields))),
   }),
 
   // Venue Snapshot

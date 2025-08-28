@@ -1,4 +1,5 @@
 import type { Doc, Id } from "../convex/_generated/dataModel";
+import { ClassDiscountRule } from "../types/classDiscount";
 
 /**
  * Flexible Discount System Overview:
@@ -20,23 +21,6 @@ import type { Doc, Id } from "../convex/_generated/dataModel";
 export type DiscountType = "fixed_amount";
 
 export type DiscountConditionType = "hours_before_min" | "hours_before_max" | "always";
-
-export type DiscountRule = {
-  id: string;
-  name: string;
-  condition: {
-    type: DiscountConditionType;
-    hours?: number;
-  };
-  discount: {
-    type: DiscountType;
-    value: number; // Credits off (for consumers)
-  };
-  createdAt: number;
-  createdBy: string;
-  updatedAt?: number;
-  updatedBy?: string;
-};
 
 export type AppliedDiscount = {
   source: "template_rule" | "instance_rule";
@@ -69,7 +53,7 @@ function applyDiscountToPrice(
  * Check if a discount rule applies based on booking time and class start time
  */
 function doesRuleApply(
-  rule: DiscountRule,
+  rule: ClassDiscountRule,
   hoursUntilClass: number
 ): boolean {
   switch (rule.condition.type) {
@@ -91,10 +75,10 @@ function doesRuleApply(
  * Find the best applicable discount rule from a list of rules
  */
 function findBestDiscountRule(
-  rules: DiscountRule[],
+  rules: ClassDiscountRule[],
   hoursUntilClass: number
-): { rule: DiscountRule; ruleName: string } | null {
-  let bestRule: DiscountRule | null = null;
+): { rule: ClassDiscountRule; ruleName: string } | null {
+  let bestRule: ClassDiscountRule | null = null;
   let bestRuleName = "";
   let bestDiscountValue = 0;
 

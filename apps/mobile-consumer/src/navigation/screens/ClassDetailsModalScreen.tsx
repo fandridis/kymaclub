@@ -13,8 +13,124 @@ import type { RootStackParamList } from '..';
 import { useActionSheet } from '@expo/react-native-action-sheet';
 import { useAuth } from '../../stores/auth-store';
 import { centsToCredits } from '@repo/utils/credits';
+import { theme } from '../../theme';
 
 type ClassDetailsRoute = RouteProp<RootStackParamList, 'ClassDetailsModal'>;
+
+// Discount rule type based on schema
+type ClassDiscountRule = {
+    id: string;
+    name: string;
+    condition: {
+        type: "hours_before_min" | "hours_before_max" | "always";
+        hours?: number;
+    };
+    discount: {
+        type: "fixed_amount";
+        value: number;
+    };
+};
+
+// Discount calculation result
+type DiscountCalculationResult = {
+    originalPrice: number;
+    finalPrice: number;
+    appliedDiscount: {
+        discountValue: number;
+        creditsSaved: number;
+        ruleName: string;
+    } | null;
+};
+
+// Helper functions for discount calculation (duplicated from ClassCard)
+function doesRuleApply(rule: ClassDiscountRule, hoursUntilClass: number): boolean {
+    switch (rule.condition.type) {
+        case "hours_before_min":
+            return rule.condition.hours !== undefined && hoursUntilClass >= rule.condition.hours;
+        case "hours_before_max":
+            return rule.condition.hours !== undefined && hoursUntilClass <= rule.condition.hours && hoursUntilClass >= 0;
+        case "always":
+            return true;
+        default:
+            return false;
+    }
+}
+
+function findBestDiscountRule(rules: ClassDiscountRule[], hoursUntilClass: number): { rule: ClassDiscountRule; ruleName: string } | null {
+    let bestRule: ClassDiscountRule | null = null;
+    let bestDiscount = 0;
+
+    for (const rule of rules) {
+        if (doesRuleApply(rule, hoursUntilClass) && rule.discount.value > bestDiscount) {
+            bestRule = rule;
+            bestDiscount = rule.discount.value;
+        }
+    }
+
+    return bestRule ? { rule: bestRule, ruleName: bestRule.name } : null;
+}
+
+function getDiscountTimingText(discountResult: DiscountCalculationResult, classInstance: any): string {
+    if (!discountResult.appliedDiscount) return '';
+
+    const now = Date.now();
+    const hoursUntilClass = Math.max(0, (classInstance.startTime - now) / (1000 * 60 * 60));
+    const ruleName = discountResult.appliedDiscount.ruleName;
+
+    if (ruleName.toLowerCase().includes('early')) {
+        return `Early bird discount: ${Math.round(hoursUntilClass)}h left`;
+    } else if (ruleName.toLowerCase().includes('last') || ruleName.toLowerCase().includes('minute')) {
+        return `Last minute discount: ${Math.round(hoursUntilClass)}h left`;
+    } else {
+        return `Discount: ${Math.round(hoursUntilClass)}h left`;
+    }
+}
+
+function calculateClassDiscount(classInstance: any, template: any): DiscountCalculationResult {
+    const priceInCents = classInstance.price ?? template?.price ?? 1000;
+    const originalPrice = priceInCents / 50; // Convert cents to credits
+
+    const now = Date.now();
+    const hoursUntilClass = (classInstance.startTime - now) / (1000 * 60 * 60);
+
+    const discountRules: ClassDiscountRule[] =
+        classInstance.discountRules ||
+        classInstance.templateSnapshot?.discountRules ||
+        template?.discountRules ||
+        [];
+
+    if (discountRules.length === 0) {
+        return {
+            originalPrice,
+            finalPrice: originalPrice,
+            appliedDiscount: null,
+        };
+    }
+
+    const bestRule = findBestDiscountRule(discountRules, hoursUntilClass);
+
+    if (!bestRule) {
+        return {
+            originalPrice,
+            finalPrice: originalPrice,
+            appliedDiscount: null,
+        };
+    }
+
+    const discountValueInCredits = bestRule.rule.discount.value / 50; // Convert cents to credits
+    const finalPrice = Math.max(0, originalPrice - discountValueInCredits);
+    const creditsSaved = originalPrice - finalPrice;
+
+    return {
+        originalPrice,
+        finalPrice,
+        appliedDiscount: {
+            discountValue: discountValueInCredits,
+            creditsSaved,
+            ruleName: bestRule.ruleName,
+        },
+    };
+}
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -87,7 +203,8 @@ export function ClassDetailsModalScreen() {
     const onPress = () => {
         if (!finalClassInstance) return;
 
-        const options = [`Spend ${priceCredits} credits`, 'Cancel'];
+        const finalPrice = discountResult.appliedDiscount ? discountResult.finalPrice : priceCredits;
+        const options = [`Spend ${finalPrice} credits`, 'Cancel'];
         const cancelButtonIndex = 1;
 
         showActionSheetWithOptions({
@@ -248,6 +365,10 @@ export function ClassDetailsModalScreen() {
 
     const duration = Math.round((finalClassInstance.endTime - finalClassInstance.startTime) / (1000 * 60));
     const priceCredits = centsToCredits(price);
+
+    // Calculate discount pricing
+    const discountResult = useMemo(() => calculateClassDiscount(finalClassInstance, template), [finalClassInstance, template]);
+
     const spotsLeft = Math.max(0, capacity - (finalClassInstance.bookedCount ?? 0));
     // const typeLabel = finalClassInstance.tags?.[0] ?? (className ? className.split(' ')[0] : 'Class');
 
@@ -341,8 +462,23 @@ export function ClassDetailsModalScreen() {
                         <View style={styles.priceInfoSection}>
                             <View style={styles.priceContainer}>
                                 <Text style={styles.priceLabel}>Price</Text>
-                                <Text style={styles.priceValue}>{priceCredits} credits</Text>
-
+                                {discountResult.appliedDiscount ? (
+                                    <View>
+                                        <View style={styles.priceComparisonRow}>
+                                            <Text style={styles.originalPriceModal}>
+                                                {discountResult.originalPrice} credits
+                                            </Text>
+                                            <Text style={styles.discountedPriceModal}>
+                                                {discountResult.finalPrice} credits
+                                            </Text>
+                                        </View>
+                                        <Text style={styles.discountTimingTextModal}>
+                                            {getDiscountTimingText(discountResult, finalClassInstance)}
+                                        </Text>
+                                    </View>
+                                ) : (
+                                    <Text style={styles.priceValue}>{priceCredits} credits</Text>
+                                )}
                             </View>
                             <View style={styles.spotsContainer}>
                                 <Text style={styles.spotsLabel}>Available spots</Text>
@@ -497,8 +633,23 @@ export function ClassDetailsModalScreen() {
                                 </View>
                                 {spotsLeft > 0 && (
                                     <View style={styles.bookButtonPriceContainer}>
-                                        <DiamondIcon size={18} color="rgba(255, 255, 255, 0.9)" />
-                                        <Text style={styles.bookButtonSubtext}>{priceCredits}</Text>
+                                        {discountResult.appliedDiscount ? (
+                                            <View style={styles.bookButtonDiscountPriceRow}>
+                                                <View style={styles.bookButtonOriginalPrice}>
+                                                    <DiamondIcon size={14} color="rgba(255, 255, 255, 0.6)" />
+                                                    <Text style={styles.bookButtonOriginalText}>{discountResult.originalPrice}</Text>
+                                                </View>
+                                                <View style={styles.bookButtonFinalPrice}>
+                                                    <DiamondIcon size={18} color="rgba(255, 255, 255, 0.9)" />
+                                                    <Text style={styles.bookButtonSubtext}>{discountResult.finalPrice}</Text>
+                                                </View>
+                                            </View>
+                                        ) : (
+                                            <>
+                                                <DiamondIcon size={18} color="rgba(255, 255, 255, 0.9)" />
+                                                <Text style={styles.bookButtonSubtext}>{priceCredits}</Text>
+                                            </>
+                                        )}
                                     </View>
                                 )}
                             </TouchableOpacity>
@@ -782,7 +933,7 @@ const styles = StyleSheet.create({
     priceValue: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#222',
+        color: theme.colors.zinc[950],
     },
     spotsContainer: {
         flex: 1,
@@ -1066,5 +1217,48 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '600',
         color: '#374151',
+    },
+    discountTimingTextModal: {
+        fontSize: 12,
+        color: theme.colors.amber[500],
+        fontWeight: '600',
+        marginTop: 4,
+    },
+    priceComparisonRow: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        gap: 12,
+    },
+    originalPriceModal: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: theme.colors.zinc[400],
+        textDecorationLine: 'line-through',
+    },
+    discountedPriceModal: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: theme.colors.zinc[950],
+    },
+    bookButtonDiscountPriceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    bookButtonOriginalPrice: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 2,
+    },
+    bookButtonOriginalText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: theme.colors.zinc[400],
+        textDecorationLine: 'line-through',
+    },
+    bookButtonFinalPrice: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 2,
     },
 }); 

@@ -41,7 +41,6 @@ export type UpdateClassTemplateArgs = Infer<typeof updateClassTemplateArgs>;
 export const updateClassTemplate = mutationWithTriggers({
     args: updateClassTemplateArgs,
     handler: async (ctx, args) => {
-        console.log("🔥🔥🔥 MUTATION: updateClassTemplate 🔥🔥🔥")
         const { user, business } = await getAuthenticatedUserAndBusinessOrThrow(ctx);
         return classTemplateService.update({ ctx, args, user });
     }

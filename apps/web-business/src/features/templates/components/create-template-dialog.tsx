@@ -37,8 +37,25 @@ import { useVenues } from '@/features/venues/hooks/use-venues';
 import { TEMPLATE_COLORS, TEMPLATE_COLORS_ARRAY } from '@repo/utils/colors';
 import { cn } from '@/lib/utils';
 import { TEMPLATE_COLORS_MAP } from '@/utils/colors';
+import { ClassDiscountRulesForm } from '@/components/class-discount-rules-form';
 
 
+
+// Define the discount rule schema for form validation
+const discountRuleSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    condition: z.object({
+        type: z.union([z.literal("hours_before_min"), z.literal("hours_before_max"), z.literal("always")]),
+        hours: z.number().optional(),
+    }),
+    discount: z.object({
+        type: z.literal("fixed_amount"),
+        value: z.number(),
+    }),
+    // Note: createdAt, createdBy, updatedAt, updatedBy will be set on the server
+
+});
 
 const createTemplateSchema = z.object({
     // Class Details
@@ -63,6 +80,9 @@ const createTemplateSchema = z.object({
     bookingWindowMinHours: z.string().min(1, "Minimum booking hours is required").refine((val) => parseInt(val) >= 0, "Minimum booking hours must be 0 or greater"),
     bookingWindowMaxHours: z.string().min(1, "Maximum booking hours is required").refine((val) => parseInt(val) > 0, "Maximum booking hours must be greater than 0"),
     cancellationWindowHours: z.string().optional(),
+
+    // Discount Rules
+    discountRules: z.array(discountRuleSchema).optional(),
 }).refine((data) => {
     const minHours = parseInt(data.bookingWindowMinHours);
     const maxHours = parseInt(data.bookingWindowMaxHours);
@@ -71,6 +91,8 @@ const createTemplateSchema = z.object({
     message: "Maximum booking hours must be greater than minimum",
     path: ["bookingWindowMaxHours"],
 })
+
+type DiscountRule = z.infer<typeof discountRuleSchema>;
 
 export type FormData = z.infer<typeof createTemplateSchema>;
 
@@ -86,6 +108,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
     const [open, setOpen] = useState(isOpen ?? false);
     const [loading, setLoading] = useState(false);
     const [currentTag, setCurrentTag] = useState("");
+    const [discountRules, setDiscountRules] = useState<DiscountRule[]>([]);
     const createClassTemplate = useMutation(api.mutations.classTemplates.createClassTemplate);
     const updateClassTemplate = useMutation(api.mutations.classTemplates.updateClassTemplate);
 
@@ -108,6 +131,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
             bookingWindowMinHours: "2",
             bookingWindowMaxHours: "168",
             cancellationWindowHours: "2",
+            discountRules: [],
         },
     });
 
@@ -135,7 +159,10 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                 bookingWindowMinHours: (classTemplate!.bookingWindow?.minHours || 2).toString(),
                 bookingWindowMaxHours: (classTemplate!.bookingWindow?.maxHours || 168).toString(),
                 cancellationWindowHours: classTemplate!.cancellationWindowHours?.toString() || "2",
+                discountRules: classTemplate!.discountRules || [],
             });
+            // Also update the discount rules state
+            setDiscountRules(classTemplate!.discountRules || []);
         }
     }, [isEditMode, classTemplate, form]);
 
@@ -143,6 +170,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
         form.reset();
         setCurrentTag("");
         setLoading(false);
+        setDiscountRules([]);
         // Re-auto-select venue after reset if only one exists
         if (venues.length === 1 && !isEditMode) {
             form.setValue("venueId", venues[0]!._id);
@@ -197,6 +225,12 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                     : 0,
                 tags: data.tags.length > 0 ? data.tags : undefined,
                 color: data.color,
+                discountRules: discountRules.length > 0 ? discountRules.map(rule => ({
+                    id: rule.id,
+                    name: rule.name,
+                    condition: rule.condition,
+                    discount: rule.discount,
+                })) : undefined,
             };
 
             if (isEditMode) {
@@ -484,6 +518,16 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                         </div>
                                     </FormItem>
                                 )} />
+
+                                {/* Discount Rules Section */}
+                                <div className="space-y-4 mt-8">
+                                    <ClassDiscountRulesForm
+                                        discountRules={discountRules}
+                                        onChange={setDiscountRules}
+                                        currency="EUR"
+                                        price={parseInt(formData.price)}
+                                    />
+                                </div>
 
                             </div>
                         </div>

@@ -7,6 +7,7 @@ import type { ClassInstance } from '../hooks/use-class-instances';
 import { useTypedTranslation } from '../i18n/typed';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation';
+import { theme } from '../theme';
 
 interface ClassesListProps {
   selectedDate: string;
@@ -102,6 +103,7 @@ export function ClassesList({ selectedDate, searchFilters }: ClassesListProps) {
     );
   }
 
+
   return (
     <FlashList
       data={filteredClasses}
@@ -130,7 +132,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 14,
-    color: '#666',
+    color: theme.colors.zinc[500],
   },
   listContainer: {
     paddingHorizontal: 16,
@@ -144,7 +146,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
+    color: theme.colors.zinc[500],
     textAlign: 'center',
   },
 });

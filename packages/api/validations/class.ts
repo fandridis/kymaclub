@@ -161,6 +161,65 @@ const validatePrice = (priceInCents: number): ValidationResult<number> => {
     return { success: true, value: priceInCents };
 };
 
+const validateDiscountRules = (rules: any[]): ValidationResult<any[]> => {
+    if (!Array.isArray(rules)) {
+        return { success: false, error: "Discount rules must be an array" };
+    }
+
+    if (rules.length > 10) {
+        return { success: false, error: "Cannot have more than 10 discount rules" };
+    }
+
+    for (let i = 0; i < rules.length; i++) {
+        const rule = rules[i];
+
+        // Validate rule structure
+        if (!rule.id || typeof rule.id !== 'string') {
+            return { success: false, error: `Discount rule ${i + 1}: ID is required and must be a string` };
+        }
+
+        if (!rule.name || typeof rule.name !== 'string' || rule.name.trim().length === 0) {
+            return { success: false, error: `Discount rule ${i + 1}: Name is required` };
+        }
+
+        if (rule.name.trim().length > 100) {
+            return { success: false, error: `Discount rule ${i + 1}: Name cannot exceed 100 characters` };
+        }
+
+        // Validate condition
+        if (!rule.condition || typeof rule.condition !== 'object') {
+            return { success: false, error: `Discount rule ${i + 1}: Condition is required` };
+        }
+
+        const validTypes = ['hours_before_min', 'hours_before_max', 'always'];
+        if (!validTypes.includes(rule.condition.type)) {
+            return { success: false, error: `Discount rule ${i + 1}: Invalid condition type` };
+        }
+
+        // Validate hours for time-based conditions
+        if (rule.condition.type !== 'always') {
+            if (typeof rule.condition.hours !== 'number' || rule.condition.hours < 0 || rule.condition.hours > 8760) { // 1 year in hours
+                return { success: false, error: `Discount rule ${i + 1}: Hours must be between 0 and 8760 (1 year)` };
+            }
+        }
+
+        // Validate discount
+        if (!rule.discount || typeof rule.discount !== 'object') {
+            return { success: false, error: `Discount rule ${i + 1}: Discount is required` };
+        }
+
+        if (rule.discount.type !== 'fixed_amount') {
+            return { success: false, error: `Discount rule ${i + 1}: Only fixed_amount discount type is supported` };
+        }
+
+        if (typeof rule.discount.value !== 'number' || rule.discount.value < 0 || rule.discount.value > 10000) {
+            return { success: false, error: `Discount rule ${i + 1}: Discount value must be between 0 and 10000 cents` };
+        }
+    }
+
+    return { success: true, value: rules };
+};
+
 export const classValidations = {
     validateStartTime,
     validateEndTime,
@@ -177,4 +236,5 @@ export const classValidations = {
     validateSelectedDaysOfWeek,
     validateDuration,
     validateWaitlistCapacity,
+    validateDiscountRules,
 }

@@ -31,6 +31,7 @@ const prepareCreateTemplate = (args: CreateClassTemplateArgs): CreateClassTempla
         ...(t.bookingWindow !== undefined && { bookingWindow: throwIfError(classValidations.validateBookingWindow(t.bookingWindow), 'bookingWindow') }),
         ...(t.cancellationWindowHours !== undefined && { cancellationWindowHours: throwIfError(classValidations.validateCancellationWindowHours(t.cancellationWindowHours), 'cancellationWindowHours') }),
         ...(t.waitlistCapacity !== undefined && { waitlistCapacity: throwIfError(classValidations.validateWaitlistCapacity(t.waitlistCapacity!), 'waitlistCapacity') }),
+        ...(t.discountRules !== undefined && { discountRules: throwIfError(classValidations.validateDiscountRules(t.discountRules), 'discountRules') }),
     };
 
     return cleanTemplate;
@@ -62,6 +63,7 @@ const prepareUpdateTemplate = (
         ...(t.bookingWindow !== undefined && { bookingWindow: throwIfError(classValidations.validateBookingWindow(t.bookingWindow), 'bookingWindow') }),
         ...(t.cancellationWindowHours !== undefined && { cancellationWindowHours: throwIfError(classValidations.validateCancellationWindowHours(t.cancellationWindowHours), 'cancellationWindowHours') }),
         ...(t.waitlistCapacity !== undefined && { waitlistCapacity: throwIfError(classValidations.validateWaitlistCapacity(t.waitlistCapacity), 'waitlistCapacity') }),
+        ...(t.discountRules !== undefined && { discountRules: throwIfError(classValidations.validateDiscountRules(t.discountRules), 'discountRules') }),
     };
 
     return cleanTemplate;

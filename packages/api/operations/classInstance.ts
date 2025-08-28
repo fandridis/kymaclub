@@ -229,6 +229,7 @@ export const prepareInstanceUpdatesFromTemplateChanges = (
                     description: templateChanges.description,
                     instructor: templateChanges.instructor,
                     imageStorageIds: templateChanges.imageStorageIds,
+                    discountRules: templateChanges.discountRules,
                     deleted: templateChanges.deleted,
                 }),
             },
@@ -418,6 +419,7 @@ export const createInstanceFromTemplate = (
             description: template.description,
             instructor: template.instructor,
             imageStorageIds: template.imageStorageIds,
+            discountRules: template.discountRules,
         },
 
         // Venue snapshot - captures venue state at instance creation
