@@ -14,6 +14,7 @@ const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 // Import the generated route tree
 import { routeTree } from './routeTree.gen'
 import { AuthSync } from "./components/auth-sync";
+import { ErrorBoundary } from "./components/error-boundary";
 import { useAuth } from "./components/stores/auth";
 import { SpinningCircles } from "./components/spinning-circles";
 import i18n from "./lib/i18n";
@@ -31,15 +32,17 @@ declare module '@tanstack/react-router' {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <I18nextProvider i18n={i18n}>
-      <ConvexAuthProvider client={convex}>
-        <ConvexQueryCacheProvider>
-          <AuthSync>
-            <InnerApp />
-          </AuthSync>
-        </ConvexQueryCacheProvider>
-      </ConvexAuthProvider>
-    </I18nextProvider>
+    <ErrorBoundary>
+      <I18nextProvider i18n={i18n}>
+        <ConvexAuthProvider client={convex}>
+          <ConvexQueryCacheProvider>
+            <AuthSync>
+              <InnerApp />
+            </AuthSync>
+          </ConvexQueryCacheProvider>
+        </ConvexAuthProvider>
+      </I18nextProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );
 

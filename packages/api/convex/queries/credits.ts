@@ -38,11 +38,11 @@ export const getUserTransactions = query({
   handler: async (ctx, args) => {
     // 🔥 OPTIMIZED: Direct query with compound index
     let query;
-    
+
     if (args.type) {
       query = ctx.db
         .query("creditTransactions")
-        .withIndex("by_user_type", q => q.eq("userId", args.userId).eq("type", args.type));
+        .withIndex("by_user_type", q => q.eq("userId", args.userId).eq("type", args.type!));
     } else {
       query = ctx.db
         .query("creditTransactions")
@@ -72,37 +72,37 @@ export const getBusinessEarnings = query({
     if (args.startDate) {
       bookingsQuery = ctx.db
         .query("creditTransactions")
-        .withIndex("by_business_type_created", q => 
+        .withIndex("by_business_type_created", q =>
           q.eq("businessId", args.businessId)
-           .eq("type", "spend")
-           .gte("createdAt", args.startDate)
+            .eq("type", "spend")
+            .gte("createdAt", args.startDate!)
         );
-      
+
       refundsQuery = ctx.db
         .query("creditTransactions")
-        .withIndex("by_business_type_created", q => 
+        .withIndex("by_business_type_created", q =>
           q.eq("businessId", args.businessId)
-           .eq("type", "refund")
-           .gte("createdAt", args.startDate)
+            .eq("type", "refund")
+            .gte("createdAt", args.startDate!)
         );
     } else {
       bookingsQuery = ctx.db
         .query("creditTransactions")
-        .withIndex("by_business_type", q => 
+        .withIndex("by_business_type", q =>
           q.eq("businessId", args.businessId).eq("type", "spend")
         );
-      
+
       refundsQuery = ctx.db
         .query("creditTransactions")
-        .withIndex("by_business_type", q => 
+        .withIndex("by_business_type", q =>
           q.eq("businessId", args.businessId).eq("type", "refund")
         );
     }
 
     // Apply end date filter if specified
     if (args.endDate) {
-      bookingsQuery = bookingsQuery.filter(q => q.lte(q.field("createdAt"), args.endDate));
-      refundsQuery = refundsQuery.filter(q => q.lte(q.field("createdAt"), args.endDate));
+      bookingsQuery = bookingsQuery.filter(q => q.lte(q.field("createdAt"), args.endDate!));
+      refundsQuery = refundsQuery.filter(q => q.lte(q.field("createdAt"), args.endDate!));
     }
 
     const [bookingTxns, refundTxns] = await Promise.all([
