@@ -209,7 +209,7 @@ export function SubscriptionScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StackScreenHeader />
+            <StackScreenHeader title="Monthly Subscription" />
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
@@ -217,7 +217,6 @@ export function SubscriptionScreen() {
             >
                 {/* Header Section */}
                 <View style={styles.headerSection}>
-                    <Text style={styles.screenTitle}>Monthly Subscription</Text>
                     <Text style={styles.screenSubtitle}>
                         {isSubscriptionActive()
                             ? 'Manage your current subscription'
@@ -369,12 +368,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: theme.spacing.lg,
         paddingTop: theme.spacing.md,
         paddingBottom: theme.spacing.lg,
-    },
-    screenTitle: {
-        fontSize: theme.fontSize['2xl'],
-        fontWeight: theme.fontWeight.bold,
-        color: theme.colors.zinc[900],
-        marginBottom: theme.spacing.xs,
     },
     screenSubtitle: {
         fontSize: theme.fontSize.base,

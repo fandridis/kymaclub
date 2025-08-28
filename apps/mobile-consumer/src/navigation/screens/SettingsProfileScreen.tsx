@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, SafeAreaView } from 'react-native';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { useAuth } from '../../stores/auth-store';
 import { SettingsGroup, SettingsHeader, SettingsRow } from '../../components/Settings';
+import { StackScreenHeader } from '../../components/StackScreenHeader';
 
 export function SettingsProfileScreen() {
     const { signOut } = useAuthActions();
@@ -39,7 +40,8 @@ export function SettingsProfileScreen() {
     }
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
+            <StackScreenHeader title="Profile" />
             <View style={styles.content}>
                 <SettingsHeader title="Account Information" />
 
@@ -63,7 +65,7 @@ export function SettingsProfileScreen() {
                     />
                 </SettingsGroup>
             </View>
-        </View>
+        </SafeAreaView>
     );
 }
 

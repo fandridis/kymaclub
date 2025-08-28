@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Alert, SafeAreaView, TouchableOpacity, Switch } from 'react-native';
 import { useUserNotificationSettings } from '../../hooks/use-user-notification-settings';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { SettingsGroup, SettingsHeader, SettingsRow } from '../../components/Settings';
@@ -92,10 +92,14 @@ export function SettingsNotificationsPreferenceScreen() {
                             key={channel.key}
                             title={channel.label}
                             subtitle={channel.description}
-                            toggle={{
-                                value: channels[channel.key],
-                                onToggle: (value) => handleChannelToggle(channel.key, value)
-                            }}
+                            renderRightSide={() => (
+                                <Switch
+                                    value={channels[channel.key]}
+                                    onValueChange={(value) => handleChannelToggle(channel.key, value)}
+                                    trackColor={{ false: '#767577', true: '#007AFF' }}
+                                    thumbColor={channels[channel.key] ? '#fff' : '#f4f3f4'}
+                                />
+                            )}
                         />
                     ))}
                 </SettingsGroup>

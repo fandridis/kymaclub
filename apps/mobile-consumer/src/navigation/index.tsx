@@ -16,6 +16,7 @@ import { SettingsNotificationsScreen } from './screens/SettingsNotificationsScre
 import { SettingsSubscriptionScreen } from './screens/SettingsSubscriptionScreen';
 import { SettingsAccountScreen } from './screens/SettingsAccountScreen';
 import { SettingsCreditsScreen } from './screens/SettingsCreditsScreen';
+import { LanguageSelectionScreen } from './screens/LanguageSelectionScreen';
 import { SubscriptionScreen } from './screens/SubscriptionScreen';
 import { SuperpowersScreen } from './screens/SuperpowersScreen';
 import { BuyCreditsScreen } from './screens/BuyCreditsScreen';
@@ -225,6 +226,14 @@ export function RootNavigator() {
             }}
           />
           <RootStack.Screen
+            name="LanguageSelection"
+            component={LanguageSelectionScreen}
+            options={{
+              animation: 'slide_from_right',
+              headerShown: false,
+            }}
+          />
+          <RootStack.Screen
             name="SettingsCredits"
             component={SettingsCreditsScreen}
             options={{
@@ -356,6 +365,7 @@ export type RootStackParamList = {
   SettingsNotifications: undefined;
   SettingsSubscription: undefined;
   SettingsAccount: undefined;
+  LanguageSelection: undefined;
   SettingsCredits: undefined;
   Subscription: undefined;
   Superpowers: undefined;
@@ -410,6 +420,7 @@ export type RootStackParamListWithNestedTabs = {
   SettingsNotifications: undefined;
   SettingsSubscription: undefined;
   SettingsAccount: undefined;
+  LanguageSelection: undefined;
   SettingsCredits: undefined;
   Subscription: undefined;
   Superpowers: undefined;

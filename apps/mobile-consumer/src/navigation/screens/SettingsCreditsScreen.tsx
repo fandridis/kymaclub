@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { DiamondIcon, CrownIcon, CheckIcon, InfoIcon } from 'lucide-react-native';
 import { theme } from '../../theme';
 import { SettingsHeader, SettingsGroup, SettingsRow } from '../../components/Settings';
+import { StackScreenHeader } from '../../components/StackScreenHeader';
 import { useAuthenticatedUser } from '../../stores/auth-store';
 import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
@@ -132,6 +133,7 @@ export function SettingsCreditsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StackScreenHeader title="Credits" />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}

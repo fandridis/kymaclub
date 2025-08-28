@@ -378,6 +378,7 @@ export function VenueDetailsScreen() {
     return (
         <SafeAreaView style={styles.safeArea}>
             <StackScreenHeader
+                title={venue?.name || 'Venue Details'}
                 onBackPress={() => {
                     console.log('Back button pressed - attempting navigation');
                     try {

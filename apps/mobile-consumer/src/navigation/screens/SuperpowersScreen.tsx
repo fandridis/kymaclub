@@ -67,12 +67,19 @@ export function SuperpowersScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StackScreenHeader />
+            <StackScreenHeader title="Superpowers" />
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
+                {/* Header Section */}
+                <View style={styles.headerSection}>
+                    <Text style={styles.screenSubtitle}>
+                        Enhance your experience with special abilities and exclusive benefits.
+                    </Text>
+                </View>
+
                 {/* Total Cost Display */}
                 <View style={styles.totalCostSection}>
                     <Text style={styles.totalCostTitle}>Total Monthly Cost</Text>
@@ -126,6 +133,16 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingBottom: 60,
+    },
+    headerSection: {
+        paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.lg,
+        paddingBottom: theme.spacing.lg,
+    },
+    screenSubtitle: {
+        fontSize: theme.fontSize.base,
+        color: theme.colors.zinc[600],
+        lineHeight: theme.fontSize.base * 1.4,
     },
     totalCostSection: {
         backgroundColor: '#fff',

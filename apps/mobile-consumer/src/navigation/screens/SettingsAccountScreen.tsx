@@ -1,19 +1,54 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { SettingsGroup, SettingsHeader, SettingsRow } from '../../components/Settings';
 import { StackScreenHeader } from '../../components/StackScreenHeader';
+import { useTypedTranslation } from '../../i18n/typed';
+import { theme } from '../../theme';
 
 export function SettingsAccountScreen() {
+    const navigation = useNavigation();
+    const { i18n } = useTypedTranslation();
+
+    const getLanguageDisplay = (languageCode: string) => {
+        const languages = {
+            'en': { name: 'English', flag: '🇺🇸' },
+            'el': { name: 'Ελληνικά', flag: '🇬🇷' },
+            'lt': { name: 'Lietuvių', flag: '🇱🇹' }
+        };
+        const lang = languages[languageCode as keyof typeof languages] || languages['en'];
+        return `${lang.flag} ${lang.name}`;
+    };
+
+    const handleLanguagePress = () => {
+        navigation.navigate('LanguageSelection' as never);
+    };
+
     return (
         <SafeAreaView style={styles.container}>
-            <StackScreenHeader />
+            <StackScreenHeader title="Account" />
             <View style={styles.content}>
-                <SettingsHeader title="Account" />
+                <SettingsHeader title="App Settings" />
+                <SettingsGroup>
+                    <SettingsRow
+                        title="App Language"
+                        subtitle={getLanguageDisplay(i18n.language)}
+                        renderRightSide={() => (
+                            <TouchableOpacity
+                                style={styles.changeButton}
+                                onPress={handleLanguagePress}
+                            >
+                                <Text style={styles.changeButtonText}>Change</Text>
+                            </TouchableOpacity>
+                        )}
+                    />
+                </SettingsGroup>
+
+                <SettingsHeader title="Account Settings" />
                 <SettingsGroup>
                     <SettingsRow
                         title="Privacy Settings"
                         subtitle="Manage your privacy preferences"
-                        showChevron
                         onPress={() => {
                             // TODO: Navigate to privacy screen
                         }}
@@ -21,7 +56,6 @@ export function SettingsAccountScreen() {
                     <SettingsRow
                         title="Data & Storage"
                         subtitle="Manage your data and storage"
-                        showChevron
                         onPress={() => {
                             // TODO: Navigate to data screen
                         }}
@@ -29,7 +63,6 @@ export function SettingsAccountScreen() {
                     <SettingsRow
                         title="Delete Account"
                         subtitle="Permanently delete your account"
-                        showChevron
                         onPress={() => {
                             // TODO: Navigate to delete account screen
                         }}
@@ -58,5 +91,16 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
         textAlign: 'center',
         marginTop: 40,
+    },
+    changeButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        backgroundColor: theme.colors.zinc[300],
+        borderRadius: 6,
+    },
+    changeButtonText: {
+        color: 'black',
+        fontSize: 14,
+        fontWeight: '600',
     },
 });

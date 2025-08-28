@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, StyleSheet, Text, ScrollView } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, ScrollView, View } from 'react-native';
 import { useUserNotificationSettings } from '../../hooks/use-user-notification-settings';
 import { useNavigation } from '@react-navigation/native';
 import { theme } from '../../theme';
@@ -127,14 +127,18 @@ export function SettingsNotificationsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StackScreenHeader />
+            <StackScreenHeader title="Notifications" />
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                <Text style={styles.title}>Notifications</Text>
-                <Text style={styles.subtitle}>Choose what notifications you'd like to receive</Text>
+                {/* Header Section */}
+                <View style={styles.headerSection}>
+                    <Text style={styles.screenSubtitle}>
+                        Choose what notifications you'd like to receive
+                    </Text>
+                </View>
 
                 <SettingsGroup>
                     {notificationGroups.map((group) => {
@@ -147,7 +151,6 @@ export function SettingsNotificationsScreen() {
                                 title={group.title}
                                 subtitle={description}
                                 icon={group.icon}
-                                showChevron
                                 onPress={() => handleGroupPress(group)}
                             />
                         );
@@ -169,20 +172,15 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingBottom: 60,
     },
-    title: {
-        fontSize: theme.fontSize['2xl'],
-        fontWeight: theme.fontWeight.black,
-        color: theme.colors.zinc[900],
-        paddingHorizontal: 20,
-        paddingTop: 16,
-        paddingBottom: 8,
+    headerSection: {
+        paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.lg,
+        paddingBottom: theme.spacing.lg,
     },
-    subtitle: {
+    screenSubtitle: {
         fontSize: theme.fontSize.base,
         color: theme.colors.zinc[600],
-        paddingHorizontal: 20,
-        paddingBottom: 20,
-        lineHeight: 20,
+        lineHeight: theme.fontSize.base * 1.4,
     },
     loadingText: {
         fontSize: 16,

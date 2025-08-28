@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import { SettingsGroup, SettingsHeader, SettingsRow } from '../../components/Settings';
+import { StackScreenHeader } from '../../components/StackScreenHeader';
 
 export function SettingsSubscriptionScreen() {
     return (
         <SafeAreaView style={styles.container}>
+            <StackScreenHeader title="Subscription" />
             <View style={styles.content}>
                 <SettingsHeader title="Subscription" />
                 <SettingsGroup>
@@ -15,7 +17,6 @@ export function SettingsSubscriptionScreen() {
                     <SettingsRow
                         title="Upgrade to Premium"
                         subtitle="Access exclusive features"
-                        showChevron
                         onPress={() => {
                             // TODO: Navigate to upgrade screen
                         }}

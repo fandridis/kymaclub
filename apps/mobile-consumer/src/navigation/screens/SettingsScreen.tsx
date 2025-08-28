@@ -227,34 +227,31 @@ export function SettingsScreen() {
             icon={CrownIcon}
             title="Monthly Subscription"
             subtitle={getSubscriptionSubtitle()}
-            rightElement={
+            renderRightSide={() => (
               <View style={[styles.statusBadge, { backgroundColor: isSubscriptionActive() ? theme.colors.emerald[100] : theme.colors.zinc[100] }]}>
                 <Text style={[styles.statusBadgeText, { color: isSubscriptionActive() ? theme.colors.emerald[700] : theme.colors.zinc[600] }]}>
                   {isSubscriptionActive() ? 'ACTIVE' : 'INACTIVE'}
                 </Text>
               </View>
-            }
+            )}
             onPress={() => navigation.navigate('Subscription')}
-            showChevron
           />
           <SettingsRow
             icon={ZapIcon}
             title="Superpowers"
             subtitle="Boost your class bookings with special features"
-            rightElement={
+            renderRightSide={() => (
               <View style={styles.countBadge}>
                 <Text style={styles.countBadgeText}>2</Text>
               </View>
-            }
+            )}
             onPress={() => navigation.navigate('Superpowers')}
-            showChevron
           />
           <SettingsRow
             icon={CreditCardIcon}
             title="Buy Credits"
             subtitle="One-time credit packs without subscription"
             onPress={() => navigation.navigate('BuyCredits')}
-            showChevron
           />
         </SettingsGroup>
 
@@ -265,14 +262,12 @@ export function SettingsScreen() {
           <SettingsRow
             title="Notifications"
             subtitle="Push notifications, email preferences"
-            showChevron
             onPress={() => navigation.navigate('SettingsNotifications')}
             icon={BellIcon}
           />
           <SettingsRow
             title="Account Settings"
             subtitle="Privacy, security, data"
-            showChevron
             onPress={() => navigation.navigate('SettingsAccount')}
             icon={ShieldIcon}
           />
@@ -281,15 +276,20 @@ export function SettingsScreen() {
         {/* Account Actions */}
         <SettingsHeader title="Account" />
         <SettingsGroup>
-          <SettingsRow
-            icon={LogOutIcon}
-            title="Sign Out"
-            subtitle="Sign out of your account"
-            titleStyle={{ color: theme.colors.rose[500] }}
-            iconColor={theme.colors.rose[500]}
+          <TouchableOpacity
+            style={styles.logoutRow}
             onPress={handleLogout}
-            showChevron={false}
-          />
+          >
+            <View style={styles.logoutContent}>
+              <View style={styles.logoutIconContainer}>
+                <LogOutIcon
+                  size={20}
+                  color={theme.colors.rose[500]}
+                />
+              </View>
+              <Text style={styles.logoutText}>Sign Out</Text>
+            </View>
+          </TouchableOpacity>
         </SettingsGroup>
       </ScrollView>
     </SafeAreaView>

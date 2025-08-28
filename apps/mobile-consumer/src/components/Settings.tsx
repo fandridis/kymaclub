@@ -46,22 +46,12 @@ export function SettingsHeader({ title, subtitle, renderSubtitle, style }: Setti
 interface SettingsRowProps {
     title: string;
     subtitle?: string;
-    onPress?: () => void;
-    rightElement?: React.ReactNode;
-    showChevron?: boolean;
-    // Function to completely override the right side rendering
-    renderRightSide?: () => React.ReactNode;
-    // Function to completely override the subtitle rendering
     renderSubtitle?: () => React.ReactNode;
-    // Toggle functionality
-    toggle?: {
-        value: boolean;
-        onToggle: (value: boolean) => void;
-    };
+    onPress?: () => void;
+    renderRightSide?: () => React.ReactNode;
     disabled?: boolean;
     style?: ViewStyle;
     titleStyle?: any;
-    // Optional icon to display on the left side
     icon?: LucideIcon;
     iconColor?: string;
 }
@@ -69,33 +59,27 @@ interface SettingsRowProps {
 export function SettingsRow({
     title,
     subtitle,
-    onPress,
-    rightElement,
-    showChevron = false,
-    renderRightSide,
     renderSubtitle,
-    toggle,
+    onPress,
+    renderRightSide,
     disabled = false,
     style,
     titleStyle,
     icon: Icon,
     iconColor
 }: SettingsRowProps) {
-    // If renderRightSide is provided, use it to completely override the right side
-    const rightSideContent = renderRightSide ? (
-        renderRightSide()
-    ) : (
+    // Logic:
+    // onPress exists => show chevron, row is pressable
+    // onPress doesn't exist => no chevron, row not pressable  
+    // renderRightSide is used to add custom content
+
+    const showChevron = !!onPress;
+    const isRowPressable = !!onPress && !disabled;
+
+    const rightSideContent = (
         <>
-            {toggle ? (
-                <Switch
-                    value={toggle.value}
-                    onValueChange={toggle.onToggle}
-                    disabled={disabled}
-                    trackColor={{ false: '#767577', true: '#007AFF' }}
-                    thumbColor={toggle.value ? '#fff' : '#f4f3f4'}
-                />
-            ) : rightElement}
-            {!toggle && showChevron && (
+            {renderRightSide && renderRightSide()}
+            {showChevron && (
                 <ChevronRight
                     size={16}
                     color={disabled ? '#999' : '#666'}
@@ -105,8 +89,7 @@ export function SettingsRow({
         </>
     );
 
-    const finalOnPress = toggle ? undefined : onPress;
-    const Component = finalOnPress ? TouchableOpacity : View;
+    const Component = isRowPressable ? TouchableOpacity : View;
 
     return (
         <Component
@@ -115,7 +98,7 @@ export function SettingsRow({
                 disabled && styles.disabledRow,
                 style
             ]}
-            onPress={finalOnPress}
+            onPress={isRowPressable ? onPress : undefined}
             disabled={disabled}
         >
             <View style={styles.settingsRowContent}>

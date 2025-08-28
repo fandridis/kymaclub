@@ -55,7 +55,7 @@ export function BuyCreditsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StackScreenHeader />
+            <StackScreenHeader title="Buy Credits" />
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
@@ -63,7 +63,6 @@ export function BuyCreditsScreen() {
             >
                 {/* Header Section */}
                 <View style={styles.headerSection}>
-                    <Text style={styles.screenTitle}>Buy Credits</Text>
                     <Text style={styles.screenSubtitle}>
                         Purchase credits if you're running low or don't want to start a subscription.
                         Credits will expire 90 days after purchase.
@@ -149,12 +148,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: theme.spacing.lg,
         paddingTop: theme.spacing.md,
         paddingBottom: theme.spacing.lg,
-    },
-    screenTitle: {
-        fontSize: theme.fontSize['2xl'],
-        fontWeight: theme.fontWeight.bold,
-        color: theme.colors.zinc[900],
-        marginBottom: theme.spacing.xs,
     },
     screenSubtitle: {
         fontSize: theme.fontSize.base,
