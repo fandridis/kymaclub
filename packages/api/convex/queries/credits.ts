@@ -21,7 +21,8 @@ export const getUserBalance = query({
 });
 
 /**
- * Get transaction history for a user
+ * Get transaction history for a user - OPTIMIZED
+ * Uses compound indexes instead of service layer
  */
 export const getUserTransactions = query({
   args: v.object({
@@ -35,12 +36,28 @@ export const getUserTransactions = query({
     )),
   }),
   handler: async (ctx, args) => {
-    return await creditService.getTransactionHistory(ctx, args);
+    // 🔥 OPTIMIZED: Direct query with compound index
+    let query;
+    
+    if (args.type) {
+      query = ctx.db
+        .query("creditTransactions")
+        .withIndex("by_user_type", q => q.eq("userId", args.userId).eq("type", args.type));
+    } else {
+      query = ctx.db
+        .query("creditTransactions")
+        .withIndex("by_user", q => q.eq("userId", args.userId));
+    }
+
+    return query
+      .order("desc")
+      .take(args.limit || 50);
   },
 });
 
 /**
- * Get business earnings from credit transactions
+ * Get business earnings from credit transactions - OPTIMIZED
+ * Uses compound indexes instead of service layer
  */
 export const getBusinessEarnings = query({
   args: v.object({
@@ -49,12 +66,67 @@ export const getBusinessEarnings = query({
     endDate: v.optional(v.number()),
   }),
   handler: async (ctx, args) => {
-    return await creditService.getBusinessEarnings(ctx, args);
+    // 🔥 OPTIMIZED: Use compound indexes for type-specific queries
+    let bookingsQuery, refundsQuery;
+
+    if (args.startDate) {
+      bookingsQuery = ctx.db
+        .query("creditTransactions")
+        .withIndex("by_business_type_created", q => 
+          q.eq("businessId", args.businessId)
+           .eq("type", "spend")
+           .gte("createdAt", args.startDate)
+        );
+      
+      refundsQuery = ctx.db
+        .query("creditTransactions")
+        .withIndex("by_business_type_created", q => 
+          q.eq("businessId", args.businessId)
+           .eq("type", "refund")
+           .gte("createdAt", args.startDate)
+        );
+    } else {
+      bookingsQuery = ctx.db
+        .query("creditTransactions")
+        .withIndex("by_business_type", q => 
+          q.eq("businessId", args.businessId).eq("type", "spend")
+        );
+      
+      refundsQuery = ctx.db
+        .query("creditTransactions")
+        .withIndex("by_business_type", q => 
+          q.eq("businessId", args.businessId).eq("type", "refund")
+        );
+    }
+
+    // Apply end date filter if specified
+    if (args.endDate) {
+      bookingsQuery = bookingsQuery.filter(q => q.lte(q.field("createdAt"), args.endDate));
+      refundsQuery = refundsQuery.filter(q => q.lte(q.field("createdAt"), args.endDate));
+    }
+
+    const [bookingTxns, refundTxns] = await Promise.all([
+      bookingsQuery.collect(),
+      refundsQuery.collect()
+    ]);
+
+    const totalEarnings = bookingTxns.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+    const totalRefunds = refundTxns.reduce((sum, tx) => sum + tx.amount, 0);
+    const netEarnings = totalEarnings - totalRefunds;
+
+    return {
+      totalEarnings,
+      totalRefunds,
+      netEarnings,
+      transactionCount: bookingTxns.length + refundTxns.length,
+      transactions: [...bookingTxns, ...refundTxns].slice(0, 100),
+    };
   },
 });
 
 /**
- * Get credit analytics (purchases vs gifts)
+ * Get credit analytics (purchases vs gifts) - OPTIMIZED  
+ * Uses type-specific queries instead of full table scan
  */
 export const getCreditAnalytics = query({
   args: v.object({
@@ -62,7 +134,63 @@ export const getCreditAnalytics = query({
     endDate: v.optional(v.number()),
   }),
   handler: async (ctx, args) => {
-    return await creditService.getCreditAnalytics(ctx, args);
+    // 🔥 CRITICAL FIX: Use separate type-specific queries instead of scanning ALL transactions
+    const queryPromises = ["purchase", "gift", "spend", "refund"].map(async (type) => {
+      let query = ctx.db
+        .query("creditTransactions")
+        .withIndex("by_type", q => q.eq("type", type as any));
+
+      // Apply date filters
+      if (args.startDate) {
+        query = query.filter(q => q.gte(q.field("createdAt"), args.startDate!));
+      }
+      if (args.endDate) {
+        query = query.filter(q => q.lte(q.field("createdAt"), args.endDate!));
+      }
+
+      return {
+        type: type as "purchase" | "gift" | "spend" | "refund",
+        transactions: await query.collect()
+      };
+    });
+
+    const results = await Promise.all(queryPromises);
+    const transactionsByType = results.reduce((acc, { type, transactions }) => {
+      acc[type] = transactions;
+      return acc;
+    }, {} as Record<string, any[]>);
+
+    // Process each type directly from organized data
+    const purchased = transactionsByType.purchase.reduce((sum, tx) => sum + tx.amount, 0);
+    const giftWelcome = transactionsByType.gift.filter(tx => tx.reason === "welcome_bonus").reduce((sum, tx) => sum + tx.amount, 0);
+    const giftReferral = transactionsByType.gift.filter(tx => tx.reason === "referral_bonus").reduce((sum, tx) => sum + tx.amount, 0);
+    const giftAdmin = transactionsByType.gift.filter(tx => tx.reason === "admin_gift" || !tx.reason).reduce((sum, tx) => sum + tx.amount, 0);
+    const giftCampaign = transactionsByType.gift.filter(tx => tx.reason === "campaign_bonus").reduce((sum, tx) => sum + tx.amount, 0);
+    const totalSpent = transactionsByType.spend.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+
+    const refundsByReason = {
+      userCancellation: transactionsByType.refund.filter(tx => tx.reason === "user_cancellation").reduce((sum, tx) => sum + tx.amount, 0),
+      businessCancellation: transactionsByType.refund.filter(tx => tx.reason === "business_cancellation").reduce((sum, tx) => sum + tx.amount, 0),
+      paymentIssue: transactionsByType.refund.filter(tx => tx.reason === "payment_issue").reduce((sum, tx) => sum + tx.amount, 0),
+      general: transactionsByType.refund.filter(tx => tx.reason === "general_refund" || !tx.reason).reduce((sum, tx) => sum + tx.amount, 0),
+    };
+
+    const totalRefunded = Object.values(refundsByReason).reduce((sum, amount) => sum + amount, 0);
+    const totalGifted = giftWelcome + giftReferral + giftAdmin + giftCampaign;
+    const totalAdded = purchased + totalGifted + totalRefunded;
+
+    return {
+      purchased,
+      giftWelcome,
+      giftReferral,
+      giftAdmin,
+      giftCampaign,
+      totalGifted,
+      totalAdded,
+      totalSpent,
+      totalRefunded,
+      refundsByReason,
+    };
   },
 });
 

@@ -303,14 +303,17 @@ export const creditService = {
   ) => {
     const { userId, limit = 50, type } = args;
 
-    let query = ctx.db
-      .query("creditTransactions")
-      .withIndex("by_user", q => q.eq("userId", userId));
+    let query;
 
     if (type) {
+      // 🔥 OPTIMIZED: Use compound index for user + type
       query = ctx.db
         .query("creditTransactions")
         .withIndex("by_user_type", q => q.eq("userId", userId).eq("type", type));
+    } else {
+      query = ctx.db
+        .query("creditTransactions")
+        .withIndex("by_user", q => q.eq("userId", userId));
     }
 
     const transactions = await query
@@ -338,31 +341,49 @@ export const creditService = {
   }> => {
     const { businessId, startDate, endDate } = args;
 
-    let bookings = ctx.db
-      .query("creditTransactions")
-      .withIndex("by_business_type", q => q.eq("businessId", businessId).eq("type", "spend"));
-
-    // Get all refund types for this business
-    let allTransactions = ctx.db
-      .query("creditTransactions")
-      .withIndex("by_business", q => q.eq("businessId", businessId));
+    // 🔥 OPTIMIZED: Use compound indexes for business + type + date
+    let bookingsQuery, refundsQuery;
 
     if (startDate) {
-      bookings = bookings.filter(q => q.gte(q.field("createdAt"), startDate));
-      allTransactions = allTransactions.filter(q => q.gte(q.field("createdAt"), startDate));
+      bookingsQuery = ctx.db
+        .query("creditTransactions")
+        .withIndex("by_business_type_created", q => 
+          q.eq("businessId", businessId)
+           .eq("type", "spend")
+           .gte("createdAt", startDate)
+        );
+      
+      refundsQuery = ctx.db
+        .query("creditTransactions")
+        .withIndex("by_business_type_created", q => 
+          q.eq("businessId", businessId)
+           .eq("type", "refund")
+           .gte("createdAt", startDate)
+        );
+    } else {
+      bookingsQuery = ctx.db
+        .query("creditTransactions")
+        .withIndex("by_business_type", q => 
+          q.eq("businessId", businessId).eq("type", "spend")
+        );
+      
+      refundsQuery = ctx.db
+        .query("creditTransactions")
+        .withIndex("by_business_type", q => 
+          q.eq("businessId", businessId).eq("type", "refund")
+        );
     }
 
+    // Apply end date filter if specified
     if (endDate) {
-      bookings = bookings.filter(q => q.lte(q.field("createdAt"), endDate));
-      allTransactions = allTransactions.filter(q => q.lte(q.field("createdAt"), endDate));
+      bookingsQuery = bookingsQuery.filter(q => q.lte(q.field("createdAt"), endDate));
+      refundsQuery = refundsQuery.filter(q => q.lte(q.field("createdAt"), endDate));
     }
 
-    const [bookingTxns, allTxns] = await Promise.all([
-      bookings.collect(),
-      allTransactions.collect()
+    const [bookingTxns, refundTxns] = await Promise.all([
+      bookingsQuery.collect(),
+      refundsQuery.collect()
     ]);
-
-    const refundTxns = allTxns.filter(tx => tx.type === "refund");
 
     const totalEarnings = bookingTxns.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
     const totalRefunds = refundTxns.reduce((sum, tx) => sum + tx.amount, 0);
@@ -402,54 +423,68 @@ export const creditService = {
       general: number;
     };
   }> => {
-    let query = ctx.db.query("creditTransactions");
+    // 🔥 CRITICAL FIX: Use separate type-specific queries instead of scanning ALL transactions
+    const queryPromises = ["purchase", "gift", "spend", "refund"].map(async (type) => {
+      let query = ctx.db
+        .query("creditTransactions")
+        .withIndex("by_type", q => q.eq("type", type as any));
 
-    if (args.startDate) {
-      query = query.filter(q => q.gte(q.field("createdAt"), args.startDate!));
-    }
+      // Apply date filters if specified (we can't use compound indexes for global analytics across all businesses)
+      if (args.startDate) {
+        query = query.filter(q => q.gte(q.field("createdAt"), args.startDate!));
+      }
+      if (args.endDate) {
+        query = query.filter(q => q.lte(q.field("createdAt"), args.endDate!));
+      }
 
-    if (args.endDate) {
-      query = query.filter(q => q.lte(q.field("createdAt"), args.endDate!));
-    }
+      return {
+        type: type as "purchase" | "gift" | "spend" | "refund",
+        transactions: await query.collect()
+      };
+    });
 
-    const transactions = await query.collect();
+    const results = await Promise.all(queryPromises);
+    const transactionsByType = results.reduce((acc, { type, transactions }) => {
+      acc[type] = transactions;
+      return acc;
+    }, {} as Record<string, any[]>);
 
-    const purchased = transactions
-      .filter(tx => tx.type === "purchase")
+    // 🔥 OPTIMIZED: Process each type directly from organized results
+    const purchased = transactionsByType.purchase
       .reduce((sum, tx) => sum + tx.amount, 0);
 
-    const giftWelcome = transactions
-      .filter(tx => tx.type === "gift" && tx.reason === "welcome_bonus")
+    // 🔥 OPTIMIZED: Process each category directly from type-organized data
+    const giftWelcome = transactionsByType.gift
+      .filter(tx => tx.reason === "welcome_bonus")
       .reduce((sum, tx) => sum + tx.amount, 0);
 
-    const giftReferral = transactions
-      .filter(tx => tx.type === "gift" && tx.reason === "referral_bonus")
+    const giftReferral = transactionsByType.gift
+      .filter(tx => tx.reason === "referral_bonus")
       .reduce((sum, tx) => sum + tx.amount, 0);
 
-    const giftAdmin = transactions
-      .filter(tx => tx.type === "gift" && (tx.reason === "admin_gift" || !tx.reason))
+    const giftAdmin = transactionsByType.gift
+      .filter(tx => tx.reason === "admin_gift" || !tx.reason)
       .reduce((sum, tx) => sum + tx.amount, 0);
 
-    const giftCampaign = transactions
-      .filter(tx => tx.type === "gift" && tx.reason === "campaign_bonus")
+    const giftCampaign = transactionsByType.gift
+      .filter(tx => tx.reason === "campaign_bonus")
       .reduce((sum, tx) => sum + tx.amount, 0);
 
-    const totalSpent = transactions
-      .filter(tx => tx.type === "spend")
+    const totalSpent = transactionsByType.spend
       .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
 
     const refundsByReason = {
-      userCancellation: transactions
-        .filter(tx => tx.type === "refund" && tx.reason === "user_cancellation")
+      userCancellation: transactionsByType.refund
+        .filter(tx => tx.reason === "user_cancellation")
         .reduce((sum, tx) => sum + tx.amount, 0),
-      businessCancellation: transactions
-        .filter(tx => tx.type === "refund" && tx.reason === "business_cancellation")
+      businessCancellation: transactionsByType.refund
+        .filter(tx => tx.reason === "business_cancellation")
         .reduce((sum, tx) => sum + tx.amount, 0),
-      paymentIssue: transactions
-        .filter(tx => tx.type === "refund" && tx.reason === "payment_issue")
+      paymentIssue: transactionsByType.refund
+        .filter(tx => tx.reason === "payment_issue")
         .reduce((sum, tx) => sum + tx.amount, 0),
-      general: transactions
-        .filter(tx => tx.type === "refund" && (tx.reason === "general_refund" || !tx.reason))
+      general: transactionsByType.refund
+        .filter(tx => tx.reason === "general_refund" || !tx.reason)
         .reduce((sum, tx) => sum + tx.amount, 0),
     };
 

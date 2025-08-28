@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, View, Text, Dimensions, ScrollView, SafeAreaView, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, Dimensions, ScrollView, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Carousel from 'react-native-reanimated-carousel';
 import { useQuery } from 'convex/react';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { api } from '@repo/api/convex/_generated/api';
 import { useTypedTranslation } from '../../i18n/typed';
 import { theme } from '../../theme';
@@ -13,6 +14,7 @@ import type { Id } from '@repo/api/convex/_generated/dataModel';
 import { useCurrentTime } from '../../hooks/use-current-time';
 import { VenueCard } from '../../components/VenueCard';
 import { useAllVenues } from '../../features/explore/hooks/useAllVenues';
+import type { RootStackParamListWithNestedTabs } from '../index';
 
 const { width: screenWidth } = Dimensions.get('window');
 const ITEM_SPACING = 12; // Spacing between cards
@@ -60,6 +62,18 @@ const WhatsNewBanner = () => (
         <View style={styles.bannerAction}>
             <Text style={styles.bannerActionText}>Learn More</Text>
         </View>
+    </View>
+);
+
+const NoUpcomingClassesMessage = ({ onExplorePress }: { onExplorePress: () => void }) => (
+    <View style={styles.noClassesContainer}>
+        <View style={styles.noClassesIcon}>
+            <Text style={styles.noClassesIconText}>📅</Text>
+        </View>
+        <Text style={styles.noClassesTitle}>You have no upcoming classes</Text>
+        <TouchableOpacity onPress={onExplorePress} style={styles.exploreButton}>
+            <Text style={styles.exploreButtonText}>explore here</Text>
+        </TouchableOpacity>
     </View>
 );
 
@@ -202,6 +216,7 @@ const CarouselSection = ({ title, data, type }: { title: string; data: any[]; ty
 
 export function NewsScreen() {
     const { t } = useTypedTranslation();
+    const navigation = useNavigation<NavigationProp<RootStackParamListWithNestedTabs>>();
     const user = useAuthenticatedUser();
 
     const now = useCurrentTime();
@@ -458,6 +473,11 @@ export function NewsScreen() {
             .slice(0, 4);
     }, [allVenues, now]);
 
+    // Handle navigation to explore screen
+    const handleExplorePress = () => {
+        navigation.navigate('Home', { screen: 'Explore' });
+    };
+
     // Separate initial loading from refetching - only show loading screen on very first load
     const isInitialLoading = user && (
         userBookings === undefined &&
@@ -571,11 +591,10 @@ export function NewsScreen() {
                         </ScrollView>
                     </View>
                 ) : (
-                    <CarouselSection
-                        title="Your upcoming classes"
-                        data={mockUpcomingClasses}
-                        type="upcoming"
-                    />
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Your Schedule</Text>
+                        <NoUpcomingClassesMessage onExplorePress={handleExplorePress} />
+                    </View>
                 )}
 
                 <CarouselSection
@@ -1096,5 +1115,48 @@ const styles = StyleSheet.create({
         color: '#1a1a1a',
         marginBottom: 16,
         paddingHorizontal: 20,
+    },
+    // No upcoming classes styles
+    noClassesContainer: {
+        alignItems: 'center',
+        paddingVertical: 24,
+        paddingHorizontal: 20,
+        backgroundColor: theme.colors.zinc[50],
+        borderRadius: 12,
+        marginHorizontal: 20,
+        borderWidth: 1,
+        borderColor: theme.colors.zinc[200],
+    },
+    noClassesIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: theme.colors.zinc[100],
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    noClassesIconText: {
+        fontSize: 24,
+    },
+    noClassesTitle: {
+        fontSize: 16,
+        fontWeight: '500',
+        color: theme.colors.zinc[700],
+        textAlign: 'center',
+        marginBottom: 12,
+    },
+    exploreButton: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        backgroundColor: theme.colors.zinc[800],
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: theme.colors.zinc[950],
+    },
+    exploreButtonText: {
+        fontSize: 14,
+        color: theme.colors.zinc[50],
+        fontWeight: '500',
     },
 });
