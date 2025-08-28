@@ -235,7 +235,9 @@ export function SubscriptionScreen() {
                     </View>
                     <Text style={styles.statusDescription}>
                         {isSubscriptionActive()
-                            ? `${subscription?.creditAmount} credits/month • Next billing: ${getNextBillingDate()}`
+                            ? isSubscriptionCanceling()
+                                ? `${subscription?.creditAmount} credits/month`
+                                : `${subscription?.creditAmount} credits/month • Next billing: ${getNextBillingDate()}`
                             : 'Choose a plan to get started with your fitness journey'
                         }
                     </Text>

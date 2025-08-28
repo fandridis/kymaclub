@@ -20,17 +20,6 @@ export function LanguageSelectionScreen() {
     const handleLanguageChange = async (languageCode: string) => {
         try {
             await i18n.changeLanguage(languageCode);
-            // Show success message and go back
-            Alert.alert(
-                'Language Changed',
-                `Language has been changed to ${LANGUAGES.find(lang => lang.code === languageCode)?.name}`,
-                [
-                    {
-                        text: 'OK',
-                        onPress: () => navigation.goBack()
-                    }
-                ]
-            );
         } catch (error) {
             console.error('Error changing language:', error);
             Alert.alert('Error', 'Failed to change language. Please try again.');
@@ -78,9 +67,9 @@ export function LanguageSelectionScreen() {
                                 </View>
                                 {isSelected && (
                                     <View style={styles.checkContainer}>
-                                        <CheckIcon 
-                                            size={20} 
-                                            color={theme.colors.emerald[600]} 
+                                        <CheckIcon
+                                            size={20}
+                                            color={theme.colors.emerald[600]}
                                         />
                                     </View>
                                 )}
@@ -91,7 +80,7 @@ export function LanguageSelectionScreen() {
 
                 <View style={styles.infoSection}>
                     <Text style={styles.infoText}>
-                        The app will restart to apply the language change
+                        Language changes will take effect immediately
                     </Text>
                 </View>
             </View>

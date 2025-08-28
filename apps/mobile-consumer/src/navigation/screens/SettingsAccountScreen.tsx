@@ -94,12 +94,12 @@ const styles = StyleSheet.create({
     },
     changeButton: {
         paddingHorizontal: 12,
-        paddingVertical: 6,
-        backgroundColor: theme.colors.zinc[300],
+        paddingVertical: 8,
+        backgroundColor: theme.colors.zinc[50],
         borderRadius: 6,
     },
     changeButtonText: {
-        color: 'black',
+        color: theme.colors.zinc[950],
         fontSize: 14,
         fontWeight: '600',
     },

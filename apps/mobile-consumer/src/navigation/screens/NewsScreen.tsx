@@ -6,8 +6,10 @@ import { theme } from '../../theme';
 import { TabScreenHeader } from '../../components/TabScreenHeader';
 
 const { width: screenWidth } = Dimensions.get('window');
-const ITEM_WIDTH = screenWidth * 0.6; // 60% of screen width to show 2.5 cards
-const ITEM_SPACING = 16; // Spacing between cards
+const ITEM_SPACING = 12; // Spacing between cards
+// Calculate width to show 2 full cards + 1/4 of 3rd card
+// Total visible = 2 + 0.25 = 2.25 cards, accounting for spacing
+const ITEM_WIDTH = (screenWidth - (ITEM_SPACING * 4)) / 2; // 4 spacings: left padding, between cards, right padding
 
 // Mock data for carousels
 const mockUpcomingClasses = [
@@ -43,7 +45,7 @@ const WhatsNewBanner = () => (
             <Text style={styles.bannerIconText}>🎉</Text>
         </View>
         <View style={styles.bannerContent}>
-            <Text style={styles.bannerTitle}>What's New!</Text>
+            <Text style={styles.bannerTitle}>What's New!!!</Text>
             <Text style={styles.bannerSubtitle}>New yoga studio opening next week</Text>
         </View>
         <View style={styles.bannerAction}>
@@ -53,6 +55,11 @@ const WhatsNewBanner = () => (
 );
 
 const CarouselItem = ({ item, type }: { item: any; type: string }) => {
+    // Return invisible placeholder if this is a placeholder item
+    // if (item.isPlaceholder) {
+    //     return <View style={styles.carouselItem} />;
+    // }
+
     const renderContent = () => {
         switch (type) {
             case 'upcoming':
@@ -120,22 +127,34 @@ const CarouselItem = ({ item, type }: { item: any; type: string }) => {
     );
 };
 
-const CarouselSection = ({ title, data, type }: { title: string; data: any[]; type: string }) => (
-    <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        <View style={styles.carouselContainer}>
-            <Carousel
-                loop
-                width={ITEM_WIDTH}
-                height={200}
-                data={data}
-                scrollAnimationDuration={1000}
-                renderItem={({ item }) => <CarouselItem item={item} type={type} />}
-                style={styles.carousel}
-            />
+const CarouselSection = ({ title, data, type }: { title: string; data: any[]; type: string }) => {
+    // Add invisible placeholder if odd number of items
+    // const processedData = data.length % 2 === 1
+    //     ? [...data, { id: 'placeholder', isPlaceholder: true }]
+    //     : data;
+
+    return (
+        <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{title}</Text>
+            <View style={styles.carouselContainer}>
+                <Carousel
+                    loop={false}
+                    width={ITEM_WIDTH}
+                    height={200}
+                    data={data}
+                    scrollAnimationDuration={500}
+                    renderItem={({ item }) => <CarouselItem item={item} type={type} />}
+                    style={styles.carousel}
+                    onConfigurePanGesture={(gestureChain) => {
+                        gestureChain
+                            .activeOffsetX([-10, 10])    // Activate on 10px horizontal movement
+                            .failOffsetY([-15, 15]);     // Fail if vertical movement > 15px first
+                    }}
+                />
+            </View>
         </View>
-    </View>
-);
+    );
+};
 
 export function NewsScreen() {
     const { t } = useTypedTranslation();
