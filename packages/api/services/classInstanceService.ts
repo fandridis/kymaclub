@@ -151,8 +151,10 @@ export const classInstanceService = {
 
         const cleanArgs = classInstanceOperations.prepareUpdateInstance(args.instance);
 
+        // When time fields are updated, regenerate timePattern and dayOfWeek for calendar display
+        // This ensures consistency between startTime/endTime and their derived display fields
         const timeFieldsUpdate = (cleanArgs.startTime || cleanArgs.endTime)
-            ? timeUtils.generateTimePatternData( // TODO: check if this is correct
+            ? timeUtils.generateTimePatternData(
                 cleanArgs.startTime ?? existingInstance.startTime,
                 cleanArgs.endTime ?? existingInstance.endTime
             )

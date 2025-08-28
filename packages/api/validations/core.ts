@@ -14,16 +14,16 @@ export const validateBusinessName = (name: string): ValidationResult<string> => 
 export const validateEmail = (email: string): ValidationResult<string> => {
     const trimmed = email.trim();
     if (!trimmed) {
-        return { success: false, error: "Email is required" };
+        return { success: false, error: "Email address is required" };
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trimmed)) {
-        return { success: false, error: "Please enter a valid email address" };
+        return { success: false, error: "Please enter a valid email address (e.g., user@example.com)" };
     }
 
     if (trimmed.length > 100) {
-        return { success: false, error: "Email cannot exceed 100 characters" };
+        return { success: false, error: "Email address must be 100 characters or less" };
     }
 
     return { success: true, value: trimmed };
@@ -40,10 +40,10 @@ export const validatePhone = (phone: string): ValidationResult<string> => {
 export const validateWebsite = (website: string): ValidationResult<string> => {
     const trimmed = website.trim();
     if (trimmed && !trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
-        return { success: false, error: "Website must start with http:// or https://" };
+        return { success: false, error: "Website URL must start with http:// or https:// (e.g., https://example.com)" };
     }
     if (trimmed.length > 200) {
-        return { success: false, error: "Website URL cannot exceed 200 characters" };
+        return { success: false, error: "Website URL must be 200 characters or less" };
     }
     return { success: true, value: trimmed };
 };
@@ -63,7 +63,7 @@ export const validateStreet = (street: string): ValidationResult<string> => {
     }
 
     if (trimmed.length > 100) {
-        return { success: false, error: "Street must be less than 100 characters" };
+        return { success: false, error: "Street must be 100 characters or less" };
     }
 
     return { success: true, value: trimmed };
@@ -76,7 +76,7 @@ export const validateCity = (city: string): ValidationResult<string> => {
     }
 
     if (trimmed.length > 100) {
-        return { success: false, error: "City must be less than 100 characters" };
+        return { success: false, error: "City must be 100 characters or less" };
     }
 
     return { success: true, value: trimmed };
@@ -89,7 +89,7 @@ export const validateZipCode = (zipCode: string): ValidationResult<string> => {
     }
 
     if (trimmed.length > 100) {
-        return { success: false, error: "Zip code must be less than 100 characters" };
+        return { success: false, error: "Zip code must be 100 characters or less" };
     }
 
     return { success: true, value: trimmed };
@@ -102,7 +102,7 @@ export const validateCountry = (country: string): ValidationResult<string> => {
     }
 
     if (trimmed.length > 100) {
-        return { success: false, error: "Country must be less than 100 characters" };
+        return { success: false, error: "Country must be 100 characters or less" };
     }
 
     return { success: true, value: trimmed };
@@ -113,7 +113,7 @@ export const validateState = (state: string | undefined): ValidationResult<strin
         const trimmed = state.trim();
 
         if (trimmed.length > 100) {
-            return { success: false, error: "State must be less than 10 characters" };
+            return { success: false, error: "State must be 100 characters or less" };
         }
     }
 

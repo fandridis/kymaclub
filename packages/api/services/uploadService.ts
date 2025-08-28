@@ -3,6 +3,7 @@ import type { Id, Doc } from "../convex/_generated/dataModel";
 import { ConvexError } from "convex/values";
 import { ERROR_CODES } from "../utils/errorCodes";
 import { classTemplateRules } from "../rules/classTemplate";
+import { venueRules } from "../rules/venue";
 
 /**
  * Upload service for managing file uploads and associations with entities.
@@ -52,8 +53,8 @@ export const uploadService = {
       throw new ConvexError({ message: "Venue not found", code: ERROR_CODES.RESOURCE_NOT_FOUND });
     }
 
-    // TODO: Add venue rules validation
-    // venueRules.ensureCanUpdateVenue(venue, user);
+    // Ensure user has permission to update this venue
+    venueRules.userMustBeVenueOwner(venue, user);
 
     const next = [...(venue.imageStorageIds ?? []), args.storageId];
     await ctx.db.patch(args.venueId, {
@@ -82,8 +83,8 @@ export const uploadService = {
       throw new ConvexError({ message: "Venue not found", code: ERROR_CODES.RESOURCE_NOT_FOUND });
     }
 
-    // TODO: Add venue rules validation
-    // venueRules.ensureCanUpdateVenue(venue, user);
+    // Ensure user has permission to update this venue
+    venueRules.userMustBeVenueOwner(venue, user);
 
     const current = venue.imageStorageIds ?? [];
     const next = current.filter((id) => id !== args.storageId);

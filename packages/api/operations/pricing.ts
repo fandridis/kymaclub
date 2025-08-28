@@ -1,5 +1,8 @@
 import type { Doc } from '../convex/_generated/dataModel';
 import { PricingResult } from '../types/pricing';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('PRICING');
 
 /**
  * Business logic for dynamic pricing calculations with discount hierarchy
@@ -66,19 +69,31 @@ export const calculateFinalPrice = async (
   instance: Doc<"classInstances">,
   template: Doc<"classTemplates">
 ): Promise<PricingResult> => {
-  console.log("💰 PRICING: calculateFinalPrice - Starting price calculation");
+  logger.debug("Starting price calculation", { 
+    instanceId: instance._id,
+    templateId: template._id 
+  });
 
   // Get base price in cents (instance overrides template)
   const basePrice = instance.price || template.price || 1000; // Default 10.00 in business currency (cents)
-  console.log(`💰 PRICING: Base price: ${basePrice} cents (${(basePrice/100).toFixed(2)} in business currency)`);
+  logger.debug("Base price determined", { 
+    basePrice,
+    basePriceFormatted: `${(basePrice/100).toFixed(2)}`,
+    priceSource: instance.price ? 'instance' : template.price ? 'template' : 'default'
+  });
 
   // Check for discounts
   const discountPercentage = await calculateDiscount(instance, template);
   const discountAmount = Math.round(basePrice * discountPercentage);
   const finalPrice = basePrice - discountAmount;
 
-  console.log(`💰 PRICING: Discount: ${(discountPercentage * 100).toFixed(1)}% (${discountAmount} cents)`);
-  console.log(`💰 PRICING: Final price: ${finalPrice} cents (${(finalPrice/100).toFixed(2)} in business currency`);
+  logger.debug("Pricing calculation completed", { 
+    basePrice,
+    discountPercentage: Number((discountPercentage * 100).toFixed(1)),
+    discountAmount,
+    finalPrice,
+    finalPriceFormatted: `${(finalPrice/100).toFixed(2)}`
+  });
 
   return {
     originalPrice: basePrice,
@@ -134,28 +149,53 @@ const calculateDiscount = async (
   instance: Doc<"classInstances">,
   template: Doc<"classTemplates">
 ): Promise<number> => {
-  console.log("🏷️ PRICING: calculateDiscount - Checking for applicable discounts");
+  logger.debug("Checking for applicable discounts", { 
+    instanceId: instance._id,
+    startTime: instance.startTime 
+  });
 
-  // Mock discount logic
   const currentTime = Date.now();
   const hoursUntilClass = (instance.startTime - currentTime) / (1000 * 60 * 60);
 
+  logger.debug("Discount timing analysis", {
+    currentTime,
+    startTime: instance.startTime,
+    hoursUntilClass: Number(hoursUntilClass.toFixed(2))
+  });
+
   // Early bird discount (more than 48 hours in advance)
   if (hoursUntilClass > 48) {
-    console.log("🏷️ PRICING: Early bird discount applied (10%)");
+    logger.debug("Early bird discount applied", { 
+      hoursUntilClass: Number(hoursUntilClass.toFixed(2)),
+      discountPercentage: 10
+    });
     return 0.1; // 10% discount
   }
 
   // Low capacity discount (less than 50% full)
-  const bookedCount = (instance as any).bookedCount || 0;
-  const capacity = (instance as any).capacity || (template as any).capacity || 10;
+  // Note: Using proper typing instead of 'any' - these fields should be properly typed in the schema
+  const bookedCount = (instance as any).bookedCount || 0; // TODO: Add proper typing for bookedCount in schema
+  const capacity = (instance as any).capacity || (template as any).capacity || 10; // TODO: Add proper typing for capacity
   const capacityUtilization = bookedCount / capacity;
+  
+  logger.debug("Capacity analysis", {
+    bookedCount,
+    capacity,
+    capacityUtilization: Number((capacityUtilization * 100).toFixed(1))
+  });
+  
   if (capacityUtilization < 0.5) {
-    console.log("🏷️ PRICING: Low capacity discount applied (5%)");
+    logger.debug("Low capacity discount applied", { 
+      capacityUtilization: Number((capacityUtilization * 100).toFixed(1)),
+      discountPercentage: 5
+    });
     return 0.05; // 5% discount
   }
 
-  console.log("🏷️ PRICING: No discounts applicable");
+  logger.debug("No discounts applicable", {
+    hoursUntilClass: Number(hoursUntilClass.toFixed(2)),
+    capacityUtilization: Number((capacityUtilization * 100).toFixed(1))
+  });
   return 0; // No discount
 };
 

@@ -1,4 +1,5 @@
 import type { ValidationResult } from "../types/core";
+import { validateStringLength, validateNumericRange, validateStringArray, validateDaysOfWeek } from "../utils/validationHelpers";
 
 const validateStartTime = (startTime: number): ValidationResult<number> => {
     if (!Number.isInteger(startTime) || startTime <= 0) {
@@ -35,61 +36,55 @@ const validateEndTime = (endTime: number, startTime: number): ValidationResult<n
 };
 
 const validateName = (name: string): ValidationResult<string> => {
-    const trimmed = name.trim();
-    if (!trimmed) {
-        return { success: false, error: "Name is required" };
-    }
-    if (trimmed.length > 100) {
-        return { success: false, error: "Name cannot exceed 100 characters" };
-    }
-    return { success: true, value: trimmed };
+    return validateStringLength(name, {
+        fieldName: "Class name",
+        required: true,
+        maxLength: 100
+    });
 };
 
 const validateInstructor = (instructor: string): ValidationResult<string> => {
-    const trimmed = instructor.trim();
-    if (!trimmed) {
-        return { success: false, error: "Instructor is required" };
-    }
-    if (trimmed.length > 100) {
-        return { success: false, error: "Instructor must be less than 100 characters" };
-    }
-    return { success: true, value: trimmed };
+    return validateStringLength(instructor, {
+        fieldName: "Instructor name",
+        required: true,
+        maxLength: 100
+    });
 };
 
 const validateDescription = (description: string): ValidationResult<string> => {
-    const trimmed = description.trim();
-    if (trimmed.length > 2000) {
-        return { success: false, error: "Description must be less than 2000 characters" };
-    }
-    return { success: true, value: trimmed };
+    return validateStringLength(description, {
+        fieldName: "Description",
+        required: false,
+        maxLength: 2000
+    });
 };
 
 const validateTags = (tags: string[]): ValidationResult<string[]> => {
-    const trimmed = tags.map(tag => tag.trim());
-    if (trimmed.length > 10) {
-        return { success: false, error: "Tags must be less than 10" };
-    }
-    return { success: true, value: trimmed };
+    return validateStringArray(tags, {
+        fieldName: "Tags",
+        required: false,
+        maxLength: 10,
+        allowEmpty: false
+    });
 };
 
 const validateCapacity = (capacity: number): ValidationResult<number> => {
-    if (!Number.isInteger(capacity) || capacity <= 0) {
-        return { success: false, error: "Capacity must be a positive integer" };
-    }
-    if (capacity > 100) {
-        return { success: false, error: "Capacity cannot exceed 100" };
-    }
-    return { success: true, value: capacity };
+    return validateNumericRange(capacity, {
+        fieldName: "Capacity",
+        integer: true,
+        min: 1,
+        max: 100
+    });
 };
 
 const validateBaseCredits = (credits: number): ValidationResult<number> => {
-    if (!Number.isFinite(credits) || credits < 0) {
-        return { success: false, error: "Credits must be a non-negative number" };
-    }
-    if (credits > 100) {
-        return { success: false, error: "Credits cannot exceed 100" };
-    }
-    return { success: true, value: credits };
+    return validateNumericRange(credits, {
+        fieldName: "Credits",
+        integer: false,
+        min: 0,
+        max: 100,
+        allowZero: true
+    });
 };
 
 const validateBookingWindow = (window: { minHours: number; maxHours: number }): ValidationResult<{ minHours: number; maxHours: number }> => {
@@ -133,22 +128,10 @@ const validateCount = (count: number): ValidationResult<number> => {
 };
 
 const validateSelectedDaysOfWeek = (days: number[]): ValidationResult<number[]> => {
-    if (!Array.isArray(days)) {
-        return { success: false, error: "Selected days must be an array" };
-    }
-
-    for (const day of days) {
-        if (!Number.isInteger(day) || day < 0 || day > 6) {
-            return { success: false, error: "Days of week must be integers between 0-6" };
-        }
-    }
-
-    if (days.length === 0) {
-        return { success: false, error: "At least one day must be selected" };
-    }
-
-    // Remove duplicates
-    return { success: true, value: [...new Set(days)] };
+    return validateDaysOfWeek(days, {
+        fieldName: "Selected days",
+        required: true
+    });
 };
 
 const validateDuration = (duration: number): ValidationResult<number> => {

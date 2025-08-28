@@ -3,11 +3,7 @@ import { Password } from "@convex-dev/auth/providers/Password";
 import GitHub from "@auth/core/providers/github";
 import { ResendOTP } from "./resendOTP";
 
-// TODO: Move it somewhere else, if used.
-const frontendBaseUrls = {
-  consumer: "http://localhost:5173",  // "http://localhost:5173",
-  business: "http://localhost:5174"   // "http://localhost:5173/business",
-}
+// Removed unused frontendBaseUrls - can be added back when needed for specific auth flows
 
 // Custom test provider
 // Custom test email provider

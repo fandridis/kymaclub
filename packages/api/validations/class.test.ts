@@ -132,7 +132,7 @@ describe('Class Validations', () => {
             
             expect(result).toEqual({
                 success: false,
-                error: 'Name is required'
+                error: 'Class name is required'
             });
         });
 
@@ -142,7 +142,7 @@ describe('Class Validations', () => {
             
             expect(result).toEqual({
                 success: false,
-                error: 'Name cannot exceed 100 characters'
+                error: 'Class name must be 100 characters or less'
             });
         });
     });
@@ -160,12 +160,12 @@ describe('Class Validations', () => {
         it('should reject zero or negative capacity', () => {
             expect(classValidations.validateCapacity(0)).toEqual({
                 success: false,
-                error: 'Capacity must be a positive integer'
+                error: 'Capacity must be greater than zero'
             });
             
             expect(classValidations.validateCapacity(-5)).toEqual({
                 success: false,
-                error: 'Capacity must be a positive integer'
+                error: 'Capacity must be greater than zero'
             });
         });
 
@@ -174,7 +174,7 @@ describe('Class Validations', () => {
             
             expect(result).toEqual({
                 success: false,
-                error: 'Capacity must be a positive integer'
+                error: 'Capacity must be a whole number'
             });
         });
 
@@ -310,7 +310,7 @@ describe('Class Validations', () => {
             
             expect(result).toEqual({
                 success: false,
-                error: 'Selected days must be an array'
+                error: 'Selected days must be a list'
             });
         });
 
@@ -319,24 +319,24 @@ describe('Class Validations', () => {
             
             expect(result).toEqual({
                 success: false,
-                error: 'At least one day must be selected'
+                error: 'Selected days is required and cannot be empty'
             });
         });
 
         it('should reject invalid day numbers', () => {
             expect(classValidations.validateSelectedDaysOfWeek([1, 7])).toEqual({
                 success: false,
-                error: 'Days of week must be integers between 0-6'
+                error: 'Selected days must contain valid day numbers (0=Sunday, 1=Monday, ..., 6=Saturday)'
             });
             
             expect(classValidations.validateSelectedDaysOfWeek([1, -1])).toEqual({
                 success: false,
-                error: 'Days of week must be integers between 0-6'
+                error: 'Selected days must contain valid day numbers (0=Sunday, 1=Monday, ..., 6=Saturday)'
             });
             
             expect(classValidations.validateSelectedDaysOfWeek([1.5])).toEqual({
                 success: false,
-                error: 'Days of week must be integers between 0-6'
+                error: 'Selected days must contain valid day numbers (0=Sunday, 1=Monday, ..., 6=Saturday)'
             });
         });
     });
