@@ -482,7 +482,7 @@ export function ClassDetailsModalScreen() {
                             </View>
                             <View style={styles.spotsContainer}>
                                 <Text style={styles.spotsLabel}>Available spots</Text>
-                                <Text style={[styles.spotsValue, spotsLeft < 5 && styles.spotsLow]}>
+                                <Text style={styles.spotsValue}>
                                     {spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left
                                 </Text>
 
@@ -948,10 +948,7 @@ const styles = StyleSheet.create({
     spotsValue: {
         fontSize: 16,
         fontWeight: '600',
-        color: "#222",
-    },
-    spotsLow: {
-        color: '#16a34a',
+        color: theme.colors.emerald[500],
     },
     detailsSection: {
         paddingTop: 8,

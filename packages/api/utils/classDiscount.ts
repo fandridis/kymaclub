@@ -115,7 +115,9 @@ export function calculateBestDiscount(
     const bestInstanceRule = findBestDiscountRule(classInstance.discountRules, hoursUntilClass);
 
     if (bestInstanceRule) {
-      const finalPrice = applyDiscountToPrice(originalPrice, bestInstanceRule.rule.discount.value);
+      // Convert discount value from cents to credits (1 credit = 50 cents)
+      const discountValueInCredits = bestInstanceRule.rule.discount.value / 50;
+      const finalPrice = applyDiscountToPrice(originalPrice, discountValueInCredits);
       const creditsSaved = originalPrice - finalPrice;
 
       return {
@@ -124,7 +126,7 @@ export function calculateBestDiscount(
         appliedDiscount: {
           source: "instance_rule",
           discountType: "fixed_amount",
-          discountValue: bestInstanceRule.rule.discount.value,
+          discountValue: discountValueInCredits,
           creditsSaved,
           ruleName: bestInstanceRule.ruleName,
         },
@@ -137,7 +139,9 @@ export function calculateBestDiscount(
     const bestTemplateRule = findBestDiscountRule(template.discountRules, hoursUntilClass);
 
     if (bestTemplateRule) {
-      const finalPrice = applyDiscountToPrice(originalPrice, bestTemplateRule.rule.discount.value);
+      // Convert discount value from cents to credits (1 credit = 50 cents)
+      const discountValueInCredits = bestTemplateRule.rule.discount.value / 50;
+      const finalPrice = applyDiscountToPrice(originalPrice, discountValueInCredits);
       const creditsSaved = originalPrice - finalPrice;
 
       return {
@@ -146,7 +150,7 @@ export function calculateBestDiscount(
         appliedDiscount: {
           source: "template_rule",
           discountType: "fixed_amount",
-          discountValue: bestTemplateRule.rule.discount.value,
+          discountValue: discountValueInCredits,
           creditsSaved,
           ruleName: bestTemplateRule.ruleName,
         },

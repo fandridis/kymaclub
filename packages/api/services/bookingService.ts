@@ -509,13 +509,37 @@ export const bookingService = {
         }
 
         // Calculate best available discount
+        console.log(`🔍 BOOKING DEBUG - Starting discount calculation for class ${template.name}`);
+        console.log(`🔍 Instance price: ${instance.price}, Template price: ${template.price}`);
+        console.log(`🔍 Instance discount rules:`, instance.discountRules);
+        console.log(`🔍 Template discount rules:`, template.discountRules);
+        
         const discountResult = calculateBestDiscount(instance, template, { bookingTime: now });
         const { originalPrice, finalPrice, appliedDiscount } = discountResult;
+        
+        console.log(`🔍 DISCOUNT RESULT:`, {
+            originalPrice,
+            finalPrice,
+            appliedDiscount,
+            bookingTime: now,
+            classStartTime: instance.startTime,
+            hoursUntilClass: (instance.startTime - now) / (1000 * 60 * 60)
+        });
 
         if (!Number.isFinite(originalPrice) || originalPrice <= 0) {
+            console.error(`❌ Invalid original price: ${originalPrice}`);
             throw new ConvexError({
                 message: "Invalid original price for class",
                 field: "originalPrice",
+                code: ERROR_CODES.VALIDATION_ERROR,
+            });
+        }
+
+        if (!Number.isFinite(finalPrice) || finalPrice < 0) {
+            console.error(`❌ Invalid final price: ${finalPrice}`);
+            throw new ConvexError({
+                message: "Invalid final price after discount calculation",
+                field: "finalPrice",
                 code: ERROR_CODES.VALIDATION_ERROR,
             });
         }
@@ -556,17 +580,32 @@ export const bookingService = {
             createdBy: user._id,
         });
 
-        // Spend credits using credit service
-        const { newBalance, transactionId } = await creditService.spendCredits(ctx, {
-            userId: user._id,
-            amount: finalPrice,
-            description: args.description ?? `Booking for ${template.name}`,
-            businessId: instance.businessId,
-            venueId: instance.venueId,
-            classTemplateId: instance.templateId,
-            classInstanceId: args.classInstanceId,
-            bookingId: bookingId,
-        });
+        // Handle credit spending - skip if class is free after discount
+        let transactionId: string;
+        let newBalance: number | undefined;
+        
+        console.log(`💳 CREDIT SPEND - About to spend ${finalPrice} credits for user ${user._id}`);
+        
+        if (finalPrice === 0) {
+            console.log(`🎉 Free class booking! Final price is 0, skipping credit spending.`);
+            // For free bookings, create a placeholder transaction ID
+            transactionId = `free_booking_${bookingId}`;
+            newBalance = undefined; // Credit balance unchanged
+        } else {
+            // Normal credit spending for paid bookings
+            const creditResult = await creditService.spendCredits(ctx, {
+                userId: user._id,
+                amount: finalPrice,
+                description: args.description ?? `Booking for ${template.name}`,
+                businessId: instance.businessId,
+                venueId: instance.venueId,
+                classTemplateId: instance.templateId,
+                classInstanceId: args.classInstanceId,
+                bookingId: bookingId,
+            });
+            transactionId = creditResult.transactionId;
+            newBalance = creditResult.newBalance;
+        }
 
         // Update booking with credit transaction ID
         await ctx.db.patch(bookingId, {
