@@ -23,6 +23,7 @@ import { useEffect, useState } from 'react';
 import { useAuth, useAuthStore } from './stores/auth-store';
 import { AuthSync } from './features/core/components/auth-sync';
 import { AuthGuard } from './features/core/components/auth-guard';
+import { ErrorBoundary } from './components/error-boundary';
 import { convexAuthStorage } from './utils/storage';
 import { RootNavigator } from './navigation';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -88,22 +89,24 @@ export function App() {
   const theme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
 
   return (
-    <ConvexProvider client={convex}>
-      <ConvexAuthProvider client={convex} storage={convexAuthStorage}>
-        <ConvexQueryCacheProvider>
-          <AuthSync>
-            <AuthGuard>
-              <ActionSheetProvider>
-                <InnerApp
-                  theme={theme}
-                  onReady={() => SplashScreen.hideAsync()}
-                />
-              </ActionSheetProvider>
-            </AuthGuard>
-          </AuthSync>
-        </ConvexQueryCacheProvider>
-      </ConvexAuthProvider>
-    </ConvexProvider>
+    <ErrorBoundary>
+      <ConvexProvider client={convex}>
+        <ConvexAuthProvider client={convex} storage={convexAuthStorage}>
+          <ConvexQueryCacheProvider>
+            <AuthSync>
+              <AuthGuard>
+                <ActionSheetProvider>
+                  <InnerApp
+                    theme={theme}
+                    onReady={() => SplashScreen.hideAsync()}
+                  />
+                </ActionSheetProvider>
+              </AuthGuard>
+            </AuthSync>
+          </ConvexQueryCacheProvider>
+        </ConvexAuthProvider>
+      </ConvexProvider>
+    </ErrorBoundary>
   );
 }
 
