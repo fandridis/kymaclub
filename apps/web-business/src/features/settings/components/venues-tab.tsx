@@ -1,6 +1,6 @@
 import { useVenues } from '@/features/venues/hooks/use-venues';
 import { SpinningCircles } from '@/components/spinning-circles';
-import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { CreateVenueDialog } from '@/features/venues/components/create-venue-dialog';
 import { DeleteVenueDialog } from '@/features/venues/components/delete-venue-dialog';
 import { useState } from 'react';
@@ -55,19 +55,16 @@ export function VenuesTab() {
                     />
                 ))}
 
-                {/* Add Venue Card */}
-                <Card
-                    key="add-venue-card"
+                {/* Add Venue Button */}
+                <Button
+                    variant="outline"
                     onClick={() => setIsCreateOpen(true)}
-                    className="border-2 border-dashed shadow-none cursor-pointer transition-colors hover:bg-muted/30"
+                    className="h-full min-h-[120px] border-2 border-dashed shadow-none transition-colors hover:bg-muted/30"
+                    aria-label="Add another venue"
                 >
-                    <CardContent className="h-full flex items-center justify-center">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Plus className="h-4 w-4" />
-                            Add another venue
-                        </div>
-                    </CardContent>
-                </Card>
+                    <Plus className="h-4 w-4" />
+                    Add another venue
+                </Button>
             </div>
 
             {editingVenue && (

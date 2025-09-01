@@ -5,10 +5,7 @@ import { loginUser } from './helpers';
 import { ConvexHttpClient } from "convex/browser";
 import { api } from '@repo/api/convex/_generated/api';
 
-
-console.log("process.env.CONVEX_URL", process.env.CONVEX_URL);
-// Create the client with your Convex deployment URL
-const client = new ConvexHttpClient(process.env.CONVEX_URL as string);
+const client = new ConvexHttpClient(process.env.VITE_CONVEX_URL!);
 
 test.describe('Venue, Template & Calendar Management Flow', () => {
     test.beforeEach(async ({ page }) => {
@@ -32,7 +29,7 @@ test.describe('Venue, Template & Calendar Management Flow', () => {
         await page.click('text=UserWithB'); // Click on user dropdown in sidenav
         await page.click('text=Settings'); // Click on Settings in dropdown
         await page.click('text=Venues'); // Click on Venues tab in settings
-        await page.click('div:has-text("Add another venue")');
+        await page.click('button:has-text("Add another venue")');
 
         // Fill venue form
         await page.fill('[name="name"]', 'gefatest01 Test Yoga Studio');
@@ -60,7 +57,7 @@ test.describe('Venue, Template & Calendar Management Flow', () => {
         await expect(page.locator('text=Venue created successfully')).toBeVisible();
 
         // Step 3: Verify venue was created
-        await expect(page.locator('text=gefatest01 Test Yoga Studio')).toBeVisible();
+        await expect(page.locator('text=gefatest01 Test Yoga Studio').first()).toBeVisible();
 
         // Step 4: Navigate to templates and create a new template
         await page.click('text=Lessons');
@@ -114,7 +111,7 @@ test.describe('Venue, Template & Calendar Management Flow', () => {
         await expect(page.locator('text=Class template created successfully')).toBeVisible();
 
         // Step 6: Verify template was created
-        await expect(page.locator('text=gefatest01 Morning Hatha Yoga')).toBeVisible();
+        await expect(page.locator('text=gefatest01 Morning Hatha Yoga').first()).toBeVisible();
 
         // Step 7: Navigate to calendar and create a standalone class instance
         await page.click('text=Schedule');
@@ -137,11 +134,11 @@ test.describe('Venue, Template & Calendar Management Flow', () => {
 
         // Select the template we created
         await page.getByLabel('Class Template').click();
-        await page.getByRole('option', { name: 'gefatest01 Morning Hatha Yoga' }).click();
+        await page.getByRole('option', { name: 'gefatest01 Morning Hatha Yoga' }).first().click();
 
         // Create single instance
         await page.click('button:has-text("Schedule Class")');
-        await expect(page.locator('text="gefatest01 Morning Hatha Yoga" scheduled successfully')).toBeVisible();
+        await expect(page.locator('text=gefatest01 Morning Hatha Yoga scheduled successfully')).toBeVisible();
 
         // Step 8: Create a recurring instance (weekly for 3 weeks)
         // Open new class dialog and select date & time for next week
@@ -161,7 +158,7 @@ test.describe('Venue, Template & Calendar Management Flow', () => {
 
         // Select the template we created
         await page.getByLabel('Class Template').click();
-        await page.getByRole('option', { name: 'gefatest01 Morning Hatha Yoga' }).click();
+        await page.getByRole('option', { name: 'gefatest01 Morning Hatha Yoga' }).first().click();
 
         // Enable recurring
         await page.check('label:has-text("Make this recurring")');
@@ -176,7 +173,7 @@ test.describe('Venue, Template & Calendar Management Flow', () => {
 
         // Create recurring instances
         await page.click('button:has-text("Schedule Series")');
-        await expect(page.locator('text="gefatest01 Morning Hatha Yoga" scheduled successfully').or(page.locator('text=3 instances created'))).toBeVisible();
+        await expect(page.locator('text=Created 7 instances of gefatest01 Morning Hatha Yoga').or(page.locator('text=3 instances created'))).toBeVisible();
 
         // Step 9: Verify the instances appear on the calendar
         await expect(page.locator('text=gefatest01 Morning Hatha Yoga').first()).toBeVisible();

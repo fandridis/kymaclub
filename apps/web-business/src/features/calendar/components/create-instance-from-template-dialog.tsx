@@ -121,7 +121,7 @@ export function CreateInstanceFromTemplateDialog({
                         selectedDaysOfWeek: frequency === 'daily' ? selectedDaysOfWeek : undefined,
                     });
 
-                    toast.success(`Created ${count} instances of "${selectedTemplate.name}"`);
+                    toast.success(`Created ${count} instances of ${selectedTemplate.name}`);
                     onClose();
                 } catch (error) {
                     console.error('Failed to create class instance:', error);
@@ -135,7 +135,7 @@ export function CreateInstanceFromTemplateDialog({
                         startTime,
                     });
 
-                    toast.success(`"${selectedTemplate.name}" scheduled successfully!`);
+                    toast.success(`${selectedTemplate.name} scheduled successfully!`);
                     onClose();
                 } catch (error) {
                     console.error('Failed to create class instance:', error);
