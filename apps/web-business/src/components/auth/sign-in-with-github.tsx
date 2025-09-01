@@ -4,7 +4,6 @@ import { GitHubIcon } from "./github-icon";
 
 export function SignInWithGitHub({ redirectTo }: { redirectTo: string }) {
     const { signIn } = useAuthActions();
-    console.log('[_auth.tsx] redirecting to: ', redirectTo);
 
     return (
         <Button

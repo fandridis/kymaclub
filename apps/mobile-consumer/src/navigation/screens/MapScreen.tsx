@@ -102,9 +102,7 @@ export function MapScreen() {
     useEffect(() => {
         (async () => {
             try {
-                console.log('requesting permission');
                 let { status } = await Location.requestForegroundPermissionsAsync();
-                console.log('permission status: ', status);
 
                 if (status !== 'granted') {
                     setErrorMsg('Permission to access location was denied');
@@ -113,11 +111,9 @@ export function MapScreen() {
                 }
 
                 let currentLocation = await Location.getCurrentPositionAsync({});
-                console.log('current location: ', currentLocation);
                 setLocation(currentLocation);
                 setLoading(false);
             } catch (error) {
-                console.error('Location error:', error);
                 setErrorMsg('Error getting location');
                 setLoading(false);
                 Alert.alert('Error', 'Unable to get your location. Please check your settings.');
@@ -133,7 +129,6 @@ export function MapScreen() {
 
     // Handle sheet changes
     const handleSheetChanges = useCallback((index: number) => {
-        console.log('handleSheetChanges', index);
         if (index === -1) {
             // Sheet is closed
             setSelectedMonument(null);

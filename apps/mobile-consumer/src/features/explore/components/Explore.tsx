@@ -29,9 +29,6 @@ export function Explore() {
     // Get user credit balance
     const creditBalance = useQuery(api.queries.credits.getUserBalance, { userId: user._id });
 
-    console.log('Explore component storageIdToUrl:', storageIdToUrl);
-    console.log('Explore component venues:', venues?.length);
-
     const [loadingLocation, setLoadingLocation] = useState(true);
 
     useEffect(() => {
@@ -83,8 +80,6 @@ export function Explore() {
         setMapSheetOpen(false);
     }, []);
 
-    console.log('loadingLocation', loadingLocation);
-    console.log('venuesLoading', venuesLoading);
     const isLoading = loadingLocation || venuesLoading;
 
     if (isLoading) {

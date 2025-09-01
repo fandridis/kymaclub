@@ -168,15 +168,6 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
   // Calculate discount pricing
   const discountResult = useMemo(() => {
     const result = calculateClassDiscount(classInstance);
-    // Debug logging to verify discount calculation
-    if (result.appliedDiscount) {
-      console.log(`Discount applied for class "${classInstance.name}":`, {
-        originalPrice: result.originalPrice,
-        finalPrice: result.finalPrice,
-        ruleName: result.appliedDiscount.ruleName,
-        creditsSaved: result.appliedDiscount.creditsSaved
-      });
-    }
     return result;
   }, [classInstance]);
 

@@ -152,20 +152,10 @@ async function checkEmailExists(
 }
 
 export async function action({ request, context }: Route.ActionArgs) {
-  console.log("=== PARTNER API DEBUG START ===");
-  console.log("Request method:", request.method);
-  console.log(
-    "Request headers:",
-    Object.fromEntries(request.headers.entries())
-  );
-
   try {
     // Only handle POST requests
     if (request.method !== "POST") {
-      console.log(
-        "DEBUG: Method not allowed - expected POST, got:",
-        request.method
-      );
+
       return new Response(
         JSON.stringify({
           success: false,
@@ -189,11 +179,8 @@ export async function action({ request, context }: Route.ActionArgs) {
       request.headers.get("X-Forwarded-For") ||
       "unknown";
 
-    console.log("DEBUG: Client IP:", clientIP);
-
     // Rate limiting check
     if (isRateLimited(clientIP)) {
-      console.log("DEBUG: Rate limited for IP:", clientIP);
       return new Response(
         JSON.stringify({
           success: false,
@@ -211,14 +198,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 
     // Check request size
     const contentLength = request.headers.get("content-length");
-    console.log("DEBUG: Content length:", contentLength);
     if (contentLength && parseInt(contentLength) > MAX_REQUEST_SIZE) {
-      console.log(
-        "DEBUG: Request too large - size:",
-        contentLength,
-        "max:",
-        MAX_REQUEST_SIZE
-      );
       return new Response(
         JSON.stringify({
           success: false,
@@ -232,47 +212,10 @@ export async function action({ request, context }: Route.ActionArgs) {
     }
 
     // Parse the request body
-    console.log("DEBUG: About to parse request body...");
     const body: FormData = await request.json();
     const { email, name, phone, area, website } = body;
 
-    console.log("DEBUG: Parsed body:", body);
-    console.log("DEBUG: Extracted fields:", {
-      email,
-      name,
-      phone,
-      area,
-      website,
-    });
-
-    // Validate required fields
-    console.log("DEBUG: Validating required fields...");
-    console.log(
-      "DEBUG: email exists:",
-      !!email,
-      "name exists:",
-      !!name,
-      "phone exists:",
-      !!phone,
-      "area exists:",
-      !!area,
-      "website exists:",
-      !!website
-    );
-
     if (!email || !name || !phone || !area || !website) {
-      console.log(
-        "DEBUG: Missing required fields - email:",
-        !!email,
-        "name:",
-        !!name,
-        "phone:",
-        !!phone,
-        "area:",
-        !!area,
-        "website:",
-        !!website
-      );
       return new Response(
         JSON.stringify({
           success: false,
@@ -286,15 +229,10 @@ export async function action({ request, context }: Route.ActionArgs) {
     }
 
     // Sanitize and validate inputs
-    console.log("DEBUG: Sanitizing inputs...");
     const sanitizedEmail = sanitizeInput(email);
     const sanitizedName = sanitizeInput(name);
-    console.log("DEBUG: Sanitized email:", sanitizedEmail);
-    console.log("DEBUG: Sanitized name:", sanitizedName);
 
-    console.log("DEBUG: Validating email format...");
     if (!validateEmail(sanitizedEmail)) {
-      console.log("DEBUG: Email validation failed for:", sanitizedEmail);
       return new Response(
         JSON.stringify({
           success: false,
@@ -307,14 +245,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       );
     }
 
-    console.log("DEBUG: Validating name...");
     if (!validateName(sanitizedName)) {
-      console.log(
-        "DEBUG: Name validation failed - length:",
-        sanitizedName.length,
-        "max:",
-        MAX_NAME_LENGTH
-      );
       return new Response(
         JSON.stringify({
           success: false,
@@ -327,14 +258,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       );
     }
 
-    console.log("DEBUG: Validating phone...");
     if (!validatePhone(phone)) {
-      console.log(
-        "DEBUG: Phone validation failed - length:",
-        phone.length,
-        "max:",
-        MAX_PHONE_LENGTH
-      );
       return new Response(
         JSON.stringify({
           success: false,
@@ -347,14 +271,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       );
     }
 
-    console.log("DEBUG: Validating area...");
     if (!validateArea(area)) {
-      console.log(
-        "DEBUG: Area validation failed - length:",
-        area.length,
-        "max:",
-        MAX_AREA_LENGTH
-      );
       return new Response(
         JSON.stringify({
           success: false,
@@ -367,14 +284,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       );
     }
 
-    console.log("DEBUG: Validating website...");
     if (!validateWebsite(website)) {
-      console.log(
-        "DEBUG: Website validation failed - length:",
-        website.length,
-        "max:",
-        MAX_WEBSITE_LENGTH
-      );
       return new Response(
         JSON.stringify({
           success: false,
@@ -388,20 +298,11 @@ export async function action({ request, context }: Route.ActionArgs) {
     }
 
     // Get database ID and API key from environment variables
-    console.log("DEBUG: Getting environment variables...");
     const databaseId = context.cloudflare.env.NOTION_PAGE_BUSINESS_WL_ID;
     const apiKey = context.cloudflare.env.NOTION_API_KEY;
 
-    console.log("DEBUG: Database ID exists:", !!databaseId);
-    console.log("DEBUG: API Key exists:", !!apiKey);
 
     if (!databaseId || !apiKey) {
-      console.error(
-        "DEBUG: Missing required environment variables - databaseId:",
-        !!databaseId,
-        "apiKey:",
-        !!apiKey
-      );
       return new Response(
         JSON.stringify({
           success: false,
@@ -414,17 +315,14 @@ export async function action({ request, context }: Route.ActionArgs) {
       );
     }
 
-    // Check if email already exists
-    console.log("DEBUG: Checking if email already exists...");
+    // Check if email already exists      
     const emailExists = await checkEmailExists(
       sanitizedEmail,
       databaseId,
       apiKey
     );
-    console.log("DEBUG: Email exists check result:", emailExists);
 
     if (emailExists) {
-      console.log("DEBUG: Email already registered:", sanitizedEmail);
       return new Response(
         JSON.stringify({
           success: false,
@@ -438,7 +336,6 @@ export async function action({ request, context }: Route.ActionArgs) {
     }
 
     // Prepare page properties for Notion
-    console.log("DEBUG: Preparing Notion page properties...");
     const pageProperties: NotionPageProperties = {
       Name: {
         title: [{ text: { content: sanitizedName } }],
@@ -462,10 +359,6 @@ export async function action({ request, context }: Route.ActionArgs) {
       },
     };
 
-    console.log(
-      "DEBUG: Page properties prepared:",
-      JSON.stringify(pageProperties, null, 2)
-    );
 
     // Create the page in Notion database using the Notion API
     const notionRequest: NotionPageRequest = {
@@ -475,11 +368,6 @@ export async function action({ request, context }: Route.ActionArgs) {
       properties: pageProperties,
     };
 
-    console.log(
-      "DEBUG: Notion request prepared:",
-      JSON.stringify(notionRequest, null, 2)
-    );
-    console.log("DEBUG: About to make Notion API call...");
 
     const response = await fetch("https://api.notion.com/v1/pages", {
       method: "POST",
@@ -491,16 +379,9 @@ export async function action({ request, context }: Route.ActionArgs) {
       body: JSON.stringify(notionRequest),
     });
 
-    console.log("DEBUG: Notion API response status:", response.status);
-    console.log(
-      "DEBUG: Notion API response headers:",
-      Object.fromEntries(response.headers.entries())
-    );
 
     if (!response.ok) {
-      console.error("DEBUG: Notion API error - status:", response.status);
       const errorText = await response.text();
-      console.error("DEBUG: Notion API error response:", errorText);
       return new Response(
         JSON.stringify({
           success: false,
@@ -514,11 +395,6 @@ export async function action({ request, context }: Route.ActionArgs) {
     }
 
     const newPage = (await response.json()) as NotionPageResponse;
-    console.log("DEBUG: Successfully created Notion page with ID:", newPage.id);
-    console.log(
-      "DEBUG: Full Notion response:",
-      JSON.stringify(newPage, null, 2)
-    );
 
     return new Response(
       JSON.stringify({
@@ -532,15 +408,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       }
     );
   } catch (error) {
-    console.error("DEBUG: Caught error in partner API:", error);
-    console.error(
-      "DEBUG: Error stack:",
-      error instanceof Error ? error.stack : "No stack trace"
-    );
-    console.error(
-      "DEBUG: Error message:",
-      error instanceof Error ? error.message : "No message"
-    );
+    console.error("Caught error in partner API:", error);
 
     return new Response(
       JSON.stringify({
@@ -553,7 +421,6 @@ export async function action({ request, context }: Route.ActionArgs) {
       }
     );
   } finally {
-    console.log("=== PARTNER API DEBUG END ===");
   }
 }
 

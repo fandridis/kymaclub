@@ -38,9 +38,6 @@ export function CreateAccountModalScreen() {
 
     const handleWaitlistSubmit = async (data: WaitlistData) => {
         try {
-            // Your waitlist submission logic
-            console.log('[CreateAccountModal] Submitting waitlist data:', data);
-
             // Mock submission
             await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -59,7 +56,6 @@ export function CreateAccountModalScreen() {
     };
 
     const handleBack = () => {
-        console.log('[CreateAccountModal] handleBack: ', flowState)
         navigation.goBack();
     };
 

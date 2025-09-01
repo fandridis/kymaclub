@@ -42,11 +42,6 @@ export const QRScannerScreen: React.FC = () => {
 
       // Check if it has the expected structure
       if (qrData.businessId && qrData.venueId) {
-        console.log('QR Code scanned successfully:', {
-          businessId: qrData.businessId,
-          venueId: qrData.venueId
-        });
-
         setVenueInfo({ businessId: qrData.businessId, venueId: qrData.venueId });
 
         // Simulate API call to fetch bookings for this venue
@@ -137,7 +132,6 @@ export const QRScannerScreen: React.FC = () => {
   };
 
   const handleTicketSelect = (ticket: Ticket) => {
-    console.log('Selected ticket:', ticket);
     setSelectedTicket(ticket);
     setModalState('selected-ticket');
   };
@@ -259,7 +253,6 @@ export const QRScannerScreen: React.FC = () => {
 
   const renderTicketCard = (ticket: Ticket, showBackButton: boolean = false) => {
     const handleConfirmByBusiness = () => {
-      console.log('Confirming ticket with business:', ticket);
       // Here you would make API call to confirm with business
       // For now, just close the modal
       navigation.goBack();

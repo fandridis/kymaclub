@@ -60,7 +60,6 @@ export const QRScanner: React.FC<QRScannerProps> = ({
     useEffect(() => {
         if (isVisible) {
             checkPermission().then((granted) => {
-                console.log('has scanner permission', granted);
                 if (granted) {
                     startScanning();
                 }

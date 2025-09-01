@@ -2,11 +2,11 @@ import { Page } from '@playwright/test';
 
 export const TEST_USERS = {
     userWithoutBusiness: {
-        email: 'user.without.business@test.com',
+        email: 'user_without_business@test.com',
         password: 'user_without_business',
     },
     userWithBusiness: {
-        email: 'user.with.business@test.com',
+        email: 'user_with_business@test.com',
         password: 'user_with_business',
     },
 };

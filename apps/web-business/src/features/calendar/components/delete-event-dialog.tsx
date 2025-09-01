@@ -76,10 +76,8 @@ export function DeleteEventDialog({
       onDeleteSuccess({ mode: 'single' });
     } catch (error) {
       if (error instanceof ConvexError) {
-        console.log('Error.data:', error.data);
         toast.error(error.data.message);
       } else {
-        console.error('Failed to delete event:', error);
         toast.error('Failed to delete event. Please try again.');
       }
     } finally {
@@ -98,7 +96,6 @@ export function DeleteEventDialog({
       onDeleteSuccess({ mode: 'similar' });
     } catch (error) {
       if (error instanceof ConvexError) {
-        console.log('Error.data:', error.data);
         toast.error(error.data.message);
       } else {
         console.error('Failed to delete event:', error);

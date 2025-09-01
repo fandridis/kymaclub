@@ -60,8 +60,6 @@ export function ClassBookingsDialog({
         }
     }
 
-    console.log('bookings', bookings)
-
     return (
         <DialogOrDrawer open={open} onOpenChange={onOpenChange}>
             <DialogOrDrawerTrigger asChild>{children}</DialogOrDrawerTrigger>

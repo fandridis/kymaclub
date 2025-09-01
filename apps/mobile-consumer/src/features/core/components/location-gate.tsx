@@ -97,14 +97,9 @@ export function LocationGate({ onLocationVerified, onLocationDenied, onBack }: L
 
       const { latitude, longitude } = location.coords;
       const serviceAreaCheck = checkServiceAreaAccess(latitude, longitude);
-
-      console.log('[LocationGate] Service area check:', serviceAreaCheck);
-
       if (serviceAreaCheck.isWithinServiceArea) {
-        console.log('[LocationGate] User is within service area');
         onLocationVerified();
       } else {
-        console.log('[LocationGate] User is outside service area');
         onLocationDenied(location, serviceAreaCheck);
       }
     } catch (error) {

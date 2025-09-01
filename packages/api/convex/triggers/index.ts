@@ -27,8 +27,6 @@ triggers.register("venues", async (ctx, change) => {
         return;
     }
 
-    console.log(`🔥 🔥 🔥 🔥 🔥 🔥 VENUES TRIGGER ${operation} 🔥 🔥 🔥 🔥 🔥 🔥`)
-
     if (operation === "update") {
         if (classInstanceRules.venueChangesRequireInstanceUpdate({ existingVenue: oldDoc, updatedVenue: newDoc })) {
             const instancesToUpdate = await ctx.db
@@ -62,9 +60,6 @@ triggers.register("venues", async (ctx, change) => {
 triggers.register("classTemplates", async (ctx, change) => {
     const { id, oldDoc, newDoc, operation } = change;
 
-
-    console.log(`🔥 🔥 🔥 🔥 🔥 🔥 CLASS TEMPLATE TRIGGER ${operation} 🔥 🔥 🔥 🔥 🔥 🔥`)
-
     if (!oldDoc || !newDoc) {
         return;
     }
@@ -95,9 +90,6 @@ triggers.register("classTemplates", async (ctx, change) => {
 triggers.register("users", async (ctx, change) => {
     const { id, oldDoc, newDoc, operation } = change;
 
-
-    console.log(`🔥 🔥 🔥 🔥 🔥 🔥 USER TRIGGER ${operation} 🔥 🔥 🔥 🔥 🔥 🔥`)
-
     if (!oldDoc || !newDoc) {
         return;
     }
@@ -119,8 +111,6 @@ triggers.register("users", async (ctx, change) => {
 triggers.register("bookings", async (ctx, change) => {
     const { id, oldDoc, newDoc, operation } = change;
 
-    console.log(`🔥 🔥 🔥 🔥 🔥 🔥 BOOKINGS TRIGGER ${operation} 🔥 🔥 🔥 🔥 🔥 🔥`)
-
     if (operation === 'insert') {
         await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleNewClassBookingEvent, {
             payload: {
@@ -136,11 +126,7 @@ triggers.register("bookings", async (ctx, change) => {
     const becameCancelled = newDoc?.status === 'cancelled_by_consumer' || newDoc?.status === 'cancelled_by_business';
     const becameRebookable = oldDoc?.status !== 'cancelled_by_business_rebookable' && newDoc?.status === 'cancelled_by_business_rebookable';
 
-    console.log('🔥🔥🔥 BECOMING CANCELLED: ', becameCancelled);
-    console.log('🔥🔥🔥 BECOMING REBOOKABLE: ', becameRebookable);
-
     if (operation === 'update' && (becameCancelled)) {
-        console.log('🔥🔥🔥 CANCELLED BY: ', newDoc.cancelledBy);
         if (newDoc.cancelledBy === "consumer") {
             await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleUserCancelledBookingEvent, {
                 payload: {
@@ -166,7 +152,6 @@ triggers.register("bookings", async (ctx, change) => {
     }
 
     if (operation === 'update' && becameRebookable) {
-        console.log('🔥🔥🔥 >  handleRebookableBookingEvent calling notification service');
         await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleRebookableBookingEvent, {
             payload: {
                 bookingId: id,
@@ -185,15 +170,7 @@ triggers.register("bookings", async (ctx, change) => {
 triggers.register("subscriptionEvents", async (ctx, change) => {
     const { id, oldDoc, newDoc, operation } = change;
 
-    console.log(`🔥 🔥 🔥 🔥 🔥 🔥 SUBSCRIPTION EVENTS TRIGGER ${operation} 🔥 🔥 🔥 🔥 🔥 🔥`)
-
     if (operation === 'insert' && newDoc && newDoc.creditsAllocated && newDoc.creditsAllocated > 0) {
-        console.log('🔥🔥🔥 Credits allocated in subscription event, triggering notification', {
-            subscriptionEventId: id,
-            creditsAllocated: newDoc.creditsAllocated,
-            eventType: newDoc.eventType
-        });
-
         // Get subscription details to find user ID
         if (newDoc.subscriptionId) {
             const subscription = await ctx.db.get(newDoc.subscriptionId);

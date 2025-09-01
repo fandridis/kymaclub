@@ -1,8 +1,6 @@
 import type { Doc } from '../convex/_generated/dataModel';
 import { PricingResult } from '../types/pricing';
-import { createLogger } from '../utils/logger';
-
-const logger = createLogger('PRICING');
+import { logger } from '../utils/logger';
 
 /**
  * Business logic for dynamic pricing calculations with discount hierarchy
@@ -69,16 +67,16 @@ export const calculateFinalPrice = async (
   instance: Doc<"classInstances">,
   template: Doc<"classTemplates">
 ): Promise<PricingResult> => {
-  logger.debug("Starting price calculation", { 
+  logger.debug("Starting price calculation", {
     instanceId: instance._id,
-    templateId: template._id 
+    templateId: template._id
   });
 
   // Get base price in cents (instance overrides template)
   const basePrice = instance.price || template.price || 1000; // Default 10.00 in business currency (cents)
-  logger.debug("Base price determined", { 
+  logger.debug("Base price determined", {
     basePrice,
-    basePriceFormatted: `${(basePrice/100).toFixed(2)}`,
+    basePriceFormatted: `${(basePrice / 100).toFixed(2)}`,
     priceSource: instance.price ? 'instance' : template.price ? 'template' : 'default'
   });
 
@@ -87,12 +85,12 @@ export const calculateFinalPrice = async (
   const discountAmount = Math.round(basePrice * discountPercentage);
   const finalPrice = basePrice - discountAmount;
 
-  logger.debug("Pricing calculation completed", { 
+  logger.debug("Pricing calculation completed", {
     basePrice,
     discountPercentage: Number((discountPercentage * 100).toFixed(1)),
     discountAmount,
     finalPrice,
-    finalPriceFormatted: `${(finalPrice/100).toFixed(2)}`
+    finalPriceFormatted: `${(finalPrice / 100).toFixed(2)}`
   });
 
   return {
@@ -149,9 +147,9 @@ const calculateDiscount = async (
   instance: Doc<"classInstances">,
   template: Doc<"classTemplates">
 ): Promise<number> => {
-  logger.debug("Checking for applicable discounts", { 
+  logger.debug("Checking for applicable discounts", {
     instanceId: instance._id,
-    startTime: instance.startTime 
+    startTime: instance.startTime
   });
 
   const currentTime = Date.now();
@@ -165,7 +163,7 @@ const calculateDiscount = async (
 
   // Early bird discount (more than 48 hours in advance)
   if (hoursUntilClass > 48) {
-    logger.debug("Early bird discount applied", { 
+    logger.debug("Early bird discount applied", {
       hoursUntilClass: Number(hoursUntilClass.toFixed(2)),
       discountPercentage: 10
     });
@@ -177,15 +175,15 @@ const calculateDiscount = async (
   const bookedCount = (instance as any).bookedCount || 0; // TODO: Add proper typing for bookedCount in schema
   const capacity = (instance as any).capacity || (template as any).capacity || 10; // TODO: Add proper typing for capacity
   const capacityUtilization = bookedCount / capacity;
-  
+
   logger.debug("Capacity analysis", {
     bookedCount,
     capacity,
     capacityUtilization: Number((capacityUtilization * 100).toFixed(1))
   });
-  
+
   if (capacityUtilization < 0.5) {
-    logger.debug("Low capacity discount applied", { 
+    logger.debug("Low capacity discount applied", {
       capacityUtilization: Number((capacityUtilization * 100).toFixed(1)),
       discountPercentage: 5
     });

@@ -15,7 +15,6 @@ const TestEmailProvider: EmailConfig = {
   sendVerificationRequest: async ({ identifier: email, url, provider, token }) => {
     // In test mode, we don't actually send emails
     // Just log for debugging if needed
-    console.log("Test mode: Skipping email send to", email);
   },
   // You might need to add other required fields depending on your version
 };
@@ -34,7 +33,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       return redirectTo;
     },
     async afterUserCreatedOrUpdated(ctx, args) {
-      // console.log('AFTER USER CREATED OR UPDATED', args);
+      // ('AFTER USER CREATED OR UPDATED', args);
     }
   },
 });

@@ -774,10 +774,6 @@ export const testSendClassRebookableNotification = internalMutation({
             classInstanceId: args.classInstanceId
         });
 
-        console.log('Test class_rebookable notification:');
-        console.log('- Direct deep link:', directDeepLink);
-        console.log('- Notification data:', JSON.stringify(notificationContent, null, 2));
-
         // Optionally send the actual push notification
         if (args.sendActualNotification) {
             const { components } = await import("../convex/_generated/api");
@@ -786,7 +782,7 @@ export const testSendClassRebookableNotification = internalMutation({
                 userId: args.userId,
                 notification: notificationContent,
             });
-            console.log('✅ Actual push notification sent!');
+            // ("✅ Actual push notification sent!");
         }
 
         return {
@@ -829,10 +825,6 @@ export const testDeepLinkGeneration = internalMutation({
         };
 
         const deepLink = generateNotificationDeepLink(args.type, data);
-
-        console.log(`Test deep link generation for type: ${args.type}`);
-        console.log(`Data:`, data);
-        console.log(`Result: ${deepLink}`);
 
         return {
             type: args.type,

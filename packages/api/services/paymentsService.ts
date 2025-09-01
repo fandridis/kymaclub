@@ -789,7 +789,7 @@ export const paymentsService = {
 
         // Note: invoice_payment.paid might be a custom event type, handle it with caution
         // case "invoice_payment.paid":
-        //   console.log(`[WEBHOOK DEBUG] 🎯 Invoice payment paid event detected - treating as invoice.payment_succeeded`);  
+        //   // (`[WEBHOOK DEBUG] 🎯 Invoice payment paid event detected - treating as invoice.payment_succeeded`);  
         //   await this.handlePaymentSucceeded(ctx, event);
         //   break;
 
@@ -871,7 +871,6 @@ export const paymentsService = {
       });
 
       databaseSubscriptionId = result.subscriptionId;
-      console.log(`✅ Subscription created atomically: ${databaseSubscriptionId}`);
 
     } catch (error) {
       throw new Error(`Failed to create subscription atomically: ${(error as Error).message}`);
@@ -913,8 +912,6 @@ export const paymentsService = {
         },
         eventType: event.type,
       });
-
-      console.log(`✅ Subscription updated atomically: ${result.subscriptionId}`);
     } catch (error) {
       throw new Error(`Failed to update subscription atomically ${subscription.id}: ${(error as Error).message}`);
     }
@@ -948,8 +945,6 @@ export const paymentsService = {
         },
         eventType: event.type,
       });
-
-      console.log(`✅ Subscription canceled atomically: ${result.subscriptionId}`);
     } catch (error) {
       throw new Error(`Failed to cancel subscription atomically ${subscription.id}: ${(error as Error).message}`);
     }
@@ -1015,8 +1010,6 @@ export const paymentsService = {
             },
           }
         );
-
-        console.log(`✅ Payment processed atomically: Credits ${result.creditsAllocated}, Transaction ${result.creditTransactionId}`);
       }
     } else if (invoice.subscription && invoice.billing_reason === "subscription_update") {
       // This is a subscription update payment (proration) - DO NOT allocate credits
@@ -1160,8 +1153,6 @@ export const paymentsService = {
     const session = event.data.object as Stripe.Checkout.Session;
 
     if (session.metadata?.oneTimePurchase === "true") {
-      console.log(`Processing one-time purchase: session ${session.id}, payment_intent: ${session.payment_intent}`);
-
       if (session.payment_intent) {
         // First, find the pending transaction by session ID and update it with payment intent ID
         await this.updatePendingTransactionWithPaymentIntent(ctx, {
@@ -1174,7 +1165,6 @@ export const paymentsService = {
           stripePaymentIntentId: session.payment_intent as string,
         });
 
-        console.log(`One-time credit purchase completed: ${session.payment_intent}`);
         return result;
       } else {
         console.warn(`No payment_intent found for session ${session.id}`);
@@ -1195,7 +1185,6 @@ export const paymentsService = {
     // This is handled by the creditService.completePurchase method
     // which will update the status based on the payment intent status
 
-    console.log(`One-time payment failed: ${paymentIntent.id}`);
   },
 
   /**
@@ -1217,9 +1206,7 @@ export const paymentsService = {
         stripePaymentIntentId: args.paymentIntentId,
       });
 
-      console.log(`Updated transaction ${transaction._id} with payment intent ${args.paymentIntentId}`);
     } else {
-      console.warn(`No pending transaction found for session ${args.sessionId}`);
     }
   }
 };

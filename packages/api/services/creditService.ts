@@ -40,10 +40,10 @@ export const creditService = {
       status?: "pending" | "completed" | "failed" | "canceled" | "refunded";
     }
   ): Promise<{ newBalance: number; transactionId: Id<"creditTransactions"> }> => {
-    const { 
-      userId, amount, type, reason, description, externalRef, businessId, venueId, 
-      classTemplateId, classInstanceId, bookingId, stripePaymentIntentId, 
-      stripeCheckoutSessionId, packageName, priceInCents, currency, status 
+    const {
+      userId, amount, type, reason, description, externalRef, businessId, venueId,
+      classTemplateId, classInstanceId, bookingId, stripePaymentIntentId,
+      stripeCheckoutSessionId, packageName, priceInCents, currency, status
     } = args;
 
     // Validate amount is positive
@@ -73,7 +73,6 @@ export const creditService = {
       credits: newBalance
     });
 
-    console.log('====================== > reason: ', reason)
     // Log transaction
     const transactionId = await ctx.db.insert("creditTransactions", {
       userId,
@@ -347,29 +346,29 @@ export const creditService = {
     if (startDate) {
       bookingsQuery = ctx.db
         .query("creditTransactions")
-        .withIndex("by_business_type_created", q => 
+        .withIndex("by_business_type_created", q =>
           q.eq("businessId", businessId)
-           .eq("type", "spend")
-           .gte("createdAt", startDate)
+            .eq("type", "spend")
+            .gte("createdAt", startDate)
         );
-      
+
       refundsQuery = ctx.db
         .query("creditTransactions")
-        .withIndex("by_business_type_created", q => 
+        .withIndex("by_business_type_created", q =>
           q.eq("businessId", businessId)
-           .eq("type", "refund")
-           .gte("createdAt", startDate)
+            .eq("type", "refund")
+            .gte("createdAt", startDate)
         );
     } else {
       bookingsQuery = ctx.db
         .query("creditTransactions")
-        .withIndex("by_business_type", q => 
+        .withIndex("by_business_type", q =>
           q.eq("businessId", businessId).eq("type", "spend")
         );
-      
+
       refundsQuery = ctx.db
         .query("creditTransactions")
-        .withIndex("by_business_type", q => 
+        .withIndex("by_business_type", q =>
           q.eq("businessId", businessId).eq("type", "refund")
         );
     }

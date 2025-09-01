@@ -96,7 +96,6 @@ export default function OnboardingWizard() {
   };
 
   const handleFinish = () => {
-    console.log('user onboarded with data:', onboardingData);
     // Add your navigation logic here to mark onboarding as complete
   };
 
@@ -211,8 +210,8 @@ export default function OnboardingWizard() {
   );
 
   const renderActivitiesStep = () => (
-    <ScrollView 
-      showsVerticalScrollIndicator={false} 
+    <ScrollView
+      showsVerticalScrollIndicator={false}
       style={{ maxHeight: SCREEN_HEIGHT * 0.5 }}
       contentContainerStyle={{ paddingBottom: 20 }}
     >
@@ -288,8 +287,8 @@ export default function OnboardingWizard() {
   );
 
   const renderCreditsStep = () => (
-    <ScrollView 
-      showsVerticalScrollIndicator={false} 
+    <ScrollView
+      showsVerticalScrollIndicator={false}
       style={{ maxHeight: SCREEN_HEIGHT * 0.6 }}
       contentContainerStyle={{ paddingBottom: 20 }}
     >
@@ -336,7 +335,7 @@ export default function OnboardingWizard() {
                     <Text style={{ color: 'white', fontSize: 11, fontWeight: 'bold' }}>POPULAR</Text>
                   </View>
                 )}
-                
+
                 {/* Credits Info */}
                 <View style={{ flex: 1 }}>
                   <Text style={{
@@ -380,7 +379,7 @@ export default function OnboardingWizard() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: THEME.background }}>
       <StatusBar barStyle="dark-content" backgroundColor={THEME.background} />
-      
+
       {/* Header */}
       <View style={{
         flexDirection: 'row',
@@ -404,7 +403,7 @@ export default function OnboardingWizard() {
             />
           ))}
         </View>
-        
+
         {/* Skip Button */}
         <TouchableOpacity
           onPress={handleSkip}
@@ -414,10 +413,10 @@ export default function OnboardingWizard() {
             marginLeft: 16
           }}
         >
-          <Text style={{ 
-            color: THEME.textSecondary, 
-            fontSize: 16, 
-            fontWeight: '600' 
+          <Text style={{
+            color: THEME.textSecondary,
+            fontSize: 16,
+            fontWeight: '600'
           }}>Skip</Text>
         </TouchableOpacity>
       </View>

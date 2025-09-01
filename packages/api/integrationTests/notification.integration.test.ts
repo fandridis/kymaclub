@@ -90,8 +90,6 @@ describe('Notification System Integration Tests', () => {
                 paginationOpts: { numItems: 10, cursor: null }
             });
 
-            console.log('#$#$#$% +> notifications', notifications);
-
             expect(notifications.page).toHaveLength(2);
 
             // Find the cancellation notification
@@ -162,8 +160,6 @@ describe('Notification System Integration Tests', () => {
                 classInstanceId: instanceId,
                 description: "My advanced practice session"
             });
-
-            console.log('bookingResult', bookingResult);
 
             // Advance time and wait for scheduled functions
             vi.advanceTimersByTime(1000);

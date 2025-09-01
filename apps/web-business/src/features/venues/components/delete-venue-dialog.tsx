@@ -19,7 +19,6 @@ export function DeleteVenueDialog({ venue, hideTrigger, isOpen, onClose }: { ven
             onClose();
         } catch (error) {
             if (error instanceof ConvexError) {
-                console.log('error', error.data);
                 toast.error(error.data.message);
             } else {
                 toast.error("Failed to delete venue");

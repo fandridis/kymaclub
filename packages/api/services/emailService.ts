@@ -65,11 +65,8 @@ export const emailService = {
                 replyTo: ["support@orcavo.com"],
             });
 
-            console.log(`✅ Email sent successfully - EmailId: ${emailId}`);
             return { emailId, success: true };
-
         } catch (error) {
-            console.error("Failed to send booking notification email:", error);
             throw new ConvexError({
                 message: "Failed to send email notification",
                 code: ERROR_CODES.UNKNOWN_ERROR
@@ -113,11 +110,9 @@ export const emailService = {
                 replyTo: ["support@orcavo.com"],
             });
 
-            console.log(`✅ Booking confirmation email sent - EmailId: ${emailId}`);
             return { emailId, success: true };
 
         } catch (error) {
-            console.error("Failed to send booking confirmation email:", error);
             throw new ConvexError({
                 message: "Failed to send confirmation email",
                 code: ERROR_CODES.UNKNOWN_ERROR
@@ -158,7 +153,6 @@ export const emailService = {
                 replyTo: ["support@orcavo.com"],
             });
 
-            console.log(`✅ Class cancellation email sent - EmailId: ${emailId}`);
             return { emailId, success: true };
 
         } catch (error) {
@@ -205,10 +199,8 @@ export const emailService = {
     }): Promise<{ success: boolean }> => {
         try {
             await resend.cancelEmail(ctx, emailId);
-            console.log(`✅ Email cancelled successfully - EmailId: ${emailId}`);
             return { success: true };
         } catch (error) {
-            console.error("Failed to cancel email:", error);
             return { success: false };
         }
     },
@@ -245,11 +237,8 @@ export const emailService = {
                 html: htmlContent,
             });
 
-            console.log(`✅ Test email sent - EmailId: ${emailId}`);
             return { emailId, success: true };
-
         } catch (error) {
-            console.error("Failed to send test email:", error);
             throw new ConvexError({
                 message: "Failed to send test email",
                 code: ERROR_CODES.UNKNOWN_ERROR
@@ -275,7 +264,7 @@ export const emailService = {
         };
     }): Promise<{ emailId: string; success: boolean }> => {
         try {
-            const subject = args.isRenewal 
+            const subject = args.isRenewal
                 ? `Your monthly credits have arrived! 🎉`
                 : `Welcome! Your subscription credits are ready 🚀`;
 
@@ -310,10 +299,10 @@ export const emailService = {
                     <div style="background: #EFF6FF; border-left: 4px solid #3B82F6; padding: 20px; margin: 24px 0; border-radius: 4px;">
                         <h4 style="color: #1E40AF; margin: 0 0 8px 0; font-size: 16px;">💡 Pro Tip</h4>
                         <p style="color: #1E40AF; margin: 0; font-size: 14px;">
-                            ${args.isRenewal 
-                                ? 'Your credits renew monthly, so make sure to use them before your next billing cycle!'
-                                : 'Welcome to KymaClub! Use your credits to book amazing fitness classes across the city.'
-                            }
+                            ${args.isRenewal
+                        ? 'Your credits renew monthly, so make sure to use them before your next billing cycle!'
+                        : 'Welcome to KymaClub! Use your credits to book amazing fitness classes across the city.'
+                    }
                         </p>
                     </div>
 
@@ -334,7 +323,6 @@ export const emailService = {
                 replyTo: ["support@orcavo.com"],
             });
 
-            console.log(`✅ Credits received email sent - EmailId: ${emailId}`);
             return { emailId, success: true };
 
         } catch (error) {

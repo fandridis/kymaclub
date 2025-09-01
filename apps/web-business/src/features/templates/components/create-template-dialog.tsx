@@ -251,7 +251,6 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
             onClose?.();
         } catch (error) {
             if (error instanceof ConvexError) {
-                console.log('Error.data:', error.data);
                 toast.error(error.data.message);
             } else {
                 console.error(`Error ${isEditMode ? 'updating' : 'creating'} class template:`, error);
@@ -263,8 +262,6 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
     };
 
     const formData = form.watch();
-
-    console.log('colors', TEMPLATE_COLORS);
 
 
     return (

@@ -76,13 +76,6 @@ export function RegisterForm({ onSuccess, onBack }: RegisterFormProps) {
             // Mock registration - replace with actual API call
             await new Promise(resolve => setTimeout(resolve, 2000));
 
-            console.log('[RegisterScreen] Registration data:', {
-                fullName,
-                email,
-                phoneNumber,
-                password: '***',
-            });
-
             // Mock successful registration
             Alert.alert(
                 'Welcome to KymaClub! 🎉',

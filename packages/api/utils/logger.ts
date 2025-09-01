@@ -2,129 +2,220 @@
  * Centralized logging utility for the API backend
  * 
  * Provides structured logging with different levels and contexts.
- * Replaces console.log statements throughout the codebase for better 
- * debugging, monitoring, and production readiness.
- * 
- * @example
- * import { logger } from '../utils/logger';
- * 
- * logger.info('User authenticated', { userId, businessId });
- * logger.error('Payment failed', { error, paymentId });
- * logger.debug('Processing booking', { bookingData });
+ * Features:
+ * - Functional approach with composable functions
+ * - Structured JSON output in production
+ * - Pretty console output in development
+ * - Performance tracking
+ * - Error serialization
+ * - Log sampling for high-volume scenarios
  */
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 export type LogContext = Record<string, any>;
 
-class Logger {
-  private isDevelopment = process.env.NODE_ENV !== 'production';
+interface LogEntry {
+  timestamp: string;
+  level: LogLevel;
+  message: string;
+  module?: string;
+  context?: LogContext;
+  duration?: number;
+}
 
-  private formatMessage(level: LogLevel, message: string, context?: LogContext, module?: string): string {
-    const timestamp = new Date().toISOString();
-    const levelEmoji = this.getLevelEmoji(level);
-    const modulePrefix = module ? `[${module}] ` : '';
-    const contextString = context ? ` ${JSON.stringify(context)}` : '';
+interface LoggerConfig {
+  isDevelopment?: boolean;
+  minLevel?: LogLevel;
+  sampleRate?: number; // 0-1, for sampling in production
+  prettify?: boolean;
+}
 
-    return `${levelEmoji} ${timestamp} ${modulePrefix}${message}${contextString}`;
+// Level hierarchy for filtering
+const LOG_LEVELS: Record<LogLevel, number> = {
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3,
+};
+
+// Pure functions for formatting and filtering
+const getLevelEmoji = (level: LogLevel): string => {
+  const emojis: Record<LogLevel, string> = {
+    debug: '🔍',
+    info: 'ℹ️',
+    warn: '⚠️',
+    error: '❌',
+  };
+  return emojis[level];
+};
+
+const createTimestamp = (): string => new Date().toISOString();
+
+const shouldLog = (level: LogLevel, config: LoggerConfig): boolean => {
+  const minLevel = config.minLevel || (config.isDevelopment ? 'debug' : 'info');
+
+  // Check level threshold
+  if (LOG_LEVELS[level] < LOG_LEVELS[minLevel]) {
+    return false;
   }
 
-  private getLevelEmoji(level: LogLevel): string {
-    switch (level) {
-      case 'debug': return '🔍';
-      case 'info': return 'ℹ️';
-      case 'warn': return '⚠️';
-      case 'error': return '❌';
-      default: return 'ℹ️';
-    }
+  // Apply sampling for non-error logs in production
+  if (!config.isDevelopment && level !== 'error' && config.sampleRate) {
+    return Math.random() < config.sampleRate;
   }
 
-  private shouldLog(level: LogLevel): boolean {
-    if (this.isDevelopment) {
-      return true; // Log everything in development
-    }
+  return true;
+};
 
-    // In production, only log info, warn, and error
-    return level !== 'debug';
+// Error serialization helper
+const serializeError = (error: unknown): LogContext => {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      ...(error as any), // Include any custom properties
+    };
   }
+  return { error: String(error) };
+};
 
-  private log(level: LogLevel, message: string, context?: LogContext, module?: string): void {
-    if (!this.shouldLog(level)) {
+// Format for development (pretty console output)
+const formatDevelopment = (entry: LogEntry): string => {
+  const emoji = getLevelEmoji(entry.level);
+  const modulePrefix = entry.module ? `[${entry.module}] ` : '';
+  const contextString = entry.context
+    ? '\n' + JSON.stringify(entry.context, null, 2)
+    : '';
+  const durationString = entry.duration !== undefined
+    ? ` (${entry.duration}ms)`
+    : '';
+
+  return `${emoji} ${entry.timestamp} ${modulePrefix}${entry.message}${durationString}${contextString}`;
+};
+
+// Format for production (structured JSON)
+const formatProduction = (entry: LogEntry): string => {
+  return JSON.stringify({
+    ...entry,
+    pid: process.pid,
+    hostname: process.env.HOSTNAME,
+  });
+};
+
+// Main logger factory
+const createLogger = (config: LoggerConfig = {}): Logger => {
+  const defaultConfig: LoggerConfig = {
+    isDevelopment: process.env.NODE_ENV !== 'production',
+    minLevel: config.isDevelopment ? 'debug' : 'info',
+    sampleRate: 1.0,
+    prettify: config.isDevelopment !== false,
+    ...config,
+  };
+
+  const log = (level: LogLevel, message: string, context?: LogContext, module?: string): void => {
+    if (!shouldLog(level, defaultConfig)) {
       return;
     }
 
-    const formattedMessage = this.formatMessage(level, message, context, module);
-
-    switch (level) {
-      case 'debug':
-      case 'info':
-        console.log(formattedMessage);
-        break;
-      case 'warn':
-        console.warn(formattedMessage);
-        break;
-      case 'error':
-        console.error(formattedMessage);
-        break;
-    }
-  }
-
-  /**
-   * Log debug information (development only)
-   * @param message - The debug message
-   * @param context - Additional context data
-   * @param module - Module name for identification
-   */
-  debug(message: string, context?: LogContext, module?: string): void {
-    this.log('debug', message, context, module);
-  }
-
-  /**
-   * Log general information
-   * @param message - The info message
-   * @param context - Additional context data
-   * @param module - Module name for identification
-   */
-  info(message: string, context?: LogContext, module?: string): void {
-    this.log('info', message, context, module);
-  }
-
-  /**
-   * Log warning messages
-   * @param message - The warning message
-   * @param context - Additional context data
-   * @param module - Module name for identification
-   */
-  warn(message: string, context?: LogContext, module?: string): void {
-    this.log('warn', message, context, module);
-  }
-
-  /**
-   * Log error messages
-   * @param message - The error message
-   * @param context - Additional context data
-   * @param module - Module name for identification
-   */
-  error(message: string, context?: LogContext, module?: string): void {
-    this.log('error', message, context, module);
-  }
-
-  /**
-   * Create a module-specific logger
-   * @param module - Module name
-   * @returns Logger instance with pre-set module context
-   */
-  createModuleLogger(module: string) {
-    return {
-      debug: (message: string, context?: LogContext) => this.debug(message, context, module),
-      info: (message: string, context?: LogContext) => this.info(message, context, module),
-      warn: (message: string, context?: LogContext) => this.warn(message, context, module),
-      error: (message: string, context?: LogContext) => this.error(message, context, module),
+    const entry: LogEntry = {
+      timestamp: createTimestamp(),
+      level,
+      message,
+      module,
+      context,
     };
-  }
+
+    const formatted = defaultConfig.prettify
+      ? formatDevelopment(entry)
+      : formatProduction(entry);
+
+    // Use appropriate console method
+    const consoleMethods: Record<LogLevel, typeof console.log> = {
+      debug: console.log,
+      info: console.log,
+      warn: console.warn,
+      error: console.error,
+    };
+
+    consoleMethods[level](formatted);
+  };
+
+  // Timer utility for performance tracking
+  const timer = (label: string, module?: string) => {
+    const start = Date.now();
+    return {
+      end: (context?: LogContext) => {
+        const duration = Date.now() - start;
+        log('info', `${label} completed`, { ...context, duration }, module);
+        return duration;
+      },
+    };
+  };
+
+  // Batch logging for multiple related entries
+  const batch = (entries: Array<{ level: LogLevel; message: string; context?: LogContext }>, module?: string): void => {
+    entries.forEach(({ level, message, context }) => {
+      log(level, message, context, module);
+    });
+  };
+
+  return {
+    debug: (message: string, context?: LogContext) => log('debug', message, context),
+    info: (message: string, context?: LogContext) => log('info', message, context),
+    warn: (message: string, context?: LogContext) => log('warn', message, context),
+    error: (message: string, error?: unknown, context?: LogContext) => {
+      const errorContext = error ? { ...serializeError(error), ...context } : context;
+      log('error', message, errorContext);
+    },
+    timer,
+    batch,
+    // Create a child logger with a specific module context
+    child: (module: string): Logger => ({
+      debug: (message: string, context?: LogContext) => log('debug', message, context, module),
+      info: (message: string, context?: LogContext) => log('info', message, context, module),
+      warn: (message: string, context?: LogContext) => log('warn', message, context, module),
+      error: (message: string, error?: unknown, context?: LogContext) => {
+        const errorContext = error ? { ...serializeError(error), ...context } : context;
+        log('error', message, errorContext, module);
+      },
+      timer: (label: string) => timer(label, module),
+      batch: (entries) => batch(entries, module),
+      child: (subModule: string) => createLogger(config).child(`${module}:${subModule}`),
+    }),
+  };
+};
+
+// Logger type definition
+export interface Logger {
+  debug: (message: string, context?: LogContext) => void;
+  info: (message: string, context?: LogContext) => void;
+  warn: (message: string, context?: LogContext) => void;
+  error: (message: string, error?: unknown, context?: LogContext) => void;
+  timer: (label: string) => { end: (context?: LogContext) => number };
+  batch: (entries: Array<{ level: LogLevel; message: string; context?: LogContext }>) => void;
+  child: (module: string) => Logger;
 }
 
-// Export singleton instance
-export const logger = new Logger();
+// Export singleton instance with default config
+export const logger = createLogger();
 
-// Export factory function for module-specific loggers
-export const createLogger = (module: string) => logger.createModuleLogger(module);
+// Export factory for custom configurations
+export { createLogger };
+
+// Utility functions for common logging patterns
+export const logAsync = async <T>(
+  promise: Promise<T>,
+  successMsg: string,
+  errorMsg: string,
+  context?: LogContext
+): Promise<T> => {
+  try {
+    const result = await promise;
+    logger.info(successMsg, context);
+    return result;
+  } catch (error) {
+    logger.error(errorMsg, error, context);
+    throw error;
+  }
+};

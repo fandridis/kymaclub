@@ -24,21 +24,15 @@ import {
     useSidebar,
 } from '@/components/ui/sidebar'
 import { useAuthActions } from '@convex-dev/auth/react'
-import { useAuthStore } from '@/components/stores/auth'
+import { useAuthStore, useCurrentUser } from '@/components/stores/auth'
 
-export function NavUser({
-    user,
-}: {
-    user: {
-        name: string
-        email: string
-        avatar: string
-    }
-}) {
+export function NavUser() {
+    const { user } = useCurrentUser()
     const { signOut } = useAuthActions();
     const { logout } = useAuthStore();
     const { isMobile } = useSidebar()
 
+    const initials = user?.name?.split(' ').map(name => name.charAt(0)).join('').toUpperCase()
     return (
         <SidebarMenu>
             <SidebarMenuItem>
@@ -49,8 +43,8 @@ export function NavUser({
                             className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
                         >
                             <Avatar className='h-8 w-8 rounded-lg'>
-                                <AvatarImage src={user.avatar} alt={user.name} />
-                                <AvatarFallback className='rounded-lg'>SN</AvatarFallback>
+                                <AvatarImage src={user.image} alt={user.name} />
+                                <AvatarFallback className='rounded-lg'>{initials}</AvatarFallback>
                             </Avatar>
                             <div className='grid flex-1 text-left text-sm leading-tight'>
                                 <span className='truncate font-semibold'>{user.name}</span>
@@ -68,8 +62,8 @@ export function NavUser({
                         <DropdownMenuLabel className='p-0 font-normal'>
                             <div className='flex items-center gap-2 px-1 py-1.5 text-left text-sm'>
                                 <Avatar className='h-8 w-8 rounded-lg'>
-                                    <AvatarImage src={user.avatar} alt={user.name} />
-                                    <AvatarFallback className='rounded-lg'>SN</AvatarFallback>
+                                    <AvatarImage src={user.image} alt={user.name} />
+                                    <AvatarFallback className='rounded-lg'>{initials}</AvatarFallback>
                                 </Avatar>
                                 <div className='grid flex-1 text-left text-sm leading-tight'>
                                     <span className='truncate font-semibold'>{user.name}</span>

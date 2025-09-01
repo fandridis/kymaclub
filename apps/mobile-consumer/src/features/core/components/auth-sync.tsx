@@ -13,8 +13,6 @@ export function AuthSync({ children }: AuthSyncProps) {
 
     const setUser = useAuthStore(state => state.setUser)
 
-    console.log('[AuthSync] renders: ', currentUser?._id)
-
     useEffect(() => {
         if (userQuery === undefined) {
             return

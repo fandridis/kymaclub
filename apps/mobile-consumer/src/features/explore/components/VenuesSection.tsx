@@ -23,10 +23,7 @@ export const VenuesSection = ({ venues, storageIdToUrl, userLocation, filters, i
     const { t } = useTypedTranslation();
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
-    console.log('VenuesSection received storageIdToUrl:', storageIdToUrl);
-
     const renderVenueItem = useCallback(({ item }: { item: Doc<'venues'> }) => {
-        console.log('FlashList rendering item:', item.name);
         return (
             <VenueCard
                 venue={item}
@@ -47,7 +44,6 @@ export const VenuesSection = ({ venues, storageIdToUrl, userLocation, filters, i
         );
     }
 
-    console.log('venues.length: ', venues.length);
     return (
         <FlashList
             data={venues}

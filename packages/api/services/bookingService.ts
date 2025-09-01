@@ -508,26 +508,13 @@ export const bookingService = {
             return { bookingId: existing._id, transactionId: existing.creditTransactionId || `${existing._id}` };
         }
 
-        // Calculate best available discount
-        console.log(`🔍 BOOKING DEBUG - Starting discount calculation for class ${template.name}`);
-        console.log(`🔍 Instance price: ${instance.price}, Template price: ${template.price}`);
-        console.log(`🔍 Instance discount rules:`, instance.discountRules);
-        console.log(`🔍 Template discount rules:`, template.discountRules);
-        
         const discountResult = calculateBestDiscount(instance, template, { bookingTime: now });
         const { originalPrice, finalPrice, appliedDiscount } = discountResult;
-        
-        console.log(`🔍 DISCOUNT RESULT:`, {
-            originalPrice,
-            finalPrice,
-            appliedDiscount,
-            bookingTime: now,
-            classStartTime: instance.startTime,
-            hoursUntilClass: (instance.startTime - now) / (1000 * 60 * 60)
-        });
+
+
 
         if (!Number.isFinite(originalPrice) || originalPrice <= 0) {
-            console.error(`❌ Invalid original price: ${originalPrice}`);
+
             throw new ConvexError({
                 message: "Invalid original price for class",
                 field: "originalPrice",
@@ -536,7 +523,7 @@ export const bookingService = {
         }
 
         if (!Number.isFinite(finalPrice) || finalPrice < 0) {
-            console.error(`❌ Invalid final price: ${finalPrice}`);
+
             throw new ConvexError({
                 message: "Invalid final price after discount calculation",
                 field: "finalPrice",
@@ -544,7 +531,7 @@ export const bookingService = {
             });
         }
 
-        console.log('instance.cancellationWindowHours', instance.cancellationWindowHours);
+
 
         // Create booking row first with user metadata for business owners
         const bookingId = await ctx.db.insert("bookings", {
@@ -583,11 +570,11 @@ export const bookingService = {
         // Handle credit spending - skip if class is free after discount
         let transactionId: string;
         let newBalance: number | undefined;
-        
-        console.log(`💳 CREDIT SPEND - About to spend ${finalPrice} credits for user ${user._id}`);
-        
+
+
+
         if (finalPrice === 0) {
-            console.log(`🎉 Free class booking! Final price is 0, skipping credit spending.`);
+
             // For free bookings, create a placeholder transaction ID
             transactionId = `free_booking_${bookingId}`;
             newBalance = undefined; // Credit balance unchanged
@@ -790,10 +777,10 @@ export const bookingService = {
             });
 
         } else {
-            console.log(`ℹ️ NO REFUND NEEDED - RefundAmount: ${refundAmount}`);
+
         }
 
-        console.log(`✅ CANCEL BOOKING COMPLETED - BookingId: ${args.bookingId}, RefundGiven: ${refundAmount > 0 ? `${refundAmount} credits` : 'None'}, Status: cancelled`);
+
 
         return { success: true };
     },

@@ -104,7 +104,6 @@ export function SettingsCreditsScreen() {
             text: 'Confirm',
             onPress: () => {
               // TODO: Implement subscription update
-              console.log('Update subscription to:', selectedSubscription);
               Alert.alert('Success', 'Subscription updated successfully!');
             }
           }
@@ -123,7 +122,6 @@ export function SettingsCreditsScreen() {
           text: 'Purchase',
           onPress: () => {
             // TODO: Implement credit purchase
-            console.log('Purchase credits:', credits);
             Alert.alert('Success', `${credits} credits purchased successfully!`);
           }
         }
@@ -173,8 +171,8 @@ export function SettingsCreditsScreen() {
               <View style={styles.titleRow}>
                 <CrownIcon size={20} color={theme.colors.emerald[600]} />
                 <Text style={styles.subscriptionTitle}>
-                  {currentSubscription.isActive 
-                    ? `${currentSubscription.credits} credits / month` 
+                  {currentSubscription.isActive
+                    ? `${currentSubscription.credits} credits / month`
                     : 'Inactive subscription'}
                 </Text>
               </View>
@@ -229,16 +227,16 @@ export function SettingsCreditsScreen() {
                   maximumTrackTintColor={theme.colors.zinc[300]}
                   thumbTintColor={theme.colors.emerald[600]}
                 />
-                
+
                 {/* Step markers */}
                 <View style={styles.stepMarkers}>
                   {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((step, index) => (
                     <View key={step} style={styles.stepMarker}>
-                      <View 
+                      <View
                         style={[
                           styles.stepDot,
                           selectedSubscription === step && styles.stepDotActive
-                        ]} 
+                        ]}
                       />
                       <Text style={[
                         styles.stepLabel,
@@ -253,9 +251,9 @@ export function SettingsCreditsScreen() {
             ) : (
               /* Custom Step Selector */
               <View style={styles.stepSelectorWrapper}>
-                <ScrollView 
+                <ScrollView
                   ref={scrollViewRef}
-                  horizontal 
+                  horizontal
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.stepScrollContent}
                   style={styles.stepScrollView}
@@ -292,8 +290,8 @@ export function SettingsCreditsScreen() {
         )}
 
         {/* One-time Purchase Section */}
-        <SettingsHeader 
-          title="Buy Credits (One-time)" 
+        <SettingsHeader
+          title="Buy Credits (One-time)"
           subtitle="Credits last 90 days from purchase"
         />
         <View style={styles.creditPacksGrid}>

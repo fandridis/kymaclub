@@ -260,7 +260,6 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
             onClose?.();
         } catch (error) {
             if (error instanceof ConvexError) {
-                console.log('Error.data:', error.data);
                 toast.error(error.data.message);
             } else {
                 console.error(`Error ${isEditMode ? 'updating' : 'creating'} venue:`, error);

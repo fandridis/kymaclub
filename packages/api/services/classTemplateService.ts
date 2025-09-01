@@ -14,9 +14,6 @@ export const classTemplateService = {
      * Create a new class template
      */
     create: async ({ ctx, args, user }: { ctx: MutationCtx, args: CreateClassTemplateArgs, user: Doc<"users"> }): Promise<{ createdTemplateId: Id<"classTemplates"> }> => {
-        console.log("📚 --- SERVICE: classTemplateService.create ---");
-        console.log("📚 Creating template for user:", user._id);
-
         coreRules.userMustBeAssociatedWithBusiness(user);
 
         const cleanTemplate = classTemplateOperations.prepareCreateTemplate(args);
@@ -53,8 +50,6 @@ export const classTemplateService = {
      * Update an existing class template
      */
     update: async ({ ctx, args, user }: { ctx: MutationCtx, args: UpdateClassTemplateArgs, user: Doc<"users"> }): Promise<{ updatedTemplateId: Id<"classTemplates"> }> => {
-        console.log("📚 --- SERVICE: classTemplateService.update ---");
-        console.log("📚 Updating template:", args.templateId);
 
         const existingTemplate = await ctx.db.get(args.templateId);
         classTemplateRules.userMustBeTemplateOwner(existingTemplate!, user);
@@ -86,7 +81,6 @@ export const classTemplateService = {
             updatedBy: user._id,
         });
 
-        console.log("🔥🔥🔥 SERVICE: classTemplateService.update - Completed 🔥🔥🔥")
 
         return { updatedTemplateId: args.templateId };
     },
@@ -195,7 +189,6 @@ export const classTemplateService = {
 
         // Return null if template doesn't exist (hard deleted or never existed)
         if (!template) {
-            console.log("📚 SERVICE: classTemplateService.getTemplateById - Template not found, returning null");
             return null;
         }
 
@@ -203,7 +196,6 @@ export const classTemplateService = {
 
         // Return null if template is soft-deleted
         if (template.deleted) {
-            console.log("📚 SERVICE: classTemplateService.getTemplateById - Template is deleted, returning null");
             return null;
         }
 
@@ -262,7 +254,6 @@ export const classTemplateService = {
         args: { venueId: Id<"venues"> },
         user: Doc<"users">
     }): Promise<Doc<"classTemplates">[]> => {
-        console.log("📚 --- SERVICE: classTemplateService.getTemplatesByVenue ---");
 
         coreRules.userMustBeAssociatedWithBusiness(user);
 
@@ -296,7 +287,6 @@ export const classTemplateService = {
         cancelledInstances: number;
         avgBookedCount: number;
     }> => {
-        console.log("📚 --- SERVICE: classTemplateService.getTemplateUsageStats ---");
 
         coreRules.userMustBeAssociatedWithBusiness(user);
 

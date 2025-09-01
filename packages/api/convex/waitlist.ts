@@ -13,27 +13,13 @@ export const submitToWaitlist = mutation({
     isManualEntry: v.boolean(),
   },
   handler: async (ctx, args) => {
-    console.log('[Waitlist] Submission received:', {
-      email: args.email,
-      city: args.selectedCity,
-      hasLocation: !!args.currentLocation,
-      isManual: args.isManualEntry,
-    });
-
     // For now, just log the waitlist submission
     // In a real implementation, you would:
     // 1. Store in a waitlist table
     // 2. Send confirmation email
     // 3. Notify admin team
-    
-    const timestamp = new Date().toISOString();
-    console.log(`[Waitlist] ${timestamp} - New waitlist entry:`, {
-      email: args.email,
-      city: args.selectedCity,
-      location: args.currentLocation,
-      manual: args.isManualEntry,
-    });
 
+    const timestamp = new Date().toISOString();
     // Simulate success response
     return {
       success: true,

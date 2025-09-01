@@ -27,7 +27,6 @@ const languageDetector = {
             const phoneLanguage = Localization.getLocales()[0].languageCode ?? 'en';
             callback(phoneLanguage);
         } catch (error) {
-            console.log('Error reading language', error);
             callback('en');
         }
     },
@@ -36,7 +35,6 @@ const languageDetector = {
         try {
             appStorage.setAppValue('userLanguage', language);
         } catch (error) {
-            console.log('Error saving language', error);
         }
     }
 };

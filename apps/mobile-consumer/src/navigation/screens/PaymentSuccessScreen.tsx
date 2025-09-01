@@ -13,8 +13,6 @@ export function PaymentSuccessScreen() {
   const { session_id, type } = route.params;
 
   useEffect(() => {
-    console.log('[PaymentSuccess] Session ID:', session_id, 'Type:', type);
-
     // TODO: You might want to verify the payment status with your backend here
     // For now, we'll just show the success screen
 

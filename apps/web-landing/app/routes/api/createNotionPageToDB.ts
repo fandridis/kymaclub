@@ -318,7 +318,6 @@ export async function action({ request, context }: Route.ActionArgs) {
     }
 
     const newPage = (await response.json()) as NotionPageResponse;
-    console.log("Successfully created Notion page:", newPage.id);
 
     return new Response(
       JSON.stringify({

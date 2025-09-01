@@ -6,8 +6,6 @@ export const Route = createFileRoute('/_auth/dashboard')({
 })
 
 function DashboardComponent() {
-  console.log('[_auth.dashboard.tsx] renders');
-
   return <div className="p-2">Hello from Dashboard! <SignOutButton /></div>
 }
 

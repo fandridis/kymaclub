@@ -40,7 +40,6 @@ export const sendBookingNotificationEmail = internalAction({
                 }
             });
 
-            console.log(`✅ Booking notification email queued successfully - EmailId: ${result.emailId}`);
             return {
                 success: true,
                 emailSent: true,
@@ -49,7 +48,6 @@ export const sendBookingNotificationEmail = internalAction({
             };
 
         } catch (error) {
-            console.error("Failed to send booking notification email:", error);
             return {
                 success: false,
                 emailSent: false,
@@ -89,7 +87,6 @@ export const sendBookingConfirmationEmail = internalAction({
                 }
             });
 
-            console.log(`✅ Booking confirmation email queued successfully - EmailId: ${result.emailId}`);
             return {
                 success: true,
                 emailSent: true,
@@ -128,7 +125,6 @@ export const sendTestEmail = internalAction({
                 }
             });
 
-            console.log(`✅ Test email queued successfully - EmailId: ${result.emailId}`);
             return {
                 success: true,
                 emailSent: true,
@@ -173,7 +169,6 @@ export const sendCreditsReceivedEmail = internalAction({
                 }
             });
 
-            console.log(`✅ Credits received email queued successfully - EmailId: ${result.emailId}`);
             return {
                 success: true,
                 emailSent: true,

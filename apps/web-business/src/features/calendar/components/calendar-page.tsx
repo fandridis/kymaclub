@@ -82,9 +82,6 @@ export function CalendarPage({ startDate, classInstances, user }: CalendarPagePr
             open: true,
             classInstance: classInstance
         });
-
-
-        console.log('Gotta view bookings for', classInstance)
     };
 
     const preparedCalendarEvents = useMemo(() => {

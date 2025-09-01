@@ -42,7 +42,6 @@ export const BookingCard = ({ booking, onCancel, onViewClass, isCanceling = fals
 
   // Calculate cancellation window information
   const cancellationInfo = useMemo(() => {
-    console.log('booking.classInstanceSnapshot?.cancellationWindowHours', booking.classInstanceSnapshot?.cancellationWindowHours);
     if (!startTime || !booking.classInstanceSnapshot?.cancellationWindowHours) {
       return null;
     }

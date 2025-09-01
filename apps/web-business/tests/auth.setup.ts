@@ -5,8 +5,6 @@ setup('create test users', async ({ request }) => {
     // If you have an API endpoint to create test users
     // await request.post('/api/seed-test-users');
 
-    console.log('[auth.setup] process.env.CONVEX_URL: ', process.env.VITE_CONVEX_URL);
-
     // Or use Convex HTTP endpoint
     await request.post(`${process.env.CONVEX_URL}/createTestUser`, {
         data: {

@@ -17,7 +17,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const { state, isMobile } = useSidebar()
 
     const isCollapsed = state === 'collapsed'
-    console.log(': ', isCollapsed)
 
     return (
         <Sidebar collapsible='icon' variant='floating' {...props}>
@@ -40,7 +39,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 ))}
             </SidebarContent>
             <SidebarFooter>
-                <NavUser user={sidebarData.user} />
+                <NavUser />
             </SidebarFooter>
             <SidebarRail />
         </Sidebar>

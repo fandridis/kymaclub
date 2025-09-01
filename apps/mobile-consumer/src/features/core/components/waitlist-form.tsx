@@ -109,7 +109,6 @@ export function WaitlistForm({ userLocation, serviceAreaCheck, onSubmit, onBack 
         isManualEntry: !userLocation || !!userLocation.mocked,
       };
 
-      console.log('[WaitlistForm] Submitting waitlist data:', waitlistData);
       await onSubmit(waitlistData);
     } catch (error) {
       console.error('[WaitlistForm] Error submitting:', error);

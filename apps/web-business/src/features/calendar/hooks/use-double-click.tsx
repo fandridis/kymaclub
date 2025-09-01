@@ -13,7 +13,7 @@ interface UseDoubleClickOptions {
  * 
  * @example
  * const handleClick = useDoubleClick((id) => {
- *   console.log(`Double clicked on item ${id}`);
+ *    // (`Double clicked on item ${id}`);
  * });
  * 
  * // In your component

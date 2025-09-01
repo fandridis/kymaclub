@@ -42,12 +42,8 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
   const [selectedVenue, setSelectedVenue] = useState<VenueWithCoordinate | null>(null);
   const [isSheetVisible, setIsSheetVisible] = useState(false);
 
-  console.log('ExploreMapView storageIdToUrl:', storageIdToUrl);
-  console.log('ExploreMapView venues:', venues?.length);
-
   // Early return if required props are missing
   if (!storageIdToUrl || !venues) {
-    console.log('ExploreMapView: Missing required props, showing loading...');
     return (
       <View style={styles.container}>
         <ActivityIndicator size="large" color="#ff4747" />
@@ -203,9 +199,6 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
     }
     return `${distance.toFixed(1)}km`;
   };
-
-
-  console.log('selected: ', selectedVenue?.rating);
 
   return (
     <View style={styles.container}>

@@ -140,31 +140,24 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
   // Handle notification interactions (when user taps on a notification)
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('[Notification] Response received:', response);
-
       const data = response.notification.request.content.data;
 
       // Handle deep link from notification data
       if (data?.deepLink && navigationRef.isReady()) {
-        console.log('[Notification] Navigating to deep link:', data.deepLink);
-
         const parsedLink = parseDeepLink(data.deepLink as string);
         if (parsedLink) {
           // Check if user is authenticated for protected routes
           if (needsAuthentication(parsedLink.route)) {
             if (user?._id) {
-              console.log('[Notification] User authenticated, navigating to protected route');
               // @ts-ignore - navigation types are complex with nested navigators
               navigationRef.navigate(parsedLink.route, parsedLink.params);
             } else {
-              console.log('[Notification] User not authenticated, storing pending deep link and navigating to auth');
               // Store the pending deep link and navigate to sign-in
               useAuthStore.getState().setPendingDeepLink(data.deepLink as string);
               navigationRef.navigate('SignInModal' as never);
             }
           } else {
             // Public routes can be navigated to directly
-            console.log('[Notification] Navigating to public route');
             // @ts-ignore - navigation types are complex with nested navigators
             navigationRef.navigate(parsedLink.route, parsedLink.params);
           }
@@ -178,7 +171,6 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
   // Handle notification received while app is in foreground
   useEffect(() => {
     const subscription = Notifications.addNotificationReceivedListener(notification => {
-      console.log('[Notification] Received while app in foreground:', notification);
       // Notification is automatically displayed by the handler we set above
     });
 
@@ -188,7 +180,6 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
   // Initialize i18n
   useEffect(() => {
     const handleLanguageChange = (lng: string) => {
-      console.log('Language changed to:', lng);
     };
 
     i18n.on('languageChanged', handleLanguageChange);
@@ -198,7 +189,6 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
   // Handle splash screen
   useEffect(() => {
     if (!isLoading && !appReady) {
-      console.log('[App] Auth state determined, hiding splash screen');
       onReady();
       setAppReady(true);
     }
@@ -282,9 +272,7 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
             },
           },
         }}
-        onReady={() => {
-          console.log('[App] Navigation ready');
-        }}
+        onReady={() => { }}
       >
         <RootNavigator />
       </NavigationContainer>
@@ -346,7 +334,6 @@ async function registerForPushNotificationsAsync() {
           projectId,
         })
       ).data;
-      console.log(pushTokenString);
       return pushTokenString;
     } catch (e: unknown) {
       handleRegistrationError(`${e}`);

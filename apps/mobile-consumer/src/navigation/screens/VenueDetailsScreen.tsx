@@ -380,7 +380,6 @@ export function VenueDetailsScreen() {
             <StackScreenHeader
                 title={venue?.name || 'Venue Details'}
                 onBackPress={() => {
-                    console.log('Back button pressed - attempting navigation');
                     try {
                         if (navigation.canGoBack()) {
                             navigation.goBack();

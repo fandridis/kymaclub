@@ -244,8 +244,6 @@ export function ClassDetailsModalScreen() {
                 }
 
                 case cancelButtonIndex:
-                    // Canceled
-                    console.log('Canceled');
                     break;
             }
         });

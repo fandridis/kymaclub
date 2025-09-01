@@ -12,8 +12,6 @@ function AuthLayout() {
   const location = useLocation();
   const initialLocation = useRef(location.pathname);
 
-  console.log('[_auth.tsx] renders: ', isLoading, isAuthenticated);
-
   useEffect(() => {
     initialLocation.current = location.pathname;
   }, [])
@@ -24,7 +22,6 @@ function AuthLayout() {
   }
 
   if (!isAuthenticated && location.pathname !== '/sign-in') {
-    console.log('[_auth.tsx] redirecting to /sign-in, current location: ', location.pathname);
     return <Navigate to="/sign-in" search={{ redirect: initialLocation.current }} replace />;
   }
 

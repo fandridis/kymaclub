@@ -621,7 +621,6 @@ export function NewsScreen() {
                                         storageIdToUrl={storageIdToUrl}
                                         onPress={(selectedVenue) => {
                                             // Handle venue press - you can navigate to venue details
-                                            console.log('Venue pressed:', selectedVenue.name);
                                         }}
                                     />
                                 </View>

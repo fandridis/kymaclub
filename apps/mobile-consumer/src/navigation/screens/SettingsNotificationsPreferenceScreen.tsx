@@ -44,8 +44,6 @@ export function SettingsNotificationsPreferenceScreen() {
         };
         setChannels(newChannels);
 
-        console.log('🔥🔥🔥 NEW SETTINGS: ', settings);
-
         const notificationPreferences = settings?.notificationPreferences || getDefaultUserNotificationSettings();
 
         // Save immediately
@@ -55,8 +53,6 @@ export function SettingsNotificationsPreferenceScreen() {
                 ...notificationPreferences,
                 [notificationType.key]: newChannels
             };
-
-            console.log('🔥🔥🔥 UPDATED PREFERENCES: ', updatedPreferences);
 
             await updateSettings({
                 settings: {

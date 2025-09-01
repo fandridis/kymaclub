@@ -290,7 +290,6 @@ async handleInvoicePaymentSucceeded(ctx: ActionCtx, event: Stripe.Event) {
       }
     );
     
-    console.log(`✅ Payment succeeded: ${result.creditTransactionId}`);
     return { success: true };
     
   } catch (error) {

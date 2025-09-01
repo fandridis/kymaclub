@@ -121,8 +121,6 @@ export const handleNewClassBookingEvent = internalMutation({
         })
     }),
     handler: async (ctx, args) => {
-        console.log('----- [mutations/notifications] handleNewClassBookingEvent -----');
-        console.log('args: ', args);
         return await notificationService.handleNewClassBookingEvent({ ctx, payload: args.payload });
     }
 });
@@ -141,8 +139,6 @@ export const handleUserCancelledBookingEvent = internalMutation({
         })
     }),
     handler: async (ctx, args) => {
-        console.log('----- [mutations/notifications] handleUserCancelledBookingEvent -----');
-        console.log('args: ', args);
         return await notificationService.handleUserCancelledBookingEvent({ ctx, payload: args.payload });
     }
 });
@@ -161,8 +157,6 @@ export const handleBusinessCancelledBookingEvent = internalMutation({
         })
     }),
     handler: async (ctx, args) => {
-        console.log('----- [mutations/notifications] handleBusinessCancelledBookingEvent -----');
-        console.log('args: ', args);
         return await notificationService.handleBusinessCancelledBookingEvent({ ctx, payload: args.payload });
     }
 });
@@ -181,8 +175,6 @@ export const handleRebookableBookingEvent = internalMutation({
         })
     }),
     handler: async (ctx, args) => {
-        console.log('----- [mutations/notifications] handleRebookableBookingEvent -----');
-        console.log('args: ', args);
         return await notificationService.handleBookingBecameRebookableEvent({ ctx, payload: args.payload });
     }
 });
@@ -202,8 +194,6 @@ export const handleSubscriptionCreditsReceivedEvent = internalMutation({
         })
     }),
     handler: async (ctx, args) => {
-        console.log('----- [mutations/notifications] handleSubscriptionCreditsReceivedEvent -----');
-        console.log('args: ', args);
         return await notificationService.handleSubscriptionCreditsReceivedEvent({ ctx, payload: args.payload });
     }
 });

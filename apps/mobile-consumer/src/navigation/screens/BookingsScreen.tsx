@@ -365,7 +365,6 @@ export function BookingsScreen() {
                     break;
 
                 case cancelButtonIndex:
-                    console.log('Keep booking');
                     break;
             }
         });
@@ -410,7 +409,6 @@ export function BookingsScreen() {
 
     const handleViewClass = (booking: Doc<"bookings">) => {
         if (!booking) {
-            console.log('No booking available');
             return;
         }
 
@@ -478,12 +476,6 @@ export function BookingsScreen() {
         return filteredBookings.length > 0;
     }, [allBookings, activeTab]);
     const isInitialLoading = status === 'LoadingFirstPage';
-
-    // log the statuses of all bookings, each on a separate line: bookingId : booking.status
-    console.log(
-        '----- [BookingsScreen] allBookings -----\n' +
-        allBookings.map((booking) => `${booking._id} : ${booking.status}`).join('\n')
-    );
 
     if (!user) {
         return (
