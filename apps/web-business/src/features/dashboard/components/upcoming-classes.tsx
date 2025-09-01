@@ -270,11 +270,11 @@ export function UpcomingClasses({ className }: UpcomingClassesProps) {
                     </ScrollArea>
                 </CardContent>
                 <CardFooter>
-                    <Button variant="outline" className="w-full bg-transparent">
+                    {/* <Button variant="outline" className="w-full bg-transparent">
                         <Link to="/calendar" className="flex items-center justify-center gap-2">
                             View calendar <ArrowRight className="w-4 h-4" />
                         </Link>
-                    </Button>
+                    </Button> */}
                 </CardFooter>
             </Card>
 

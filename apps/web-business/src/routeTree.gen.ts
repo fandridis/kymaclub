@@ -18,6 +18,7 @@ import { Route as AppLayoutRouteImport } from './routes/_app-layout'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppLayoutTemplatesRouteImport } from './routes/_app-layout/templates'
 import { Route as AppLayoutSettingsRouteImport } from './routes/_app-layout/settings'
+import { Route as AppLayoutEarningsRouteImport } from './routes/_app-layout/earnings'
 import { Route as AppLayoutDashboardRouteImport } from './routes/_app-layout/dashboard'
 import { Route as AppLayoutCalendarRouteImport } from './routes/_app-layout/calendar'
 import { Route as AppLayoutBookingsRouteImport } from './routes/_app-layout/bookings'
@@ -67,6 +68,11 @@ const AppLayoutSettingsRoute = AppLayoutSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppLayoutRoute,
 } as any)
+const AppLayoutEarningsRoute = AppLayoutEarningsRouteImport.update({
+  id: '/earnings',
+  path: '/earnings',
+  getParentRoute: () => AppLayoutRoute,
+} as any)
 const AppLayoutDashboardRoute = AppLayoutDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/bookings': typeof AppLayoutBookingsRoute
   '/calendar': typeof AppLayoutCalendarRoute
   '/dashboard': typeof AppLayoutDashboardRoute
+  '/earnings': typeof AppLayoutEarningsRoute
   '/settings': typeof AppLayoutSettingsRoute
   '/templates': typeof AppLayoutTemplatesRoute
 }
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/bookings': typeof AppLayoutBookingsRoute
   '/calendar': typeof AppLayoutCalendarRoute
   '/dashboard': typeof AppLayoutDashboardRoute
+  '/earnings': typeof AppLayoutEarningsRoute
   '/settings': typeof AppLayoutSettingsRoute
   '/templates': typeof AppLayoutTemplatesRoute
 }
@@ -129,6 +137,7 @@ export interface FileRoutesById {
   '/_app-layout/bookings': typeof AppLayoutBookingsRoute
   '/_app-layout/calendar': typeof AppLayoutCalendarRoute
   '/_app-layout/dashboard': typeof AppLayoutDashboardRoute
+  '/_app-layout/earnings': typeof AppLayoutEarningsRoute
   '/_app-layout/settings': typeof AppLayoutSettingsRoute
   '/_app-layout/templates': typeof AppLayoutTemplatesRoute
 }
@@ -145,6 +154,7 @@ export interface FileRouteTypes {
     | '/bookings'
     | '/calendar'
     | '/dashboard'
+    | '/earnings'
     | '/settings'
     | '/templates'
   fileRoutesByTo: FileRoutesByTo
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/bookings'
     | '/calendar'
     | '/dashboard'
+    | '/earnings'
     | '/settings'
     | '/templates'
   id:
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/_app-layout/bookings'
     | '/_app-layout/calendar'
     | '/_app-layout/dashboard'
+    | '/_app-layout/earnings'
     | '/_app-layout/settings'
     | '/_app-layout/templates'
   fileRoutesById: FileRoutesById
@@ -253,6 +265,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLayoutSettingsRouteImport
       parentRoute: typeof AppLayoutRoute
     }
+    '/_app-layout/earnings': {
+      id: '/_app-layout/earnings'
+      path: '/earnings'
+      fullPath: '/earnings'
+      preLoaderRoute: typeof AppLayoutEarningsRouteImport
+      parentRoute: typeof AppLayoutRoute
+    }
     '/_app-layout/dashboard': {
       id: '/_app-layout/dashboard'
       path: '/dashboard'
@@ -289,6 +308,7 @@ interface AppLayoutRouteChildren {
   AppLayoutBookingsRoute: typeof AppLayoutBookingsRoute
   AppLayoutCalendarRoute: typeof AppLayoutCalendarRoute
   AppLayoutDashboardRoute: typeof AppLayoutDashboardRoute
+  AppLayoutEarningsRoute: typeof AppLayoutEarningsRoute
   AppLayoutSettingsRoute: typeof AppLayoutSettingsRoute
   AppLayoutTemplatesRoute: typeof AppLayoutTemplatesRoute
 }
@@ -298,6 +318,7 @@ const AppLayoutRouteChildren: AppLayoutRouteChildren = {
   AppLayoutBookingsRoute: AppLayoutBookingsRoute,
   AppLayoutCalendarRoute: AppLayoutCalendarRoute,
   AppLayoutDashboardRoute: AppLayoutDashboardRoute,
+  AppLayoutEarningsRoute: AppLayoutEarningsRoute,
   AppLayoutSettingsRoute: AppLayoutSettingsRoute,
   AppLayoutTemplatesRoute: AppLayoutTemplatesRoute,
 }

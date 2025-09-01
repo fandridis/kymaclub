@@ -8,6 +8,7 @@ import {
     BookmarkMinusIcon,
     CalendarHeartIcon,
     BookTemplateIcon,
+    DollarSign,
 } from 'lucide-react'
 import { AudioWaveform, Command, GalleryVerticalEnd } from 'lucide-react'
 import { type SidebarData } from './types'
@@ -53,6 +54,11 @@ export const sidebarData: SidebarData = {
                     title: 'Lessons',
                     url: '/templates',
                     icon: BookTemplateIcon,
+                },
+                {
+                    title: 'Earnings',
+                    url: '/earnings',
+                    icon: DollarSign,
                 },
                 // {
                 //     title: 'Bookings',

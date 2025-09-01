@@ -37,7 +37,7 @@ function Dashboard() {
 
     return (
         <>
-            <Header fixed>My Dashboard (Credits: {user.credits ?? 0})</Header>
+            <Header fixed>My Dashboard</Header>
             <Main>
                 <DashboardPage />
             </Main>

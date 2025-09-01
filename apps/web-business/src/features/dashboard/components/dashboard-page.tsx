@@ -6,7 +6,7 @@ export default function DashboardPage() {
     return (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
             {/* Top stats */}
-            {["Total Revenue", "New Bookings", "Active Members", "Attendance"].map((label) => (
+            {/* {["Total Revenue", "New Bookings", "Active Members", "Attendance"].map((label) => (
                 <Card key={label}>
                     <CardHeader>
                         <CardTitle className="text-sm text-muted-foreground">{label}</CardTitle>
@@ -16,7 +16,7 @@ export default function DashboardPage() {
                         <Skeleton className="h-3 w-3/4" />
                     </CardContent>
                 </Card>
-            ))}
+            ))} */}
 
             {/* Main chart */}
             <UpcomingClasses className="col-span-1 sm:col-span-2 xl:col-span-2" />
