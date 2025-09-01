@@ -13,7 +13,6 @@ import {
     DrawerContent,
     DrawerHeader,
     DrawerTitle,
-    DrawerDescription,
     DrawerFooter,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
@@ -352,20 +351,22 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                                         <Clock className="h-4 w-4" />
                                                         Duration <span className="text-red-500">*</span>
                                                     </FormLabel>
-                                                    <Select onValueChange={field.onChange} value={field.value || ''}>
-                                                        <FormControl>
-                                                            <SelectTrigger className="w-full">
-                                                                <SelectValue placeholder="Select duration" />
-                                                            </SelectTrigger>
-                                                        </FormControl>
-                                                        <SelectContent>
-                                                            {getDurationOptions().map(option => (
-                                                                <SelectItem key={option.value} value={option.value}>
-                                                                    {option.label}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
+                                                    <FormControl>
+                                                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                                                            <FormControl>
+                                                                <SelectTrigger className="w-full">
+                                                                    <SelectValue placeholder="Select duration" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                {getDurationOptions().map(option => (
+                                                                    <SelectItem key={option.value} value={option.value}>
+                                                                        {option.label}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />
@@ -538,7 +539,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                             disabled={loading}
                             className="w-full"
                         >
-                            {loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Template' : 'Create Template')}
+                            {loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Template' : 'Create this template')}
                         </Button>
 
                         <Button

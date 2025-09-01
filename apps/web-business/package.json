@@ -10,8 +10,8 @@
     "preview": "pnpm run build && vite preview",
     "deploy": "pnpm run build && wrangler deploy",
     "cf-typegen": "wrangler types",
-    "test": "pnpm exec playwright test",
-    "test:ui": "pnpm exec playwright test --ui",
+    "test": "CONVEX_URL=https://colorful-ladybug-413.convex.cloud pnpm exec playwright test",
+    "test:ui": "CONVEX_URL=https://colorful-ladybug-413.convex.cloud pnpm exec playwright test --ui",
     "test:report": "pnpm exec playwright show-report"
   },
   "dependencies": {

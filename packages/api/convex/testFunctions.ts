@@ -1,5 +1,6 @@
 import { v } from "convex/values"
-import { internalMutation, internalQuery, internalAction } from "./_generated/server";
+import { ConvexHttpClient } from "convex/browser";
+import { internalMutation, internalQuery, internalAction, mutation } from "./_generated/server";
 import { getAuthenticatedUserAndBusinessOrThrow } from "./utils";
 import { creditService } from "../services/creditService";
 
@@ -834,3 +835,48 @@ export const testDeepLinkGeneration = internalMutation({
     },
 });
 
+
+/**
+ * Reset test data in database
+ */
+export const resetTestData = mutation({
+    args: {
+        testRunId: v.optional(v.string())
+    },
+    handler: async (ctx, args) => {
+        // Delete test venues
+        const venues = await ctx.db
+            .query("venues")
+            .filter(q => q.eq(q.field("name"), "gefatest01 Test Yoga Studio"))
+            .collect();
+
+        for (const venue of venues) {
+            await ctx.db.delete(venue._id);
+        }
+
+        // Delete test templates
+        const templates = await ctx.db
+            .query("classTemplates")
+            .filter(q => q.eq(q.field("name"), "gefatest01 Morning Hatha Yoga"))
+            .collect();
+
+        for (const template of templates) {
+            await ctx.db.delete(template._id);
+        }
+
+        // Delete test class instances
+        const instances = await ctx.db
+            .query("classInstances")
+            .filter(q => q.eq(q.field("name"), "gefatest01 Morning Hatha Yoga"))
+            .collect();
+
+        for (const instance of instances) {
+            await ctx.db.delete(instance._id);
+        }
+
+        return {
+            success: true,
+            deletedCount: venues.length + templates.length + instances.length
+        };
+    },
+});

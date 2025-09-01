@@ -1,3 +1,14 @@
+import type { TemplateColorType } from "@repo/utils/colors";
+
+type TemplateColorMap = Record<TemplateColorType, {
+    default: string;
+    defaultHex: string;
+    background: string;
+    backgroundHex: string;
+    text: string;
+    border: string;
+}>;
+
 export const TEMPLATE_COLORS_MAP = {
     green: {
         default: 'bg-green-500',
@@ -55,6 +66,4 @@ export const TEMPLATE_COLORS_MAP = {
         text: "text-pink-950",
         border: "border-pink-200",
     },
-}
-
-
+} as const satisfies TemplateColorMap;

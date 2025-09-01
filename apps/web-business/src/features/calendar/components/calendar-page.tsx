@@ -26,6 +26,8 @@ import { useDoubleClick } from '../hooks/use-double-click';
 import { TEMPLATE_COLORS_MAP } from '@/utils/colors';
 import type { TemplateColorType } from '@repo/utils/colors';
 import { ClassBookingsDialog } from '../../bookings/components/class-bookings-dialog';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 
 interface CalendarPageProps {
     startDate: Date;
@@ -90,6 +92,12 @@ export function CalendarPage({ startDate, classInstances, user }: CalendarPagePr
 
     return (
         <>
+            <div className="mb-2 flex justify-end">
+                <Button size="sm" onClick={() => setCreateDialog({ open: true, selectedDateTime: '' })}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    New class
+                </Button>
+            </div>
             <FullCalendar
                 ref={calendarRef}
                 initialView={isMobile ? 'timeGridWeek' : 'timeGrid'}

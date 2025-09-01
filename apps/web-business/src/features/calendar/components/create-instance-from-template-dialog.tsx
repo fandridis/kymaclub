@@ -214,7 +214,7 @@ export function CreateInstanceFromTemplateDialog({
                                 renderEmptyState()
                             ) : (
                                 <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                                    <SelectTrigger className={`w-full ${selectedTemplateId ? 'h-14!' : ''}`}>
+                                    <SelectTrigger id="template" className={`w-full ${selectedTemplateId ? 'h-14!' : ''}`}>
                                         <SelectValue placeholder="Select a template" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -251,9 +251,9 @@ export function CreateInstanceFromTemplateDialog({
                             <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
                                 <div className="flex gap-4">
                                     <div className="space-y-2 flex-1">
-                                        <Label htmlFor="frequency">Frequency</Label>
+                                        <Label htmlFor="frequency-select">Frequency</Label>
                                         <Select value={frequency} onValueChange={(value: 'daily' | 'weekly') => setFrequency(value)}>
-                                            <SelectTrigger className="w-full">
+                                            <SelectTrigger id="frequency-select" className="w-full">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -263,9 +263,9 @@ export function CreateInstanceFromTemplateDialog({
                                         </Select>
                                     </div>
                                     <div className="space-y-2 flex-1">
-                                        <Label htmlFor="weeks">Duration</Label>
+                                        <Label htmlFor="weeks-select">Duration</Label>
                                         <Select value={weeks.toString()} onValueChange={(value) => setWeeks(parseInt(value))}>
-                                            <SelectTrigger className="w-full">
+                                            <SelectTrigger id="weeks-select" className="w-full">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>

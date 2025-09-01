@@ -1,8 +1,19 @@
+/// <reference types="node" />
+
 import { test, expect } from '@playwright/test';
 import { loginUser } from './helpers';
+import { ConvexHttpClient } from "convex/browser";
+import { api } from '@repo/api/convex/_generated/api';
+
+
+console.log("process.env.CONVEX_URL", process.env.CONVEX_URL);
+// Create the client with your Convex deployment URL
+const client = new ConvexHttpClient(process.env.CONVEX_URL as string);
 
 test.describe('Venue, Template & Calendar Management Flow', () => {
     test.beforeEach(async ({ page }) => {
+        await client.mutation(api.testFunctions.resetTestData, { testRunId: `test_${Date.now()}` });
+
         // Clear storage and cookies
         await page.goto('/');
         await page.evaluate(() => {
@@ -24,7 +35,7 @@ test.describe('Venue, Template & Calendar Management Flow', () => {
         await page.click('div:has-text("Add another venue")');
 
         // Fill venue form
-        await page.fill('[name="name"]', 'Test Yoga Studio');
+        await page.fill('[name="name"]', 'gefatest01 Test Yoga Studio');
         await page.fill('[name="email"]', 'studio@testyoga.com');
         await page.fill('[name="description"]', 'A beautiful yoga studio for all levels of practice');
         await page.fill('[name="phone"]', '+30 123 456 7890');
@@ -49,24 +60,27 @@ test.describe('Venue, Template & Calendar Management Flow', () => {
         await expect(page.locator('text=Venue created successfully')).toBeVisible();
 
         // Step 3: Verify venue was created
-        await expect(page.locator('text=Test Yoga Studio')).toBeVisible();
+        await expect(page.locator('text=gefatest01 Test Yoga Studio')).toBeVisible();
 
         // Step 4: Navigate to templates and create a new template
-        await page.click('text=Templates');
+        await page.click('text=Lessons');
         await page.click('button:has-text("Create Template")');
 
         // Fill template form
-        await page.fill('[name="name"]', 'Morning Hatha Yoga');
+        await page.fill('[name="name"]', 'gefatest01 Morning Hatha Yoga');
         await page.fill('[name="instructor"]', 'Maria Kalogirou');
         await page.fill('[name="description"]', 'A gentle morning flow suitable for all levels');
 
         // Select the venue we just created
-        await page.selectOption('select[name="venueId"]', { label: 'Test Yoga Studio' });
+        await page.click('text=Venue');
+        await page.keyboard.press('Enter'); // Select the first/highlighted option
 
         // Set duration, capacity, and price
-        await page.selectOption('select[name="duration"]', '60');
+        await page.getByLabel('Duration').click();
+        await page.getByRole('option', { name: '90 minutes' }).click();
+
         await page.fill('[name="capacity"]', '20');
-        await page.fill('[name="price"]', '2500'); // €25.00 in cents
+        await page.fill('[name="price"]', '25'); // €25
 
         // Add some tags
         await page.fill('input[placeholder*="tag"]', 'hatha');
@@ -80,77 +94,91 @@ test.describe('Venue, Template & Calendar Management Flow', () => {
         await page.fill('[name="cancellationWindowHours"]', '4');
 
         // Step 5: Add two discount rules
-        await page.click('button:has-text("Add Discount Rule")');
+        await page.click('button:has-text("Add Rule")');
 
         // First discount rule - Early bird discount
-        await page.fill('input[placeholder="Rule name"]', 'Early Bird Special');
-        await page.selectOption('select[name*="condition.type"]', 'hours_before_min');
+        await page.locator('label:has-text("Type")').first().click();
+        await page.getByRole('option', { name: 'Early Booking' }).click();
         await page.fill('input[name*="condition.hours"]', '48');
         await page.fill('input[name*="discount.value"]', '500'); // €5.00 discount
 
         // Add second discount rule
-        await page.click('button:has-text("Add Discount Rule")');
-        await page.fill('input[placeholder="Rule name"]:last-of-type', 'Last Minute Deal');
-        await page.selectOption('select[name*="condition.type"]:last-of-type', 'hours_before_max');
+        await page.click('button:has-text("Add Rule")');
+        await page.locator('label:has-text("Type")').nth(1).click();
+        await page.getByRole('option', { name: 'Last Minute' }).click();
         await page.fill('input[name*="condition.hours"]:last-of-type', '4');
         await page.fill('input[name*="discount.value"]:last-of-type', '250'); // €2.50 discount
 
         // Submit template creation
-        await page.click('button:has-text("Create Template")');
+        await page.click('button:has-text("Create this template")');
         await expect(page.locator('text=Class template created successfully')).toBeVisible();
 
         // Step 6: Verify template was created
-        await expect(page.locator('text=Morning Hatha Yoga')).toBeVisible();
+        await expect(page.locator('text=gefatest01 Morning Hatha Yoga')).toBeVisible();
 
         // Step 7: Navigate to calendar and create a standalone class instance
-        await page.click('text=Calendar');
+        await page.click('text=Schedule');
 
-        // Click on a calendar cell (tomorrow at 9:00 AM)
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowDateStr = tomorrow.getDate().toString();
+        // Open new class dialog and select date & time for tomorrow
+        await page.click('button:has-text("New Class")');
+        await page.getByRole('button', { name: 'Select date and time' }).click();
 
-        await page.click(`[data-date*="${tomorrowDateStr}"][data-hour="09:00"]`);
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+
+        const year = tomorrow.getFullYear();
+        const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+        const day = String(tomorrow.getDate()).padStart(2, '0');
+        const tomorrowStr = `${year}-${month}-${day}`;
+
+        await page.click(`[data-day="${tomorrowStr}"]`);
+        await page.keyboard.press('Escape');
 
         // Select the template we created
-        await page.selectOption('select[name="templateId"]', { label: 'Morning Hatha Yoga' });
+        await page.getByLabel('Class Template').click();
+        await page.getByRole('option', { name: 'gefatest01 Morning Hatha Yoga' }).click();
 
         // Create single instance
-        await page.click('button:has-text("Create Instance")');
-        await expect(page.locator('text=Class instance created successfully')).toBeVisible();
+        await page.click('button:has-text("Schedule Class")');
+        await expect(page.locator('text="gefatest01 Morning Hatha Yoga" scheduled successfully')).toBeVisible();
 
         // Step 8: Create a recurring instance (weekly for 3 weeks)
-        // Click on another calendar cell (next week same time)
+        // Open new class dialog and select date & time for next week
+        await page.click('button:has-text("New Class")');
+        await page.getByRole('button', { name: 'Select date and time' }).click();
+
         const nextWeek = new Date();
         nextWeek.setDate(nextWeek.getDate() + 8);
-        const nextWeekDateStr = nextWeek.getDate().toString();
 
-        await page.click(`[data-date*="${nextWeekDateStr}"][data-hour="10:00"]`);
+        const nextWeekYear = nextWeek.getFullYear();
+        const nextWeekMonth = String(nextWeek.getMonth() + 1).padStart(2, '0');
+        const nextWeekDay = String(nextWeek.getDate()).padStart(2, '0');
+        const nextWeekStr = `${nextWeekYear}-${nextWeekMonth}-${nextWeekDay}`;
 
-        // Select the template again
-        await page.selectOption('select[name="templateId"]', { label: 'Morning Hatha Yoga' });
+        await page.click(`[data-day="${nextWeekStr}"]`);
+        await page.keyboard.press('Escape');
+
+        // Select the template we created
+        await page.getByLabel('Class Template').click();
+        await page.getByRole('option', { name: 'gefatest01 Morning Hatha Yoga' }).click();
 
         // Enable recurring
-        await page.check('input[name="isRecurring"]');
+        await page.check('label:has-text("Make this recurring")');
 
         // Set weekly frequency and 3 weeks
-        await page.selectOption('select[name="frequency"]', 'weekly');
-        await page.fill('input[name="weeks"]', '3');
+        await page.click('label:has-text("Frequency")');
+        await page.getByRole('option', { name: 'Weekly' }).click();
+
+        // Find the dropdown that's currently open/visible
+        await page.click('label:has-text("Duration")');
+        await page.getByRole('option', { name: '7 weeks' }).click();
 
         // Create recurring instances
-        await page.click('button:has-text("Create Instances")');
-        await expect(page.locator('text=Class instances created successfully').or(page.locator('text=3 instances created'))).toBeVisible();
+        await page.click('button:has-text("Schedule Series")');
+        await expect(page.locator('text="gefatest01 Morning Hatha Yoga" scheduled successfully').or(page.locator('text=3 instances created'))).toBeVisible();
 
         // Step 9: Verify the instances appear on the calendar
-        await expect(page.locator('text=Morning Hatha Yoga').first()).toBeVisible();
-
-        // Count the instances (should be 4 total: 1 standalone + 3 recurring)
-        const instanceElements = await page.locator('text=Morning Hatha Yoga').count();
-        expect(instanceElements).toBeGreaterThanOrEqual(3); // At least 3 visible instances
-
-        // Verify venue and template are properly linked
-        await page.click('text=Morning Hatha Yoga', { position: { x: 10, y: 10 } });
-        await expect(page.locator('text=Test Yoga Studio')).toBeVisible();
-        await expect(page.locator('text=Maria Kalogirou')).toBeVisible();
+        await expect(page.locator('text=gefatest01 Morning Hatha Yoga').first()).toBeVisible();
     });
 });

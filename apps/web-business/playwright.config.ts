@@ -50,6 +50,7 @@ export default defineConfig({
         reuseExistingServer: !process.env.CI,
         env: {
             ENABLE_TEST_AUTH: 'true',
+            CONVEX_URL: process.env.CONVEX_URL || 'https://colorful-ladybug-413.convex.cloud',
         },
     },
 });

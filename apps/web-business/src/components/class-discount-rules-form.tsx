@@ -39,7 +39,7 @@ export function ClassDiscountRulesForm({
 }: ClassDiscountRulesFormProps) {
     const [rules, setRules] = useState<DiscountRule[]>(discountRules)
 
-    const getDiscountTypeName = (type: string, hours?: number) => {
+    const getDiscountTypeName = (type: string) => {
         switch (type) {
             case "always":
                 return "Always On"
@@ -138,16 +138,16 @@ export function ClassDiscountRulesForm({
                                 <div className="flex flex-row gap-2">
                                     {/* Discount Type Selection - Takes 2 columns (2/3 of space) */}
                                     <div className="space-y-1 w-full">
-                                        <Label className="text-xs">Type</Label>
+                                        <Label htmlFor={`discount-type-${index}`} className="text-xs">Type</Label>
                                         <Select
                                             value={rule.condition.type}
                                             onValueChange={(value: "always" | "hours_before_min" | "hours_before_max") => {
                                                 const newCondition = { type: value, hours: rule.condition.hours || 24 }
-                                                const newName = getDiscountTypeName(value, newCondition.hours)
+                                                const newName = getDiscountTypeName(value)
                                                 updateRule(index, { condition: newCondition, name: newName })
                                             }}
                                         >
-                                            <SelectTrigger className="w-full h-9">
+                                            <SelectTrigger id={`discount-type-${index}`} className="w-full h-9">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -175,14 +175,16 @@ export function ClassDiscountRulesForm({
 
                                     {/* Discount Amount - Takes 1 column (1/3 of space) */}
                                     <div className="space-y-1 w-38">
-                                        <Label className="text-xs">Amount ({currency})</Label>
+                                        <Label htmlFor={`discount-amount-${index}`} className="text-xs">Amount ({currency})</Label>
                                         <div className="relative">
                                             <Input
+                                                id={`discount-amount-${index}`}
                                                 type="number"
                                                 min="1"
                                                 max={price ? Math.min(100, Math.floor(price / 100)) : 100}
                                                 step="1"
                                                 placeholder="5"
+                                                name="discount.value"
                                                 value={Math.floor(rule.discount.value / 100) || ""}
                                                 onChange={(e) => {
                                                     const inputValue = Number.parseInt(e.target.value) || 0
@@ -202,13 +204,15 @@ export function ClassDiscountRulesForm({
                                 {/* Conditional Hours Input - New row below if needed */}
                                 {rule.condition.type !== "always" && (
                                     <div className="mt-4 w-full">
-                                        <Label className="text-xs">
+                                        <Label htmlFor={`discount-hours-${index}`} className="text-xs">
                                             {rule.condition.type === "hours_before_min" ? "Minimum Hours Before Class" : "Maximum Hours Before Class"}
                                         </Label>
                                         <Input
+                                            id={`discount-hours-${index}`}
                                             type="number"
                                             min="1"
                                             placeholder="24"
+                                            name="condition.hours"
                                             value={rule.condition.hours || ""}
                                             onChange={(e) => {
                                                 const hours = Number.parseInt(e.target.value) || undefined
