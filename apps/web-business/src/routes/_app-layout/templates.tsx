@@ -9,7 +9,7 @@ export const Route = createFileRoute('/_app-layout/templates')({
 
 function RouteComponent() {
     return <>
-        <Header fixed>My lessons</Header>
+        <Header fixed title="My lessons" />
         <Main>
             <TemplatesPage />
         </Main>

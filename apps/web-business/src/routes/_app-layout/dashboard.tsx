@@ -37,7 +37,7 @@ function Dashboard() {
 
     return (
         <>
-            <Header fixed>My Dashboard</Header>
+            <Header fixed title="My Dashboard" />
             <Main>
                 <DashboardPage />
             </Main>

@@ -25,9 +25,7 @@ function RouteComponent() {
 
     return (
         <>
-            <Header fixed>
-                <h1>My Calendar</h1>
-            </Header>
+            <Header fixed title="My Calendar" />
             <Main className="-pr-4">
                 <CalendarPage
                     startDate={startDate}

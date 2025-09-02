@@ -7,12 +7,24 @@ import { NotificationsPopover } from '@/components/notifications-popover'
 interface HeaderProps extends React.HTMLAttributes<HTMLElement> {
     fixed?: boolean
     ref?: React.Ref<HTMLElement>
+    /** Simple text title for the header */
+    title?: string
+    /** Custom render function for title content (takes precedence over title) */
+    renderTitle?: () => React.ReactNode
+    /** Custom render function for right-side content (appears left of notifications) */
+    renderRightSide?: () => React.ReactNode
+    /** Whether to hide the notifications bell */
+    hideNotifications?: boolean
 }
 
 export const Header = ({
     className,
     fixed,
     children,
+    title,
+    renderTitle,
+    renderRightSide,
+    hideNotifications = false,
     ...props
 }: HeaderProps) => {
     const [offset, setOffset] = React.useState(0)
@@ -42,9 +54,10 @@ export const Header = ({
             <SidebarTrigger variant='outline' className='scale-125 sm:scale-100' />
             <Separator orientation='vertical' className='h-6' />
             <div className="flex-1">
-                {children}
+                {renderTitle ? renderTitle() : title ? <h1>{title}</h1> : children}
             </div>
-            <NotificationsPopover />
+            {renderRightSide && renderRightSide()}
+            {!hideNotifications && <NotificationsPopover />}
         </header>
     )
 }

@@ -24,7 +24,7 @@ export const Route = createFileRoute('/_app-layout/settings')({
 function RouteComponent() {
     return (
         <>
-            <Header fixed>Settings</Header>
+            <Header fixed title="Settings" />
 
             <Main>
                 <SettingsPage />
