@@ -82,8 +82,9 @@ describe("Booking Service Safety Tests", () => {
                     };
                 } else {
                     // Paid class: attempt credit spending (would fail if amount = 0)
+                    const creditsToSpend = discountResult.finalPrice / 50; // Convert cents to credits  
                     const creditResult = mockCreditService.spendCredits({
-                        amount: discountResult.finalPrice,
+                        amount: creditsToSpend,
                     });
                     return {
                         success: true,
@@ -145,8 +146,9 @@ describe("Booking Service Safety Tests", () => {
                         finalPrice: 0,
                     };
                 } else {
+                    const creditsToSpend = discountResult.finalPrice / 50; // Convert cents to credits  
                     const creditResult = mockCreditService.spendCredits({
-                        amount: discountResult.finalPrice,
+                        amount: creditsToSpend,
                     });
                     return {
                         success: true,
@@ -191,8 +193,8 @@ describe("Booking Service Safety Tests", () => {
                 bookingTime: now,
             });
 
-            // Verify normal discount calculation
-            expect(discountResult.finalPrice).toBe(34); // 40 - 6 = 34 credits (€17)
+            // Verify normal discount calculation (now in cents)
+            expect(discountResult.finalPrice).toBe(1700); // 2000 - 300 = 1700 cents (€17)
             expect(discountResult.appliedDiscount?.creditsSaved).toBe(6);
 
             // Simulate booking flow
@@ -204,8 +206,9 @@ describe("Booking Service Safety Tests", () => {
                         finalPrice: 0,
                     };
                 } else {
+                    const creditsToSpend = discountResult.finalPrice / 50; // Convert cents to credits  
                     const creditResult = mockCreditService.spendCredits({
-                        amount: discountResult.finalPrice,
+                        amount: creditsToSpend,
                     });
                     return {
                         success: true,
@@ -219,9 +222,9 @@ describe("Booking Service Safety Tests", () => {
 
             // Should successfully process paid booking
             expect(result.success).toBe(true);
-            expect(result.finalPrice).toBe(34);
+            expect(result.finalPrice).toBe(1700); // Now in cents
             expect(mockCreditService.spendCredits).toHaveBeenCalledWith({
-                amount: 34,
+                amount: 34, // Credits spent (1700 cents / 50 = 34 credits)
             });
             expect(result.transactionId).toBe("mock_transaction_123");
         });
@@ -265,11 +268,11 @@ describe("Booking Service Safety Tests", () => {
                 bookingTime: now,
             });
 
-            // Verify the fix produces correct results
-            expect(discountResult.originalPrice).toBe(40); // €20 = 40 credits
+            // Verify the fix produces correct results (now in cents)
+            expect(discountResult.originalPrice).toBe(2000); // €20 = 2000 cents
             // Note: discountValue was redundant and removed; we now only use creditsSaved
             expect(discountResult.appliedDiscount?.creditsSaved).toBe(6); // 300 cents ÷ 50 = 6 credits
-            expect(discountResult.finalPrice).toBe(34); // 40 - 6 = 34 credits (€17)
+            expect(discountResult.finalPrice).toBe(1700); // 2000 - 300 = 1700 cents (€17)
             expect(discountResult.appliedDiscount?.creditsSaved).toBe(6);
 
             // The bug would have made finalPrice = 0, causing credit service validation error
@@ -305,23 +308,23 @@ describe("Booking Service Safety Tests", () => {
             const testScenarios = [
                 {
                     name: "Regular discounted class",
-                    price: 1500, // €15 = 30 credits
-                    value: 250, // €2.50 = 5 credits
-                    expectedFinalPrice: 25, // 30 - 5 = 25 credits (€12.50)
+                    price: 1500, // €15 = 1500 cents
+                    value: 250, // €2.50 = 250 cents
+                    expectedFinalPrice: 1250, // 1500 - 250 = 1250 cents (€12.50)
                     expectedCreditsUsed: true,
                 },
                 {
                     name: "Free class after discount",
-                    price: 500, // €5 = 10 credits
-                    value: 500, // €5 = 10 credits
+                    price: 500, // €5 = 500 cents
+                    value: 500, // €5 = 500 cents
                     expectedFinalPrice: 0, // Free
                     expectedCreditsUsed: false,
                 },
                 {
                     name: "Nearly free class after discount",
-                    price: 150, // €1.50 = 3 credits
-                    value: 100, // €1 = 2 credits
-                    expectedFinalPrice: 1, // 3 - 2 = 1 credit (€0.50)
+                    price: 150, // €1.50 = 150 cents
+                    value: 100, // €1 = 100 cents
+                    expectedFinalPrice: 50, // 150 - 100 = 50 cents (€0.50)
                     expectedCreditsUsed: true,
                 },
             ];
@@ -367,8 +370,9 @@ describe("Booking Service Safety Tests", () => {
                             creditsUsed: false,
                         };
                     } else {
+                        const creditsToSpend = discountResult.finalPrice / 50; // Convert cents to credits
                         const creditResult = mockCreditService.spendCredits({
-                            amount: discountResult.finalPrice,
+                            amount: creditsToSpend,
                         });
                         return {
                             success: true,
@@ -384,8 +388,9 @@ describe("Booking Service Safety Tests", () => {
                 expect(bookingResult.creditsUsed).toBe(scenario.expectedCreditsUsed);
 
                 if (scenario.expectedCreditsUsed) {
+                    const expectedCreditsSpent = scenario.expectedFinalPrice / 50; // Convert cents to credits
                     expect(mockCreditService.spendCredits).toHaveBeenCalledWith({
-                        amount: scenario.expectedFinalPrice,
+                        amount: expectedCreditsSpent,
                     });
                 } else {
                     expect(mockCreditService.spendCredits).not.toHaveBeenCalled();

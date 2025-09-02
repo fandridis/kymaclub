@@ -511,10 +511,11 @@ export const bookingService = {
         const discountResult = calculateBestDiscount(instance, template, { bookingTime: now });
         const { originalPrice, finalPrice, appliedDiscount } = discountResult;
 
-
+        // originalPrice and finalPrice are now in cents (not credits!)
+        // Calculate credits used for credit spending (1 credit = 50 cents)
+        const creditsUsed = finalPrice / 50;
 
         if (!Number.isFinite(originalPrice) || originalPrice <= 0) {
-
             throw new ConvexError({
                 message: "Invalid original price for class",
                 field: "originalPrice",
@@ -523,7 +524,6 @@ export const bookingService = {
         }
 
         if (!Number.isFinite(finalPrice) || finalPrice < 0) {
-
             throw new ConvexError({
                 message: "Invalid final price after discount calculation",
                 field: "finalPrice",
@@ -539,9 +539,9 @@ export const bookingService = {
             userId: user._id,
             classInstanceId: args.classInstanceId,
             status: "pending",
-            originalPrice,
-            finalPrice,
-            creditsUsed: finalPrice,
+            originalPrice,  // Now stored in cents
+            finalPrice,     // Now stored in cents
+            creditsUsed,    // Credits calculated from finalPrice (cents / 50)
             creditTransactionId: "", // Will be updated after credit transaction
             appliedDiscount: appliedDiscount || undefined,
             // Populate user metadata for business owners to see customer details
@@ -574,15 +574,15 @@ export const bookingService = {
 
 
         if (finalPrice === 0) {
-
             // For free bookings, create a placeholder transaction ID
             transactionId = `free_booking_${bookingId}`;
             newBalance = undefined; // Credit balance unchanged
         } else {
             // Normal credit spending for paid bookings
+            // Use creditsUsed (converted from cents) for credit spending
             const creditResult = await creditService.spendCredits(ctx, {
                 userId: user._id,
-                amount: finalPrice,
+                amount: creditsUsed, // Use credits, not cents
                 description: args.description ?? `Booking for ${template.name}`,
                 businessId: instance.businessId,
                 venueId: instance.venueId,
@@ -755,6 +755,7 @@ export const bookingService = {
 
         // 💰 REFUND CALCULATION AND PROCESSING
         const refundMultiplier = isLateCancellation ? 0.5 : 1;
+        // booking.creditsUsed is already in credits, so we can use it directly for refund
         const refundAmount = booking.creditsUsed * refundMultiplier; // 50% refund if late, full refund otherwise
 
         if (refundAmount > 0) {

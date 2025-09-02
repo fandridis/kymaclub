@@ -32,8 +32,8 @@ export type AppliedDiscount = {
 };
 
 export type DiscountCalculationResult = {
-  originalPrice: number;
-  finalPrice: number;
+  originalPrice: number; // Price in cents (for storage in database)
+  finalPrice: number;    // Price in cents (for storage in database)
   appliedDiscount: AppliedDiscount | null;
 };
 
@@ -95,6 +95,9 @@ function findBestDiscountRule(
 /**
  * Calculate the best available discount for a booking
  * Priority: Instance rules > Template rules
+ * 
+ * IMPORTANT: Returns prices in cents for database storage consistency.
+ * Credit calculations are done internally but final result is in cents.
  */
 export function calculateBestDiscount(
   classInstance: Doc<"classInstances">,
@@ -104,9 +107,7 @@ export function calculateBestDiscount(
   }
 ): DiscountCalculationResult {
   // Get the original price in cents (instance override or template default)
-  const priceInCents = classInstance.price ?? template.price ?? 1000; // Default 10.00 in business currency (cents)
-  // Convert from currency cents to credits for user-facing operations (1 credit = 50 cents)
-  const originalPrice = priceInCents / 50; // Convert cents to credits for consumers
+  const originalPriceInCents = classInstance.price ?? template.price ?? 1000; // Default 10.00 in business currency (cents)
   const hoursUntilClass = (classInstance.startTime - context.bookingTime) / (1000 * 60 * 60);
 
   // 1. Check instance-specific discount rules (override template rules)
@@ -114,18 +115,21 @@ export function calculateBestDiscount(
     const bestInstanceRule = findBestDiscountRule(classInstance.discountRules, hoursUntilClass);
 
     if (bestInstanceRule) {
-      // Convert discount value from cents to credits (1 credit = 50 cents)
-      const discountAmountInCredits = bestInstanceRule.rule.discount.value / 50;
-      const finalPrice = applyDiscountToPrice(originalPrice, discountAmountInCredits);
-      const creditsSaved = originalPrice - finalPrice;
+      // Apply discount directly in cents
+      const discountAmountInCents = bestInstanceRule.rule.discount.value;
+      const finalPriceInCents = Math.max(0, originalPriceInCents - discountAmountInCents);
+      const centsSaved = originalPriceInCents - finalPriceInCents;
+      
+      // Convert saved amount to credits for user-facing display (1 credit = 50 cents)
+      const creditsSaved = centsSaved / 50;
 
       return {
-        originalPrice,
-        finalPrice,
+        originalPrice: originalPriceInCents, // Return cents for storage
+        finalPrice: finalPriceInCents,       // Return cents for storage
         appliedDiscount: {
           source: "instance_rule",
           discountType: "fixed_amount",
-          creditsSaved,
+          creditsSaved, // Credits saved for user-facing display
           ruleName: bestInstanceRule.ruleName,
         },
       };
@@ -137,28 +141,31 @@ export function calculateBestDiscount(
     const bestTemplateRule = findBestDiscountRule(template.discountRules, hoursUntilClass);
 
     if (bestTemplateRule) {
-      // Convert discount value from cents to credits (1 credit = 50 cents)
-      const discountAmountInCredits = bestTemplateRule.rule.discount.value / 50;
-      const finalPrice = applyDiscountToPrice(originalPrice, discountAmountInCredits);
-      const creditsSaved = originalPrice - finalPrice;
+      // Apply discount directly in cents
+      const discountAmountInCents = bestTemplateRule.rule.discount.value;
+      const finalPriceInCents = Math.max(0, originalPriceInCents - discountAmountInCents);
+      const centsSaved = originalPriceInCents - finalPriceInCents;
+      
+      // Convert saved amount to credits for user-facing display (1 credit = 50 cents)
+      const creditsSaved = centsSaved / 50;
 
       return {
-        originalPrice,
-        finalPrice,
+        originalPrice: originalPriceInCents, // Return cents for storage
+        finalPrice: finalPriceInCents,       // Return cents for storage
         appliedDiscount: {
           source: "template_rule",
           discountType: "fixed_amount",
-          creditsSaved,
+          creditsSaved, // Credits saved for user-facing display
           ruleName: bestTemplateRule.ruleName,
         },
       };
     }
   }
 
-  // No discounts apply
+  // No discounts apply - return prices in cents
   return {
-    originalPrice,
-    finalPrice: originalPrice,
+    originalPrice: originalPriceInCents, // Return cents for storage
+    finalPrice: originalPriceInCents,    // Return cents for storage
     appliedDiscount: null,
   };
 }

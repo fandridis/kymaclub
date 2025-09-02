@@ -73,6 +73,7 @@ src/
 │   ├── dashboard/             # Business analytics and onboarding
 │   ├── calendar/              # FullCalendar class scheduling
 │   ├── bookings/              # Customer booking management
+│   ├── earnings/              # Revenue dashboard and hooks
 │   ├── venues/                # Venue/location management
 │   ├── templates/             # Class template management
 │   └── settings/              # Application configuration
@@ -83,6 +84,7 @@ src/
 │       ├── dashboard.tsx     # Business dashboard
 │       ├── calendar.tsx      # Class scheduling calendar
 │       ├── bookings.tsx      # Booking management
+│       ├── earnings.tsx      # Revenue dashboard with CSV export
 │       ├── settings.tsx      # Settings with tabbed interface
 │       └── templates.tsx     # Class template management
 ├── hooks/                     # Custom React hooks
@@ -125,6 +127,13 @@ src/
 - **Field inheritance** - Instance values override template defaults
 - **Image support** - Template images with storage management
 - **Validation** - Comprehensive business rule validation
+
+### **Earnings & Revenue Dashboard** 💰
+- **Real-time earnings** - Monthly breakdown with gross and net revenue
+- **20% system cut** - Automatic calculation of platform fee and business earnings
+- **CSV export** - Download earnings data for invoicing and accounting
+- **Booking details** - Complete list of completed bookings with revenue impact
+- **Custom hook pattern** - `useEarnings` with convex-helpers caching
 
 ### **Settings Management** ⚙️
 - **Tabbed interface** - Organized settings with URL state management

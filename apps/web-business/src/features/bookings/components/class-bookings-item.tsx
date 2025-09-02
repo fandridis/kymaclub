@@ -97,7 +97,8 @@ export function ClassBookingsItem({
         return format(new Date(timestamp), "MMM d, yyyy 'at' h:mm a");
     };
 
-    // Calculate discount savings if discount was applied
+    // Calculate discount savings if discount was applied  
+    // originalPrice and finalPrice are now in cents, so discountSavings is in cents
     const discountSavings = booking.appliedDiscount
         ? booking.originalPrice - booking.finalPrice
         : 0;
@@ -176,7 +177,7 @@ export function ClassBookingsItem({
                         </div>
                         {booking.appliedDiscount && (
                             <div className="text-xs text-green-600">
-                                Discount applied: {booking.appliedDiscount.ruleName} (-€{Math.ceil(discountSavings / 5)})
+                                Discount applied: {booking.appliedDiscount.ruleName} (-€{(discountSavings / 100).toFixed(2)})
                             </div>
                         )}
                     </div>

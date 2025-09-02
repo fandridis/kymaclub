@@ -422,9 +422,9 @@ export const bookingsFields = {
   cancelReason: v.optional(v.string()),
 
   // Simple pricing tracking (links to credit ledger)
-  originalPrice: v.number(),           // Template price (before any discount)
-  finalPrice: v.number(),             // What they actually paid
-  creditsUsed: v.number(),            // Same as finalPrice (for consistency)
+  originalPrice: v.number(),           // Template price in cents (before any discount)  
+  finalPrice: v.number(),             // What they actually paid in cents
+  creditsUsed: v.number(),            // Credits spent (finalPrice / 50)
   creditTransactionId: v.string(),    // Links to creditLedger entries
 
   // What discount was actually applied at booking time
@@ -435,7 +435,7 @@ export const bookingsFields = {
     ),
     discountType: v.union(v.literal("percentage"), v.literal("fixed_amount")),
     // Note: discountValue removed as it was redundant with creditsSaved
-    creditsSaved: v.number(),         // originalPrice - finalPrice
+    creditsSaved: v.number(),         // (originalPrice - finalPrice) / 50 (in credits for display)
     ruleName: v.string(),             // Name of the discount rule
     reason: v.optional(v.string()),   // Reason for the discount
     appliedBy: v.optional(v.id("users")), // Who applied the discount

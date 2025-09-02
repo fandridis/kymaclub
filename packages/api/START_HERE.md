@@ -85,9 +85,10 @@ Complete reference of all business rules, constraints, and operational logic wit
 3. [Credit System](#credit-system)
 4. [Booking System](#booking-system)
 5. [Data Integrity](#data-integrity)
-6. [Template Management](#template-management)
-7. [Venue Management](#venue-management)
-8. [Validation Rules](#validation-rules)
+6. [Earnings & Revenue System](#earnings--revenue-system)
+7. [Template Management](#template-management)
+8. [Venue Management](#venue-management)
+9. [Validation Rules](#validation-rules)
 
 ---
 
@@ -278,6 +279,45 @@ Complete reference of all business rules, constraints, and operational logic wit
 - **Tests**: Audit field tests in integration test suites
 - **Compliance**: Required for business auditing and debugging
 - **Soft Deletes**: Use `deleted`, `deletedAt`, `deletedBy` instead of hard deletes
+
+---
+
+## Earnings & Revenue System
+
+### ER-001: System Revenue Cut (ADR-012)
+- **Rule**: Platform takes 20% of all completed booking revenue (80% to business)
+- **Code**: `convex/queries/earnings.ts:35-52` (earnings calculation with system cut)
+- **Tests**: Earnings integration tests verify 20% platform fee calculation
+- **Business Logic**: Businesses receive net revenue (gross - 20%) for invoicing
+- **Display**: Dashboard shows both gross earnings and net "Your Earnings"
+
+### ER-002: Completed Bookings Revenue Only (ADR-013)
+- **Rule**: Revenue calculations include only `completed` bookings, not pending/cancelled
+- **Code**: `convex/queries/earnings.ts:18-23` (status filtering)
+- **Tests**: Earnings tests verify only completed bookings counted
+- **Rationale**: Accurate invoicing requires confirmed revenue, not potential revenue
+- **Real-time Updates**: Earnings update immediately when bookings complete
+
+### ER-003: Pricing Consistency - Cents Storage (ADR-014)
+- **Rule**: All prices stored in cents for consistency (bookings, templates, instances)
+- **Code**: Booking creation/update operations store `finalPrice`/`originalPrice` in cents
+- **Tests**: All discount and pricing tests expect cent values (2000 cents = €20)
+- **Conversion**: 1 credit = 50 cents spending value, prices display as euros (÷100)
+- **Data Integrity**: Prevents floating-point precision errors in financial calculations
+
+### ER-004: Monthly Earnings Dashboard
+- **Rule**: Real-time earnings dashboard with monthly breakdown and CSV export
+- **Code**: `apps/web-business/src/routes/_app-layout/earnings.tsx` (dashboard implementation)
+- **Backend**: `convex/queries/earnings.ts` (monthly earnings query)
+- **Features**: Gross/net revenue display, booking list, CSV export for invoicing
+- **Hook Pattern**: `useEarnings` hook with convex-helpers caching
+
+### ER-005: CSV Export for Invoicing
+- **Rule**: Businesses can export earnings data as CSV for accounting/invoicing
+- **Code**: `apps/web-business/src/routes/_app-layout/earnings.tsx:89-106` (CSV generation)
+- **Format**: Date, Class Name, Consumer, Gross Price, System Cut, Your Earnings, Status
+- **Currency**: Displays in euros (cents ÷ 100) with proper formatting
+- **Business Use**: Direct integration with accounting systems and invoice generation
 
 ---
 

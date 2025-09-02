@@ -72,7 +72,7 @@ describe("Discount Priority Edge Cases", () => {
             expect(result.appliedDiscount?.source).toBe("instance_rule");
             expect(result.appliedDiscount?.ruleName).toBe("Instance Large €8 Off");
             expect(result.appliedDiscount?.creditsSaved).toBe(16);
-            expect(result.finalPrice).toBe(44); // 60 - 16
+            expect(result.finalPrice).toBe(2200); // 3000 - 800 cents
         });
 
         it("should select highest template discount when no instance rules apply", () => {
@@ -123,7 +123,7 @@ describe("Discount Priority Edge Cases", () => {
             expect(result.appliedDiscount?.source).toBe("template_rule");
             expect(result.appliedDiscount?.ruleName).toBe("Template Super Early €7 Off");
             expect(result.appliedDiscount?.creditsSaved).toBe(14);
-            expect(result.finalPrice).toBe(36); // 50 - 14
+            expect(result.finalPrice).toBe(1800); // 2500 - 700 cents
         });
 
         it("should prioritize smallest instance discount over largest template discount", () => {
@@ -170,7 +170,7 @@ describe("Discount Priority Edge Cases", () => {
             expect(result.appliedDiscount?.source).toBe("instance_rule");
             expect(result.appliedDiscount?.ruleName).toBe("Instance Tiny €1 Off");
             expect(result.appliedDiscount?.creditsSaved).toBe(2);
-            expect(result.finalPrice).toBe(78); // 80 - 2 (NOT 50 from template)
+            expect(result.finalPrice).toBe(3900); // 4000 - 100 cents (NOT 2500 from template)
         });
     });
 
@@ -222,7 +222,7 @@ describe("Discount Priority Edge Cases", () => {
             expect(result.appliedDiscount?.source).toBe("template_rule");
             expect(result.appliedDiscount?.ruleName).toBe("Template Always €3 Off");
             expect(result.appliedDiscount?.creditsSaved).toBe(6);
-            expect(result.finalPrice).toBe(34); // 40 - 6
+            expect(result.finalPrice).toBe(1700); // 2000 - 300 cents
         });
 
         it("should handle mixed condition types correctly", () => {
@@ -275,7 +275,7 @@ describe("Discount Priority Edge Cases", () => {
             expect(result.appliedDiscount?.source).toBe("instance_rule");
             expect(result.appliedDiscount?.ruleName).toBe("Instance Last Minute €6 Off");
             expect(result.appliedDiscount?.creditsSaved).toBe(12);
-            expect(result.finalPrice).toBe(58); // 70 - 12
+            expect(result.finalPrice).toBe(2900); // 3500 - 600 cents
         });
 
         it("should handle no applicable discounts gracefully", () => {
@@ -326,8 +326,8 @@ describe("Discount Priority Edge Cases", () => {
 
             // No discounts should apply
             expect(result.appliedDiscount).toBeNull();
-            expect(result.originalPrice).toBe(30);
-            expect(result.finalPrice).toBe(30); // No discount
+            expect(result.originalPrice).toBe(1500);
+            expect(result.finalPrice).toBe(1500); // No discount
         });
     });
 
@@ -374,10 +374,10 @@ describe("Discount Priority Edge Cases", () => {
             });
 
             // Should use template.price (1800 cents = 36 credits) with instance discount
-            expect(result.originalPrice).toBe(36); // From template.price
+            expect(result.originalPrice).toBe(1800); // From template.price
             expect(result.appliedDiscount?.source).toBe("instance_rule");
             expect(result.appliedDiscount?.creditsSaved).toBe(6);
-            expect(result.finalPrice).toBe(30); // 36 - 6
+            expect(result.finalPrice).toBe(1500); // 1800 - 300 cents
         });
 
         it("should handle zero/free pricing scenarios with priority", () => {
@@ -422,7 +422,7 @@ describe("Discount Priority Edge Cases", () => {
 
             // Instance makes it free, not template partial discount
             expect(result.appliedDiscount?.source).toBe("instance_rule");
-            expect(result.originalPrice).toBe(10);
+            expect(result.originalPrice).toBe(500);
             expect(result.finalPrice).toBe(0); // FREE
             expect(result.appliedDiscount?.creditsSaved).toBe(10); // Full discount
         });

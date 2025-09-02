@@ -4,12 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Download, TrendingUp, Calendar, Users, DollarSign } from 'lucide-react'
+import { Download, TrendingUp, TrendingDown, Calendar, Users, DollarSign } from 'lucide-react'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
-// import { useQuery } from 'convex/react'
-// import { api } from '@repo/api'
-// import { useAuthStore } from '@/components/stores/auth'
+import { useEarnings } from '@/features/earnings/hooks/use-earnings'
 
 export const Route = createFileRoute('/_app-layout/earnings')({
   component: EarningsPage,
@@ -21,83 +19,15 @@ function EarningsPage() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   })
 
-  // const { user } = useAuthStore()
-  // const businessId = user?.businessId
+  // Use the custom hook to get earnings data
+  const { earningsData, isLoading, hasData } = useEarnings({
+    month: selectedMonth
+  })
 
-  // Mock data for demonstration - 100 bookings
-  const generateMockBookings = () => {
-    const classNames = [
-      'Morning Yoga Flow', 'HIIT Bootcamp', 'Pilates Core', 'Spin Class', 'Vinyasa Yoga',
-      'CrossFit WOD', 'Barre Fusion', 'Boxing Fundamentals', 'Zumba Dance', 'Hot Yoga',
-      'Strength Training', 'Cardio Blast', 'Meditation Session', 'Aqua Fitness', 'TRX Training',
-      'Kettlebell Circuit', 'Stretching & Recovery', 'Power Yoga', 'Dance Cardio', 'Core Fusion',
-      'Bootcamp Challenge', 'Tai Chi', 'Reformer Pilates', 'Indoor Cycling', 'Functional Fitness'
-    ]
-    
-    const firstNames = [
-      'Sarah', 'Mike', 'Emma', 'Alex', 'Lisa', 'David', 'Rachel', 'Tom', 'Jessica', 'Ryan',
-      'Amanda', 'Chris', 'Nicole', 'Brian', 'Ashley', 'Kevin', 'Lauren', 'Matt', 'Stephanie', 'Josh',
-      'Michelle', 'Daniel', 'Jennifer', 'Andrew', 'Rebecca', 'Tyler', 'Samantha', 'Nathan', 'Amy', 'Jacob',
-      'Megan', 'Brandon', 'Hannah', 'Justin', 'Taylor', 'Sean', 'Brittany', 'Aaron', 'Kimberly', 'Eric',
-      'Danielle', 'Adam', 'Chelsea', 'Jordan', 'Heather', 'Luke', 'Kayla', 'Mason', 'Morgan', 'Caleb'
-    ]
-    
-    const lastNames = [
-      'Johnson', 'Chen', 'Davis', 'Rodriguez', 'Thompson', 'Kim', 'Green', 'Wilson', 'Brown', 'Miller',
-      'Garcia', 'Martinez', 'Anderson', 'Taylor', 'Thomas', 'Moore', 'Jackson', 'Martin', 'Lee', 'White',
-      'Harris', 'Clark', 'Lewis', 'Walker', 'Hall', 'Allen', 'Young', 'King', 'Wright', 'Lopez',
-      'Hill', 'Scott', 'Green', 'Adams', 'Baker', 'Gonzalez', 'Nelson', 'Carter', 'Mitchell', 'Perez',
-      'Roberts', 'Turner', 'Phillips', 'Campbell', 'Parker', 'Evans', 'Edwards', 'Collins', 'Stewart', 'Sanchez'
-    ]
+  console.log("earningsData", earningsData)
 
-    const bookings = []
-    
-    for (let i = 1; i <= 100; i++) {
-      const firstName = firstNames[Math.floor(Math.random() * firstNames.length)]
-      const lastName = lastNames[Math.floor(Math.random() * lastNames.length)]
-      const className = classNames[Math.floor(Math.random() * classNames.length)]
-      const price = Math.floor(Math.random() * (4000 - 2000) + 2000) // €20-€40 range
-      
-      // Spread bookings across the last 30 days
-      const daysAgo = Math.floor(Math.random() * 30)
-      const startTime = Date.now() - (daysAgo * 86400000)
-      
-      bookings.push({
-        _id: i.toString(),
-        status: 'completed',
-        finalPrice: price,
-        userSnapshot: {
-          name: `${firstName} ${lastName}`,
-          email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@email.com`
-        },
-        classInstanceSnapshot: {
-          name: className,
-          startTime: startTime
-        }
-      })
-    }
-    
-    // Sort by most recent first
-    return bookings.sort((a, b) => (b.classInstanceSnapshot?.startTime || 0) - (a.classInstanceSnapshot?.startTime || 0))
-  }
-
-  const mockBookings = generateMockBookings()
-
-  const totalGrossEarnings = mockBookings.reduce((sum, booking) => sum + booking.finalPrice, 0)
-  const systemCutRate = 0.20 // 20% system cut
-  const totalNetEarnings = Math.round(totalGrossEarnings * (1 - systemCutRate)) // Amount business actually receives
-  const totalSystemCut = totalGrossEarnings - totalNetEarnings
-  const totalBookings = mockBookings.length
-
-  const earningsData = {
-    totalGrossEarnings,
-    totalNetEarnings,
-    totalSystemCut,
-    totalBookings,
-    bookings: mockBookings
-  }
-
-  const isLoading = false
+  // System cut rate constant (20% as per business rules)
+  const systemCutRate = 0.20
 
   // Generate month options for the dropdown (current month + 11 previous months)
   const monthOptions = Array.from({ length: 12 }, (_, i) => {
@@ -119,8 +49,17 @@ function EarningsPage() {
         const grossPrice = booking.finalPrice / 100
         const systemCut = grossPrice * systemCutRate
         const netPrice = grossPrice - systemCut
+        const dateTime = new Date(booking.classInstanceSnapshot?.startTime || 0)
+        const formattedDate = `${dateTime.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        })} ${dateTime.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        })}`
         return [
-          new Date(booking.classInstanceSnapshot?.startTime || 0).toLocaleDateString(),
+          formattedDate,
           booking.classInstanceSnapshot?.name || '',
           booking.userSnapshot?.name || booking.userSnapshot?.email || '',
           `€${grossPrice.toFixed(2)}`,
@@ -130,11 +69,11 @@ function EarningsPage() {
         ]
       }),
       // Add totals row
-      ['', '', '', 
-       `€${(earningsData.totalGrossEarnings / 100).toFixed(2)}`,
-       `€${(earningsData.totalSystemCut / 100).toFixed(2)}`,
-       `€${(earningsData.totalNetEarnings / 100).toFixed(2)}`,
-       'TOTAL'
+      ['', '', '',
+        `€${(earningsData.totalGrossEarnings / 100).toFixed(2)}`,
+        `€${(earningsData.totalSystemCut / 100).toFixed(2)}`,
+        `€${(earningsData.totalNetEarnings / 100).toFixed(2)}`,
+        'TOTAL'
       ]
     ]
       .map((row) => row.join(','))
@@ -149,23 +88,78 @@ function EarningsPage() {
     window.URL.revokeObjectURL(url)
   }
 
+  // if (!user || !businessId) {
+  //   return (
+  //     <div className="flex items-center justify-center h-96">
+  //       <div className="text-muted-foreground">Please sign in to view earnings data</div>
+  //     </div>
+  //   )
+  // }
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-muted-foreground">Loading earnings data...</div>
-      </div>
+      <>
+        <Header fixed>
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-6 h-6 text-primary" />
+              <h1 className="text-xl font-semibold">Earnings</h1>
+            </div>
+          </div>
+        </Header>
+        <Main>
+          <div className="flex items-center justify-center h-96">
+            <div className="text-muted-foreground">Loading earnings data...</div>
+          </div>
+        </Main>
+      </>
     )
   }
 
-  if (!earningsData) {
+  if (!hasData || !earningsData) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-muted-foreground">No earnings data available</div>
-      </div>
+      <>
+        <Header fixed>
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-6 h-6 text-primary" />
+              <h1 className="text-xl font-semibold">Earnings</h1>
+            </div>
+          </div>
+        </Header>
+        <Main>
+          <div className="flex items-center justify-center h-96">
+            <div className="text-muted-foreground">No earnings data available for this month</div>
+          </div>
+        </Main>
+      </>
     )
   }
 
   const selectedMonthLabel = monthOptions.find(option => option.value === selectedMonth)?.label || selectedMonth
+
+  // Get real comparison data from backend (replaces mock data)
+  const comparisonData = earningsData?.comparison || {
+    bookings: { change: 0, isPositive: true },
+    earnings: { change: 0, isPositive: true },
+    avgPrice: { change: 0, isPositive: true },
+    allTime: { change: 0, isPositive: true }
+  }
+
+  const formatChangeIndicator = (change: number, isPositive: boolean) => {
+    const Icon = isPositive ? TrendingUp : TrendingDown
+    const colorClass = isPositive ? 'text-green-600' : 'text-red-600'
+    const bgClass = isPositive ? 'bg-green-50' : 'bg-red-50'
+    
+    return (
+      <div className={`flex items-center gap-1 px-2 py-1 rounded-md ${bgClass}`}>
+        <Icon className={`w-3 h-3 ${colorClass}`} />
+        <span className={`text-xs font-medium ${colorClass}`}>
+          {isPositive ? '+' : ''}{change.toFixed(1)}%
+        </span>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -212,53 +206,68 @@ function EarningsPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <Card className="bg-card border-border">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Gross Revenue</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium text-card-foreground">Monthly Bookings</CardTitle>
+                <Users className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-xl font-bold text-muted-foreground">
-                  €{((earningsData.totalGrossEarnings || 0) / 100).toFixed(2)}
+                <div className="text-2xl font-bold text-foreground">{earningsData.totalBookings || 0}</div>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xs text-muted-foreground">Classes completed</p>
+                  {formatChangeIndicator(comparisonData.bookings.change, comparisonData.bookings.isPositive)}
                 </div>
-                <p className="text-xs text-muted-foreground">Total booking value</p>
               </CardContent>
             </Card>
 
             <Card className="bg-primary/5 border-primary/20">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-primary font-semibold">Your Earnings</CardTitle>
+                <CardTitle className="text-sm font-medium text-primary font-semibold">Monthly Earnings</CardTitle>
                 <DollarSign className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-primary">
                   €{((earningsData.totalNetEarnings || 0) / 100).toFixed(2)}
                 </div>
-                <p className="text-xs text-primary/80 font-medium">
-                  💰 Invoice this amount
-                </p>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xs text-primary/80 font-medium">
+                    Your revenue this month
+                  </p>
+                  {formatChangeIndicator(comparisonData.earnings.change, comparisonData.earnings.isPositive)}
+                </div>
               </CardContent>
             </Card>
 
             <Card className="bg-card border-border">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-card-foreground">System Cut</CardTitle>
+                <CardTitle className="text-sm font-medium text-card-foreground">Avg Booking Price</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-xl font-bold text-muted-foreground">
-                  €{((earningsData.totalSystemCut || 0) / 100).toFixed(2)}
+                <div className="text-2xl font-bold text-foreground">
+                  €{earningsData.totalBookings > 0 
+                    ? (((earningsData.totalNetEarnings || 0) / earningsData.totalBookings) / 100).toFixed(2)
+                    : '0.00'
+                  }
                 </div>
-                <p className="text-xs text-muted-foreground">20% platform fee</p>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xs text-muted-foreground">Average per booking</p>
+                  {formatChangeIndicator(comparisonData.avgPrice.change, comparisonData.avgPrice.isPositive)}
+                </div>
               </CardContent>
             </Card>
 
             <Card className="bg-card border-border">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-card-foreground">Total Bookings</CardTitle>
-                <Users className="h-4 w-4 text-primary" />
+                <CardTitle className="text-sm font-medium text-card-foreground">All-time Earnings</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-xl font-bold text-foreground">{earningsData.totalBookings || 0}</div>
-                <p className="text-xs text-muted-foreground">Classes completed</p>
+                <div className="text-2xl font-bold text-foreground">
+                  €{((earningsData.allTimeNetEarnings || 0) / 100).toFixed(2)}
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xs text-muted-foreground">Total lifetime revenue</p>
+                  {formatChangeIndicator(comparisonData.allTime.change, comparisonData.allTime.isPositive)}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -288,6 +297,7 @@ function EarningsPage() {
                     <tbody>
                       {earningsData.bookings.map((booking) => {
                         const grossPrice = booking.finalPrice / 100
+                        const systemCutRate = 0.20 // 20% system cut - matches backend logic
                         const netPrice = grossPrice * (1 - systemCutRate)
                         return (
                           <tr key={booking._id} className="border-b border-border hover:bg-muted/50 transition-colors">
@@ -295,6 +305,11 @@ function EarningsPage() {
                               {new Date(booking.classInstanceSnapshot?.startTime || 0).toLocaleDateString('en-US', {
                                 month: 'short',
                                 day: 'numeric',
+                              })}{' '}
+                              {new Date(booking.classInstanceSnapshot?.startTime || 0).toLocaleTimeString('en-US', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: false,
                               })}
                             </td>
                             <td className="py-3 px-4 text-sm font-medium text-foreground">
@@ -310,7 +325,7 @@ function EarningsPage() {
                               €{netPrice.toFixed(2)}
                             </td>
                             <td className="py-3 px-4 text-center">
-                              <Badge 
+                              <Badge
                                 variant={booking.status === 'completed' ? 'default' : 'secondary'}
                                 className={booking.status === 'completed' ? 'bg-primary/10 text-primary border-primary/20' : ''}
                               >

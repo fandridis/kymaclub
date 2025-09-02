@@ -77,7 +77,14 @@ Turborepo monorepo with pnpm workspaces for a comprehensive class/venue booking 
 - Credits allocated only AFTER payment confirmation
 - 20% system cut with business payouts
 
-### **4. Multi-tenant Data Model**
+### **4. Earnings & Revenue System**
+- Real-time earnings dashboard for businesses with monthly breakdown
+- 20% platform fee automatically calculated (businesses receive 80% net revenue)
+- CSV export functionality for invoicing and accounting
+- Revenue calculated from completed bookings only for accuracy
+- All pricing stored in cents for consistency (bookings, templates, instances)
+
+### **5. Multi-tenant Data Model**
 - All entities include `businessId` for isolation
 - Audit fields: `createdAt`, `createdBy`, `updatedAt`, `updatedBy`
 - Soft deletes: `deleted`, `deletedAt`, `deletedBy`
@@ -128,8 +135,9 @@ Operations organized by file type, not domain handlers:
 - **`types/`** - TypeScript definitions
 
 ### **Real-time Architecture**
-- Convex provides live subscriptions for calendar, bookings, credits
+- Convex provides live subscriptions for calendar, bookings, credits, earnings
 - All booking changes propagate immediately to connected clients
+- Earnings dashboard updates in real-time as bookings are completed
 - Mobile app receives real-time notifications with deep-links
 
 ### **Payment Safety**
