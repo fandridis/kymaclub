@@ -168,6 +168,14 @@ Operations organized by file type, not domain handlers:
 // Tests: operations/classInstance.test.ts:201-236
 ```
 
+### **BL-001: Maximum Active Bookings Limit**
+```typescript
+// Consumers can only have 5 active bookings simultaneously to prevent overbooking
+// Active = pending status + future startTime + not deleted
+// Code: rules/booking.ts (pure functions), services/bookingService.ts:496-505
+// Tests: rules/booking.test.ts, integrationTests/booking.limits.integration.test.ts
+```
+
 ## Key Data Relationships
 
 ```mermaid

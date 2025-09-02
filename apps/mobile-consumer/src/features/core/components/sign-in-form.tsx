@@ -136,9 +136,9 @@ export function SignInForm() {
                                     style={styles.input}
                                     value={code}
                                     onChangeText={setCode}
-                                    placeholder="Enter 8-digit code"
+                                    placeholder="Enter 6-digit code"
                                     keyboardType="number-pad"
-                                    maxLength={8}
+                                    maxLength={6}
                                     editable={!submitting}
                                 />
                             </View>

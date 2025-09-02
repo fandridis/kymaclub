@@ -68,6 +68,9 @@ export const ERROR_CODES = {
 
     // Booking Errors - Duplicates
     DUPLICATE_BOOKING: 'DUPLICATE_BOOKING',
+    
+    // Booking Errors - Limits
+    MAX_ACTIVE_BOOKINGS_EXCEEDED: 'MAX_ACTIVE_BOOKINGS_EXCEEDED',
 
     // Class Template Validation
     MISSING_NAME: 'MISSING_NAME',

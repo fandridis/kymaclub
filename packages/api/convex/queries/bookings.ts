@@ -239,3 +239,36 @@ export const getActiveBookingsForClass = query({
   },
 });
 
+/***************************************************************
+ * 🆕 ACTIVE BOOKINGS LIMITS - BL-001 BUSINESS RULE
+ * Enforce maximum active bookings per user to prevent overbooking
+ ***************************************************************/
+
+/**
+ * Get current user's active bookings count and limit
+ * Returns both current count and maximum allowed for UX display
+ * 
+ * Business Rule BL-001: Maximum Active Bookings Limit
+ * - Users can only have 5 active bookings simultaneously
+ * - Active = pending status + future startTime + not deleted
+ */
+export const getActiveBookingsCount = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getAuthenticatedUserOrThrow(ctx);
+    return bookingService.getActiveBookingsCount({ ctx, user });
+  },
+});
+
+/**
+ * Get current user's active bookings with details
+ * Returns detailed information for UX display (cancel booking suggestions, etc.)
+ */
+export const getActiveBookingsDetails = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getAuthenticatedUserOrThrow(ctx);
+    return bookingService.getActiveBookingsDetails({ ctx, user });
+  },
+});
+

@@ -246,6 +246,15 @@ Complete reference of all business rules, constraints, and operational logic wit
 - **Code**: Convex real-time subscriptions throughout booking system
 - **Tests**: Integration tests verify real-time propagation
 - **Statuses**: pending, confirmed, cancelled, completed, no_show
+
+### BL-001: Maximum Active Bookings Limit
+- **Rule**: Consumers can only have 5 active bookings simultaneously to prevent overbooking and reduce book/cancel churn
+- **Active Definition**: Bookings with status="pending" + future startTime + not deleted
+- **Code**: `rules/booking.ts` (pure validation functions), `services/bookingService.ts:496-505` (data querying + enforcement)
+- **Tests**: `rules/booking.test.ts` (unit tests with pure functions), `integrationTests/booking.limits.integration.test.ts` (e2e tests)
+- **Business Logic**: Prevents consumers from hoarding bookings and creating poor experiences for other users
+- **Error**: `MAX_ACTIVE_BOOKINGS_EXCEEDED` with clear messaging about limit and cancellation options
+- **Architecture**: Pure functions in rules/ receive data from services/, no context dependencies
 - **UX Impact**: Customers see immediate confirmation and status changes
 
 ---

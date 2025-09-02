@@ -5,6 +5,8 @@ import { ERROR_CODES } from "../utils/errorCodes";
 import { ConvexError } from "convex/values";
 import { creditService } from "./creditService";
 import { calculateBestDiscount } from "../utils/classDiscount";
+import { validateActiveBookingsLimit } from "../rules/booking";
+import { logger } from "../utils/logger";
 
 
 /***************************************************************
@@ -492,7 +494,10 @@ export const bookingService = {
             }
         }
 
-        // Prevent duplicate booking for same user+class (best-effort)
+        // BL-001: Validate maximum active bookings limit before allowing new booking
+        // This prevents consumers from overbooking and reduces book/cancel churn behavior
+        // Get user's current bookings to validate limits
+        // First, check for duplicate booking to ensure idempotent behavior
         // Only check for active bookings (not cancelled, completed, or no_show)
         const existing = await ctx.db
             .query("bookings")
@@ -507,6 +512,16 @@ export const bookingService = {
             // If called again, treat idempotently and do not double-charge
             return { bookingId: existing._id, transactionId: existing.creditTransactionId || `${existing._id}` };
         }
+
+        // Only validate booking limits after confirming this is not a duplicate booking
+        const userBookings = await ctx.db
+            .query("bookings")
+            .withIndex("by_user", q => q.eq("userId", user._id))
+            .filter(q => q.neq(q.field("deleted"), true))
+            .collect();
+
+        logger.debug('userBookings', { userBookings, length: userBookings.length });
+        validateActiveBookingsLimit(userBookings, now);
 
         const discountResult = calculateBestDiscount(instance, template, { bookingTime: now });
         const { originalPrice, finalPrice, appliedDiscount } = discountResult;
@@ -918,5 +933,57 @@ export const bookingService = {
         });
 
         return { success: true };
+    },
+
+    /***************************************************************
+     * Get Active Bookings Count Handler
+     * Returns the current count of active bookings for a user
+     ***************************************************************/
+    getActiveBookingsCount: async ({
+        ctx,
+        user,
+    }: {
+        ctx: QueryCtx;
+        user: Doc<"users">;
+    }): Promise<{ count: number; limit: number }> => {
+        const { countActiveBookings } = await import("../rules/booking");
+        const { BOOKING_LIMITS } = await import("../utils/constants");
+
+        // Get user's bookings
+        const userBookings = await ctx.db
+            .query("bookings")
+            .withIndex("by_user", q => q.eq("userId", user._id))
+            .filter(q => q.neq(q.field("deleted"), true))
+            .collect();
+
+        const count = countActiveBookings(userBookings);
+
+        return {
+            count,
+            limit: BOOKING_LIMITS.MAX_ACTIVE_BOOKINGS_PER_USER
+        };
+    },
+
+    /***************************************************************
+     * Get Active Bookings Details Handler  
+     * Returns detailed active bookings for UX display
+     ***************************************************************/
+    getActiveBookingsDetails: async ({
+        ctx,
+        user,
+    }: {
+        ctx: QueryCtx;
+        user: Doc<"users">;
+    }): Promise<import("../rules/booking").ActiveBookingSummary[]> => {
+        const { getActiveBookingsDetails } = await import("../rules/booking");
+
+        // Get user's bookings
+        const userBookings = await ctx.db
+            .query("bookings")
+            .withIndex("by_user", q => q.eq("userId", user._id))
+            .filter(q => q.neq(q.field("deleted"), true))
+            .collect();
+
+        return getActiveBookingsDetails(userBookings);
     },
 };
