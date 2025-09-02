@@ -264,6 +264,7 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
                             disabled={status !== "idle" || imageStorageIds.length >= 4}
                         />
                         <Button
+                            variant="outline"
                             onClick={() => fileInputRef.current?.click()}
                             disabled={status !== "idle" || imageStorageIds.length >= 4}
                             className="w-full"

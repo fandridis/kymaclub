@@ -1,11 +1,15 @@
-"use client"
+/**
+ * TODO: We can improve this page by splitting the data fetching either per card or per section
+ * and then create a loading state for each section. Currently, when we change months here, the whole
+ * right-side content is re-rendered.
+ */
 
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Download, TrendingUp, TrendingDown, Calendar, Users, DollarSign } from 'lucide-react'
+import { Download, TrendingUp, TrendingDown, Users, DollarSign } from 'lucide-react'
 import { useEarnings } from '../hooks/use-earnings'
 
 export default function EarningsPage() {
@@ -111,7 +115,7 @@ export default function EarningsPage() {
 
     const formatChangeIndicator = (change: number, isPositive: boolean) => {
         const Icon = isPositive ? TrendingUp : TrendingDown
-        const colorClass = isPositive ? 'text-green-600' : 'text-red-600'
+        const colorClass = isPositive ? 'text-green-700' : 'text-red-700'
         const bgClass = isPositive ? 'bg-green-50' : 'bg-red-50'
 
         return (
@@ -143,7 +147,7 @@ export default function EarningsPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="bg-primary/5 border-primary/20">
+                <Card className="bg-card border-border">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-semibold text-primary">Monthly Earnings</CardTitle>
                         <DollarSign className="h-4 w-4 text-primary" />
@@ -274,7 +278,7 @@ export default function EarningsPage() {
                                                 <td className="py-3 px-4 text-center">
                                                     <Badge
                                                         variant={booking.status === 'completed' ? 'default' : 'secondary'}
-                                                        className={booking.status === 'completed' ? 'bg-primary/10 text-primary border-primary/20' : ''}
+                                                        className={booking.status === 'completed' ? 'bg-green-100 text-green-950 border-green-200' : ''}
                                                     >
                                                         {booking.status}
                                                     </Badge>
