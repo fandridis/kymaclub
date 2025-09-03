@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Image, Alert, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { BellIcon, CreditCardIcon, ShieldIcon, CameraIcon, LogOutIcon, RefreshCwIcon, DiamondIcon, CrownIcon, ZapIcon } from 'lucide-react-native';
@@ -10,6 +10,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { useCompressedImageUpload } from '../../hooks/useCompressedImageUpload';
 import { TabScreenHeader } from '../../components/TabScreenHeader';
+import { MembershipCard } from '../../components/MembershipCard';
 
 export function SettingsScreen() {
   const navigation = useNavigation();
@@ -38,11 +39,11 @@ export function SettingsScreen() {
   const updateProfileImage = useMutation(api.mutations.uploads.updateUserProfileImage);
   const removeProfileImage = useMutation(api.mutations.uploads.removeUserProfileImage);
 
-  // Get user booking statistics (mock data for now - we'll need to implement this query)
-  const bookingStats = {
-    thisMonth: 12,
-    allTime: 45
-  };
+  // Get user booking statistics
+  const bookingStats = useQuery(api.queries.bookings.getUserBookingStats);
+
+  // Get user expiring credits
+  const expiringCredits = useQuery(api.queries.credits.getUserExpiringCredits, { userId: user._id });
 
   const handleAvatarPress = () => {
     if (status !== "idle") return; // Prevent multiple uploads
@@ -119,22 +120,26 @@ export function SettingsScreen() {
     }
 
     // Format next billing date
-    const nextBilling = new Date(subscription.currentPeriodEnd);
-    const formatter = new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric'
-    });
+    // const nextBilling = new Date(subscription.currentPeriodEnd);
+    // const formatter = new Intl.DateTimeFormat('en-US', {
+    //   month: 'short',
+    //   day: 'numeric'
+    // });
 
     // If subscription is set to cancel at period end, show cancellation message
     if (subscription.cancelAtPeriodEnd) {
-      return `${subscription.creditAmount} credits/month • Subscription will end on ${formatter.format(nextBilling)}`;
+      return `${subscription.creditAmount} credits/month`;
     }
 
-    return `${subscription.creditAmount} credits/month • Next billing: ${formatter.format(nextBilling)}`;
+    return `${subscription.creditAmount} credits/month`;
   };
 
-  const isSubscriptionActive = () => {
+  const isSubscriptionActiveAndNotExpiring = () => {
     return subscription && subscription.status === 'active';
+  };
+
+  const isSubscriptionActiveAndExpiring = () => {
+    return subscription && subscription.status === 'active' && subscription.cancelAtPeriodEnd;
   };
 
   return (
@@ -146,8 +151,9 @@ export function SettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
 
-        {/* Compact User Section */}
-        <View style={styles.userSection}>
+        {/* New Header Design */}
+        <View style={styles.headerSection}>
+          <Text style={styles.greeting}>Hi {user.name?.split(' ')[0] || 'there'}!</Text>
           <TouchableOpacity
             style={styles.avatarContainer}
             onPress={handleAvatarPress}
@@ -169,53 +175,27 @@ export function SettingsScreen() {
               />
             </View>
           </TouchableOpacity>
-          <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user.name || 'User'}</Text>
-            <Text style={styles.userEmail}>{user.email}</Text>
-            {status !== "idle" && (
-              <Text style={styles.uploadStatus}>
-                {status === "preparing" ? "Preparing..." : "Uploading..."}
-              </Text>
-            )}
-          </View>
         </View>
 
-        {/* Statistics with Colored Background */}
+        {/* Membership Card */}
+        <MembershipCard
+          creditBalance={creditBalance?.balance || 0}
+          allTimeBookings={bookingStats?.allTime || 0}
+          expiringCredits={expiringCredits?.expiringCredits}
+          daysUntilExpiry={expiringCredits?.daysUntilExpiry}
+        />
+
+        {/* Statistics */}
         <View style={styles.statsCard}>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{bookingStats.thisMonth}</Text>
+              <Text style={styles.statNumber}>{bookingStats?.thisMonth || 0}</Text>
               <Text style={styles.statLabel}>Classes this month</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{bookingStats.allTime}</Text>
+              <Text style={styles.statNumber}>{bookingStats?.allTime || 0}</Text>
               <Text style={styles.statLabel}>Classes all-time</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Credits Balance with Colored Background */}
-        <View style={styles.creditsCard}>
-          <View style={styles.creditsRow}>
-            <View style={styles.creditsInfo}>
-              <Text style={styles.creditsTitle}>Credits Balance</Text>
-              {(() => {
-                const mockExpiringCredits = 15;
-                const mockDaysUntilExpiry = 12;
-                if (mockDaysUntilExpiry < 30 && mockExpiringCredits > 0) {
-                  return (
-                    <Text style={styles.creditsSubtitle}>
-                      {mockExpiringCredits} credits expire in {mockDaysUntilExpiry} days
-                    </Text>
-                  );
-                }
-                return null;
-              })()}
-            </View>
-            <View style={styles.creditsBadge}>
-              <DiamondIcon size={16} color={theme.colors.emerald[950]} />
-              <Text style={styles.creditsBadgeText}>{creditBalance?.balance || 0}</Text>
             </View>
           </View>
         </View>
@@ -227,15 +207,42 @@ export function SettingsScreen() {
             icon={CrownIcon}
             title="Monthly Subscription"
             subtitle={getSubscriptionSubtitle()}
-            renderRightSide={() => (
-              <View style={[styles.statusBadge, { backgroundColor: isSubscriptionActive() ? theme.colors.emerald[100] : theme.colors.zinc[100] }]}>
-                <Text style={[styles.statusBadgeText, { color: isSubscriptionActive() ? theme.colors.emerald[700] : theme.colors.zinc[600] }]}>
-                  {isSubscriptionActive() ? 'ACTIVE' : 'INACTIVE'}
-                </Text>
-              </View>
-            )}
+            renderRightSide={() => {
+              const getStatusStyle = () => {
+                if (isSubscriptionActiveAndNotExpiring()) {
+                  return {
+                    backgroundColor: theme.colors.emerald[100],
+                    textColor: theme.colors.emerald[700],
+                    text: 'ACTIVE'
+                  };
+                } else if (isSubscriptionActiveAndExpiring()) {
+                  return {
+                    backgroundColor: theme.colors.amber[100],
+                    textColor: theme.colors.amber[700],
+                    text: 'EXPIRING'
+                  };
+                } else {
+                  return {
+                    backgroundColor: theme.colors.zinc[100],
+                    textColor: theme.colors.zinc[600],
+                    text: 'INACTIVE'
+                  };
+                }
+              };
+
+              const statusStyle = getStatusStyle();
+
+              return (
+                <View style={[styles.statusBadge, { backgroundColor: statusStyle.backgroundColor }]}>
+                  <Text style={[styles.statusBadgeText, { color: statusStyle.textColor }]}>
+                    {statusStyle.text}
+                  </Text>
+                </View>
+              );
+            }}
             onPress={() => navigation.navigate('Subscription')}
           />
+          {/* 
           <SettingsRow
             icon={ZapIcon}
             title="Superpowers"
@@ -247,6 +254,7 @@ export function SettingsScreen() {
             )}
             onPress={() => navigation.navigate('Superpowers')}
           />
+          */}
           <SettingsRow
             icon={CreditCardIcon}
             title="Buy Credits"
@@ -308,34 +316,39 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 80,
   },
-  // Compact user section (Option C style)
-  userSection: {
+  // New header section
+  headerSection: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: theme.colors.zinc[50],
-    paddingVertical: 12,
+    paddingVertical: 16,
     paddingHorizontal: 20,
     marginBottom: 16,
   },
+  greeting: {
+    fontSize: theme.fontSize['3xl'],
+    fontWeight: theme.fontWeight.bold,
+    color: theme.colors.zinc[900],
+  },
   avatarContainer: {
     position: 'relative',
-    marginRight: 16,
   },
   avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 40,
+    height: 40,
+    borderRadius: 25,
   },
   avatarPlaceholder: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: theme.colors.emerald[500],
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarInitials: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: theme.fontWeight.semibold,
     color: '#fff',
   },
@@ -343,9 +356,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -355,34 +368,15 @@ const styles = StyleSheet.create({
   avatarOverlayLoading: {
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
-  userInfo: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: theme.fontSize.xl,
-    fontWeight: theme.fontWeight.bold,
-    color: theme.colors.zinc[900],
-    marginBottom: 2,
-  },
-  userEmail: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.zinc[600],
-  },
-  uploadStatus: {
-    fontSize: theme.fontSize.xs,
-    color: theme.colors.emerald[600],
-    marginTop: 2,
-    fontWeight: theme.fontWeight.medium,
-  },
 
-  // Colored background statistics (Option A style)
+  // Statistics card
   statsCard: {
     marginHorizontal: 20,
     marginBottom: 16,
     borderRadius: 12,
-    backgroundColor: theme.colors.sky[50],
+    backgroundColor: theme.colors.emerald[50],
     borderWidth: 1,
-    borderColor: theme.colors.sky[100],
+    borderColor: theme.colors.emerald[100],
   },
   statsRow: {
     flexDirection: 'row',
@@ -395,51 +389,22 @@ const styles = StyleSheet.create({
   },
   statDivider: {
     width: 1,
-    backgroundColor: theme.colors.sky[200],
+    backgroundColor: theme.colors.emerald[200],
     marginHorizontal: 20,
   },
   statNumber: {
     fontSize: theme.fontSize['2xl'],
     fontWeight: theme.fontWeight.bold,
-    color: theme.colors.sky[950],
+    color: theme.colors.emerald[950],
     marginBottom: 4,
   },
   statLabel: {
     fontSize: theme.fontSize.sm,
-    color: theme.colors.sky[700],
+    color: theme.colors.emerald[700],
     textAlign: 'center',
     fontWeight: theme.fontWeight.medium,
   },
 
-  // Colored credits section
-  creditsCard: {
-    marginHorizontal: 20,
-    marginBottom: 16,
-    borderRadius: 12,
-    backgroundColor: theme.colors.emerald[50],
-    borderWidth: 1,
-    borderColor: theme.colors.emerald[100],
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-  },
-  creditsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  creditsInfo: {
-    flex: 1,
-  },
-  creditsTitle: {
-    fontSize: theme.fontSize.base,
-    fontWeight: theme.fontWeight.semibold,
-    color: theme.colors.emerald[950],
-    marginBottom: 2,
-  },
-  creditsSubtitle: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.emerald[700],
-  },
   logoutRow: {
     backgroundColor: '#fff',
     borderBottomWidth: 1,
@@ -463,20 +428,6 @@ const styles = StyleSheet.create({
     color: theme.colors.rose[500],
     fontWeight: theme.fontWeight.medium,
     flex: 1,
-  },
-  creditsBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.emerald[50],
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  creditsBadgeText: {
-    fontSize: theme.fontSize.base,
-    fontWeight: theme.fontWeight.semibold,
-    color: theme.colors.emerald[950],
-    marginLeft: 4,
   },
   statusBadge: {
     paddingHorizontal: 8,

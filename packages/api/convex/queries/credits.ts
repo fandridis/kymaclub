@@ -328,3 +328,39 @@ export const getBusinessEarningsOptimized = query({
     };
   },
 });
+
+/**
+ * Get user's expiring credits information
+ * Returns credits expiring in the next 30 days
+ * 
+ * Note: This is a mock implementation for the UI redesign.
+ * In the current system, credits don't have individual expiration dates.
+ * This will need to be properly implemented when the credit expiration system is built.
+ */
+export const getUserExpiringCredits = query({
+  args: v.object({
+    userId: v.id("users"),
+  }),
+  handler: async (ctx, args) => {
+    // Mock implementation for now - will be properly implemented later
+    // when the credit expiration system is built
+    
+    // For demo purposes, show that 15 credits expire in 12 days for users with credits
+    const userBalance = await ctx.db
+      .query("creditTransactions")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+    
+    const totalCredits = userBalance.reduce((sum, tx) => sum + tx.amount, 0);
+    
+    if (totalCredits > 0) {
+      return {
+        expiringCredits: Math.min(15, totalCredits),
+        daysUntilExpiry: 12,
+        earliestExpiry: Date.now() + (12 * 24 * 60 * 60 * 1000)
+      };
+    }
+    
+    return null;
+  },
+});

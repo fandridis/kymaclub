@@ -272,3 +272,37 @@ export const getActiveBookingsDetails = query({
   },
 });
 
+/**
+ * Get current user's booking statistics
+ * Returns booking count for current month and all time
+ */
+export const getUserBookingStats = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getAuthenticatedUserOrThrow(ctx);
+    
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    
+    // Get all completed bookings for all time
+    const allTimeBookings = await ctx.db
+      .query("bookings")
+      .withIndex("by_user_status_deleted", (q) =>
+        q.eq("userId", user._id)
+          .eq("status", "completed")
+          .eq("deleted", false)
+      )
+      .collect();
+    
+    // Filter for this month
+    const thisMonthBookings = allTimeBookings.filter(booking => 
+      booking.createdAt >= startOfMonth
+    );
+    
+    return {
+      thisMonth: thisMonthBookings.length,
+      allTime: allTimeBookings.length
+    };
+  },
+});
+

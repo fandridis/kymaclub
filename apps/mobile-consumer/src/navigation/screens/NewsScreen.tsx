@@ -15,32 +15,28 @@ import { useCurrentTime } from '../../hooks/use-current-time';
 import { VenueCard } from '../../components/VenueCard';
 import { useAllVenues } from '../../features/explore/hooks/useAllVenues';
 import type { RootStackParamListWithNestedTabs } from '../index';
+import { centsToCredits } from '@repo/utils/credits';
 
 const { width: screenWidth } = Dimensions.get('window');
 const ITEM_SPACING = 12; // Spacing between cards
-// Calculate width to show 2 full cards + 1/4 of 3rd card
-// Total visible = 2 + 0.25 = 2.25 cards, accounting for spacing
-const ITEM_WIDTH = (screenWidth - (ITEM_SPACING * 4)) / 2; // 4 spacings: left padding, between cards, right padding
 
-// Mock data for carousels
-const mockUpcomingClasses = [
-    { id: 1, title: 'Yoga Flow', time: '10:00 AM', instructor: 'Sarah Johnson', image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=300&fit=crop' },
-    { id: 2, title: 'Pilates Core', time: '2:00 PM', instructor: 'Mike Chen', image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop' },
-    { id: 3, title: 'HIIT Training', time: '6:00 PM', instructor: 'Emma Davis', image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop' },
-    { id: 4, title: 'Zumba Dance', time: '7:30 PM', instructor: 'Carlos Rodriguez', image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=300&fit=crop' },
-];
+// Width constants for different carousel sections
+// Last minute offers - show 2.25 cards (2 full + 1/4 of 3rd card)
+const OFFERS_ITEM_WIDTH = (screenWidth - (ITEM_SPACING * 4)) / 2.25;
+
+// New studios - show 1.5 cards (1 full + 1/2 of 2nd card)
+const NEW_STUDIOS_ITEM_WIDTH = (screenWidth - (ITEM_SPACING * 3)) / 1.9;
+
+// Categories - show 2.25 cards (2 full + 1/4 of 3rd card)
+const CATEGORIES_ITEM_WIDTH = (screenWidth - (ITEM_SPACING * 4)) / 2.25;
+
+// Legacy width for backward compatibility (same as offers)
+const ITEM_WIDTH = OFFERS_ITEM_WIDTH;
 
 const mockLastMinuteOffers = [
     { id: 1, title: '50% Off Yoga', originalPrice: '$30', discountedPrice: '$15', image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=300&fit=crop' },
     { id: 2, title: 'Flash Sale Pilates', originalPrice: '$25', discountedPrice: '$12', image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop' },
     { id: 3, title: 'HIIT Bundle Deal', originalPrice: '$40', discountedPrice: '$20', image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop' },
-];
-
-const mockNewClasses = [
-    { id: 1, title: 'Aerial Yoga', level: 'Intermediate', instructor: 'Lisa Park', image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=300&fit=crop' },
-    { id: 2, title: 'Boxing Basics', level: 'Beginner', instructor: 'Tom Wilson', image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop' },
-    { id: 3, title: 'Meditation & Mindfulness', level: 'All Levels', instructor: 'Dr. Zen', image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=300&fit=crop' },
-    { id: 4, title: 'Functional Training', level: 'Advanced', instructor: 'Alex Thompson', image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop' },
 ];
 
 const mockCategories = [
@@ -77,7 +73,7 @@ const NoUpcomingClassesMessage = ({ onExplorePress }: { onExplorePress: () => vo
     </View>
 );
 
-const CarouselItem = ({ item, type }: { item: any; type: string }) => {
+const CarouselItem = ({ item, type, itemWidth }: { item: any; type: string; itemWidth: number }) => {
     const renderContent = () => {
         switch (type) {
             case 'upcoming':
@@ -184,24 +180,24 @@ const CarouselItem = ({ item, type }: { item: any; type: string }) => {
     };
 
     return (
-        <View style={styles.carouselItem}>
+        <View style={[styles.carouselItem, { width: itemWidth }]}>
             {renderContent()}
         </View>
     );
 };
 
-const CarouselSection = ({ title, data, type }: { title: string; data: any[]; type: string }) => {
+const CarouselSection = ({ title, data, type, itemWidth }: { title: string; data: any[]; type: string; itemWidth: number }) => {
     return (
         <View style={styles.section}>
             <Text style={styles.sectionTitle}>{title}</Text>
             <View style={styles.carouselContainer}>
                 <Carousel
                     loop={false}
-                    width={ITEM_WIDTH}
-                    height={200}
+                    width={itemWidth}
+                    height={180}
                     data={data}
                     scrollAnimationDuration={500}
-                    renderItem={({ item }) => <CarouselItem item={item} type={type} />}
+                    renderItem={({ item }) => <CarouselItem item={item} type={type} itemWidth={itemWidth} />}
                     style={styles.carousel}
                     onConfigurePanGesture={(gestureChain) => {
                         gestureChain
@@ -322,7 +318,6 @@ export function NewsScreen() {
 
         return bookingsData
             .filter(booking => booking.status === 'pending')
-            .slice(0, 4) // Show max 4 items
             .map(booking => {
                 // Find the matching class instance
                 const classInstance = upcomingClassInstances?.find(instance =>
@@ -383,7 +378,7 @@ export function NewsScreen() {
                     instructor: booking.classInstanceSnapshot?.instructor || 'Instructor',
                     venue: booking.venueSnapshot?.name || 'Venue',
                     venueAddress: addressText,
-                    price: booking.finalPrice ? `${booking.finalPrice} credits` : 'Free',
+                    price: booking.finalPrice ? `${centsToCredits(booking.finalPrice)} credits` : 'Free',
                     imageUrl,
                     startTime: booking.classInstanceSnapshot?.startTime,
                     classInstanceId: booking.classInstanceId
@@ -601,6 +596,7 @@ export function NewsScreen() {
                     title="Last minute offers"
                     data={lastMinuteOffers.length > 0 ? lastMinuteOffers : mockLastMinuteOffers}
                     type="offers"
+                    itemWidth={OFFERS_ITEM_WIDTH}
                 />
 
                 {/* New studios section - horizontal carousel with VenueCards */}
@@ -608,14 +604,14 @@ export function NewsScreen() {
                     <View style={styles.newStudiosSection}>
                         <Text style={styles.newStudiosSectionTitle}>New studios</Text>
                         <Carousel
-                            width={ITEM_WIDTH}
+                            width={NEW_STUDIOS_ITEM_WIDTH}
                             height={300}
                             data={newVenuesForCards}
                             scrollAnimationDuration={600}
                             style={styles.carousel}
                             loop={false}
                             renderItem={({ item: venue }) => (
-                                <View style={styles.carouselItem}>
+                                <View style={styles.newStudiosCarouselItem}>
                                     <VenueCard
                                         venue={venue}
                                         storageIdToUrl={storageIdToUrl}
@@ -633,6 +629,7 @@ export function NewsScreen() {
                     title="Categories"
                     data={mockCategories}
                     type="categories"
+                    itemWidth={CATEGORIES_ITEM_WIDTH}
                 />
             </ScrollView>
         </SafeAreaView>
@@ -672,12 +669,16 @@ const styles = StyleSheet.create({
     },
     carouselContainer: {
         paddingHorizontal: 20,
+
     },
     carousel: {
         width: screenWidth,
     },
     carouselItem: {
-        width: ITEM_WIDTH,
+        paddingHorizontal: ITEM_SPACING / 2,
+    },
+    newStudiosCarouselItem: {
+        width: NEW_STUDIOS_ITEM_WIDTH,
         paddingHorizontal: ITEM_SPACING / 2,
     },
     // Upcoming classes styles
@@ -1040,7 +1041,7 @@ const styles = StyleSheet.create({
     },
     scheduleOverlayClassName: {
         fontSize: 22,
-        fontWeight: '700',
+        fontWeight: '800',
         color: 'white',
         textShadowColor: 'rgba(0,0,0,0.35)',
         textShadowOffset: { width: 0, height: 1 },
@@ -1048,8 +1049,8 @@ const styles = StyleSheet.create({
         marginBottom: 2,
     },
     scheduleOverlayInstructor: {
-        fontSize: 15,
-        fontWeight: '500',
+        fontSize: 14,
+        fontWeight: '700',
         color: 'rgba(255,255,255,0.9)',
         textShadowColor: 'rgba(0,0,0,0.35)',
         textShadowOffset: { width: 0, height: 1 },
