@@ -145,10 +145,6 @@ const CarouselItem = ({ item, type, itemWidth }: { item: any; type: string; item
                                 </Text>
                             </View>
 
-                            {/* Discount badge */}
-                            <View style={styles.offerDiscountBadge}>
-                                <Text style={styles.offerDiscountBadgeText}>{item.discountPercentage || '20%'} OFF</Text>
-                            </View>
                         </View>
 
                         {/* Content section - similar to upcoming classes */}
@@ -701,30 +697,42 @@ export function NewsScreen() {
                                             </Text>
                                         </View>
 
-                                        {/* Discount badge */}
-                                        <View style={styles.offerDiscountBadge}>
-                                            <Text style={styles.offerDiscountBadgeText}>{offer.discountPercentage || '20%'} OFF</Text>
+                                        {/* Time badge - top left */}
+                                        <View style={styles.offerTimeBadge}>
+                                            <Text style={styles.offerTimeBadgeText}>{offer.subtitle}</Text>
                                         </View>
                                     </View>
 
-                                    {/* Content section - similar to upcoming classes */}
+                                    {/* Content section - enhanced layout */}
                                     <View style={styles.scheduleContent}>
-                                        <View style={styles.scheduleTimeRow}>
-                                            <Text style={styles.offerTime}>{offer.subtitle}</Text>
+                                        {/* Price section with better visual hierarchy */}
+                                        <View style={styles.offerPriceSection}>
                                             <View style={styles.priceContainer}>
                                                 <Text style={styles.originalPrice}>{offer.originalPrice}</Text>
                                                 <Text style={styles.discountedPrice}>{offer.discountedPrice}</Text>
                                             </View>
+                                            <View style={styles.savingsBadge}>
+                                                <Text style={styles.savingsText}>Save {offer.discountPercentage}</Text>
+                                            </View>
                                         </View>
 
-                                        <Text style={styles.scheduleVenue} numberOfLines={1}>
-                                            {offer.venueName}
-                                        </Text>
-                                        {offer.venueCity && (
-                                            <Text style={styles.scheduleAddress} numberOfLines={2}>
-                                                {offer.venueCity}
+                                        {/* Venue information */}
+                                        <View style={styles.offerVenueSection}>
+                                            <Text style={styles.scheduleVenue} numberOfLines={1}>
+                                                {offer.venueName}
                                             </Text>
-                                        )}
+                                            {offer.venueCity && (
+                                                <Text style={styles.scheduleAddress} numberOfLines={1}>
+                                                    {offer.venueCity}
+                                                </Text>
+                                            )}
+                                        </View>
+
+                                        {/* Call to action - absolute positioned */}
+                                        <View style={styles.offerCTA}>
+                                            <Text style={styles.offerCTAText}>Book Now</Text>
+                                            <Text style={styles.offerCTAArrow}>→</Text>
+                                        </View>
                                     </View>
                                 </View>
                             ))}
@@ -939,23 +947,24 @@ const styles = StyleSheet.create({
         textShadowOffset: { width: 0, height: 1 },
         textShadowRadius: 3,
     },
-    offerDiscountBadge: {
+    offerTimeBadge: {
         position: 'absolute',
-        top: 12,
-        right: 12,
-        backgroundColor: '#dc3545',
+        top: 10,
+        left: 10,
+        backgroundColor: theme.colors.rose[500],
         borderRadius: 8,
         paddingHorizontal: 8,
         paddingVertical: 4,
         zIndex: 2,
     },
-    offerDiscountBadgeText: {
-        fontSize: 11,
-        fontWeight: '600',
-        color: '#ffffff',
+    offerTimeBadgeText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: theme.colors.rose[50],
     },
     offerContent: {
         padding: 16,
+        paddingBottom: 12,
     },
     offerTimeRow: {
         flexDirection: 'row',
@@ -989,14 +998,14 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     originalPrice: {
-        fontSize: 12,
+        fontSize: 15,
         color: '#6c757d',
         textDecorationLine: 'line-through',
     },
     discountedPrice: {
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: '700',
-        color: '#dc3545',
+        color: theme.colors.emerald[600],
     },
     // New venues styles
     newVenueItem: {
@@ -1183,6 +1192,7 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 3,
         overflow: 'hidden',
+        position: 'relative',
     },
     scheduleImageContainer: {
         width: '100%',
@@ -1243,6 +1253,7 @@ const styles = StyleSheet.create({
     },
     scheduleContent: {
         padding: 16,
+        paddingBottom: 12,
     },
     scheduleTimeRow: {
         flexDirection: 'row',
@@ -1274,6 +1285,48 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#6b7280',
         lineHeight: 16,
+    },
+    // Enhanced offer content styles
+    offerPriceSection: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 8,
+    },
+    savingsBadge: {
+        backgroundColor: theme.colors.emerald[50],
+        borderWidth: 1,
+        borderColor: theme.colors.emerald[100],
+        borderRadius: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+    },
+    savingsText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: theme.colors.emerald[800],
+    },
+    offerVenueSection: {
+        marginBottom: 8,
+    },
+    offerCTA: {
+        position: 'absolute',
+        bottom: 12,
+        right: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        zIndex: 2,
+    },
+    offerCTAText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: theme.colors.rose[600],
+    },
+    offerCTAArrow: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: theme.colors.rose[600],
     },
     // New studios section styles
     newStudiosSection: {
