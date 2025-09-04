@@ -574,7 +574,18 @@ export function NewsScreen() {
                             snapToAlignment="start"
                         >
                             {upcomingClasses.map((classItem, index) => (
-                                <View key={classItem.id} style={styles.scheduleCard}>
+                                <TouchableOpacity 
+                                    key={classItem.id} 
+                                    style={styles.scheduleCard}
+                                    onPress={() => {
+                                        if (classItem.classInstanceId) {
+                                            navigation.navigate('ClassDetailsModal', { 
+                                                classInstanceId: classItem.classInstanceId 
+                                            });
+                                        }
+                                    }}
+                                    activeOpacity={0.7}
+                                >
                                     {/* Image section with overlay */}
                                     <View style={styles.scheduleImageContainer}>
                                         {classItem.imageUrl ? (
@@ -635,7 +646,7 @@ export function NewsScreen() {
                                             </Text>
                                         )}
                                     </View>
-                                </View>
+                                </TouchableOpacity>
                             ))}
                         </ScrollView>
                     </View>
@@ -658,7 +669,18 @@ export function NewsScreen() {
                             snapToAlignment="start"
                         >
                             {lastMinuteOffers.map((offer, index) => (
-                                <View key={offer.id} style={styles.scheduleCard}>
+                                <TouchableOpacity 
+                                    key={offer.id} 
+                                    style={styles.scheduleCard}
+                                    onPress={() => {
+                                        if (offer.classInstanceId) {
+                                            navigation.navigate('ClassDetailsModal', { 
+                                                classInstanceId: offer.classInstanceId 
+                                            });
+                                        }
+                                    }}
+                                    activeOpacity={0.7}
+                                >
                                     {/* Image section with overlay */}
                                     <View style={styles.scheduleImageContainer}>
                                         {offer.imageUrl ? (
@@ -734,7 +756,7 @@ export function NewsScreen() {
                                             <Text style={styles.offerCTAArrow}>→</Text>
                                         </View>
                                     </View>
-                                </View>
+                                </TouchableOpacity>
                             ))}
                         </ScrollView>
                     </View>
@@ -757,7 +779,9 @@ export function NewsScreen() {
                                         venue={venue}
                                         storageIdToUrl={storageIdToUrl}
                                         onPress={(selectedVenue) => {
-                                            // Handle venue press - you can navigate to venue details
+                                            navigation.navigate('VenueDetailsScreen', { 
+                                                venueId: selectedVenue._id 
+                                            });
                                         }}
                                     />
                                 </View>
