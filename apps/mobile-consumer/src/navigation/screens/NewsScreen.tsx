@@ -107,6 +107,7 @@ const CarouselItem = ({ item, type, itemWidth }: { item: any; type: string; item
             case 'offers':
                 return (
                     <View style={styles.offerItem}>
+                        {/* Image section with overlay - similar to upcoming classes */}
                         <View style={styles.offerImageContainer}>
                             {item.imageUrl ? (
                                 <Image
@@ -119,19 +120,55 @@ const CarouselItem = ({ item, type, itemWidth }: { item: any; type: string; item
                             ) : (
                                 <View style={[styles.offerImage, styles.placeholderImage]} />
                             )}
-                            <View style={styles.offerBadge}>
-                                <Text style={styles.offerBadgeText}>20% OFF</Text>
+
+                            {/* Gradient overlay */}
+                            <LinearGradient
+                                pointerEvents="none"
+                                colors={[
+                                    'transparent',
+                                    'rgba(0,0,0,0.25)',
+                                    'rgba(0,0,0,0.65)',
+                                ]}
+                                locations={[0, 0.5, 1]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 0, y: 1 }}
+                                style={styles.offerImageGradient}
+                            />
+
+                            {/* Text overlay on image */}
+                            <View style={styles.offerImageOverlay}>
+                                <Text style={styles.offerOverlayClassName} numberOfLines={1}>
+                                    {item.title}
+                                </Text>
+                                <Text style={styles.offerOverlayInstructor} numberOfLines={1}>
+                                    with {item.instructor}
+                                </Text>
+                            </View>
+
+                            {/* Discount badge */}
+                            <View style={styles.offerDiscountBadge}>
+                                <Text style={styles.offerDiscountBadgeText}>{item.discountPercentage || '20%'} OFF</Text>
                             </View>
                         </View>
+
+                        {/* Content section - similar to upcoming classes */}
                         <View style={styles.offerContent}>
-                            <Text style={styles.offerTitle} numberOfLines={1}>{item.title}</Text>
-                            {item.subtitle && <Text style={styles.offerSubtitle}>{item.subtitle}</Text>}
-                            {item.venueName && <Text style={styles.offerVenue} numberOfLines={1}>{item.venueName}</Text>}
-                            {item.instructor && <Text style={styles.offerInstructor} numberOfLines={1}>{item.instructor}</Text>}
-                            <View style={styles.priceContainer}>
-                                <Text style={styles.originalPrice}>{item.originalPrice}</Text>
-                                <Text style={styles.discountedPrice}>{item.discountedPrice}</Text>
+                            <View style={styles.offerTimeRow}>
+                                <Text style={styles.offerTime}>{item.subtitle}</Text>
+                                <View style={styles.priceContainer}>
+                                    <Text style={styles.originalPrice}>{item.originalPrice}</Text>
+                                    <Text style={styles.discountedPrice}>{item.discountedPrice}</Text>
+                                </View>
                             </View>
+
+                            <Text style={styles.offerVenue} numberOfLines={1}>
+                                {item.venueName}
+                            </Text>
+                            {item.venueCity && (
+                                <Text style={styles.offerVenueCity} numberOfLines={1}>
+                                    {item.venueCity}
+                                </Text>
+                            )}
                         </View>
                     </View>
                 );
@@ -194,7 +231,7 @@ const CarouselSection = ({ title, data, type, itemWidth }: { title: string; data
                 <Carousel
                     loop={false}
                     width={itemWidth}
-                    height={180}
+                    height={type === 'offers' ? 280 : 180}
                     data={data}
                     scrollAnimationDuration={500}
                     renderItem={({ item }) => <CarouselItem item={item} type={type} itemWidth={itemWidth} />}
@@ -216,7 +253,7 @@ export function NewsScreen() {
     const user = useAuthenticatedUser();
 
     const now = useCurrentTime();
-    const next12Hours = useMemo(() => new Date(now.getTime() + (12 * 60 * 60 * 1000)), [now]);
+    const next8Hours = useMemo(() => new Date(now.getTime() + (8 * 60 * 60 * 1000)), [now]);
     const thirtyDaysAgo = useMemo(() => new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000)), [now]);
 
     // Query for user's upcoming bookings (for "Your upcoming classes")
@@ -225,14 +262,16 @@ export function NewsScreen() {
         user ? { daysAhead: 7 } : "skip"
     );
 
-    // Query for last minute offers (classes starting in next 12 hours)
-    const lastMinuteClassInstances = useQuery(
-        api.queries.classInstances.getClassInstances,
+    // Query for last minute offers (classes starting in next 8 hours with actual discounts)
+    const lastMinuteDiscountedInstances = useQuery(
+        api.queries.classInstances.getLastMinuteDiscountedClassInstances,
         {
             startDate: now.getTime(),
-            endDate: next12Hours.getTime()
+            endDate: next8Hours.getTime(),
+            limit: 6
         }
     );
+
 
     // Get venues with image URLs using custom hook
     const { venues: allVenues, venuesLoading, storageIdToUrl } = useAllVenues();
@@ -271,8 +310,8 @@ export function NewsScreen() {
             }
         });
 
-        // From last minute class instances (template snapshots) - for last minute offers
-        lastMinuteClassInstances?.forEach(instance => {
+        // From last minute discounted instances (template snapshots) - for last minute offers
+        lastMinuteDiscountedInstances?.forEach(instance => {
             if (instance.templateSnapshot?.imageStorageIds) {
                 ids.push(...instance.templateSnapshot.imageStorageIds);
             }
@@ -282,7 +321,7 @@ export function NewsScreen() {
         });
 
         return [...new Set(ids)]; // Remove duplicates
-    }, [upcomingClassInstances, lastMinuteClassInstances]);
+    }, [upcomingClassInstances, lastMinuteDiscountedInstances]);
 
     // Fetch image URLs for class instances only
     const classImageUrlsQuery = useQuery(
@@ -390,28 +429,47 @@ export function NewsScreen() {
     // Process data for last minute offers - use stale data when available
     const lastMinuteOffers = useMemo(() => {
         // Use most recent data available, even if refreshing
-        const classInstancesData = lastMinuteClassInstances || [];
-        if (!classInstancesData.length) return [];
+        const discountedInstancesData = lastMinuteDiscountedInstances || [];
+        if (!discountedInstancesData.length) return [];
 
-        return classInstancesData
-            .filter(instance => {
-                const timeUntilStart = (instance.startTime - now.getTime()) / (1000 * 60 * 60);
-                return timeUntilStart <= 12 && timeUntilStart > 0;
-            })
+        console.log('lastMinuteDiscountedInstances', discountedInstancesData[0].pricing.originalPrice);
+        console.log('lastMinuteDiscountedInstances', discountedInstancesData[0].pricing.finalPrice);
+        console.log('lastMinuteDiscountedInstances', discountedInstancesData[0].discountPercentage);
+
+        return discountedInstancesData
             .slice(0, 4)
             .map(instance => {
-                const timeUntilStart = (instance.startTime - now.getTime()) / (1000 * 60 * 60);
+                const timeUntilStartMs = instance.startTime - now.getTime();
+                const timeUntilStartHours = Math.floor(timeUntilStartMs / (1000 * 60 * 60));
+                const timeUntilStartMinutes = Math.floor((timeUntilStartMs % (1000 * 60 * 60)) / (1000 * 60));
+
                 const templateImageId = instance.templateSnapshot?.imageStorageIds?.[0];
                 const venueImageId = instance.venueSnapshot?.imageStorageIds?.[0];
                 const imageUrl = templateImageId ? combinedStorageIdToUrl.get(templateImageId) :
                     venueImageId ? combinedStorageIdToUrl.get(venueImageId) : null;
 
+                // Use real pricing data from backend
+                const originalPrice = instance.pricing.originalPrice;
+                const finalPrice = instance.pricing.finalPrice;
+                const discountPercentage = instance.discountPercentage;
+
+                // Format time display with hours and minutes
+                let timeDisplay = '';
+                if (timeUntilStartHours > 0) {
+                    timeDisplay = `Starting in ${timeUntilStartHours}h ${timeUntilStartMinutes}m`;
+                } else if (timeUntilStartMinutes > 0) {
+                    timeDisplay = `Starting in ${timeUntilStartMinutes}m`;
+                } else {
+                    timeDisplay = 'Starting soon';
+                }
+
                 return {
                     id: instance._id,
                     title: instance.name || 'Class',
-                    subtitle: `Starting in ${Math.floor(timeUntilStart)}h`,
-                    originalPrice: instance.price ? `${(instance.price / 100).toFixed(0)}€` : '25€',
-                    discountedPrice: instance.price ? `${Math.floor(instance.price * 0.8 / 100)}€` : '20€',
+                    subtitle: timeDisplay,
+                    originalPrice: `${centsToCredits(originalPrice)} credits`,
+                    discountedPrice: `${centsToCredits(finalPrice)} credits`,
+                    discountPercentage: `${discountPercentage}%`,
                     venueName: instance.venueSnapshot?.name,
                     venueCity: instance.venueSnapshot?.address?.city,
                     instructor: instance.templateSnapshot?.instructor,
@@ -420,7 +478,7 @@ export function NewsScreen() {
                     classInstanceId: instance._id
                 };
             });
-    }, [lastMinuteClassInstances, now, combinedStorageIdToUrl]);
+    }, [lastMinuteDiscountedInstances, now, combinedStorageIdToUrl]);
 
     // Process data for new venues - use stale data when available
     const newVenues = useMemo(() => {
@@ -476,7 +534,7 @@ export function NewsScreen() {
     // Separate initial loading from refetching - only show loading screen on very first load
     const isInitialLoading = user && (
         userBookings === undefined &&
-        lastMinuteClassInstances === undefined &&
+        lastMinuteDiscountedInstances === undefined &&
         (allVenues === undefined || venuesLoading)
     );
 
@@ -592,12 +650,87 @@ export function NewsScreen() {
                     </View>
                 )}
 
-                <CarouselSection
-                    title="Last minute offers"
-                    data={lastMinuteOffers.length > 0 ? lastMinuteOffers : mockLastMinuteOffers}
-                    type="offers"
-                    itemWidth={OFFERS_ITEM_WIDTH}
-                />
+                {lastMinuteOffers.length > 0 && (
+                    <View style={styles.scheduleSection}>
+                        <Text style={styles.scheduleSectionTitle}>Last minute offers</Text>
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.scheduleScrollContainer}
+                            decelerationRate="fast"
+                            snapToInterval={screenWidth * 0.8 + 16}
+                            snapToAlignment="start"
+                        >
+                            {lastMinuteOffers.map((offer, index) => (
+                                <View key={offer.id} style={styles.scheduleCard}>
+                                    {/* Image section with overlay */}
+                                    <View style={styles.scheduleImageContainer}>
+                                        {offer.imageUrl ? (
+                                            <Image
+                                                source={{ uri: offer.imageUrl }}
+                                                style={styles.scheduleImage}
+                                                contentFit="cover"
+                                                transition={200}
+                                                cachePolicy="memory-disk"
+                                            />
+                                        ) : (
+                                            <View style={[styles.scheduleImage, styles.placeholderImage]} />
+                                        )}
+
+                                        {/* Gradient overlay */}
+                                        <LinearGradient
+                                            pointerEvents="none"
+                                            colors={[
+                                                'transparent',
+                                                'rgba(0,0,0,0.25)',
+                                                'rgba(0,0,0,0.65)',
+                                            ]}
+                                            locations={[0, 0.5, 1]}
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 0, y: 1 }}
+                                            style={styles.scheduleImageGradient}
+                                        />
+
+                                        {/* Text overlay on image */}
+                                        <View style={styles.scheduleImageOverlay}>
+                                            <Text style={styles.scheduleOverlayClassName} numberOfLines={1}>
+                                                {offer.title}
+                                            </Text>
+                                            <Text style={styles.scheduleOverlayInstructor} numberOfLines={1}>
+                                                with {offer.instructor}
+                                            </Text>
+                                        </View>
+
+                                        {/* Discount badge */}
+                                        <View style={styles.offerDiscountBadge}>
+                                            <Text style={styles.offerDiscountBadgeText}>{offer.discountPercentage || '20%'} OFF</Text>
+                                        </View>
+                                    </View>
+
+                                    {/* Content section - similar to upcoming classes */}
+                                    <View style={styles.scheduleContent}>
+                                        <View style={styles.scheduleTimeRow}>
+                                            <Text style={styles.offerTime}>{offer.subtitle}</Text>
+                                            <View style={styles.priceContainer}>
+                                                <Text style={styles.originalPrice}>{offer.originalPrice}</Text>
+                                                <Text style={styles.discountedPrice}>{offer.discountedPrice}</Text>
+                                            </View>
+                                        </View>
+
+                                        <Text style={styles.scheduleVenue} numberOfLines={1}>
+                                            {offer.venueName}
+                                        </Text>
+                                        {offer.venueCity && (
+                                            <Text style={styles.scheduleAddress} numberOfLines={2}>
+                                                {offer.venueCity}
+                                            </Text>
+                                        )}
+                                    </View>
+                                </View>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
 
                 {/* New studios section - horizontal carousel with VenueCards */}
                 {newVenuesForCards.length > 0 && (
@@ -752,36 +885,103 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-start',
         marginTop: 4,
     },
-    // Offers styles
+    // Offers styles - updated to match upcoming classes
     offerItem: {
-        backgroundColor: '#fff3cd',
+        backgroundColor: '#ffffff',
         borderRadius: 16,
-        padding: 16,
-        borderWidth: 2,
-        borderColor: '#ffc107',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 3,
+        overflow: 'hidden',
     },
     offerImageContainer: {
         width: '100%',
-        height: 120,
-        borderRadius: 12,
-        marginBottom: 12,
+        height: 160,
         overflow: 'hidden',
         position: 'relative',
     },
     offerImage: {
         width: '100%',
         height: '100%',
-        backgroundColor: '#ffeaa7',
-        borderRadius: 12,
+        backgroundColor: '#f3f4f6',
+    },
+    offerImageGradient: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: '60%',
+        zIndex: 1,
+    },
+    offerImageOverlay: {
+        position: 'absolute',
+        left: 12,
+        bottom: 12,
+        right: 60,
+        zIndex: 2,
+    },
+    offerOverlayClassName: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: 'white',
+        textShadowColor: 'rgba(0,0,0,0.35)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 3,
+        marginBottom: 2,
+    },
+    offerOverlayInstructor: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: 'rgba(255,255,255,0.9)',
+        textShadowColor: 'rgba(0,0,0,0.35)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 3,
+    },
+    offerDiscountBadge: {
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        backgroundColor: '#dc3545',
+        borderRadius: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        zIndex: 2,
+    },
+    offerDiscountBadgeText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#ffffff',
     },
     offerContent: {
-        flex: 1,
+        padding: 16,
     },
-    offerTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#856404',
+    offerTimeRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         marginBottom: 8,
+    },
+    offerTime: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#dc3545',
+        backgroundColor: '#fee2e2',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 4,
+    },
+    offerVenue: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#1a1a1a',
+        marginBottom: 4,
+    },
+    offerVenueCity: {
+        fontSize: 12,
+        color: '#6b7280',
+        lineHeight: 16,
     },
     priceContainer: {
         flexDirection: 'row',
@@ -789,44 +989,14 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     originalPrice: {
-        fontSize: 14,
+        fontSize: 12,
         color: '#6c757d',
         textDecorationLine: 'line-through',
     },
     discountedPrice: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#dc3545',
-    },
-    offerBadge: {
-        position: 'absolute',
-        top: 8,
-        left: 8,
-        backgroundColor: '#dc3545',
-        borderRadius: 8,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-    },
-    offerBadgeText: {
-        fontSize: 10,
+        fontSize: 14,
         fontWeight: '700',
-        color: '#ffffff',
-    },
-    offerSubtitle: {
-        fontSize: 12,
-        color: '#856404',
-        fontWeight: '500',
-        marginBottom: 2,
-    },
-    offerVenue: {
-        fontSize: 11,
-        color: '#6c757d',
-        marginBottom: 2,
-    },
-    offerInstructor: {
-        fontSize: 11,
-        color: '#8b5cf6',
-        marginBottom: 6,
+        color: '#dc3545',
     },
     // New venues styles
     newVenueItem: {

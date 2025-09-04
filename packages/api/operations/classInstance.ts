@@ -354,6 +354,7 @@ export const prepareInstanceUpdatesFromVenueChanges = (
  * @business_rule endTime = startTime + (template.duration * 60 * 1000)
  * @business_rule dayOfWeek calculated using getDay() (0=Sunday, 1=Monday, etc.)
  * @business_rule timePattern format: "HH:mm-HH:mm" in 24-hour format
+ * @business_rule discountRules inherited from template (can be overridden per instance)
  * @data_integrity Creates immutable snapshots of template and venue at creation time
  * @audit_trail Sets createdAt, createdBy for full audit trail
  * @initialization bookedCount and waitlistCount start at 0
@@ -400,6 +401,7 @@ export const createInstanceFromTemplate = (
         cancellationWindowHours: template.cancellationWindowHours,
         tags: template.tags,
         color: template.color,
+        discountRules: template.discountRules,
 
         // Booking tracking
         bookedCount: 0,

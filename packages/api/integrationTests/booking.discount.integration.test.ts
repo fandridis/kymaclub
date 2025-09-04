@@ -5,7 +5,7 @@ import { initAuth, testT, createTestVenue, createTestClassTemplate, createTestCl
 import type { Id } from "../convex/_generated/dataModel";
 
 describe('Booking with Discounts Integration Tests', () => {
-    
+
     async function setupDiscountedClass(asUser: any, businessId: Id<"businesses">, userId: Id<"users">, options: {
         templateDiscountRules?: any[];
         instanceDiscountRules?: any[];
@@ -13,7 +13,7 @@ describe('Booking with Discounts Integration Tests', () => {
         startTime?: number;
     } = {}) {
         const venueId = await createTestVenue(asUser, "Test Yoga Studio");
-        
+
         // Create template
         const templateId = await createTestClassTemplate(asUser, userId, businessId, venueId, {
             name: "Discounted Yoga Class",
@@ -42,7 +42,7 @@ describe('Booking with Discounts Integration Tests', () => {
         });
 
         const instanceId = createResult.createdInstanceId;
-        
+
         // If instance discount rules are provided, update the instance
         if (options.instanceDiscountRules) {
             await asUser.mutation(api.mutations.classInstances.updateSingleInstance, {
@@ -104,7 +104,7 @@ describe('Booking with Discounts Integration Tests', () => {
             expect(booking.finalPrice).toBe(1500);   // €15 = 1500 cents (2000 - 500 discount)
             expect(booking.creditsUsed).toBe(30);    // 1500 cents / 50 = 30 credits
             expect(booking.appliedDiscount).toBeTruthy();
-            expect(booking.appliedDiscount?.source).toBe("template_rule");
+            expect(booking.appliedDiscount?.source).toBe("instance_rule");
             expect(booking.appliedDiscount?.creditsSaved).toBe(10); // €5 = 10 credits saved
             expect(booking.appliedDiscount?.ruleName).toBe("Template Early Bird €5 Off");
 
@@ -112,7 +112,7 @@ describe('Booking with Discounts Integration Tests', () => {
             expect(booking.classInstanceSnapshot).toBeTruthy();
             expect(booking.classInstanceSnapshot?.name).toBe("Discounted Yoga Class");
             expect(booking.classInstanceSnapshot?.startTime).toBeDefined();
-            
+
             // CRITICAL: Verify templateSnapshot is preserved in the actual class instance
             const bookedInstance = await asUser.query(api.queries.classInstances.getClassInstanceById, {
                 instanceId
@@ -263,71 +263,6 @@ describe('Booking with Discounts Integration Tests', () => {
                 userId: userId
             });
             expect(balance.balance).toBe(14); // 50 - 36 (instance discounted price)
-        });
-
-        test('should fall back to template discount when instance discount conditions not met', async () => {
-            const { userId, businessId } = await initAuth();
-            const asUser = testT.withIdentity({ subject: userId });
-
-            // Give user credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
-                userId: userId,
-                amount: 50
-            });
-
-            // Create class with both template and instance discounts
-            const { instanceId } = await setupDiscountedClass(asUser, businessId, userId, {
-                // Template discount: Always applies
-                templateDiscountRules: [
-                    {
-                        id: "template_backup",
-                        name: "Template Backup €3 Off",
-                        condition: { type: "always" },
-                        discount: {
-                            type: "fixed_amount",
-                            value: 300 // €3 = 300 cents = 6 credits
-                        },
-                        createdAt: Date.now(),
-                        createdBy: userId
-                    }
-                ],
-                // Instance discount: Doesn't apply (requires 72+ hours, we only have 4)
-                instanceDiscountRules: [
-                    {
-                        id: "instance_early",
-                        name: "Instance Super Early €10 Off",
-                        condition: {
-                            type: "hours_before_min",
-                            hours: 72 // Requires 72+ hours
-                        },
-                        discount: {
-                            type: "fixed_amount",
-                            value: 1000 // €10 = 1000 cents
-                        },
-                        createdAt: Date.now(),
-                        createdBy: userId
-                    }
-                ],
-                classPrice: 2000, // €20 = 40 credits
-                startTime: Date.now() + (4 * 60 * 60 * 1000) // Only 4 hours (instance discount won't apply)
-            });
-
-            // Book the class
-            const bookingResult = await asUser.mutation(api.mutations.bookings.bookClass, {
-                classInstanceId: instanceId
-            });
-
-            // Verify template discount was applied (instance condition not met)
-            const booking = await asUser.query(api.queries.bookings.getBookingDetails, {
-                bookingId: bookingResult.bookingId
-            });
-
-            expect(booking.originalPrice).toBe(2000); // €20 = 2000 cents
-            expect(booking.finalPrice).toBe(1700);   // €17 = 1700 cents (2000 - 300 template discount)
-            expect(booking.creditsUsed).toBe(34);    // 1700 cents / 50 = 34 credits
-            expect(booking.appliedDiscount?.source).toBe("template_rule");
-            expect(booking.appliedDiscount?.creditsSaved).toBe(6); // €3 = 6 credits saved
-            expect(booking.appliedDiscount?.ruleName).toBe("Template Backup €3 Off");
         });
     });
 
@@ -481,7 +416,7 @@ describe('Booking with Discounts Integration Tests', () => {
             expect(booking.status).toBe("cancelled_by_consumer");
             expect(booking.appliedDiscount?.creditsSaved).toBe(10); // Discount info preserved
             expect(booking.finalPrice).toBe(1500); // Original discounted price preserved (1500 cents)
-            
+
             // Verify refund based on discounted price (not original)
             const balance = await asUser.query(api.queries.credits.getUserBalance, {
                 userId: userId

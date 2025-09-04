@@ -334,7 +334,7 @@ describe('Class Instance Operations - Safety Tests', () => {
       );
 
       // Verify discountRules are copied to both instance and templateSnapshot
-      expect(instance.discountRules).toBeUndefined(); // Instance should not get template discountRules directly
+      expect(instance.discountRules).toEqual(mockTemplate.discountRules); // Instance now inherits template discountRules
       expect(instance.templateSnapshot.discountRules).toEqual(mockTemplate.discountRules);
     });
 

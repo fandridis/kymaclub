@@ -3,65 +3,81 @@ import { PricingResult } from '../types/pricing';
 import { logger } from '../utils/logger';
 
 /**
- * Business logic for dynamic pricing calculations with discount hierarchy
+ * Business logic for flexible pricing calculations with configurable discount rules
  * 
- * This module implements the core pricing engine for class bookings, applying
- * time-based and capacity-based discounts according to business rules.
+ * This module implements the core pricing engine for class bookings, evaluating
+ * discount rules defined in class instances and templates to find the best applicable discount.
+ * Supports time-based conditions (hours_before_min, hours_before_max, always) with fixed amount discounts.
  */
 
 /**
- * Calculates final price for a class booking with dynamic discount application
+ * Calculates final price for a class booking using flexible discount rules
  * 
- * @description Applies discount hierarchy: Early bird (10%) takes precedence over low capacity (5%).
- * Base price selection follows: instance.price → template.price → default(1000 cents)
+ * @description Evaluates discount rules from instance/template and applies the best valid discount.
+ * Base price selection follows: instance.price → template.price → default(0 cents)
+ * Discount rules are evaluated based on timing conditions and the highest valid discount is applied.
  * 
- * @param instance - Class instance containing startTime, bookedCount, capacity, and optional price
+ * @param instance - Class instance containing startTime, discount rules, and optional price
  * @param template - Class template providing fallback values for missing instance fields
  * @returns Promise<PricingResult> with originalPrice, finalPrice, discountPercentage, discountAmount (in cents)
  * 
  * @example
- * // Early bird discount (>48 hours advance booking)
+ * // Early bird discount rule (150 cents off if >48 hours advance booking)
  * const instance = { 
  *   startTime: Date.now() + (72 * 60 * 60 * 1000), // 72 hours future
- *   price: 2000 // 20 business currency units in cents
+ *   price: 2000, // 20 business currency units in cents
+ *   discountRules: [{
+ *     id: "early-bird",
+ *     name: "Early Bird Special",
+ *     condition: { type: "hours_before_min", hours: 48 },
+ *     discount: { type: "fixed_amount", value: 150 }
+ *   }]
  * };
- * const template = { price: 1500 }; // 15 business currency units in cents
  * const result = await calculateFinalPrice(instance, template);
- * // Returns: { originalPrice: 2000, finalPrice: 1800, discountPercentage: 0.1, discountAmount: 200 }
+ * // Returns: { originalPrice: 2000, finalPrice: 1850, discountPercentage: 0.075, discountAmount: 150 }
  * 
  * @example
- * // Low capacity discount (<50% booked, within 48h)
+ * // Multiple discount rules - best valid one is applied
  * const instance = { 
  *   startTime: Date.now() + (24 * 60 * 60 * 1000), // 24 hours future
- *   price: 2000, // 20 euros in cents
- *   bookedCount: 3,
- *   capacity: 10 // 30% utilization
+ *   price: 2000,
+ *   discountRules: [
+ *     { condition: { type: "hours_before_min", hours: 48 }, discount: { value: 300 } }, // Invalid (need >48h)
+ *     { condition: { type: "hours_before_min", hours: 12 }, discount: { value: 100 } }   // Valid (need >12h)
+ *   ]
  * };
  * const result = await calculateFinalPrice(instance, template);
  * // Returns: { originalPrice: 2000, finalPrice: 1900, discountPercentage: 0.05, discountAmount: 100 }
  * 
  * @example
- * // No discount (well-booked class within 48h)
+ * // No valid discount rules
  * const instance = { 
- *   startTime: Date.now() + (24 * 60 * 60 * 1000),
- *   price: 2000, // 20 euros in cents
- *   bookedCount: 8,
- *   capacity: 10 // 80% utilization
+ *   startTime: Date.now() + (6 * 60 * 60 * 1000), // 6 hours future
+ *   price: 2000,
+ *   discountRules: [
+ *     { condition: { type: "hours_before_min", hours: 12 }, discount: { value: 100 } } // Invalid (need >12h)
+ *   ]
  * };
  * const result = await calculateFinalPrice(instance, template);
  * // Returns: { originalPrice: 2000, finalPrice: 2000, discountPercentage: 0, discountAmount: 0 }
  * 
  * @example
- * // Base price fallback chain
- * const instance = { startTime: Date.now() + (72 * 60 * 60 * 1000) }; // No price
- * const template = {}; // No price  
+ * // Template discount rules used when instance has none
+ * const instance = { startTime: Date.now() + (72 * 60 * 60 * 1000) }; // No price, no rules
+ * const template = { 
+ *   price: 1500,
+ *   discountRules: [{
+ *     condition: { type: "always" },
+ *     discount: { type: "fixed_amount", value: 50 }
+ *   }]
+ * };
  * const result = await calculateFinalPrice(instance, template);
- * // Returns: { originalPrice: 1000, finalPrice: 900, discountPercentage: 0.1, discountAmount: 100 }
+ * // Returns: { originalPrice: 1500, finalPrice: 1450, discountPercentage: 0.033, discountAmount: 50 }
  * 
  * @throws Never throws - all edge cases handled gracefully
- * @safety Zero capacity handled via fallback to default (1000 cents), prevents division by zero
- * @safety Negative prices impossible - minimum result is 0
- * @safety Past classes can still receive capacity discounts (intentional business rule)
+ * @safety Negative prices prevented - minimum final price is 0
+ * @safety Instance discount rules take precedence over template rules
+ * @safety Missing discount rules result in no discount (0 cents off)
  */
 export const calculateFinalPrice = async (
   instance: Doc<"classInstances">,
@@ -73,17 +89,17 @@ export const calculateFinalPrice = async (
   });
 
   // Get base price in cents (instance overrides template)
-  const basePrice = instance.price || template.price || 1000; // Default 10.00 in business currency (cents)
+  const basePrice = instance.price || template.price || 0; // Default 0 in business currency (cents)
   logger.debug("Base price determined", {
     basePrice,
     basePriceFormatted: `${(basePrice / 100).toFixed(2)}`,
     priceSource: instance.price ? 'instance' : template.price ? 'template' : 'default'
   });
 
-  // Check for discounts
-  const discountPercentage = await calculateDiscount(instance, template);
-  const discountAmount = Math.round(basePrice * discountPercentage);
-  const finalPrice = basePrice - discountAmount;
+  // Check for discounts (now returns discount amount in cents, not percentage)
+  const discountAmount = await calculateDiscount(instance, template);
+  const finalPrice = Math.max(0, basePrice - discountAmount); // Ensure price doesn't go negative
+  const discountPercentage = basePrice > 0 ? discountAmount / basePrice : 0;
 
   logger.debug("Pricing calculation completed", {
     basePrice,
@@ -102,52 +118,52 @@ export const calculateFinalPrice = async (
 };
 
 /**
- * Calculates applicable discount percentage based on timing and capacity utilization
+ * Calculates the best applicable discount amount based on discount rules
  * 
- * @description Implements discount hierarchy where early bird takes precedence.
- * Business rules: Early bird (>48h) = 10%, Low capacity (<50% full) = 5%, No overlap
+ * @description Evaluates all discount rules from instance and template, finds the best valid discount.
+ * Discount rules can have time-based conditions (hours_before_min, hours_before_max) or always apply.
+ * Returns the highest discount amount that has valid conditions.
  * 
- * @param instance - Class instance with startTime, bookedCount, capacity
- * @param template - Template providing fallback capacity value
- * @returns Promise<number> discount percentage (0, 0.05, or 0.1)
- * 
- * @example
- * // Early bird wins over low capacity
- * const instance = { 
- *   startTime: Date.now() + (72 * 60 * 60 * 1000), // >48h = early bird eligible
- *   bookedCount: 2, capacity: 10 // 20% = low capacity eligible too
- * };
- * const discount = await calculateDiscount(instance, {});
- * // Returns: 0.1 (early bird takes precedence)
+ * @param instance - Class instance containing discount rules and timing
+ * @param template - Template providing fallback discount rules
+ * @returns Promise<number> discount amount in cents (not percentage)
  * 
  * @example
- * // Low capacity discount when not early bird
+ * // Instance with early bird rule (50 cents off if >48h)
  * const instance = { 
- *   startTime: Date.now() + (24 * 60 * 60 * 1000), // <48h = no early bird
- *   bookedCount: 3, capacity: 10 // 30% = low capacity
+ *   startTime: Date.now() + (72 * 60 * 60 * 1000), // 72 hours future
+ *   discountRules: [{
+ *     id: "early-bird",
+ *     name: "Early Bird",
+ *     condition: { type: "hours_before_min", hours: 48 },
+ *     discount: { type: "fixed_amount", value: 50 }
+ *   }]
  * };
- * const discount = await calculateDiscount(instance, {});
- * // Returns: 0.05 (low capacity discount)
+ * const discount = await calculateDiscount(instance, template);
+ * // Returns: 50 (cents discount amount)
  * 
  * @example
- * // No discount scenarios
+ * // Multiple rules - returns best valid discount
  * const instance = { 
- *   startTime: Date.now() + (24 * 60 * 60 * 1000), // <48h
- *   bookedCount: 7, capacity: 10 // 70% utilization
+ *   startTime: Date.now() + (24 * 60 * 60 * 1000), // 24 hours future
+ *   discountRules: [
+ *     { condition: { type: "hours_before_min", hours: 48 }, discount: { value: 100 } }, // Invalid (need >48h)
+ *     { condition: { type: "hours_before_min", hours: 12 }, discount: { value: 25 } }   // Valid (need >12h)
+ *   ]
  * };
- * const discount = await calculateDiscount(instance, {});
- * // Returns: 0 (no discounts applicable)
+ * const discount = await calculateDiscount(instance, template);
+ * // Returns: 25 (best valid discount)
  * 
  * @internal This function is not exported - used only by calculateFinalPrice
- * @business_rule Early bird discount requires >48 hours advance booking
- * @business_rule Low capacity discount requires <50% utilization
- * @business_rule Discounts are mutually exclusive, early bird takes precedence
+ * @business_rule Instance discount rules take precedence over template rules
+ * @business_rule Returns the highest valid discount amount, not percentage
+ * @business_rule "always" condition type is always valid regardless of timing
  */
 const calculateDiscount = async (
   instance: Doc<"classInstances">,
   template: Doc<"classTemplates">
 ): Promise<number> => {
-  logger.debug("Checking for applicable discounts", {
+  logger.debug("Evaluating discount rules", {
     instanceId: instance._id,
     startTime: instance.startTime
   });
@@ -155,46 +171,110 @@ const calculateDiscount = async (
   const currentTime = Date.now();
   const hoursUntilClass = (instance.startTime - currentTime) / (1000 * 60 * 60);
 
-  logger.debug("Discount timing analysis", {
+  logger.debug("Discount timing context", {
     currentTime,
     startTime: instance.startTime,
     hoursUntilClass: Number(hoursUntilClass.toFixed(2))
   });
 
-  // Early bird discount (more than 48 hours in advance)
-  if (hoursUntilClass > 48) {
-    logger.debug("Early bird discount applied", {
-      hoursUntilClass: Number(hoursUntilClass.toFixed(2)),
-      discountPercentage: 10
-    });
-    return 0.1; // 10% discount
+  // Get discount rules (template rules are not used, they are only used when creating instances)
+  const discountRules = instance.discountRules || [];
+
+  if (discountRules.length === 0) {
+    logger.debug("No discount rules found");
+    return 0;
   }
 
-  // Low capacity discount (less than 50% full)
-  // Note: Using proper typing instead of 'any' - these fields should be properly typed in the schema
-  const bookedCount = (instance as any).bookedCount || 0; // TODO: Add proper typing for bookedCount in schema
-  const capacity = (instance as any).capacity || (template as any).capacity || 10; // TODO: Add proper typing for capacity
-  const capacityUtilization = bookedCount / capacity;
-
-  logger.debug("Capacity analysis", {
-    bookedCount,
-    capacity,
-    capacityUtilization: Number((capacityUtilization * 100).toFixed(1))
+  logger.debug("Found discount rules", {
+    ruleCount: discountRules.length,
+    rules: discountRules.map(rule => ({
+      id: rule.id,
+      name: rule.name,
+      conditionType: rule.condition.type,
+      conditionHours: rule.condition.hours,
+      discountValue: rule.discount.value
+    }))
   });
 
-  if (capacityUtilization < 0.5) {
-    logger.debug("Low capacity discount applied", {
-      capacityUtilization: Number((capacityUtilization * 100).toFixed(1)),
-      discountPercentage: 5
-    });
-    return 0.05; // 5% discount
+  // Evaluate each rule and find the best valid discount
+  let bestDiscountAmount = 0;
+  let bestRuleName = null;
+
+  for (const rule of discountRules) {
+    const isValid = evaluateDiscountCondition(rule.condition, hoursUntilClass);
+
+    if (isValid && rule.discount.value > bestDiscountAmount) {
+      bestDiscountAmount = rule.discount.value;
+      bestRuleName = rule.name;
+
+      logger.debug("New best discount found", {
+        ruleName: rule.name,
+        ruleId: rule.id,
+        discountAmount: rule.discount.value,
+        conditionType: rule.condition.type,
+        conditionHours: rule.condition.hours
+      });
+    } else if (!isValid) {
+      logger.debug("Rule condition not met", {
+        ruleName: rule.name,
+        ruleId: rule.id,
+        conditionType: rule.condition.type,
+        conditionHours: rule.condition.hours,
+        hoursUntilClass: Number(hoursUntilClass.toFixed(2))
+      });
+    }
   }
 
-  logger.debug("No discounts applicable", {
-    hoursUntilClass: Number(hoursUntilClass.toFixed(2)),
-    capacityUtilization: Number((capacityUtilization * 100).toFixed(1))
+  logger.debug("Discount evaluation completed", {
+    bestDiscountAmount,
+    bestRuleName,
+    totalRulesEvaluated: discountRules.length
   });
-  return 0; // No discount
+
+  return bestDiscountAmount;
+};
+
+/**
+ * Evaluates if a discount condition is met based on current timing
+ * 
+ * @param condition - The discount rule condition to evaluate
+ * @param hoursUntilClass - Hours until class starts (can be negative for past classes)
+ * @returns boolean indicating if condition is satisfied
+ * 
+ * @example
+ * // hours_before_min: must book at least X hours in advance
+ * evaluateDiscountCondition({ type: "hours_before_min", hours: 48 }, 72); // true (72 > 48)
+ * evaluateDiscountCondition({ type: "hours_before_min", hours: 48 }, 24); // false (24 < 48)
+ * 
+ * @example  
+ * // hours_before_max: must book within X hours of class
+ * evaluateDiscountCondition({ type: "hours_before_max", hours: 24 }, 12); // true (12 < 24)
+ * evaluateDiscountCondition({ type: "hours_before_max", hours: 24 }, 48); // false (48 > 24)
+ * 
+ * @example
+ * // always: condition is always met
+ * evaluateDiscountCondition({ type: "always" }, -10); // true (even for past classes)
+ */
+const evaluateDiscountCondition = (
+  condition: { type: "hours_before_min" | "hours_before_max" | "always", hours?: number },
+  hoursUntilClass: number
+): boolean => {
+  switch (condition.type) {
+    case "always":
+      return true;
+
+    case "hours_before_min":
+      // Must book at least X hours in advance
+      return condition.hours !== undefined && hoursUntilClass >= condition.hours;
+
+    case "hours_before_max":
+      // Must book within X hours of class start
+      return condition.hours !== undefined && hoursUntilClass <= condition.hours;
+
+    default:
+      logger.debug("Unknown condition type", { conditionType: condition.type });
+      return false;
+  }
 };
 
 /**

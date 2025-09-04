@@ -4,148 +4,198 @@ import type { Doc } from "../convex/_generated/dataModel";
 
 // Mock console.log to reduce test noise
 beforeEach(() => {
-  vi.spyOn(console, 'log').mockImplementation(() => {});
+  vi.spyOn(console, 'log').mockImplementation(() => { });
 });
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('Pricing Operations - Safety Tests', () => {
-  
+describe('Pricing Operations - Discount Rule Tests', () => {
+
   describe('calculateFinalPrice', () => {
-    
+
     describe('Base Price Selection (Financial Safety)', () => {
       it('should prioritize instance price over template price', async () => {
         const instance = {
           startTime: Date.now() + (72 * 60 * 60 * 1000), // 72 hours future
-          price: 1500 // 15 euros in cents
+          price: 1500, // 15 euros in cents
+          discountRules: [{
+            id: "early-bird",
+            name: "Early Bird",
+            condition: { type: "hours_before_min", hours: 48 },
+            discount: { type: "fixed_amount", value: 150 }
+          }]
         } as Doc<"classInstances">;
-        
+
         const template = {
-          price: 800 // 8 euros in cents
+          price: 800 // 8 euros in cents (should be ignored)
         } as Doc<"classTemplates">;
-        
+
         const result = await calculateFinalPrice(instance, template);
-        
+
         expect(result.originalPrice).toBe(1500);
-        expect(result.finalPrice).toBe(1350); // 1500 - (1500 * 0.1) = early bird discount
+        expect(result.finalPrice).toBe(1350); // 1500 - 150 discount
+        expect(result.discountAmount).toBe(150);
       });
 
       it('should use template price when instance has no price', async () => {
         const instance = {
           startTime: Date.now() + (72 * 60 * 60 * 1000),
-          // No price property
+          // No price property, no discount rules (template rules not used in pricing logic)
         } as Doc<"classInstances">;
-        
+
         const template = {
-          price: 1200 // 12 euros in cents
+          price: 1200, // 12 euros in cents
+          discountRules: [{
+            id: "template-discount",
+            name: "Template Discount",
+            condition: { type: "always" },
+            discount: { type: "fixed_amount", value: 50 }
+          }]
         } as Doc<"classTemplates">;
-        
+
         const result = await calculateFinalPrice(instance, template);
-        
+
         expect(result.originalPrice).toBe(1200);
+        expect(result.finalPrice).toBe(1200); // No discount applied (no instance discount rules)
+        expect(result.discountAmount).toBe(0);
       });
 
-      it('should use default price (1000 cents) when neither instance nor template has price', async () => {
+      it('should use default 0 cents when neither instance nor template has price', async () => {
         const instance = {
           startTime: Date.now() + (72 * 60 * 60 * 1000),
         } as Doc<"classInstances">;
-        
+
         const template = {
           // No price property
         } as Doc<"classTemplates">;
-        
+
         const result = await calculateFinalPrice(instance, template);
-        
-        expect(result.originalPrice).toBe(1000);
+
+        expect(result.originalPrice).toBe(0);
+        expect(result.finalPrice).toBe(0); // No price, no discount
+        expect(result.discountAmount).toBe(0);
       });
 
       it('should handle zero price correctly', async () => {
         const instance = {
           startTime: Date.now() + (72 * 60 * 60 * 1000),
-          price: 0
+          price: 0,
+          discountRules: [{
+            id: "instance-early-bird",
+            name: "Instance Early Bird",
+            condition: { type: "hours_before_min", hours: 48 },
+            discount: { type: "fixed_amount", value: 50 }
+          }]
         } as Doc<"classInstances">;
-        
+
         const template = {
-          price: 500
+          price: 500,
         } as Doc<"classTemplates">;
-        
+
         const result = await calculateFinalPrice(instance, template);
-        
-        // Logic is: instance.price || template.price || 1000
+
+        // Logic is: instance.price || template.price || 0
         // So 0 (falsy) should fall back to template (500)
         expect(result.originalPrice).toBe(500);
-        expect(result.finalPrice).toBe(450); // 500 - (500 * 0.1) early bird discount
+        expect(result.finalPrice).toBe(450); // 500 - 50 discount
+        expect(result.discountAmount).toBe(50);
       });
     });
 
-    describe('Discount Calculation Safety', () => {
-      it('should apply early bird discount (10%) for classes more than 48 hours away', async () => {
+    describe('Discount Rule Evaluation', () => {
+      it('should apply discount when hours_before_min condition is met', async () => {
         const instance = {
           startTime: Date.now() + (72 * 60 * 60 * 1000), // 72 hours future
-          price: 2000
+          price: 2000,
+          discountRules: [{
+            id: "early-bird",
+            name: "Early Bird",
+            condition: { type: "hours_before_min", hours: 48 },
+            discount: { type: "fixed_amount", value: 200 }
+          }]
         } as Doc<"classInstances">;
-        
+
         const template = {} as Doc<"classTemplates">;
-        
+
         const result = await calculateFinalPrice(instance, template);
-        
-        expect(result.discountPercentage).toBe(0.1);
+
         expect(result.discountAmount).toBe(200);
         expect(result.finalPrice).toBe(1800);
+        expect(result.discountPercentage).toBe(0.1); // 200/2000
       });
 
-      it('should apply low capacity discount (5%) when less than 50% full', async () => {
+      it('should not apply discount when hours_before_min condition is not met', async () => {
         const instance = {
-          startTime: Date.now() + (24 * 60 * 60 * 1000), // 24 hours (no early bird)
+          startTime: Date.now() + (24 * 60 * 60 * 1000), // 24 hours future (less than 48)
           price: 2000,
-          bookedCount: 3,
-          capacity: 10 // 30% capacity
+          discountRules: [{
+            id: "early-bird",
+            name: "Early Bird",
+            condition: { type: "hours_before_min", hours: 48 },
+            discount: { type: "fixed_amount", value: 200 }
+          }]
         } as Doc<"classInstances">;
-        
-        const template = {} as Doc<"classTemplates">;
-        
-        const result = await calculateFinalPrice(instance, template);
-        
-        expect(result.discountPercentage).toBe(0.05);
-        expect(result.discountAmount).toBe(100);
-        expect(result.finalPrice).toBe(1900);
-      });
 
-      it('should not apply discounts when class is soon and well-booked', async () => {
-        const instance = {
-          startTime: Date.now() + (24 * 60 * 60 * 1000), // 24 hours (no early bird)
-          price: 2000,
-          bookedCount: 8,
-          capacity: 10 // 80% capacity (no low capacity discount)
-        } as Doc<"classInstances">;
-        
         const template = {} as Doc<"classTemplates">;
-        
+
         const result = await calculateFinalPrice(instance, template);
-        
-        expect(result.discountPercentage).toBe(0);
+
         expect(result.discountAmount).toBe(0);
         expect(result.finalPrice).toBe(2000);
+        expect(result.discountPercentage).toBe(0);
       });
 
-      it('should prioritize early bird over capacity discount', async () => {
+      it('should apply hours_before_max discount when within time window', async () => {
         const instance = {
-          startTime: Date.now() + (72 * 60 * 60 * 1000), // 72 hours (early bird eligible)
+          startTime: Date.now() + (12 * 60 * 60 * 1000), // 12 hours future
           price: 2000,
-          bookedCount: 2,
-          capacity: 10 // 20% capacity (also eligible for low capacity)
+          discountRules: [{
+            id: "last-minute",
+            name: "Last Minute Deal",
+            condition: { type: "hours_before_max", hours: 24 },
+            discount: { type: "fixed_amount", value: 100 }
+          }]
         } as Doc<"classInstances">;
-        
+
         const template = {} as Doc<"classTemplates">;
-        
+
         const result = await calculateFinalPrice(instance, template);
-        
-        // Should apply early bird (10%), not low capacity (5%)
-        expect(result.discountPercentage).toBe(0.1);
-        expect(result.discountAmount).toBe(200);
-        expect(result.finalPrice).toBe(1800);
+
+        expect(result.discountAmount).toBe(100);
+        expect(result.finalPrice).toBe(1900);
+        expect(result.discountPercentage).toBe(0.05); // 100/2000
+      });
+
+      it('should apply the highest valid discount when multiple rules exist', async () => {
+        const instance = {
+          startTime: Date.now() + (72 * 60 * 60 * 1000), // 72 hours future
+          price: 2000,
+          discountRules: [
+            {
+              id: "small-discount",
+              name: "Small Discount",
+              condition: { type: "hours_before_min", hours: 48 },
+              discount: { type: "fixed_amount", value: 50 }
+            },
+            {
+              id: "big-discount",
+              name: "Big Early Bird",
+              condition: { type: "hours_before_min", hours: 48 },
+              discount: { type: "fixed_amount", value: 300 }
+            }
+          ]
+        } as Doc<"classInstances">;
+
+        const template = {} as Doc<"classTemplates">;
+
+        const result = await calculateFinalPrice(instance, template);
+
+        // Should apply the highest discount (300), not the smaller one (50)
+        expect(result.discountAmount).toBe(300);
+        expect(result.finalPrice).toBe(1700);
+        expect(result.discountPercentage).toBe(0.15); // 300/2000
       });
     });
 
@@ -154,108 +204,138 @@ describe('Pricing Operations - Safety Tests', () => {
         const instance = {
           startTime: Date.now() - (24 * 60 * 60 * 1000), // 24 hours ago
           price: 2000,
-          bookedCount: 8,
-          capacity: 10 // 80% capacity to avoid low capacity discount
+          discountRules: [{
+            id: "early-bird",
+            name: "Early Bird",
+            condition: { type: "hours_before_min", hours: 48 },
+            discount: { type: "fixed_amount", value: 200 }
+          }]
         } as Doc<"classInstances">;
-        
+
         const template = {} as Doc<"classTemplates">;
-        
+
         const result = await calculateFinalPrice(instance, template);
-        
-        // Should not apply early bird discount for past classes, and no low capacity discount due to high utilization
-        expect(result.discountPercentage).toBe(0);
+
+        // Should not apply discount for past classes (negative hours until class)
+        expect(result.discountAmount).toBe(0);
         expect(result.finalPrice).toBe(2000);
+        expect(result.discountPercentage).toBe(0);
       });
 
-      it('should handle zero capacity safely (avoid division by zero)', async () => {
+      it('should handle always condition type correctly', async () => {
         const instance = {
           startTime: Date.now() + (24 * 60 * 60 * 1000),
           price: 2000,
-          bookedCount: 0,
-          capacity: 0 // Zero capacity
+          discountRules: [{
+            id: "always-discount",
+            name: "Always Available",
+            condition: { type: "always" },
+            discount: { type: "fixed_amount", value: 100 }
+          }]
         } as Doc<"classInstances">;
-        
+
         const template = {} as Doc<"classTemplates">;
-        
+
         const result = await calculateFinalPrice(instance, template);
-        
-        // Should not crash, capacity utilization would be 0/0 = NaN
-        expect(result.finalPrice).toBeGreaterThanOrEqual(0);
-        expect(result.originalPrice).toBe(2000);
-        // When capacity is 0, bookedCount/capacity = 0/0 = NaN, NaN < 0.5 is false, so no discount
-        // BUT: The current logic defaults to capacity 10 if capacity is 0, so 0/10 = 0 < 0.5, giving 5% discount
-        expect(result.discountPercentage).toBe(0.05);
-        expect(result.finalPrice).toBe(1900); // 2000 - 100
+
+        // Always condition should always apply
+        expect(result.discountAmount).toBe(100);
+        expect(result.finalPrice).toBe(1900);
+        expect(result.discountPercentage).toBe(0.05); // 100/2000
       });
 
-      it('should handle missing capacity from template fallback', async () => {
+      it('should only use instance discount rules (not template rules)', async () => {
         const instance = {
-          startTime: Date.now() + (24 * 60 * 60 * 1000),
-          price: 2000,
-          bookedCount: 3
-          // No capacity property
+          startTime: Date.now() + (72 * 60 * 60 * 1000),
+          price: 2000
+          // No discount rules - template rules are not used by pricing logic
         } as Doc<"classInstances">;
-        
+
         const template = {
-          capacity: 15
+          discountRules: [{
+            id: "template-early-bird",
+            name: "Template Early Bird",
+            condition: { type: "hours_before_min", hours: 48 },
+            discount: { type: "fixed_amount", value: 150 }
+          }]
         } as Doc<"classTemplates">;
-        
+
         const result = await calculateFinalPrice(instance, template);
-        
-        // Should use template capacity (3/15 = 20% < 50%)
-        expect(result.discountPercentage).toBe(0.05);
-        expect(result.finalPrice).toBe(1900);
+
+        // Should NOT use template discount rules - only instance rules are used
+        expect(result.discountAmount).toBe(0);
+        expect(result.finalPrice).toBe(2000);
+        expect(result.discountPercentage).toBe(0);
       });
 
-      it('should handle completely missing capacity data', async () => {
+      it('should handle no discount rules gracefully', async () => {
         const instance = {
           startTime: Date.now() + (24 * 60 * 60 * 1000),
-          price: 2000,
-          bookedCount: 3
-          // No capacity
+          price: 2000
+          // No discount rules
         } as Doc<"classInstances">;
-        
+
         const template = {
-          // No capacity
+          // No discount rules
         } as Doc<"classTemplates">;
-        
+
         const result = await calculateFinalPrice(instance, template);
-        
-        // Should use default capacity 10, so 3/10 = 30% < 50%
-        expect(result.discountPercentage).toBe(0.05);
-        expect(result.finalPrice).toBe(1900);
+
+        // Should apply no discounts
+        expect(result.discountAmount).toBe(0);
+        expect(result.finalPrice).toBe(2000);
+        expect(result.discountPercentage).toBe(0);
       });
 
       it('should never produce negative prices', async () => {
         const instance = {
           startTime: Date.now() + (72 * 60 * 60 * 1000),
-          price: 100 // Very low base price (1 euro in cents)
+          price: 100, // Very low base price (1 euro in cents)
+          discountRules: [{
+            id: "huge-discount",
+            name: "Huge Discount",
+            condition: { type: "always" },
+            discount: { type: "fixed_amount", value: 200 } // Discount bigger than price
+          }]
         } as Doc<"classInstances">;
-        
+
         const template = {} as Doc<"classTemplates">;
-        
+
         const result = await calculateFinalPrice(instance, template);
-        
-        // Even with 10% discount, should not go negative
-        expect(result.finalPrice).toBeGreaterThanOrEqual(0);
-        expect(result.finalPrice).toBe(90); // 100 - 10
+
+        // Should not go negative, minimum is 0
+        expect(result.finalPrice).toBe(0);
+        expect(result.originalPrice).toBe(100);
+        expect(result.discountAmount).toBe(200);
       });
 
-      it('should handle very high booking counts without crashing', async () => {
+      it('should prioritize instance rules over template rules', async () => {
         const instance = {
-          startTime: Date.now() + (24 * 60 * 60 * 1000),
+          startTime: Date.now() + (72 * 60 * 60 * 1000),
           price: 2000,
-          bookedCount: 1000000, // Very high booking count
-          capacity: 10
+          discountRules: [{
+            id: "instance-discount",
+            name: "Instance Discount",
+            condition: { type: "always" },
+            discount: { type: "fixed_amount", value: 100 }
+          }]
         } as Doc<"classInstances">;
-        
-        const template = {} as Doc<"classTemplates">;
-        
+
+        const template = {
+          discountRules: [{
+            id: "template-discount",
+            name: "Template Discount",
+            condition: { type: "always" },
+            discount: { type: "fixed_amount", value: 300 } // Higher discount, but should be ignored
+          }]
+        } as Doc<"classTemplates">;
+
         const result = await calculateFinalPrice(instance, template);
-        
-        // Capacity utilization is 100000% (way over 50%), so no low capacity discount
-        expect(result.discountPercentage).toBe(0);
-        expect(result.finalPrice).toBe(2000);
+
+        // Should use instance rules, not template rules
+        expect(result.discountAmount).toBe(100);
+        expect(result.finalPrice).toBe(1900);
+        expect(result.discountPercentage).toBe(0.05); // 100/2000
       });
     });
 
@@ -263,34 +343,44 @@ describe('Pricing Operations - Safety Tests', () => {
       it('should calculate discount amount correctly', async () => {
         const instance = {
           startTime: Date.now() + (72 * 60 * 60 * 1000),
-          price: 2500
+          price: 2500,
+          discountRules: [{
+            id: "fixed-discount",
+            name: "Fixed Discount",
+            condition: { type: "always" },
+            discount: { type: "fixed_amount", value: 250 }
+          }]
         } as Doc<"classInstances">;
-        
+
         const template = {} as Doc<"classTemplates">;
-        
+
         const result = await calculateFinalPrice(instance, template);
-        
+
         expect(result.originalPrice).toBe(2500);
-        expect(result.discountPercentage).toBe(0.1);
-        expect(result.discountAmount).toBe(250); // 2500 * 0.1
+        expect(result.discountAmount).toBe(250);
         expect(result.finalPrice).toBe(2250); // 2500 - 250
+        expect(result.discountPercentage).toBe(0.1); // 250/2500
       });
 
-      it('should handle floating point arithmetic correctly', async () => {
+      it('should handle percentage calculation correctly', async () => {
         const instance = {
           startTime: Date.now() + (24 * 60 * 60 * 1000),
           price: 3300,
-          bookedCount: 1,
-          capacity: 3 // 33.33% capacity
+          discountRules: [{
+            id: "precise-discount",
+            name: "Precise Discount",
+            condition: { type: "always" },
+            discount: { type: "fixed_amount", value: 165 }
+          }]
         } as Doc<"classInstances">;
-        
+
         const template = {} as Doc<"classTemplates">;
-        
+
         const result = await calculateFinalPrice(instance, template);
-        
-        expect(result.discountPercentage).toBe(0.05);
-        expect(result.discountAmount).toBe(165); // 3300 * 0.05 = 165 (Math.round handles this)
+
+        expect(result.discountAmount).toBe(165);
         expect(result.finalPrice).toBe(3135); // 3300 - 165
+        expect(result.discountPercentage).toBe(0.05); // 165/3300 = 0.05
       });
     });
   });

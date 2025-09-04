@@ -2,6 +2,7 @@ import { query } from "../_generated/server";
 import { v } from "convex/values";
 import { classInstanceService } from "../../services/classInstanceService";
 import { getAuthenticatedUserOrThrow } from "../utils";
+import { pricingOperations } from "../../operations/pricing";
 
 /***************************************************************
  * Get Class Instance By ID
@@ -199,5 +200,79 @@ export const getTemplateInstancesOptimized = query({
         return query
             .order("desc")
             .take(args.limit || 100);
+    }
+});
+
+/***************************************************************
+ * Get Last Minute Discounted Class Instances
+ * 
+ * Returns class instances starting within the next 8 hours that have
+ * actual discounts applied based on the pricing system rules.
+ * 
+ * Only returns classes with low capacity discounts (5%) since early bird
+ * discounts require >48 hours advance booking.
+ ***************************************************************/
+
+export const getLastMinuteDiscountedClassInstancesArgs = v.object({
+    startDate: v.number(), // Current time
+    endDate: v.number(),   // 8 hours from now
+    limit: v.optional(v.number()),
+});
+
+export const getLastMinuteDiscountedClassInstances = query({
+    args: getLastMinuteDiscountedClassInstancesArgs,
+    handler: async (ctx, args) => {
+        const user = await getAuthenticatedUserOrThrow(ctx);
+        
+        // Get all scheduled class instances in the 8-hour window
+        const instances = await ctx.db
+            .query("classInstances")
+            .withIndex("by_start_time", (q) =>
+                q.gte("startTime", args.startDate)
+            )
+            .filter(q => 
+                q.and(
+                    q.lte(q.field("startTime"), args.endDate),
+                    q.eq(q.field("status"), "scheduled"),
+                    q.neq(q.field("deleted"), true)
+                )
+            )
+            .collect();
+
+        // Get templates for pricing calculations
+        const templateIds = [...new Set(instances.map(i => i.templateId))];
+        const templateMap = new Map();
+        
+        for (const id of templateIds) {
+            const template = await ctx.db.get(id);
+            if (template) {
+                templateMap.set(id, template);
+            }
+        }
+
+        // Calculate pricing and filter for discounted classes
+        const discountedInstances = [];
+        
+        for (const instance of instances) {
+            const template = templateMap.get(instance.templateId);
+            if (!template) continue;
+
+            // Calculate pricing with discounts
+            const pricingResult = await pricingOperations.calculateFinalPrice(instance, template);
+            
+            // Only include classes with actual discounts (discount > 0)
+            if (pricingResult.discountPercentage > 0) {
+                discountedInstances.push({
+                    ...instance,
+                    pricing: pricingResult,
+                    discountPercentage: Math.round(pricingResult.discountPercentage * 100), // Convert to percentage (5, 10)
+                });
+            }
+        }
+
+        // Sort by start time and limit results
+        return discountedInstances
+            .sort((a, b) => a.startTime - b.startTime)
+            .slice(0, args.limit || 10);
     }
 });
