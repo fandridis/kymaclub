@@ -87,8 +87,16 @@ function getDiscountTimingText(discountResult: DiscountCalculationResult, classI
 }
 
 function calculateClassDiscount(classInstance: any, template: any): DiscountCalculationResult {
-    const priceInCents = classInstance.price ?? template?.price ?? 1000;
+    const priceInCents = classInstance?.price ?? template?.price ?? 1000;
     const originalPrice = priceInCents / 50; // Convert cents to credits
+
+    if (!classInstance) {
+        return {
+            originalPrice,
+            finalPrice: originalPrice,
+            appliedDiscount: null,
+        };
+    }
 
     const now = Date.now();
     const hoursUntilClass = (classInstance.startTime - now) / (1000 * 60 * 60);
@@ -135,12 +143,12 @@ function calculateClassDiscount(classInstance: any, template: any): DiscountCalc
 const { width: screenWidth } = Dimensions.get('window');
 
 export function ClassDetailsModalScreen() {
+    // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL LOGIC
     const navigation = useNavigation();
     const route = useRoute<ClassDetailsRoute>();
     const { classInstance, classInstanceId } = route.params;
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const { showActionSheetWithOptions } = useActionSheet();
-
     const { user } = useAuth();
     const bookClass = useMutation(api.mutations.bookings.bookClass);
     const [isBooking, setIsBooking] = useState(false);
@@ -154,42 +162,38 @@ export function ClassDetailsModalScreen() {
     // Use either the provided classInstance or the fetched one
     const finalClassInstance = classInstance || fetchedClassInstance;
 
-    // Check if user already has a booking for this class (only if authenticated)
+    // ALWAYS call these hooks, even if finalClassInstance is null
     const existingBooking = useQuery(
         api.queries.bookings.getUserBookings,
         finalClassInstance && user ? { classInstanceId: finalClassInstance._id } : "skip"
     );
 
-    // Get booking history for this class (only if authenticated)
     const bookingHistory = useQuery(
         api.queries.bookings.getUserBookingHistory,
         finalClassInstance && user ? { classInstanceId: finalClassInstance._id } : "skip"
     );
 
-    // Fetch full template data
     const template = useQuery(
         api.queries.classTemplates.getClassTemplateById,
         finalClassInstance ? { templateId: finalClassInstance.templateId } : "skip"
     );
 
-    // Fetch full venue data  
     const venue = useQuery(
         api.queries.venues.getVenueById,
         finalClassInstance ? { venueId: finalClassInstance.venueId } : "skip"
     );
 
-    // Get all image storage IDs from both template and venue
+    // Get image IDs with null-safe access
     const templateImageIds = template?.imageStorageIds ?? [];
     const venueImageIds = venue?.imageStorageIds ?? [];
     const allImageIds = [...templateImageIds, ...venueImageIds];
 
-    // Fetch image URLs if there are images
     const imageUrlsQuery = useQuery(
         api.queries.uploads.getUrls,
         allImageIds.length > 0 ? { storageIds: allImageIds } : "skip"
     );
 
-    // Create storage ID to URL mapping
+    // useMemo hooks - MUST be called unconditionally
     const storageIdToUrl = useMemo(() => {
         const map = new Map<string, string | null>();
         if (imageUrlsQuery) {
@@ -200,6 +204,25 @@ export function ClassDetailsModalScreen() {
         return map;
     }, [imageUrlsQuery]);
 
+    const imageUrls = useMemo(() => {
+        const urls: string[] = [];
+        templateImageIds.forEach(id => {
+            const url = storageIdToUrl.get(id);
+            if (url) urls.push(url);
+        });
+        venueImageIds.forEach(id => {
+            const url = storageIdToUrl.get(id);
+            if (url) urls.push(url);
+        });
+        return urls;
+    }, [templateImageIds, venueImageIds, storageIdToUrl]);
+
+    const discountResult = useMemo(
+        () => calculateClassDiscount(finalClassInstance, template),
+        [finalClassInstance, template]
+    );
+
+    // Event handlers
     const onPress = () => {
         if (!finalClassInstance) return;
 
@@ -215,7 +238,6 @@ export function ClassDetailsModalScreen() {
 
             switch (selectedIndex) {
                 case 0: {
-                    // Book
                     if (!user) {
                         Alert.alert('Sign In Required', 'Please sign in to book classes.', [
                             { text: 'Cancel', style: 'cancel' },
@@ -249,29 +271,7 @@ export function ClassDetailsModalScreen() {
         });
     };
 
-    // Get image URLs for carousel (prioritize template images)
-    const imageUrls = useMemo(() => {
-        const urls: string[] = [];
-
-        // Add template images first
-        templateImageIds.forEach(id => {
-            const url = storageIdToUrl.get(id);
-            if (url) urls.push(url);
-        });
-
-        // Add venue images after
-        venueImageIds.forEach(id => {
-            const url = storageIdToUrl.get(id);
-            if (url) urls.push(url);
-        });
-
-        return urls;
-    }, [templateImageIds, venueImageIds, storageIdToUrl]);
-
-    // Navigate to bookings screen - reset stack to avoid modal cycles
     const handleGoToBookings = () => {
-        // Reset the navigation stack to HomeTabs with Bookings active
-        // This completely clears the modal stack and goes directly to the main tab
         navigation.dispatch(
             CommonActions.reset({
                 index: 0,
@@ -285,10 +285,7 @@ export function ClassDetailsModalScreen() {
         );
     };
 
-    // Loading state - now only checks for template, venue, images, and booking data
-    const isLoading = !template || !venue || (allImageIds.length > 0 && !imageUrlsQuery) || existingBooking === undefined;
-
-    // Early return if no classInstance available and no classInstanceId to fetch
+    // NOW we can do conditional returns, after ALL hooks have been called
     if (!finalClassInstance && !classInstanceId) {
         return (
             <SafeAreaView style={styles.safeArea}>
@@ -309,7 +306,6 @@ export function ClassDetailsModalScreen() {
         );
     }
 
-    // Early return if still loading classInstance
     if (!finalClassInstance) {
         return (
             <SafeAreaView style={styles.safeArea}>
@@ -330,45 +326,31 @@ export function ClassDetailsModalScreen() {
         );
     }
 
-    // Use template data (with instance overrides)
+    // Calculate derived values
     const className = finalClassInstance.name ?? template?.name ?? 'Class';
     const description = finalClassInstance.description ?? template?.description ?? '';
     const instructor = finalClassInstance.instructor ?? template?.instructor ?? 'TBD';
     const capacity = finalClassInstance.capacity ?? template?.capacity ?? 0;
     const price = finalClassInstance.price ?? template?.price ?? 0;
-
-    // Venue info
     const businessName = venue?.name ?? 'Unknown Venue';
-
-    // Time and pricing calculations  
     const startTime = new Date(finalClassInstance.startTime);
-
-    // Formatted "When" string like "Friday, 14 August, 13:00" in Europe/Athens timezone
     const whenStr = format(startTime, 'eeee, dd MMMM, HH:mm', {
         in: tz('Europe/Athens')
     });
-
-    // Formatted "Cancel until" string based on template.cancellationWindowHours
     const cancelUntilStr = template?.cancellationWindowHours
         ? (() => {
             const cancelUntilDate = new Date(
                 finalClassInstance.startTime - template.cancellationWindowHours * 60 * 60 * 1000,
             );
-            // Format in Europe/Athens timezone
             return format(cancelUntilDate, 'eeee, dd MMMM, HH:mm', {
                 in: tz('Europe/Athens')
             });
         })()
         : null;
-
     const duration = Math.round((finalClassInstance.endTime - finalClassInstance.startTime) / (1000 * 60));
     const priceCredits = centsToCredits(price);
-
-    // Calculate discount pricing
-    const discountResult = useMemo(() => calculateClassDiscount(finalClassInstance, template), [finalClassInstance, template]);
-
     const spotsLeft = Math.max(0, capacity - (finalClassInstance.bookedCount ?? 0));
-    // const typeLabel = finalClassInstance.tags?.[0] ?? (className ? className.split(' ')[0] : 'Class');
+    const isLoading = !template || !venue || (allImageIds.length > 0 && !imageUrlsQuery) || existingBooking === undefined;
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -483,7 +465,6 @@ export function ClassDetailsModalScreen() {
                                 <Text style={styles.spotsValue}>
                                     {spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left
                                 </Text>
-
                             </View>
                         </View>
 
@@ -692,9 +673,8 @@ const styles = StyleSheet.create({
         width: 48,
     },
     contentContainer: {
-        paddingBottom: 100, // Extra padding for sticky button
+        paddingBottom: 100,
     },
-    // Full width image styles
     fullWidthCarouselContainer: {
         marginBottom: 0,
     },
@@ -712,7 +692,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    // Legacy styles (keep for compatibility)
     carouselContainer: {
         marginBottom: 16,
     },
@@ -825,7 +804,6 @@ const styles = StyleSheet.create({
         color: '#374151',
         fontWeight: '500',
     },
-    // New styles for improved UI
     priceInfoSection: {
         flexDirection: 'row',
         paddingHorizontal: 20,
@@ -874,7 +852,6 @@ const styles = StyleSheet.create({
         fontWeight: '400',
         flex: 1,
     },
-    // Legacy styles (updated)
     instructorName: {
         fontSize: 18,
         color: '#6b7280',
@@ -1048,7 +1025,7 @@ const styles = StyleSheet.create({
         color: 'rgba(255, 255, 255, 0.9)',
     },
     alreadyAttendingContainer: {
-        backgroundColor: '#16a34a', // Emerald green
+        backgroundColor: '#16a34a',
         borderRadius: 40,
         height: 56,
         paddingHorizontal: 28,
@@ -1078,7 +1055,7 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     statusContainer: {
-        backgroundColor: '#fbbf24', // Yellow background
+        backgroundColor: '#fbbf24',
         borderRadius: 40,
         height: 56,
         paddingHorizontal: 28,
@@ -1097,18 +1074,18 @@ const styles = StyleSheet.create({
     statusTitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#7c2d12', // Dark brown text for contrast on yellow
+        color: '#7c2d12',
         textAlign: 'center',
     },
     statusSubtext: {
         fontSize: 13,
         fontWeight: '500',
-        color: '#92400e', // Medium brown text
+        color: '#92400e',
         textAlign: 'center',
         marginTop: 2,
     },
     rebookContainer: {
-        backgroundColor: '#3b82f6', // Blue background for rebooking
+        backgroundColor: '#3b82f6',
         borderRadius: 40,
         height: 56,
         paddingHorizontal: 28,
@@ -1248,7 +1225,7 @@ const styles = StyleSheet.create({
     bookButtonOriginalText: {
         fontSize: 14,
         fontWeight: '500',
-        color: theme.colors.zinc[400],
+        color: 'rgba(255, 255, 255, 0.6)',
         textDecorationLine: 'line-through',
     },
     bookButtonFinalPrice: {
@@ -1256,4 +1233,4 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 2,
     },
-}); 
+});
