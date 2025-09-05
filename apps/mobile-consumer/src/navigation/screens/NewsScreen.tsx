@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, View, Text, Dimensions, ScrollView, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { MapPinIcon } from 'lucide-react-native';
+import { MapPinIcon, StarIcon } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Carousel from 'react-native-reanimated-carousel';
@@ -13,7 +13,6 @@ import { TabScreenHeader } from '../../components/TabScreenHeader';
 import { useAuthenticatedUser } from '../../stores/auth-store';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
 import { useCurrentTime } from '../../hooks/use-current-time';
-import { VenueCard } from '../../components/VenueCard';
 import { useAllVenues } from '../../features/explore/hooks/useAllVenues';
 import type { RootStackParamListWithNestedTabs } from '../index';
 import { centsToCredits } from '@repo/utils/credits';
@@ -21,7 +20,10 @@ import { centsToCredits } from '@repo/utils/credits';
 const { width: screenWidth } = Dimensions.get('window');
 
 // Unified carousel constants
-const CAROUSEL_HEIGHT = 220; // Unified height for all carousels
+const DEFAULT_CAROUSEL_HEIGHT = 220; // Unified height for all carousels
+const SCHEDULE_CAROUSEL_HEIGHT = 160;
+const NEW_STUDIOS_CAROUSEL_HEIGHT = 180;
+
 const ITEM_GAP = 8; // Gap between items
 const SECTION_PADDING = 20; // Horizontal padding for sections
 const CAROUSEL_PADDING = SECTION_PADDING - (ITEM_GAP / 2); // Adjust for item gaps
@@ -343,14 +345,14 @@ export function NewsScreen() {
                             <Carousel
                                 loop={false}
                                 width={CAROUSEL_ITEM_WIDTH + ITEM_GAP}
-                                height={CAROUSEL_HEIGHT}
+                                height={SCHEDULE_CAROUSEL_HEIGHT}
                                 data={upcomingClasses}
                                 scrollAnimationDuration={500}
                                 style={styles.carousel}
                                 snapEnabled
                                 renderItem={({ item }) => (
                                     <TouchableOpacity
-                                        style={styles.carouselCard}
+                                        style={[styles.baseCarouselCard, styles.scheduleCarouselCard]}
                                         onPress={() => {
                                             if (item.classInstanceId) {
                                                 navigation.navigate('ClassDetailsModal', {
@@ -360,51 +362,24 @@ export function NewsScreen() {
                                         }}
                                         activeOpacity={0.7}
                                     >
-                                        <View style={styles.cardImageContainer}>
-                                            {item.imageUrl ? (
-                                                <Image
-                                                    source={{ uri: item.imageUrl }}
-                                                    style={styles.cardImage}
-                                                    contentFit="cover"
-                                                    transition={200}
-                                                    cachePolicy="memory-disk"
-                                                />
-                                            ) : (
-                                                <View style={[styles.cardImage, styles.placeholderImage]} />
-                                            )}
-                                            <LinearGradient
-                                                pointerEvents="none"
-                                                colors={['transparent', 'rgba(0,0,0,0.25)', 'rgba(0,0,0,0.65)']}
-                                                locations={[0, 0.5, 1]}
-                                                start={{ x: 0, y: 0 }}
-                                                end={{ x: 0, y: 1 }}
-                                                style={styles.imageGradient}
-                                            />
-                                            <View style={styles.imageOverlay}>
-                                                <Text style={styles.overlayTitle} numberOfLines={1}>
-                                                    {item.title}
-                                                </Text>
-                                                <Text style={styles.overlaySubtitle} numberOfLines={1}>
-                                                    with {item.instructor}
-                                                </Text>
-                                            </View>
-                                            <View style={[styles.badge, styles.timeBadge]}>
-                                                <Text style={styles.badgeText}>{item.date}</Text>
-                                            </View>
+                                        <View style={styles.scheduleTopHalf}>
+                                            <Text style={styles.scheduleDate}>{item.date}</Text>
+                                            <Text style={styles.scheduleTime}>{item.time}</Text>
                                         </View>
-                                        <View style={styles.cardContent}>
-                                            <View style={styles.contentRow}>
-                                                <Text style={styles.primaryText}>{item.time}</Text>
-                                                <Text style={styles.priceText}>{item.price}</Text>
-                                            </View>
-                                            <Text style={styles.secondaryText} numberOfLines={1}>
-                                                {item.venue}
+
+                                        <View style={styles.scheduleBottomHalf}>
+                                            <Text style={styles.scheduleTitle} numberOfLines={1}>
+                                                {item.title}
                                             </Text>
-                                            {item.venueAddress && (
-                                                <Text style={styles.tertiaryText} numberOfLines={1}>
-                                                    {item.venueAddress}
+                                            <Text style={styles.scheduleInstructor} numberOfLines={1}>
+                                                with {item.instructor}
+                                            </Text>
+                                            <View style={styles.locationContainer}>
+                                                <MapPinIcon size={12} color="#9ca3af" />
+                                                <Text style={styles.scheduleLocation} numberOfLines={1}>
+                                                    {item.venueAddress || item.venue}
                                                 </Text>
-                                            )}
+                                            </View>
                                         </View>
                                     </TouchableOpacity>
                                 )}
@@ -431,14 +406,14 @@ export function NewsScreen() {
                             <Carousel
                                 loop={false}
                                 width={CAROUSEL_ITEM_WIDTH + ITEM_GAP}
-                                height={CAROUSEL_HEIGHT}
+                                height={DEFAULT_CAROUSEL_HEIGHT}
                                 data={lastMinuteOffers}
                                 scrollAnimationDuration={500}
                                 style={styles.carousel}
                                 snapEnabled
                                 renderItem={({ item }) => (
                                     <TouchableOpacity
-                                        style={styles.carouselCard}
+                                        style={[styles.baseCarouselCard, styles.lastMinuteCarouselCard]}
                                         onPress={() => {
                                             if (item.classInstanceId) {
                                                 navigation.navigate('ClassDetailsModal', {
@@ -518,24 +493,68 @@ export function NewsScreen() {
                         <View style={styles.carouselContainer}>
                             <Carousel
                                 width={CAROUSEL_ITEM_WIDTH + ITEM_GAP}
-                                height={CAROUSEL_HEIGHT}
+                                height={NEW_STUDIOS_CAROUSEL_HEIGHT}
                                 data={newVenuesForCards}
                                 scrollAnimationDuration={600}
                                 style={styles.carousel}
                                 loop={false}
                                 snapEnabled
                                 renderItem={({ item: venue }) => (
-                                    <View style={styles.carouselCard}>
-                                        <VenueCard
-                                            venue={venue}
-                                            storageIdToUrl={storageIdToUrl}
-                                            onPress={(selectedVenue) => {
-                                                navigation.navigate('VenueDetailsScreen', {
-                                                    venueId: selectedVenue._id
-                                                });
-                                            }}
-                                        />
-                                    </View>
+                                    <TouchableOpacity
+                                        style={[styles.baseCarouselCard, styles.newStudiosCarouselCard]}
+                                        onPress={() => {
+                                            navigation.navigate('VenueDetailsScreen', {
+                                                venueId: venue._id
+                                            });
+                                        }}
+                                        activeOpacity={0.8}
+                                    >
+                                        <View style={styles.venueImageWrapper}>
+                                            {venue.imageStorageIds?.[0] && storageIdToUrl.get(venue.imageStorageIds[0]) ? (
+                                                <Image
+                                                    source={{ uri: storageIdToUrl.get(venue.imageStorageIds[0])! }}
+                                                    style={styles.venueImage}
+                                                    contentFit="cover"
+                                                    transition={200}
+                                                    cachePolicy="memory-disk"
+                                                />
+                                            ) : (
+                                                <View style={[styles.venueImage, styles.venuePlaceholderImage]}>
+                                                    <Text style={styles.venuePlaceholderText}>No Images Available</Text>
+                                                </View>
+                                            )}
+
+                                            {/* Top-left rating badge */}
+                                            <View style={styles.venueRatingBadge}>
+                                                <StarIcon size={12} color="#fff" fill="#ffd700" />
+                                                <Text style={styles.venueRatingText}>{venue.rating?.toFixed(1)} ({venue.reviewCount || 0})</Text>
+                                            </View>
+
+                                            {/* Bottom gradient overlay */}
+                                            <LinearGradient
+                                                pointerEvents="none"
+                                                colors={[
+                                                    'transparent',
+                                                    'rgba(0,0,0,0.25)',
+                                                    'rgba(0,0,0,0.65)',
+                                                ]}
+                                                locations={[0, 0.5, 1]}
+                                                start={{ x: 0, y: 0 }}
+                                                end={{ x: 0, y: 1 }}
+                                                style={styles.venueBottomGradient}
+                                            />
+
+                                            {/* Bottom-left overlay text */}
+                                            <View pointerEvents="none" style={styles.venueImageOverlayContainer}>
+                                                <Text style={styles.venueImageOverlayTitle} numberOfLines={1}>
+                                                    {venue.name}
+                                                </Text>
+                                                <Text style={styles.venueImageOverlaySubtitle} numberOfLines={1}>
+                                                    {venue.primaryCategory}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
                                 )}
                             />
                         </View>
@@ -549,13 +568,13 @@ export function NewsScreen() {
                         <Carousel
                             loop={false}
                             width={CAROUSEL_ITEM_WIDTH + ITEM_GAP}
-                            height={CAROUSEL_HEIGHT}
+                            height={DEFAULT_CAROUSEL_HEIGHT}
                             data={mockCategories}
                             scrollAnimationDuration={500}
                             style={styles.carousel}
                             snapEnabled
                             renderItem={({ item }) => (
-                                <View style={styles.carouselCard}>
+                                <View style={[styles.baseCarouselCard, styles.categoriesCarouselCard]}>
                                     <View style={styles.cardImageContainer}>
                                         <View style={[styles.cardImage, styles.placeholderImage]} />
                                         <View style={[styles.badge, styles.categoryBadge]}>
@@ -605,7 +624,7 @@ const styles = StyleSheet.create({
 
     // Section styles
     section: {
-        marginVertical: 10,
+        marginVertical: 16,
     },
     sectionTitle: {
         fontSize: 20,
@@ -623,10 +642,8 @@ const styles = StyleSheet.create({
         width: screenWidth,
     },
 
-    // Unified card styles
-    carouselCard: {
-        width: CAROUSEL_ITEM_WIDTH,
-        height: CAROUSEL_HEIGHT,
+    // Base carousel card styles
+    baseCarouselCard: {
         backgroundColor: '#ffffff',
         borderRadius: 16,
         shadowColor: '#000',
@@ -635,6 +652,76 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 3,
         overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: theme.colors.zinc[100],
+    },
+
+    // Specific carousel card styles
+    scheduleCarouselCard: {
+        width: CAROUSEL_ITEM_WIDTH,
+        height: SCHEDULE_CAROUSEL_HEIGHT,
+    },
+
+    lastMinuteCarouselCard: {
+        width: CAROUSEL_ITEM_WIDTH,
+        height: DEFAULT_CAROUSEL_HEIGHT,
+    },
+
+    newStudiosCarouselCard: {
+        width: CAROUSEL_ITEM_WIDTH,
+        height: NEW_STUDIOS_CAROUSEL_HEIGHT,
+    },
+
+    categoriesCarouselCard: {
+        width: CAROUSEL_ITEM_WIDTH,
+        height: DEFAULT_CAROUSEL_HEIGHT,
+    },
+
+    scheduleTopHalf: {
+        flex: 1,
+        backgroundColor: theme.colors.emerald[500],
+        padding: 16,
+        justifyContent: 'center',
+    },
+    scheduleBottomHalf: {
+        flex: 2,
+        backgroundColor: '#ffffff',
+        padding: 16,
+        justifyContent: 'space-between',
+    },
+    scheduleDate: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: 'rgba(255,255,255,0.9)',
+        marginBottom: 4,
+    },
+    scheduleTime: {
+        fontSize: 20,
+        fontWeight: '800',
+        color: 'white',
+    },
+    locationContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        marginTop: 8,
+    },
+    scheduleLocation: {
+        fontSize: 12,
+        fontWeight: '500',
+        color: '#9ca3af',
+        flex: 1,
+    },
+    scheduleTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#1a1a1a',
+        marginBottom: 4,
+    },
+    scheduleInstructor: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#6b7280',
     },
 
     // width: CAROUSEL_ITEM_WIDTH,
@@ -758,7 +845,7 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     originalPrice: {
-        fontSize: 13,
+        fontSize: 14,
         color: '#9ca3af',
         textDecorationLine: 'line-through',
     },
@@ -883,5 +970,72 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#6b7280',
         fontWeight: '500',
+    },
+
+    // Venue card styles (inline from VenueCard component)
+    venueImageWrapper: {
+        position: 'relative',
+        width: '100%',
+        height: NEW_STUDIOS_CAROUSEL_HEIGHT,
+    },
+    venueImage: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#f3f4f6',
+    },
+    venuePlaceholderImage: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    venuePlaceholderText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#6b7280',
+    },
+    venueRatingBadge: {
+        position: 'absolute',
+        top: 8,
+        left: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    venueRatingText: {
+        color: 'white',
+        fontSize: 13,
+        fontWeight: '800',
+    },
+    venueBottomGradient: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: '55%',
+        zIndex: 1,
+    },
+    venueImageOverlayContainer: {
+        position: 'absolute',
+        left: 12,
+        right: 12,
+        bottom: 12,
+        zIndex: 2,
+        gap: 2,
+    },
+    venueImageOverlayTitle: {
+        fontSize: 20,
+        fontWeight: '900',
+        color: 'white',
+        textShadowColor: 'rgba(0,0,0,0.35)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 3,
+    },
+    venueImageOverlaySubtitle: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: 'rgba(255,255,255,0.92)',
     },
 });
