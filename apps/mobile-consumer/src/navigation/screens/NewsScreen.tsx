@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, View, Text, Dimensions, ScrollView, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { MapPinIcon } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Carousel from 'react-native-reanimated-carousel';
@@ -18,26 +19,15 @@ import type { RootStackParamListWithNestedTabs } from '../index';
 import { centsToCredits } from '@repo/utils/credits';
 
 const { width: screenWidth } = Dimensions.get('window');
-const ITEM_SPACING = 12; // Spacing between cards
 
-// Width constants for different carousel sections
-// Last minute offers - show 2.25 cards (2 full + 1/4 of 3rd card)
-const OFFERS_ITEM_WIDTH = (screenWidth - (ITEM_SPACING * 4)) / 2.25;
+// Unified carousel constants
+const CAROUSEL_HEIGHT = 220; // Unified height for all carousels
+const ITEM_GAP = 8; // Gap between items
+const SECTION_PADDING = 20; // Horizontal padding for sections
+const CAROUSEL_PADDING = SECTION_PADDING - (ITEM_GAP / 2); // Adjust for item gaps
 
-// New studios - show 1.5 cards (1 full + 1/2 of 2nd card)
-const NEW_STUDIOS_ITEM_WIDTH = (screenWidth - (ITEM_SPACING * 3)) / 1.9;
+const CAROUSEL_ITEM_WIDTH = (screenWidth - (SECTION_PADDING * 2)) / 2.05;
 
-// Categories - show 2.25 cards (2 full + 1/4 of 3rd card)
-const CATEGORIES_ITEM_WIDTH = (screenWidth - (ITEM_SPACING * 4)) / 2.25;
-
-// Legacy width for backward compatibility (same as offers)
-const ITEM_WIDTH = OFFERS_ITEM_WIDTH;
-
-const mockLastMinuteOffers = [
-    { id: 1, title: '50% Off Yoga', originalPrice: '$30', discountedPrice: '$15', image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=300&fit=crop' },
-    { id: 2, title: 'Flash Sale Pilates', originalPrice: '$25', discountedPrice: '$12', image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop' },
-    { id: 3, title: 'HIIT Bundle Deal', originalPrice: '$40', discountedPrice: '$20', image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop' },
-];
 
 const mockCategories = [
     { id: 1, name: 'Yoga', count: '24 classes', image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=300&fit=crop' },
@@ -73,176 +63,6 @@ const NoUpcomingClassesMessage = ({ onExplorePress }: { onExplorePress: () => vo
     </View>
 );
 
-const CarouselItem = ({ item, type, itemWidth }: { item: any; type: string; itemWidth: number }) => {
-    const renderContent = () => {
-        switch (type) {
-            case 'upcoming':
-                return (
-                    <View style={styles.upcomingItem}>
-                        <View style={styles.upcomingImageContainer}>
-                            {item.imageUrl ? (
-                                <Image
-                                    source={{ uri: item.imageUrl }}
-                                    style={styles.upcomingImage}
-                                    contentFit="cover"
-                                    transition={200}
-                                    cachePolicy="memory-disk"
-                                />
-                            ) : (
-                                <View style={[styles.upcomingImage, styles.placeholderImage]} />
-                            )}
-                        </View>
-                        <View style={styles.upcomingContent}>
-                            <Text style={styles.upcomingTitle} numberOfLines={1}>{item.title}</Text>
-                            <View style={styles.upcomingTimeRow}>
-                                <Text style={styles.upcomingTime}>{item.time}</Text>
-                                {item.date && <Text style={styles.upcomingDate}>{item.date}</Text>}
-                            </View>
-                            <Text style={styles.upcomingInstructor} numberOfLines={1}>{item.instructor}</Text>
-                            {item.venue && <Text style={styles.upcomingVenue} numberOfLines={1}>{item.venue}</Text>}
-                            {item.price && <Text style={styles.upcomingPrice}>{item.price}</Text>}
-                        </View>
-                    </View>
-                );
-            case 'offers':
-                return (
-                    <View style={styles.offerItem}>
-                        {/* Image section with overlay - similar to upcoming classes */}
-                        <View style={styles.offerImageContainer}>
-                            {item.imageUrl ? (
-                                <Image
-                                    source={{ uri: item.imageUrl }}
-                                    style={styles.offerImage}
-                                    contentFit="cover"
-                                    transition={200}
-                                    cachePolicy="memory-disk"
-                                />
-                            ) : (
-                                <View style={[styles.offerImage, styles.placeholderImage]} />
-                            )}
-
-                            {/* Gradient overlay */}
-                            <LinearGradient
-                                pointerEvents="none"
-                                colors={[
-                                    'transparent',
-                                    'rgba(0,0,0,0.25)',
-                                    'rgba(0,0,0,0.65)',
-                                ]}
-                                locations={[0, 0.5, 1]}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 0, y: 1 }}
-                                style={styles.offerImageGradient}
-                            />
-
-                            {/* Text overlay on image */}
-                            <View style={styles.offerImageOverlay}>
-                                <Text style={styles.offerOverlayClassName} numberOfLines={1}>
-                                    {item.title}
-                                </Text>
-                                <Text style={styles.offerOverlayInstructor} numberOfLines={1}>
-                                    with {item.instructor}
-                                </Text>
-                            </View>
-
-                        </View>
-
-                        {/* Content section - similar to upcoming classes */}
-                        <View style={styles.offerContent}>
-                            <View style={styles.offerTimeRow}>
-                                <Text style={styles.offerTime}>{item.subtitle}</Text>
-                                <View style={styles.priceContainer}>
-                                    <Text style={styles.originalPrice}>{item.originalPrice}</Text>
-                                    <Text style={styles.discountedPrice}>{item.discountedPrice}</Text>
-                                </View>
-                            </View>
-
-                            <Text style={styles.offerVenue} numberOfLines={1}>
-                                {item.venueName}
-                            </Text>
-                            {item.venueCity && (
-                                <Text style={styles.offerVenueCity} numberOfLines={1}>
-                                    {item.venueCity}
-                                </Text>
-                            )}
-                        </View>
-                    </View>
-                );
-            case 'new':
-                return (
-                    <View style={styles.newVenueItem}>
-                        <View style={styles.newVenueImageContainer}>
-                            {item.imageUrl ? (
-                                <Image
-                                    source={{ uri: item.imageUrl }}
-                                    style={styles.newVenueImage}
-                                    contentFit="cover"
-                                    transition={200}
-                                    cachePolicy="memory-disk"
-                                />
-                            ) : (
-                                <View style={[styles.newVenueImage, styles.placeholderImage]} />
-                            )}
-                            <View style={styles.newVenueBadge}>
-                                <Text style={styles.newVenueBadgeText}>NEW</Text>
-                            </View>
-                        </View>
-                        <View style={styles.newVenueContent}>
-                            <Text style={styles.newVenueTitle} numberOfLines={1}>{item.title}</Text>
-                            <Text style={styles.newVenueLevel}>{item.level}</Text>
-                            <Text style={styles.newVenueLocation} numberOfLines={1}>{item.instructor}</Text>
-                            {item.description && <Text style={styles.newVenueDescription} numberOfLines={2}>{item.description}</Text>}
-                        </View>
-                    </View>
-                );
-            case 'categories':
-                return (
-                    <View style={styles.categoryItem}>
-                        <View style={styles.categoryImageContainer}>
-                            <View style={styles.categoryImage} />
-                        </View>
-                        <View style={styles.categoryContent}>
-                            <Text style={styles.categoryName}>{item.name}</Text>
-                            <Text style={styles.categoryCount}>{item.count}</Text>
-                        </View>
-                    </View>
-                );
-            default:
-                return null;
-        }
-    };
-
-    return (
-        <View style={[styles.carouselItem, { width: itemWidth }]}>
-            {renderContent()}
-        </View>
-    );
-};
-
-const CarouselSection = ({ title, data, type, itemWidth }: { title: string; data: any[]; type: string; itemWidth: number }) => {
-    return (
-        <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{title}</Text>
-            <View style={styles.carouselContainer}>
-                <Carousel
-                    loop={false}
-                    width={itemWidth}
-                    height={type === 'offers' ? 280 : 180}
-                    data={data}
-                    scrollAnimationDuration={500}
-                    renderItem={({ item }) => <CarouselItem item={item} type={type} itemWidth={itemWidth} />}
-                    style={styles.carousel}
-                    onConfigurePanGesture={(gestureChain) => {
-                        gestureChain
-                            .activeOffsetX([-10, 10])    // Activate on 10px horizontal movement
-                            .failOffsetY([-15, 15]);     // Fail if vertical movement > 15px first
-                    }}
-                />
-            </View>
-        </View>
-    );
-};
-
 export function NewsScreen() {
     const { t } = useTypedTranslation();
     const navigation = useNavigation<NavigationProp<RootStackParamListWithNestedTabs>>();
@@ -252,13 +72,13 @@ export function NewsScreen() {
     const next8Hours = useMemo(() => new Date(now.getTime() + (8 * 60 * 60 * 1000)), [now]);
     const thirtyDaysAgo = useMemo(() => new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000)), [now]);
 
-    // Query for user's upcoming bookings (for "Your upcoming classes")
+    // Query for user's upcoming bookings
     const userBookings = useQuery(
         api.queries.bookings.getCurrentUserUpcomingBookings,
         user ? { daysAhead: 7 } : "skip"
     );
 
-    // Query for last minute offers (classes starting in next 8 hours with actual discounts)
+    // Query for last minute offers
     const lastMinuteDiscountedInstances = useQuery(
         api.queries.classInstances.getLastMinuteDiscountedClassInstances,
         {
@@ -268,35 +88,33 @@ export function NewsScreen() {
         }
     );
 
-
     // Get venues with image URLs using custom hook
     const { venues: allVenues, venuesLoading, storageIdToUrl } = useAllVenues();
 
-    // Get class instance IDs from user bookings to fetch full class instances
+    // Get class instance IDs from user bookings
     const upcomingClassInstanceIds = useMemo(() => {
         if (!userBookings?.length) return [];
 
         return userBookings
             .filter(booking => booking.status === 'pending')
-            .slice(0, 4) // Limit to first 4
+            .slice(0, 6)
             .map(booking => booking.classInstanceId)
             .filter(Boolean) as string[];
     }, [userBookings]);
 
-    // Fetch full class instances for upcoming bookings to get template images
+    // Fetch full class instances
     const upcomingClassInstances = useQuery(
         api.queries.classInstances.getClassInstances,
         upcomingClassInstanceIds.length > 0 ? {
-            startDate: now.getTime() - (24 * 60 * 60 * 1000), // Start from yesterday to catch today's classes
-            endDate: now.getTime() + (30 * 24 * 60 * 60 * 1000) // Next 30 days
+            startDate: now.getTime() - (24 * 60 * 60 * 1000),
+            endDate: now.getTime() + (30 * 24 * 60 * 60 * 1000)
         } : "skip"
     );
 
-    // Collect image storage IDs for class instances only (venues handled by useAllVenues hook)
+    // Collect image storage IDs
     const classImageIds = useMemo(() => {
         const ids: string[] = [];
 
-        // From upcoming class instances (template snapshots) - for upcoming classes
         upcomingClassInstances?.forEach(instance => {
             if (instance.templateSnapshot?.imageStorageIds) {
                 ids.push(...instance.templateSnapshot.imageStorageIds);
@@ -306,7 +124,6 @@ export function NewsScreen() {
             }
         });
 
-        // From last minute discounted instances (template snapshots) - for last minute offers
         lastMinuteDiscountedInstances?.forEach(instance => {
             if (instance.templateSnapshot?.imageStorageIds) {
                 ids.push(...instance.templateSnapshot.imageStorageIds);
@@ -316,16 +133,16 @@ export function NewsScreen() {
             }
         });
 
-        return [...new Set(ids)]; // Remove duplicates
+        return [...new Set(ids)];
     }, [upcomingClassInstances, lastMinuteDiscountedInstances]);
 
-    // Fetch image URLs for class instances only
+    // Fetch image URLs
     const classImageUrlsQuery = useQuery(
         api.queries.uploads.getUrls,
         classImageIds.length > 0 ? { storageIds: classImageIds as Id<"_storage">[] } : "skip"
     );
 
-    // Create storage ID to URL mapping for class instances (merge with venue URLs from hook)
+    // Create storage ID to URL mapping
     const classImageStorageIdToUrl = useMemo(() => {
         const map = new Map<string, string | null>();
         if (classImageUrlsQuery) {
@@ -345,34 +162,34 @@ export function NewsScreen() {
         return combined;
     }, [storageIdToUrl, classImageStorageIdToUrl]);
 
-    // Process data for upcoming classes - use stale data when available
+    // Process data for upcoming classes
     const upcomingClasses = useMemo(() => {
-        // Always use the most recent data available, even if some queries are refreshing
         const bookingsData = userBookings || [];
         if (!bookingsData.length) return [];
 
         return bookingsData
-            .filter(booking => booking.status === 'pending')
+            .filter(booking => {
+                if (booking.status !== 'pending') return false;
+                const startTime = booking.classInstanceSnapshot?.startTime;
+                if (!startTime) return false;
+                return startTime > now.getTime();
+            })
             .map(booking => {
-                // Find the matching class instance
                 const classInstance = upcomingClassInstances?.find(instance =>
                     instance._id === booking.classInstanceId
                 );
 
-                // Get image URL (prioritize template images, fallback to venue images)
                 const templateImageId = classInstance?.templateSnapshot?.imageStorageIds?.[0];
                 const venueImageId = classInstance?.venueSnapshot?.imageStorageIds?.[0];
                 const imageUrl = templateImageId ? combinedStorageIdToUrl.get(templateImageId) :
                     venueImageId ? combinedStorageIdToUrl.get(venueImageId) : null;
 
-                // Enhanced date/time formatting
                 const startTime = booking.classInstanceSnapshot?.startTime;
                 const startDate = startTime ? new Date(startTime) : null;
                 const today = new Date();
                 const tomorrow = new Date(today);
                 tomorrow.setDate(today.getDate() + 1);
 
-                // Format date with relative context
                 let dateDisplay = '';
                 if (startDate) {
                     const isToday = startDate.toDateString() === today.toDateString();
@@ -384,32 +201,28 @@ export function NewsScreen() {
                         dateDisplay = 'Tomorrow';
                     } else {
                         dateDisplay = startDate.toLocaleDateString('en-US', {
-                            weekday: 'long',
+                            weekday: 'short',
                             month: 'short',
                             day: 'numeric'
                         });
                     }
                 }
 
-                // Time formatting
                 const timeDisplay = startDate ? startDate.toLocaleTimeString('en-US', {
                     hour: 'numeric',
                     minute: '2-digit',
                     hour12: true
                 }) : '';
 
-                // Get venue address from class instance
                 const venueAddress = classInstance?.venueSnapshot?.address;
                 const addressText = venueAddress ?
-                    `${venueAddress.street}, ${venueAddress.city}${venueAddress.zipCode ? ` ${venueAddress.zipCode}` : ''}` :
-                    '';
+                    `${venueAddress.street}, ${venueAddress.city}` : '';
 
                 return {
                     id: booking._id,
                     title: booking.classInstanceSnapshot?.name || 'Class',
                     time: timeDisplay,
                     date: dateDisplay,
-                    dateTime: startDate ? `${dateDisplay} at ${timeDisplay}` : '',
                     instructor: booking.classInstanceSnapshot?.instructor || 'Instructor',
                     venue: booking.venueSnapshot?.name || 'Venue',
                     venueAddress: addressText,
@@ -420,20 +233,15 @@ export function NewsScreen() {
                 };
             })
             .sort((a, b) => (a.startTime || 0) - (b.startTime || 0));
-    }, [userBookings, upcomingClassInstances, combinedStorageIdToUrl]);
+    }, [userBookings, upcomingClassInstances, combinedStorageIdToUrl, now]);
 
-    // Process data for last minute offers - use stale data when available
+    // Process data for last minute offers
     const lastMinuteOffers = useMemo(() => {
-        // Use most recent data available, even if refreshing
         const discountedInstancesData = lastMinuteDiscountedInstances || [];
         if (!discountedInstancesData.length) return [];
 
-        console.log('lastMinuteDiscountedInstances', discountedInstancesData[0].pricing.originalPrice);
-        console.log('lastMinuteDiscountedInstances', discountedInstancesData[0].pricing.finalPrice);
-        console.log('lastMinuteDiscountedInstances', discountedInstancesData[0].discountPercentage);
-
         return discountedInstancesData
-            .slice(0, 4)
+            .slice(0, 6)
             .map(instance => {
                 const timeUntilStartMs = instance.startTime - now.getTime();
                 const timeUntilStartHours = Math.floor(timeUntilStartMs / (1000 * 60 * 60));
@@ -444,17 +252,15 @@ export function NewsScreen() {
                 const imageUrl = templateImageId ? combinedStorageIdToUrl.get(templateImageId) :
                     venueImageId ? combinedStorageIdToUrl.get(venueImageId) : null;
 
-                // Use real pricing data from backend
                 const originalPrice = instance.pricing.originalPrice;
                 const finalPrice = instance.pricing.finalPrice;
                 const discountPercentage = instance.discountPercentage;
 
-                // Format time display with hours and minutes
                 let timeDisplay = '';
                 if (timeUntilStartHours > 0) {
-                    timeDisplay = `Starting in ${timeUntilStartHours}h ${timeUntilStartMinutes}m`;
+                    timeDisplay = `In ${timeUntilStartHours}h ${timeUntilStartMinutes}m`;
                 } else if (timeUntilStartMinutes > 0) {
-                    timeDisplay = `Starting in ${timeUntilStartMinutes}m`;
+                    timeDisplay = `In ${timeUntilStartMinutes}m`;
                 } else {
                     timeDisplay = 'Starting soon';
                 }
@@ -463,8 +269,8 @@ export function NewsScreen() {
                     id: instance._id,
                     title: instance.name || 'Class',
                     subtitle: timeDisplay,
-                    originalPrice: `${centsToCredits(originalPrice)} credits`,
-                    discountedPrice: `${centsToCredits(finalPrice)} credits`,
+                    originalPrice: `${centsToCredits(originalPrice)}`,
+                    discountedPrice: `${centsToCredits(finalPrice)}`,
                     discountPercentage: `${discountPercentage}%`,
                     venueName: instance.venueSnapshot?.name,
                     venueCity: instance.venueSnapshot?.address?.city,
@@ -476,38 +282,7 @@ export function NewsScreen() {
             });
     }, [lastMinuteDiscountedInstances, now, combinedStorageIdToUrl]);
 
-    // Process data for new venues - use stale data when available
-    const newVenues = useMemo(() => {
-        // Use most recent data available, even if refreshing
-        const venuesData = allVenues || [];
-        if (!venuesData.length) return [];
-
-        return venuesData
-            .filter(venue => {
-                const venueAge = now.getTime() - venue.createdAt;
-                const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
-                return venueAge <= thirtyDaysInMs;
-            })
-            .sort((a, b) => b.createdAt - a.createdAt) // Newest first
-            .slice(0, 4)
-            .map(venue => {
-                const imageUrl = venue.imageStorageIds?.[0] ? combinedStorageIdToUrl.get(venue.imageStorageIds[0]) : null;
-                const daysOld = Math.floor((now.getTime() - venue.createdAt) / (1000 * 60 * 60 * 24));
-
-                return {
-                    id: venue._id,
-                    title: venue.name,
-                    level: daysOld === 0 ? 'Opened Today!' : `${daysOld} days old`,
-                    instructor: `${venue.address?.city || 'Location'}${venue.address?.country ? `, ${venue.address.country}` : ''}`,
-                    description: venue.description || 'New fitness studio',
-                    imageUrl,
-                    createdAt: venue.createdAt,
-                    venueId: venue._id
-                };
-            });
-    }, [allVenues, now, combinedStorageIdToUrl]);
-
-    // Get actual venue objects for VenueCard (new studios section)
+    // Get new venues for VenueCard
     const newVenuesForCards = useMemo(() => {
         const venuesData = allVenues || [];
         if (!venuesData.length) return [];
@@ -518,23 +293,22 @@ export function NewsScreen() {
                 const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
                 return venueAge <= thirtyDaysInMs;
             })
-            .sort((a, b) => b.createdAt - a.createdAt) // Newest first
-            .slice(0, 4);
+            .sort((a, b) => b.createdAt - a.createdAt)
+            .slice(0, 6);
     }, [allVenues, now]);
 
-    // Handle navigation to explore screen
+    // Handle navigation
     const handleExplorePress = () => {
         navigation.navigate('Home', { screen: 'Explore' });
     };
 
-    // Separate initial loading from refetching - only show loading screen on very first load
+    // Loading state
     const isInitialLoading = user && (
         userBookings === undefined &&
         lastMinuteDiscountedInstances === undefined &&
         (allVenues === undefined || venuesLoading)
     );
 
-    // Loading state - only show loading screen if we have no data at all (initial load)
     if (isInitialLoading) {
         return (
             <SafeAreaView style={styles.container}>
@@ -561,94 +335,86 @@ export function NewsScreen() {
 
                 <WhatsNewBanner />
 
-                {/* Your Schedule - Horizontal scroll section */}
+                {/* Your Schedule Section */}
                 {upcomingClasses.length > 0 ? (
-                    <View style={styles.scheduleSection}>
-                        <Text style={styles.scheduleSectionTitle}>Your Schedule</Text>
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={styles.scheduleScrollContainer}
-                            decelerationRate="fast"
-                            snapToInterval={screenWidth * 0.8 + 16}
-                            snapToAlignment="start"
-                        >
-                            {upcomingClasses.map((classItem, index) => (
-                                <TouchableOpacity 
-                                    key={classItem.id} 
-                                    style={styles.scheduleCard}
-                                    onPress={() => {
-                                        if (classItem.classInstanceId) {
-                                            navigation.navigate('ClassDetailsModal', { 
-                                                classInstanceId: classItem.classInstanceId 
-                                            });
-                                        }
-                                    }}
-                                    activeOpacity={0.7}
-                                >
-                                    {/* Image section with overlay */}
-                                    <View style={styles.scheduleImageContainer}>
-                                        {classItem.imageUrl ? (
-                                            <Image
-                                                source={{ uri: classItem.imageUrl }}
-                                                style={styles.scheduleImage}
-                                                contentFit="cover"
-                                                transition={200}
-                                                cachePolicy="memory-disk"
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Your Schedule</Text>
+                        <View style={styles.carouselContainer}>
+                            <Carousel
+                                loop={false}
+                                width={CAROUSEL_ITEM_WIDTH + ITEM_GAP}
+                                height={CAROUSEL_HEIGHT}
+                                data={upcomingClasses}
+                                scrollAnimationDuration={500}
+                                style={styles.carousel}
+                                snapEnabled
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        style={styles.carouselCard}
+                                        onPress={() => {
+                                            if (item.classInstanceId) {
+                                                navigation.navigate('ClassDetailsModal', {
+                                                    classInstanceId: item.classInstanceId
+                                                });
+                                            }
+                                        }}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={styles.cardImageContainer}>
+                                            {item.imageUrl ? (
+                                                <Image
+                                                    source={{ uri: item.imageUrl }}
+                                                    style={styles.cardImage}
+                                                    contentFit="cover"
+                                                    transition={200}
+                                                    cachePolicy="memory-disk"
+                                                />
+                                            ) : (
+                                                <View style={[styles.cardImage, styles.placeholderImage]} />
+                                            )}
+                                            <LinearGradient
+                                                pointerEvents="none"
+                                                colors={['transparent', 'rgba(0,0,0,0.25)', 'rgba(0,0,0,0.65)']}
+                                                locations={[0, 0.5, 1]}
+                                                start={{ x: 0, y: 0 }}
+                                                end={{ x: 0, y: 1 }}
+                                                style={styles.imageGradient}
                                             />
-                                        ) : (
-                                            <View style={[styles.scheduleImage, styles.placeholderImage]} />
-                                        )}
-
-                                        {/* Gradient overlay */}
-                                        <LinearGradient
-                                            pointerEvents="none"
-                                            colors={[
-                                                'transparent',
-                                                'rgba(0,0,0,0.25)',
-                                                'rgba(0,0,0,0.65)',
-                                            ]}
-                                            locations={[0, 0.5, 1]}
-                                            start={{ x: 0, y: 0 }}
-                                            end={{ x: 0, y: 1 }}
-                                            style={styles.scheduleImageGradient}
-                                        />
-
-                                        {/* Text overlay on image */}
-                                        <View style={styles.scheduleImageOverlay}>
-                                            <Text style={styles.scheduleOverlayClassName} numberOfLines={1}>
-                                                {classItem.title}
-                                            </Text>
-                                            <Text style={styles.scheduleOverlayInstructor} numberOfLines={1}>
-                                                with {classItem.instructor}
-                                            </Text>
+                                            <View style={styles.imageOverlay}>
+                                                <Text style={styles.overlayTitle} numberOfLines={1}>
+                                                    {item.title}
+                                                </Text>
+                                                <Text style={styles.overlaySubtitle} numberOfLines={1}>
+                                                    with {item.instructor}
+                                                </Text>
+                                            </View>
+                                            <View style={[styles.badge, styles.timeBadge]}>
+                                                <Text style={styles.badgeText}>{item.date}</Text>
+                                            </View>
                                         </View>
-
-                                        {/* Price badge */}
-                                        <View style={styles.schedulePriceBadge}>
-                                            <Text style={styles.schedulePriceBadgeText}>{classItem.price}</Text>
-                                        </View>
-                                    </View>
-
-                                    {/* Simplified content section */}
-                                    <View style={styles.scheduleContent}>
-                                        <View style={styles.scheduleTimeRow}>
-                                            <Text style={styles.scheduleDate}>{classItem.date}</Text>
-                                            <Text style={styles.scheduleTime}>{classItem.time}</Text>
-                                        </View>
-
-                                        <Text style={styles.scheduleVenue} numberOfLines={1}>
-                                            {classItem.venue}
-                                        </Text>
-                                        {classItem.venueAddress && (
-                                            <Text style={styles.scheduleAddress} numberOfLines={2}>
-                                                {classItem.venueAddress}
+                                        <View style={styles.cardContent}>
+                                            <View style={styles.contentRow}>
+                                                <Text style={styles.primaryText}>{item.time}</Text>
+                                                <Text style={styles.priceText}>{item.price}</Text>
+                                            </View>
+                                            <Text style={styles.secondaryText} numberOfLines={1}>
+                                                {item.venue}
                                             </Text>
-                                        )}
-                                    </View>
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
+                                            {item.venueAddress && (
+                                                <Text style={styles.tertiaryText} numberOfLines={1}>
+                                                    {item.venueAddress}
+                                                </Text>
+                                            )}
+                                        </View>
+                                    </TouchableOpacity>
+                                )}
+                                onConfigurePanGesture={(gestureChain) => {
+                                    gestureChain
+                                        .activeOffsetX([-10, 10])
+                                        .failOffsetY([-15, 15]);
+                                }}
+                            />
+                        </View>
                     </View>
                 ) : (
                     <View style={styles.section}>
@@ -657,145 +423,159 @@ export function NewsScreen() {
                     </View>
                 )}
 
+                {/* Last Minute Offers Section */}
                 {lastMinuteOffers.length > 0 && (
-                    <View style={styles.scheduleSection}>
-                        <Text style={styles.scheduleSectionTitle}>Last minute offers</Text>
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={styles.scheduleScrollContainer}
-                            decelerationRate="fast"
-                            snapToInterval={screenWidth * 0.8 + 16}
-                            snapToAlignment="start"
-                        >
-                            {lastMinuteOffers.map((offer, index) => (
-                                <TouchableOpacity 
-                                    key={offer.id} 
-                                    style={styles.scheduleCard}
-                                    onPress={() => {
-                                        if (offer.classInstanceId) {
-                                            navigation.navigate('ClassDetailsModal', { 
-                                                classInstanceId: offer.classInstanceId 
-                                            });
-                                        }
-                                    }}
-                                    activeOpacity={0.7}
-                                >
-                                    {/* Image section with overlay */}
-                                    <View style={styles.scheduleImageContainer}>
-                                        {offer.imageUrl ? (
-                                            <Image
-                                                source={{ uri: offer.imageUrl }}
-                                                style={styles.scheduleImage}
-                                                contentFit="cover"
-                                                transition={200}
-                                                cachePolicy="memory-disk"
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Last minute offers</Text>
+                        <View style={styles.carouselContainer}>
+                            <Carousel
+                                loop={false}
+                                width={CAROUSEL_ITEM_WIDTH + ITEM_GAP}
+                                height={CAROUSEL_HEIGHT}
+                                data={lastMinuteOffers}
+                                scrollAnimationDuration={500}
+                                style={styles.carousel}
+                                snapEnabled
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        style={styles.carouselCard}
+                                        onPress={() => {
+                                            if (item.classInstanceId) {
+                                                navigation.navigate('ClassDetailsModal', {
+                                                    classInstanceId: item.classInstanceId
+                                                });
+                                            }
+                                        }}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={styles.cardImageContainer}>
+                                            {item.imageUrl ? (
+                                                <Image
+                                                    source={{ uri: item.imageUrl }}
+                                                    style={styles.cardImage}
+                                                    contentFit="cover"
+                                                    transition={200}
+                                                    cachePolicy="memory-disk"
+                                                />
+                                            ) : (
+                                                <View style={[styles.cardImage, styles.placeholderImage]} />
+                                            )}
+                                            <LinearGradient
+                                                pointerEvents="none"
+                                                colors={['transparent', 'rgba(0,0,0,0.25)', 'rgba(0,0,0,0.65)']}
+                                                locations={[0, 0.5, 1]}
+                                                start={{ x: 0, y: 0 }}
+                                                end={{ x: 0, y: 1 }}
+                                                style={styles.imageGradient}
                                             />
-                                        ) : (
-                                            <View style={[styles.scheduleImage, styles.placeholderImage]} />
-                                        )}
-
-                                        {/* Gradient overlay */}
-                                        <LinearGradient
-                                            pointerEvents="none"
-                                            colors={[
-                                                'transparent',
-                                                'rgba(0,0,0,0.25)',
-                                                'rgba(0,0,0,0.65)',
-                                            ]}
-                                            locations={[0, 0.5, 1]}
-                                            start={{ x: 0, y: 0 }}
-                                            end={{ x: 0, y: 1 }}
-                                            style={styles.scheduleImageGradient}
-                                        />
-
-                                        {/* Text overlay on image */}
-                                        <View style={styles.scheduleImageOverlay}>
-                                            <Text style={styles.scheduleOverlayClassName} numberOfLines={1}>
-                                                {offer.title}
-                                            </Text>
-                                            <Text style={styles.scheduleOverlayInstructor} numberOfLines={1}>
-                                                with {offer.instructor}
-                                            </Text>
-                                        </View>
-
-                                        {/* Time badge - top left */}
-                                        <View style={styles.offerTimeBadge}>
-                                            <Text style={styles.offerTimeBadgeText}>{offer.subtitle}</Text>
-                                        </View>
-                                    </View>
-
-                                    {/* Content section - enhanced layout */}
-                                    <View style={styles.scheduleContent}>
-                                        {/* Price section with better visual hierarchy */}
-                                        <View style={styles.offerPriceSection}>
-                                            <View style={styles.priceContainer}>
-                                                <Text style={styles.originalPrice}>{offer.originalPrice}</Text>
-                                                <Text style={styles.discountedPrice}>{offer.discountedPrice}</Text>
+                                            <View style={styles.imageOverlay}>
+                                                <Text style={styles.overlayTitle} numberOfLines={1}>
+                                                    {item.title}
+                                                </Text>
+                                                <Text style={styles.overlaySubtitle} numberOfLines={1}>
+                                                    with {item.instructor}
+                                                </Text>
                                             </View>
-                                            <View style={styles.savingsBadge}>
-                                                <Text style={styles.savingsText}>Save {offer.discountPercentage}</Text>
+                                            <View style={[styles.badge, styles.offerBadge]}>
+                                                <Text style={styles.badgeText}>{item.subtitle}</Text>
                                             </View>
                                         </View>
-
-                                        {/* Venue information */}
-                                        <View style={styles.offerVenueSection}>
-                                            <Text style={styles.scheduleVenue} numberOfLines={1}>
-                                                {offer.venueName}
+                                        <View style={styles.cardContent}>
+                                            <View style={styles.contentRow}>
+                                                <View style={styles.priceContainer}>
+                                                    <Text style={styles.originalPrice}>{item.originalPrice}</Text>
+                                                    <Text style={styles.discountedPrice}>{item.discountedPrice} credits</Text>
+                                                </View>
+                                                <View style={styles.discountBadge}>
+                                                    <Text style={styles.discountText}>-{item.discountPercentage}</Text>
+                                                </View>
+                                            </View>
+                                            <Text style={styles.secondaryText} numberOfLines={1}>
+                                                {item.venueName}
                                             </Text>
-                                            {offer.venueCity && (
-                                                <Text style={styles.scheduleAddress} numberOfLines={1}>
-                                                    {offer.venueCity}
+                                            {item.venueCity && (
+                                                <Text style={styles.tertiaryText} numberOfLines={1}>
+                                                    {item.venueCity}
                                                 </Text>
                                             )}
                                         </View>
+                                    </TouchableOpacity>
+                                )}
+                                onConfigurePanGesture={(gestureChain) => {
+                                    gestureChain
+                                        .activeOffsetX([-10, 10])
+                                        .failOffsetY([-15, 15]);
+                                }}
+                            />
+                        </View>
+                    </View>
+                )}
 
-                                        {/* Call to action - absolute positioned */}
-                                        <View style={styles.offerCTA}>
-                                            <Text style={styles.offerCTAText}>Book Now</Text>
-                                            <Text style={styles.offerCTAArrow}>→</Text>
+                {/* New Studios Section */}
+                {newVenuesForCards.length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>New studios</Text>
+                        <View style={styles.carouselContainer}>
+                            <Carousel
+                                width={CAROUSEL_ITEM_WIDTH + ITEM_GAP}
+                                height={CAROUSEL_HEIGHT}
+                                data={newVenuesForCards}
+                                scrollAnimationDuration={600}
+                                style={styles.carousel}
+                                loop={false}
+                                snapEnabled
+                                renderItem={({ item: venue }) => (
+                                    <View style={styles.carouselCard}>
+                                        <VenueCard
+                                            venue={venue}
+                                            storageIdToUrl={storageIdToUrl}
+                                            onPress={(selectedVenue) => {
+                                                navigation.navigate('VenueDetailsScreen', {
+                                                    venueId: selectedVenue._id
+                                                });
+                                            }}
+                                        />
+                                    </View>
+                                )}
+                            />
+                        </View>
+                    </View>
+                )}
+
+                {/* Categories Section */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Categories</Text>
+                    <View style={styles.carouselContainer}>
+                        <Carousel
+                            loop={false}
+                            width={CAROUSEL_ITEM_WIDTH + ITEM_GAP}
+                            height={CAROUSEL_HEIGHT}
+                            data={mockCategories}
+                            scrollAnimationDuration={500}
+                            style={styles.carousel}
+                            snapEnabled
+                            renderItem={({ item }) => (
+                                <View style={styles.carouselCard}>
+                                    <View style={styles.cardImageContainer}>
+                                        <View style={[styles.cardImage, styles.placeholderImage]} />
+                                        <View style={[styles.badge, styles.categoryBadge]}>
+                                            <Text style={styles.badgeText}>Popular</Text>
                                         </View>
                                     </View>
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                    </View>
-                )}
-
-                {/* New studios section - horizontal carousel with VenueCards */}
-                {newVenuesForCards.length > 0 && (
-                    <View style={styles.newStudiosSection}>
-                        <Text style={styles.newStudiosSectionTitle}>New studios</Text>
-                        <Carousel
-                            width={NEW_STUDIOS_ITEM_WIDTH}
-                            height={300}
-                            data={newVenuesForCards}
-                            scrollAnimationDuration={600}
-                            style={styles.carousel}
-                            loop={false}
-                            renderItem={({ item: venue }) => (
-                                <View style={styles.newStudiosCarouselItem}>
-                                    <VenueCard
-                                        venue={venue}
-                                        storageIdToUrl={storageIdToUrl}
-                                        onPress={(selectedVenue) => {
-                                            navigation.navigate('VenueDetailsScreen', { 
-                                                venueId: selectedVenue._id 
-                                            });
-                                        }}
-                                    />
+                                    <View style={styles.cardContent}>
+                                        <Text style={styles.categoryTitle}>{item.name}</Text>
+                                        <Text style={styles.secondaryText}>{item.count}</Text>
+                                    </View>
                                 </View>
                             )}
+                            onConfigurePanGesture={(gestureChain) => {
+                                gestureChain
+                                    .activeOffsetX([-10, 10])
+                                    .failOffsetY([-15, 15]);
+                            }}
                         />
                     </View>
-                )}
-
-                <CarouselSection
-                    title="Categories"
-                    data={mockCategories}
-                    type="categories"
-                    itemWidth={CATEGORIES_ITEM_WIDTH}
-                />
+                </View>
             </ScrollView>
         </SafeAreaView>
     );
@@ -814,7 +594,7 @@ const styles = StyleSheet.create({
         paddingBottom: 80,
     },
     subtitleContainer: {
-        paddingHorizontal: 20,
+        paddingHorizontal: SECTION_PADDING,
         paddingBottom: 16,
         backgroundColor: theme.colors.zinc[50],
     },
@@ -822,6 +602,8 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#6c757d',
     },
+
+    // Section styles
     section: {
         marginVertical: 10,
     },
@@ -830,116 +612,50 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#1a1a1a',
         marginBottom: 16,
-        paddingHorizontal: 20,
+        paddingHorizontal: SECTION_PADDING,
     },
-    carouselContainer: {
-        paddingHorizontal: 20,
 
+    // Unified carousel styles
+    carouselContainer: {
+        paddingHorizontal: CAROUSEL_PADDING,
     },
     carousel: {
         width: screenWidth,
     },
-    carouselItem: {
-        paddingHorizontal: ITEM_SPACING / 2,
-    },
-    newStudiosCarouselItem: {
-        width: NEW_STUDIOS_ITEM_WIDTH,
-        paddingHorizontal: ITEM_SPACING / 2,
-    },
-    // Upcoming classes styles
-    upcomingItem: {
-        backgroundColor: '#ffffff',
-        borderRadius: 16,
-        padding: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 3,
-    },
-    upcomingImageContainer: {
-        width: '100%',
-        height: 120,
-        borderRadius: 12,
-        marginBottom: 12,
-        overflow: 'hidden',
-    },
-    upcomingImage: {
-        width: '100%',
-        height: '100%',
-        backgroundColor: '#e9ecef',
-        borderRadius: 12,
-    },
-    upcomingContent: {
-        flex: 1,
-    },
-    upcomingTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#1a1a1a',
-        marginBottom: 4,
-    },
-    upcomingTime: {
-        fontSize: 14,
-        color: '#007bff',
-        fontWeight: '500',
-        marginBottom: 2,
-    },
-    upcomingInstructor: {
-        fontSize: 12,
-        color: '#6c757d',
-    },
-    upcomingTimeRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 4,
-    },
-    upcomingDate: {
-        fontSize: 11,
-        color: '#8b5cf6',
-        fontWeight: '500',
-    },
-    upcomingVenue: {
-        fontSize: 11,
-        color: '#9ca3af',
-        fontStyle: 'italic',
-        marginBottom: 2,
-    },
-    upcomingPrice: {
-        fontSize: 12,
-        color: '#059669',
-        fontWeight: '600',
-        backgroundColor: '#d1fae5',
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 8,
-        alignSelf: 'flex-start',
-        marginTop: 4,
-    },
-    // Offers styles - updated to match upcoming classes
-    offerItem: {
+
+    // Unified card styles
+    carouselCard: {
+        width: CAROUSEL_ITEM_WIDTH,
+        height: CAROUSEL_HEIGHT,
         backgroundColor: '#ffffff',
         borderRadius: 16,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
+        shadowOpacity: 0.08,
         shadowRadius: 8,
         elevation: 3,
         overflow: 'hidden',
     },
-    offerImageContainer: {
+
+    // width: CAROUSEL_ITEM_WIDTH,
+    // height: CAROUSEL_HEIGHT,
+
+
+    // Image section
+    cardImageContainer: {
         width: '100%',
-        height: 160,
+        height: 140,
         overflow: 'hidden',
         position: 'relative',
     },
-    offerImage: {
+    cardImage: {
         width: '100%',
         height: '100%',
+    },
+    placeholderImage: {
         backgroundColor: '#f3f4f6',
     },
-    offerImageGradient: {
+    imageGradient: {
         position: 'absolute',
         left: 0,
         right: 0,
@@ -947,196 +663,133 @@ const styles = StyleSheet.create({
         height: '60%',
         zIndex: 1,
     },
-    offerImageOverlay: {
+    imageOverlay: {
         position: 'absolute',
         left: 12,
         bottom: 12,
-        right: 60,
+        right: 12,
         zIndex: 2,
     },
-    offerOverlayClassName: {
-        fontSize: 22,
-        fontWeight: '800',
+    overlayTitle: {
+        fontSize: 18,
+        fontWeight: '700',
         color: 'white',
         textShadowColor: 'rgba(0,0,0,0.35)',
         textShadowOffset: { width: 0, height: 1 },
         textShadowRadius: 3,
         marginBottom: 2,
     },
-    offerOverlayInstructor: {
-        fontSize: 14,
-        fontWeight: '700',
+    overlaySubtitle: {
+        fontSize: 12,
+        fontWeight: '600',
         color: 'rgba(255,255,255,0.9)',
         textShadowColor: 'rgba(0,0,0,0.35)',
         textShadowOffset: { width: 0, height: 1 },
         textShadowRadius: 3,
     },
-    offerTimeBadge: {
+
+    // Badge styles
+    badge: {
         position: 'absolute',
         top: 10,
-        left: 10,
-        backgroundColor: theme.colors.rose[500],
-        borderRadius: 8,
+        right: 10,
+        borderRadius: 6,
         paddingHorizontal: 8,
         paddingVertical: 4,
         zIndex: 2,
     },
-    offerTimeBadgeText: {
-        fontSize: 14,
+    timeBadge: {
+        backgroundColor: theme.colors.emerald[500],
+    },
+    offerBadge: {
+        backgroundColor: theme.colors.rose[500],
+    },
+    categoryBadge: {
+        backgroundColor: theme.colors.emerald[500],
+    },
+    badgeText: {
+        fontSize: 11,
         fontWeight: '700',
-        color: theme.colors.rose[50],
+        color: 'white',
     },
-    offerContent: {
-        padding: 16,
-        paddingBottom: 12,
+
+    // Card content section
+    cardContent: {
+        flex: 1,
+        padding: 12,
+        justifyContent: 'space-between',
     },
-    offerTimeRow: {
+    contentRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 8,
+        marginBottom: 4,
     },
-    offerTime: {
+    primaryText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#1a1a1a',
+    },
+    secondaryText: {
+        fontSize: 13,
+        fontWeight: '500',
+        color: '#6b7280',
+    },
+    tertiaryText: {
+        fontSize: 11,
+        color: '#9ca3af',
+    },
+    priceText: {
         fontSize: 12,
         fontWeight: '600',
-        color: '#dc3545',
-        backgroundColor: '#fee2e2',
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 4,
+        color: theme.colors.emerald[600],
     },
-    offerVenue: {
-        fontSize: 14,
-        fontWeight: '600',
+    categoryTitle: {
+        fontSize: 16,
+        fontWeight: '700',
         color: '#1a1a1a',
         marginBottom: 4,
     },
-    offerVenueCity: {
-        fontSize: 12,
-        color: '#6b7280',
-        lineHeight: 16,
-    },
+
+    // Price styles
     priceContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        gap: 6,
     },
     originalPrice: {
-        fontSize: 15,
-        color: '#6c757d',
+        fontSize: 13,
+        color: '#9ca3af',
         textDecorationLine: 'line-through',
     },
     discountedPrice: {
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: '700',
         color: theme.colors.emerald[600],
     },
-    // New venues styles
-    newVenueItem: {
-        backgroundColor: '#d1ecf1',
-        borderRadius: 16,
-        padding: 16,
-        borderWidth: 2,
-        borderColor: '#17a2b8',
+    discountBadge: {
+        backgroundColor: theme.colors.emerald[50],
+        borderRadius: 6,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
     },
-    newVenueImageContainer: {
-        width: '100%',
-        height: 120,
-        borderRadius: 12,
-        marginBottom: 12,
-        overflow: 'hidden',
-        position: 'relative',
-    },
-    newVenueImage: {
-        width: '100%',
-        height: '100%',
-        backgroundColor: '#bee5eb',
-        borderRadius: 12,
-    },
-    newVenueBadge: {
-        position: 'absolute',
-        top: 8,
-        right: 8,
-        backgroundColor: '#17a2b8',
-        borderRadius: 8,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-    },
-    newVenueBadgeText: {
-        fontSize: 10,
-        fontWeight: '700',
-        color: '#ffffff',
-    },
-    newVenueContent: {
-        flex: 1,
-    },
-    newVenueTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#0c5460',
-        marginBottom: 4,
-    },
-    newVenueLevel: {
-        fontSize: 12,
-        color: '#17a2b8',
-        fontWeight: '500',
-        marginBottom: 2,
-    },
-    newVenueLocation: {
+    discountText: {
         fontSize: 11,
-        color: '#6c757d',
-        marginBottom: 4,
+        fontWeight: '700',
+        color: theme.colors.emerald[700],
     },
-    newVenueDescription: {
-        fontSize: 10,
-        color: '#8899a6',
-        lineHeight: 14,
-    },
-    // Categories styles
-    categoryItem: {
-        backgroundColor: '#f8f9fa',
-        borderRadius: 16,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: '#dee2e6',
-    },
-    categoryImageContainer: {
-        width: '100%',
-        height: 120,
-        borderRadius: 12,
-        marginBottom: 12,
-        overflow: 'hidden',
-    },
-    categoryImage: {
-        width: '100%',
-        height: '100%',
-        backgroundColor: '#e9ecef',
-        borderRadius: 12,
-    },
-    categoryContent: {
-        flex: 1,
-    },
-    categoryName: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#1a1a1a',
-        marginBottom: 4,
-    },
-    categoryCount: {
-        fontSize: 12,
-        color: '#6c757d',
-    },
-    // Whats New Banner styles
+
+    // WhatsNew Banner styles
     whatsNewBanner: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#e3f2fd',
         paddingVertical: 12,
-        paddingHorizontal: 20,
+        paddingHorizontal: SECTION_PADDING,
         borderRadius: 12,
         marginTop: 16,
         marginBottom: 16,
-        marginHorizontal: 20,
+        marginHorizontal: SECTION_PADDING,
     },
     bannerIcon: {
         width: 40,
@@ -1174,203 +827,15 @@ const styles = StyleSheet.create({
         color: '#ffffff',
         fontWeight: '500',
     },
-    // Loading styles
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 12,
-    },
-    loadingText: {
-        fontSize: 16,
-        color: '#6b7280',
-        fontWeight: '500',
-    },
-    // Image placeholder styles
-    placeholderImage: {
-        backgroundColor: '#f3f4f6',
-    },
-    // Your Schedule horizontal scroll section
-    scheduleSection: {
-        marginVertical: 10,
-    },
-    scheduleSectionTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#1a1a1a',
-        marginBottom: 16,
-        paddingHorizontal: 20,
-    },
-    scheduleScrollContainer: {
-        paddingHorizontal: 16,
-        paddingBottom: 4,
-    },
-    scheduleCard: {
-        width: screenWidth * 0.8,
-        backgroundColor: '#ffffff',
-        borderRadius: 16,
-        marginHorizontal: 8,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 3,
-        overflow: 'hidden',
-        position: 'relative',
-    },
-    scheduleImageContainer: {
-        width: '100%',
-        height: 160,
-        overflow: 'hidden',
-        position: 'relative',
-    },
-    scheduleImage: {
-        width: '100%',
-        height: '100%',
-    },
-    scheduleImageGradient: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        height: '60%',
-        zIndex: 1,
-    },
-    scheduleImageOverlay: {
-        position: 'absolute',
-        left: 12,
-        bottom: 12,
-        right: 60,
-        zIndex: 2,
-    },
-    scheduleOverlayClassName: {
-        fontSize: 22,
-        fontWeight: '800',
-        color: 'white',
-        textShadowColor: 'rgba(0,0,0,0.35)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 3,
-        marginBottom: 2,
-    },
-    scheduleOverlayInstructor: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: 'rgba(255,255,255,0.9)',
-        textShadowColor: 'rgba(0,0,0,0.35)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 3,
-    },
-    schedulePriceBadge: {
-        position: 'absolute',
-        top: 12,
-        right: 12,
-        backgroundColor: 'rgba(255,255,255,0.95)',
-        borderRadius: 8,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        zIndex: 2,
-    },
-    schedulePriceBadgeText: {
-        fontSize: 11,
-        fontWeight: '600',
-        color: '#8b5cf6',
-    },
-    scheduleContent: {
-        padding: 16,
-        paddingBottom: 12,
-    },
-    scheduleTimeRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 8,
-        gap: 8,
-    },
-    scheduleDate: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: '#8b5cf6',
-        backgroundColor: '#ede9fe',
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 4,
-    },
-    scheduleTime: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: '#1a1a1a',
-    },
-    scheduleVenue: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#1a1a1a',
-        marginBottom: 4,
-    },
-    scheduleAddress: {
-        fontSize: 12,
-        color: '#6b7280',
-        lineHeight: 16,
-    },
-    // Enhanced offer content styles
-    offerPriceSection: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 8,
-    },
-    savingsBadge: {
-        backgroundColor: theme.colors.emerald[50],
-        borderWidth: 1,
-        borderColor: theme.colors.emerald[100],
-        borderRadius: 8,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-    },
-    savingsText: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: theme.colors.emerald[800],
-    },
-    offerVenueSection: {
-        marginBottom: 8,
-    },
-    offerCTA: {
-        position: 'absolute',
-        bottom: 12,
-        right: 12,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        zIndex: 2,
-    },
-    offerCTAText: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: theme.colors.rose[600],
-    },
-    offerCTAArrow: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: theme.colors.rose[600],
-    },
-    // New studios section styles
-    newStudiosSection: {
-        marginVertical: 10,
-    },
-    newStudiosSectionTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#1a1a1a',
-        marginBottom: 16,
-        paddingHorizontal: 20,
-    },
+
     // No upcoming classes styles
     noClassesContainer: {
         alignItems: 'center',
         paddingVertical: 24,
-        paddingHorizontal: 20,
+        paddingHorizontal: SECTION_PADDING,
         backgroundColor: theme.colors.zinc[50],
         borderRadius: 12,
-        marginHorizontal: 20,
+        marginHorizontal: SECTION_PADDING,
         borderWidth: 1,
         borderColor: theme.colors.zinc[200],
     },
@@ -1404,6 +869,19 @@ const styles = StyleSheet.create({
     exploreButtonText: {
         fontSize: 14,
         color: theme.colors.zinc[50],
+        fontWeight: '500',
+    },
+
+    // Loading styles
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 12,
+    },
+    loadingText: {
+        fontSize: 16,
+        color: '#6b7280',
         fontWeight: '500',
     },
 });
