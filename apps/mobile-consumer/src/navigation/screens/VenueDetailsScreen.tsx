@@ -7,6 +7,7 @@ import Carousel from 'react-native-reanimated-carousel';
 import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { ClassCard } from '../../components/ClassCard';
+import { Divider } from '../../components/Divider';
 import type { RootStackParamListWithNestedTabs } from '..';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
 import type { ClassInstance } from '../../hooks/use-class-instances';
@@ -319,9 +320,9 @@ export function VenueDetailsScreen() {
                 {/* Venue Name - Centered */}
                 <Text style={styles.venueName}>{venueName}</Text>
 
-                {/* Venue Description - Centered, Two Lines */}
+                {/* Venue Address - Centered, Two Lines */}
                 <Text style={styles.venueDescription} numberOfLines={2}>
-                    {venueDescription || 'A wellness center offering various health and fitness services to help you achieve your goals.'}
+                    {distanceLabel ? `${venueAddress} • ${distanceLabel}` : venueAddress}
                 </Text>
 
                 {/* 3-Column Row */}
@@ -369,8 +370,22 @@ export function VenueDetailsScreen() {
         >
             {renderHeaderSection()}
 
-            {/* Separator */}
-            <View style={styles.separator} />
+            <Divider />
+
+            {/* About the studio Section */}
+            {venueDescription && (
+                <>
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>About the studio</Text>
+                        <Text style={styles.descriptionText}>
+                            {venueDescription}
+                        </Text>
+                    </View>
+
+                    {/* Separator */}
+                    <Divider />
+                </>
+            )}
 
             {/* Who we are Section */}
             <View style={styles.section}>
@@ -395,11 +410,10 @@ export function VenueDetailsScreen() {
                 </View>
             </View>
 
-            {/* Separator */}
-            <View style={styles.separator} />
+            <Divider />
 
             {/* Services Section */}
-            <View style={styles.section}>
+            {/* <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Services</Text>
                 <View style={styles.tagContainer}>
                     {venue?.services ? Object.entries(venue.services)
@@ -419,7 +433,7 @@ export function VenueDetailsScreen() {
                         </>
                     )}
                 </View>
-            </View>
+            </View> */}
 
             {/* Amenities Section */}
             <View style={styles.section}>
@@ -450,8 +464,7 @@ export function VenueDetailsScreen() {
                 </View>
             </View>
 
-            {/* Separator */}
-            <View style={styles.separator} />
+            <Divider />
 
             {/* Classes Section */}
             <View style={styles.section}>
@@ -547,11 +560,6 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         backgroundColor: theme.colors.zinc[50],
-    },
-    separator: {
-        height: 1,
-        backgroundColor: theme.colors.zinc[100],
-        marginVertical: 24,
     },
     section: {
         paddingHorizontal: 20,
@@ -879,10 +887,10 @@ const styles = StyleSheet.create({
         backgroundColor: '#fafafa', // theme.zinc[50]
     },
     sectionTitle: {
-        fontSize: 18,
-        fontWeight: '600',
+        fontSize: 20,
+        fontWeight: '700',
         color: '#111827',
-        marginBottom: 10,
+        marginBottom: 12,
     },
     amenitiesTitle: {
         marginTop: 8,
