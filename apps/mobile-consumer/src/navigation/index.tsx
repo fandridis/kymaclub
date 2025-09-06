@@ -192,6 +192,13 @@ export function RootNavigator() {
             }}
           />
           <RootStack.Screen
+            name="ClassDetailsModal"
+            component={ClassDetailsModalScreen}
+            options={{
+              animation: 'slide_from_right',
+            }}
+          />
+          <RootStack.Screen
             name="SettingsProfile"
             component={SettingsProfileScreen}
             options={{
@@ -328,14 +335,6 @@ export function RootNavigator() {
 
         />
         <RootStack.Screen
-          name="ClassDetailsModal"
-          component={ClassDetailsModalScreen}
-          options={{
-            title: 'Class Details',
-            animation: 'slide_from_bottom',
-          }}
-        />
-        <RootStack.Screen
           name="SignInModal"
           component={SignInModalScreen}
           options={{
@@ -361,6 +360,10 @@ export type RootStackParamList = {
   Settings: undefined;
   Profile: { user: string };
   VenueDetailsScreen: { venueId: string };
+  ClassDetailsModal: {
+    classInstance?: import('@repo/api/convex/_generated/dataModel').Doc<"classInstances">;
+    classInstanceId?: import('@repo/api/convex/_generated/dataModel').Id<"classInstances">;
+  };
   SettingsProfile: undefined;
   SettingsNotifications: undefined;
   SettingsSubscription: undefined;
@@ -390,10 +393,6 @@ export type RootStackParamList = {
   Landing: undefined;
   // Modal screens
   QRScannerModal: undefined;
-  ClassDetailsModal: {
-    classInstance?: import('@repo/api/convex/_generated/dataModel').Doc<"classInstances">;
-    classInstanceId?: import('@repo/api/convex/_generated/dataModel').Id<"classInstances">;
-  };
   SignInModal: undefined;
   CreateAccountModal: {
     waitlistData?: {
@@ -416,6 +415,10 @@ export type RootStackParamListWithNestedTabs = {
   Settings: undefined;
   Profile: { user: string };
   VenueDetailsScreen: { venueId: string };
+  ClassDetailsModal: {
+    classInstance?: import('../hooks/use-class-instances').ClassInstance;
+    classInstanceId?: import('@repo/api/convex/_generated/dataModel').Id<"classInstances">;
+  };
   ProfileSettings: undefined;
   SettingsNotifications: undefined;
   SettingsSubscription: undefined;
@@ -437,10 +440,6 @@ export type RootStackParamListWithNestedTabs = {
   Landing: undefined;
   // Modal screens
   QRScannerModal: undefined;
-  ClassDetailsModal: {
-    classInstance?: import('../hooks/use-class-instances').ClassInstance;
-    classInstanceId?: import('@repo/api/convex/_generated/dataModel').Id<"classInstances">;
-  };
   SignInModal: undefined;
   CreateAccountModal: {
     waitlistData?: {

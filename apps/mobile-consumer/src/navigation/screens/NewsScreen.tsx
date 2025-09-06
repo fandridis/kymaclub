@@ -630,7 +630,7 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: '600',
         color: '#1a1a1a',
-        marginBottom: 16,
+        marginBottom: 10,
         paddingHorizontal: SECTION_PADDING,
     },
 

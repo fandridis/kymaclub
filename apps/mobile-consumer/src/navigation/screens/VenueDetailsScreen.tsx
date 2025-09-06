@@ -2,21 +2,18 @@ import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Dimensions, ActivityIndicator, Linking } from 'react-native';
 import { Image } from 'expo-image';
 import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
-import { CalendarIcon, StarIcon } from 'lucide-react-native';
+import { StarIcon, ArrowLeftIcon, ShowerHeadIcon, AccessibilityIcon, UserIcon } from 'lucide-react-native';
 import Carousel from 'react-native-reanimated-carousel';
 import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { ClassCard } from '../../components/ClassCard';
-import { FlashList } from '@shopify/flash-list';
 import type { RootStackParamListWithNestedTabs } from '..';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
 import type { ClassInstance } from '../../hooks/use-class-instances';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import { formatDistance as formatDistanceMeters, calculateDistance } from '../../utils/location';
 import { useTypedTranslation } from '../../i18n/typed';
-import { getVenueCategoryDisplay } from '@repo/utils/constants';
-import { StackScreenHeader } from '../../components/StackScreenHeader';
+import { theme } from '../../theme';
 
 type VenueDetailsRoute = RouteProp<RootStackParamListWithNestedTabs, 'VenueDetailsScreen'>;
 
@@ -69,6 +66,12 @@ const groupClassesByDate = (classes: ClassInstance[]): Record<string, ClassInsta
 
 type TabType = 'Details' | 'Classes';
 
+// Amenities icons mapping
+const amenitiesIconsMap: Record<string, React.ComponentType<any>> = {
+    showers: ShowerHeadIcon,
+    accessible: AccessibilityIcon,
+};
+
 export function VenueDetailsScreen() {
     const navigation = useNavigation<NavigationProp<RootStackParamListWithNestedTabs>>();
     const route = useRoute<VenueDetailsRoute>();
@@ -77,6 +80,8 @@ export function VenueDetailsScreen() {
     const [activeTab, setActiveTab] = useState<TabType>('Details');
     const { t } = useTypedTranslation();
     const [distanceLabel, setDistanceLabel] = useState<string | null>(null);
+    const [isHeaderWhite, setIsHeaderWhite] = useState(false);
+    const [headerOpacity, setHeaderOpacity] = useState(0);
 
     // Fetch full venue data
     const venue = useQuery(api.queries.venues.getVenueById, {
@@ -222,6 +227,32 @@ export function VenueDetailsScreen() {
         }
     };
 
+    const handleScroll = (event: any) => {
+        const scrollY = event.nativeEvent.contentOffset.y;
+
+        // Calculate opacity based on scroll position
+        // 0-100px: opacity 0 (transparent)
+        // 100-250px: opacity 0-1 (gradual transition)
+        // 250px+: opacity 1 (fully white)
+        let opacity = 0;
+        if (scrollY > 100) {
+            if (scrollY >= 250) {
+                opacity = 1;
+            } else {
+                // Gradual transition from 100px to 250px
+                opacity = (scrollY - 100) / 150;
+            }
+        }
+
+        setHeaderOpacity(opacity);
+
+        // Update the boolean state for other styling
+        const shouldBeWhite = scrollY > 100;
+        if (shouldBeWhite !== isHeaderWhite) {
+            setIsHeaderWhite(shouldBeWhite);
+        }
+    };
+
     const renderImageItem = ({ item: imageUrl }: { item: string }) => (
         <View style={styles.imageContainer}>
             <Image
@@ -234,15 +265,15 @@ export function VenueDetailsScreen() {
         </View>
     );
 
-    // Render venue details tab content
-    const renderDetailsTab = () => (
-        <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+    // Render venue image and header info
+    const renderHeaderSection = () => (
+        <>
             {/* Full-width Image Carousel with Overlay */}
             {imageUrls.length > 0 ? (
                 <View style={styles.fullWidthCarouselContainer}>
                     <Carousel
                         width={screenWidth}
-                        height={280}
+                        height={360}
                         data={imageUrls}
                         renderItem={({ item: imageUrl }) => (
                             <Image
@@ -259,30 +290,8 @@ export function VenueDetailsScreen() {
                         autoPlay={false}
                         onSnapToItem={(index) => setCurrentImageIndex(index)}
                     />
-                    <LinearGradient
-                        pointerEvents="none"
-                        colors={[
-                            'transparent',
-                            'rgba(0,0,0,0.25)',
-                            'rgba(0,0,0,0.65)',
-                        ]}
-                        locations={[0, 0.5, 1]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 0, y: 1 }}
-                        style={styles.bottomGradient}
-                    />
-                    <View pointerEvents="none" style={styles.imageOverlayContainer}>
-                        <Text style={styles.imageOverlayTitle} numberOfLines={2}>
-                            {venueName}
-                        </Text>
-                        <View style={styles.ratingContainer}>
-                            <StarIcon size={14} color="#fff" fill="#ffd700" />
-                            <Text style={styles.ratingText}>{venue?.rating?.toFixed(1)} ({venue?.reviewCount}) - {getVenueCategoryDisplay(venue?.primaryCategory ?? 'wellness_center')}</Text>
-                        </View>
-                        <Text style={styles.imageOverlaySubtitle} numberOfLines={2}>
-                            {venueAddress}
-                        </Text>
-                    </View>
+
+
                     {imageUrls.length > 1 && (
                         <View style={styles.carouselDots}>
                             {imageUrls.map((_, index) => (
@@ -305,176 +314,309 @@ export function VenueDetailsScreen() {
                 </View>
             )}
 
-            {/* Description */}
-            {venueDescription && (
-                <View style={styles.descriptionContainer}>
-                    <Text style={styles.sectionTitle}>About this venue</Text>
-                    <Text style={styles.descriptionText}>{venueDescription}</Text>
-                </View>
-            )}
+            {/* Venue Info Section */}
+            <View style={styles.venueInfoSection}>
+                {/* Venue Name - Centered */}
+                <Text style={styles.venueName}>{venueName}</Text>
 
-            {/* Services */}
-            {venue?.services && Object.entries(venue.services).some(([_, enabled]) => enabled) && (
-                <View style={styles.amenitiesContainer}>
-                    <Text style={styles.sectionTitle}>Services</Text>
-                    <View style={styles.tagContainer}>
-                        {Object.entries(venue.services)
-                            .filter(([_, enabled]) => enabled)
-                            .map(([service]) => (
-                                <View key={service} style={styles.tag}>
-                                    <Text style={styles.tagText}>
-                                        {service.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                                    </Text>
-                                </View>
+                {/* Venue Description - Centered, Two Lines */}
+                <Text style={styles.venueDescription} numberOfLines={2}>
+                    {venueDescription || 'A wellness center offering various health and fitness services to help you achieve your goals.'}
+                </Text>
+
+                {/* 3-Column Row */}
+                <View style={styles.venueStatsRow}>
+                    {/* Ratings Column - Two Rows */}
+                    <View style={styles.statsColumn}>
+                        <Text style={styles.ratingNumber}>{venue?.rating?.toFixed(2) || '0.00'}</Text>
+                        <View style={styles.starsRow}>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <StarIcon
+                                    key={star}
+                                    size={14}
+                                    color="#ffd700"
+                                    fill={star <= Math.floor(venue?.rating || 0) ? "#ffd700" : "transparent"}
+                                />
                             ))}
+                        </View>
+                    </View>
+
+                    {/* JUST ARRIVED! Badge Column */}
+                    <View style={styles.statsColumn}>
+                        <View style={styles.newBadge}>
+                            <Text style={styles.newBadgeText}>JUST ARRIVED!</Text>
+                        </View>
+                    </View>
+
+                    {/* Reviews Column - Two Rows */}
+                    <View style={styles.statsColumn}>
+                        <Text style={styles.reviewsNumber}>{venue?.reviewCount || 0}</Text>
+                        <Text style={styles.reviewsLabel}>reviews</Text>
                     </View>
                 </View>
-            )}
-            {/* Amenities */}
-            {venue?.amenities && Object.entries(venue.amenities).some(([_, enabled]) => enabled) && (
-                <View style={styles.amenitiesContainer}>
-                    <Text style={styles.sectionTitle}>Amenities</Text>
-                    <View style={styles.tagContainer}>
-                        {Object.entries(venue.amenities)
-                            .filter(([_, enabled]) => enabled)
-                            .map(([amenity]) => (
+            </View>
+
+        </>
+    );
+
+    // Render main content sections
+    const renderContent = () => (
+        <ScrollView
+            style={styles.content}
+            showsVerticalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+        >
+            {renderHeaderSection()}
+
+            {/* Separator */}
+            <View style={styles.separator} />
+
+            {/* Who we are Section */}
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Who we are</Text>
+                <View style={styles.teamMember}>
+                    <View style={styles.avatarContainer}>
+                        <UserIcon size={40} color={theme.colors.zinc[600]} />
+                    </View>
+                    <View style={styles.memberInfo}>
+                        <Text style={styles.memberName}>Sarah Johnson</Text>
+                        <Text style={styles.memberDescription}>Certified yoga instructor with 8+ years experience. Passionate about helping people find balance through mindful movement.</Text>
+                    </View>
+                </View>
+                <View style={styles.teamMember}>
+                    <View style={styles.avatarContainer}>
+                        <UserIcon size={40} color={theme.colors.zinc[600]} />
+                    </View>
+                    <View style={styles.memberInfo}>
+                        <Text style={styles.memberName}>Mike Thompson</Text>
+                        <Text style={styles.memberDescription}>Personal trainer and nutrition specialist. Dedicated to creating personalized fitness programs for every goal.</Text>
+                    </View>
+                </View>
+            </View>
+
+            {/* Separator */}
+            <View style={styles.separator} />
+
+            {/* Services Section */}
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Services</Text>
+                <View style={styles.tagContainer}>
+                    {venue?.services ? Object.entries(venue.services)
+                        .filter(([_, enabled]) => enabled)
+                        .map(([service]) => (
+                            <View key={service} style={styles.tag}>
+                                <Text style={styles.tagText}>
+                                    {service.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                </Text>
+                            </View>
+                        )) : (
+                        <>
+                            <View style={styles.tag}><Text style={styles.tagText}>Gym</Text></View>
+                            <View style={styles.tag}><Text style={styles.tagText}>Yoga</Text></View>
+                            <View style={styles.tag}><Text style={styles.tagText}>Personal Training</Text></View>
+                            <View style={styles.tag}><Text style={styles.tagText}>Group Classes</Text></View>
+                        </>
+                    )}
+                </View>
+            </View>
+
+            {/* Amenities Section */}
+            <View style={styles.section}>
+                <Text style={[styles.sectionTitle, styles.amenitiesTitle]}>Amenities</Text>
+                <View style={styles.tagContainer}>
+                    {venue?.amenities ? Object.entries(venue.amenities)
+                        .filter(([_, enabled]) => enabled)
+                        .map(([amenity]) => {
+                            const IconComponent = amenitiesIconsMap[amenity];
+                            return (
                                 <View key={amenity} style={styles.tag}>
+                                    {IconComponent && (
+                                        <IconComponent size={16} color={theme.colors.zinc[600]} style={styles.tagIcon} />
+                                    )}
                                     <Text style={styles.tagText}>
                                         {amenity.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                                     </Text>
                                 </View>
-                            ))}
-                    </View>
+                            );
+                        }) : (
+                        <>
+                            <View style={styles.tag}><Text style={styles.tagText}>Parking</Text></View>
+                            <View style={styles.tag}><Text style={styles.tagText}>Locker Rooms</Text></View>
+                            <View style={styles.tag}><Text style={styles.tagText}>WiFi</Text></View>
+                            <View style={styles.tag}><Text style={styles.tagText}>Water Station</Text></View>
+                        </>
+                    )}
                 </View>
-            )}
+            </View>
+
+            {/* Separator */}
+            <View style={styles.separator} />
+
+            {/* Classes Section */}
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Classes</Text>
+                <View style={styles.classesPlaceholder}>
+                    <Text style={styles.placeholderText}>Coming soon - Browse available classes and book your sessions.</Text>
+                </View>
+            </View>
         </ScrollView>
     );
 
-    // Render classes tab content with FlashList and sticky headers
-    const renderClassesTab = () => {
-        if (!upcomingClasses || upcomingClasses.length === 0) {
-            return (
-                <View style={styles.emptyClassesContainer}>
-                    <CalendarIcon size={48} color="#9ca3af" />
-                    <Text style={styles.emptyClassesText}>No upcoming classes</Text>
-                    <Text style={styles.emptyClassesSubtext}>Check back later for new classes</Text>
-                </View>
-            );
-        }
-
-        return (
-            <FlashList
-                data={flattenedItems}
-                renderItem={renderFlashListItem}
-                keyExtractor={(item) => item.type === 'header' ? `header-${item.title}` : `class-${item.data._id}`}
-                getItemType={(item) => item.type}
-                stickyHeaderIndices={headerIndices}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.sectionListContent}
-            />
-        );
-    };
-
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <StackScreenHeader
-                title={venue?.name || 'Venue Details'}
-                onBackPress={() => {
-                    try {
-                        if (navigation.canGoBack()) {
-                            navigation.goBack();
-                        } else {
+        <View style={styles.container}>
+            {/* Fixed Header Row */}
+            <View style={[
+                styles.fixedHeader,
+                {
+                    backgroundColor: `rgba(255, 255, 255, ${headerOpacity})`,
+                    borderBottomWidth: headerOpacity > 0 ? 1 : 0,
+                    borderBottomColor: `rgba(229, 231, 235, ${headerOpacity})`,
+                }
+            ]}>
+                <TouchableOpacity
+                    style={[
+                        styles.headerBackButton,
+                        {
+                            backgroundColor: `rgba(255, 255, 255, ${0.5 - (headerOpacity * 0.5)})`,
+                        }
+                    ]}
+                    onPress={() => {
+                        try {
+                            if (navigation.canGoBack()) {
+                                navigation.goBack();
+                            } else {
+                                navigation.navigate('Home', { screen: 'Explore' });
+                            }
+                        } catch (error) {
+                            console.error('Navigation error:', error);
                             navigation.navigate('Home', { screen: 'Explore' });
                         }
-                    } catch (error) {
-                        console.error('Navigation error:', error);
-                        navigation.navigate('Home', { screen: 'Explore' });
-                    }
-                }}
-            />
-
-            {/* Tab Navigation */}
-            <View style={styles.tabContainer}>
-                <TouchableOpacity
-                    style={[styles.tabButton, activeTab === 'Details' && styles.activeTabButton]}
-                    onPress={() => setActiveTab('Details')}
+                    }}
                 >
-                    <Text style={[styles.tabButtonText, activeTab === 'Details' && styles.activeTabButtonText]}>
-                        Details
-                    </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.tabButton, activeTab === 'Classes' && styles.activeTabButton]}
-                    onPress={() => setActiveTab('Classes')}
-                >
-                    <Text style={[styles.tabButtonText, activeTab === 'Classes' && styles.activeTabButtonText]}>
-                        Classes
-                    </Text>
+                    <ArrowLeftIcon
+                        size={26}
+                    // color={theme.colors.zinc[950]}
+                    />
                 </TouchableOpacity>
             </View>
 
-            {/* Content */}
             {isLoading ? (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#ff4747" />
                     <Text style={styles.loadingText}>Loading venue details...</Text>
                 </View>
             ) : (
-                <View style={styles.contentContainer}>
-                    {activeTab === 'Details' ? renderDetailsTab() : renderClassesTab()}
-                </View>
+                renderContent()
             )}
-        </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    safeArea: {
+    container: {
         flex: 1,
-        backgroundColor: 'white',
+        backgroundColor: theme.colors.zinc[50],
     },
-    tabContainer: {
-        flexDirection: 'row',
-        backgroundColor: '#f8f9fa',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-    },
-    tabButton: {
-        flex: 1,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        alignItems: 'center',
+    fixedHeader: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 100, // Height to accommodate status bar + header
+        paddingTop: 48, // Status bar height
+        paddingHorizontal: 20,
+        zIndex: 1000,
         backgroundColor: 'transparent',
-        borderRadius: 8,
     },
-    activeTabButton: {
-        backgroundColor: 'white',
+    headerBackButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 22,
+        justifyContent: 'center',
+        alignItems: 'center',
         shadowColor: '#000',
         shadowOffset: {
             width: 0,
-            height: 1,
+            height: 2,
         },
         shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
+        shadowRadius: 4,
+        elevation: 3,
     },
-    tabButtonText: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#6b7280',
+    content: {
+        flex: 1,
+        backgroundColor: theme.colors.zinc[50],
     },
-    activeTabButtonText: {
-        color: '#111827',
+    separator: {
+        height: 1,
+        backgroundColor: theme.colors.zinc[100],
+        marginVertical: 24,
+    },
+    section: {
+        paddingHorizontal: 20,
+        paddingBottom: 8,
+    },
+    teamMember: {
+        flexDirection: 'row',
+        marginBottom: 16,
+        alignItems: 'flex-start',
+    },
+    avatarContainer: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: theme.colors.zinc[100],
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    memberInfo: {
+        flex: 1,
+    },
+    memberName: {
+        fontSize: 16,
         fontWeight: '600',
+        color: '#111827',
+        marginBottom: 4,
     },
-    contentContainer: {
-        flex: 1,
+    memberDescription: {
+        fontSize: 14,
+        color: '#6b7280',
+        lineHeight: 20,
     },
-    tabContent: {
-        flex: 1,
+    amenitiesGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 16,
     },
-    sectionListContent: {
-        paddingBottom: 20,
+    amenityItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+        width: '48%',
+    },
+    amenityIcon: {
+        width: 20,
+        height: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
+    },
+    amenityIconText: {
+        fontSize: 16,
+        color: theme.colors.zinc[600],
+    },
+    amenityText: {
+        fontSize: 14,
+        color: '#374151',
+        fontWeight: '500',
+    },
+    classesPlaceholder: {
+        padding: 24,
+        backgroundColor: theme.colors.zinc[100],
+        borderRadius: 12,
+        alignItems: 'center',
     },
     carouselContainer: {
         marginBottom: 16,
@@ -528,11 +670,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#6b7280',
         fontWeight: '500',
-    },
-    section: {
-        gap: 4,
-        paddingHorizontal: 16,
-        marginBottom: 16,
     },
     sectionRow: {
         flexDirection: 'row',
@@ -601,26 +738,23 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         borderWidth: 1,
         borderColor: '#e5e7eb',
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     tagText: {
         fontSize: 12,
         color: '#374151',
         fontWeight: '500',
     },
+    tagIcon: {
+        marginRight: 4,
+    },
     stickyDateHeader: {
-        backgroundColor: '#ffffff',
+        backgroundColor: theme.colors.zinc[50],
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderBottomWidth: 1,
         borderBottomColor: '#e5e7eb',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 1,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
         zIndex: 2,
     },
     dateHeaderText: {
@@ -641,41 +775,23 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#6b7280',
     },
-    emptyClassesContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingVertical: 60,
-        paddingHorizontal: 32,
-    },
-    emptyClassesText: {
-        fontSize: 16,
-        color: '#6b7280',
-        textAlign: 'center',
-        marginTop: 16,
-        fontWeight: '600',
-    },
-    emptyClassesSubtext: {
-        fontSize: 14,
-        color: '#9ca3af',
-        textAlign: 'center',
-        marginTop: 8,
-    },
 
     // New full-width image styles (aligned with ClassDetailsModal)
     fullWidthCarouselContainer: {
         marginBottom: 0,
+        position: 'relative',
+        borderWidth: 1,
     },
     fullWidthImage: {
         width: screenWidth,
-        height: 280,
+        height: 360,
     },
     fullWidthPlaceholderContainer: {
         marginBottom: 0,
     },
     fullWidthPlaceholderImage: {
         width: screenWidth,
-        height: 280,
+        height: 360,
         backgroundColor: '#f3f4f6',
         justifyContent: 'center',
         alignItems: 'center',
@@ -760,12 +876,16 @@ const styles = StyleSheet.create({
         paddingTop: 12,
         paddingHorizontal: 20,
         paddingBottom: 24,
+        backgroundColor: '#fafafa', // theme.zinc[50]
     },
     sectionTitle: {
         fontSize: 18,
         fontWeight: '600',
         color: '#111827',
         marginBottom: 10,
+    },
+    amenitiesTitle: {
+        marginTop: 8,
     },
     descriptionText: {
         fontSize: 16,
@@ -776,6 +896,7 @@ const styles = StyleSheet.create({
     amenitiesContainer: {
         paddingHorizontal: 20,
         paddingBottom: 24,
+        backgroundColor: '#fafafa', // theme.zinc[50]
     },
 
     // New contact details list styled like ClassDetailsModal
@@ -810,5 +931,81 @@ const styles = StyleSheet.create({
     },
     detailTextDisabled: {
         color: '#9ca3af',
+    },
+
+
+    // New venue info section
+    venueInfoSection: {
+        paddingHorizontal: 20,
+        paddingTop: 20,
+        paddingBottom: 16,
+        backgroundColor: theme.colors.zinc[50],
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        marginTop: -24, // Overlap the image slightly for overlay effect
+        position: 'relative',
+        zIndex: 1,
+    },
+    venueName: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#111827',
+        textAlign: 'center',
+        marginBottom: 8,
+    },
+    venueDescription: {
+        fontSize: 14,
+        fontWeight: '400',
+        color: '#6b7280',
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 16,
+        paddingHorizontal: 8,
+    },
+    venueStatsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+    },
+    statsColumn: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    ratingNumber: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#111827',
+        marginBottom: 4,
+    },
+    starsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 2,
+    },
+    newBadge: {
+        backgroundColor: theme.colors.zinc[50],
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: theme.colors.zinc[200],
+    },
+    newBadgeText: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: theme.colors.zinc[950],
+        letterSpacing: 0.5,
+    },
+    reviewsNumber: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#111827',
+        marginBottom: 2,
+    },
+    reviewsLabel: {
+        fontSize: 12,
+        fontWeight: '500',
+        color: '#6b7280',
     },
 });

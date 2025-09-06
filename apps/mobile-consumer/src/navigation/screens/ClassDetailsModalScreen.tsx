@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import { Image } from 'expo-image';
-import { Calendar1Icon, ClockIcon, CalendarOffIcon, DiamondIcon } from 'lucide-react-native';
+import { Calendar1Icon, ClockIcon, CalendarOffIcon, DiamondIcon, ArrowLeftIcon } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import Carousel from 'react-native-reanimated-carousel';
@@ -152,6 +152,8 @@ export function ClassDetailsModalScreen() {
     const { user } = useAuth();
     const bookClass = useMutation(api.mutations.bookings.bookClass);
     const [isBooking, setIsBooking] = useState(false);
+    const [isHeaderWhite, setIsHeaderWhite] = useState(false);
+    const [headerOpacity, setHeaderOpacity] = useState(0);
 
     // Fetch classInstance if not provided directly
     const fetchedClassInstance = useQuery(
@@ -285,44 +287,68 @@ export function ClassDetailsModalScreen() {
         );
     };
 
+    const handleScroll = (event: any) => {
+        const scrollY = event.nativeEvent.contentOffset.y;
+
+        // Calculate opacity based on scroll position
+        // 0-100px: opacity 0 (transparent)
+        // 100-250px: opacity 0-1 (gradual transition)
+        // 250px+: opacity 1 (fully white)
+        let opacity = 0;
+        if (scrollY > 100) {
+            if (scrollY >= 250) {
+                opacity = 1;
+            } else {
+                // Gradual transition from 100px to 250px
+                opacity = (scrollY - 100) / 150;
+            }
+        }
+
+        setHeaderOpacity(opacity);
+
+        // Update the boolean state for other styling
+        const shouldBeWhite = scrollY > 100;
+        if (shouldBeWhite !== isHeaderWhite) {
+            setIsHeaderWhite(shouldBeWhite);
+        }
+    };
+
     // NOW we can do conditional returns, after ALL hooks have been called
     if (!finalClassInstance && !classInstanceId) {
         return (
-            <SafeAreaView style={styles.safeArea}>
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
-                        <Text style={styles.closeText}>Close</Text>
+            <View style={styles.container}>
+                <View style={styles.fixedHeader}>
+                    <TouchableOpacity
+                        style={styles.headerBackButton}
+                        onPress={() => navigation.goBack()}
+                    >
+                        <ArrowLeftIcon size={26} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle} numberOfLines={1}>
-                        Class Details
-                    </Text>
-                    <View style={styles.headerRightSpacer} />
                 </View>
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#ff4747" />
                     <Text style={styles.loadingText}>No class information provided</Text>
                 </View>
-            </SafeAreaView>
+            </View>
         );
     }
 
     if (!finalClassInstance) {
         return (
-            <SafeAreaView style={styles.safeArea}>
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
-                        <Text style={styles.closeText}>Close</Text>
+            <View style={styles.container}>
+                <View style={styles.fixedHeader}>
+                    <TouchableOpacity
+                        style={styles.headerBackButton}
+                        onPress={() => navigation.goBack()}
+                    >
+                        <ArrowLeftIcon size={26} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle} numberOfLines={1}>
-                        Class Details
-                    </Text>
-                    <View style={styles.headerRightSpacer} />
                 </View>
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#ff4747" />
                     <Text style={styles.loadingText}>Loading class details...</Text>
                 </View>
-            </SafeAreaView>
+            </View>
         );
     }
 
@@ -353,15 +379,27 @@ export function ClassDetailsModalScreen() {
     const isLoading = !template || !venue || (allImageIds.length > 0 && !imageUrlsQuery) || existingBooking === undefined;
 
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
-                    <Text style={styles.closeText}>Close</Text>
+        <View style={styles.container}>
+            {/* Fixed Header Row */}
+            <View style={[
+                styles.fixedHeader,
+                {
+                    backgroundColor: `rgba(255, 255, 255, ${headerOpacity})`,
+                    borderBottomWidth: headerOpacity > 0 ? 1 : 0,
+                    borderBottomColor: `rgba(229, 231, 235, ${headerOpacity})`,
+                }
+            ]}>
+                <TouchableOpacity
+                    style={[
+                        styles.headerBackButton,
+                        {
+                            backgroundColor: `rgba(255, 255, 255, ${0.5 - (headerOpacity * 0.5)})`,
+                        }
+                    ]}
+                    onPress={() => navigation.goBack()}
+                >
+                    <ArrowLeftIcon size={26} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle} numberOfLines={1}>
-                    {className}
-                </Text>
-                <View style={styles.headerRightSpacer} />
             </View>
 
             {isLoading ? (
@@ -374,13 +412,15 @@ export function ClassDetailsModalScreen() {
                     <ScrollView
                         contentContainerStyle={styles.contentContainer}
                         showsVerticalScrollIndicator={false}
+                        onScroll={handleScroll}
+                        scrollEventThrottle={16}
                     >
                         {/* Image Carousel - Full Width */}
                         {imageUrls.length > 0 ? (
                             <View style={styles.fullWidthCarouselContainer}>
                                 <Carousel
                                     width={screenWidth}
-                                    height={280}
+                                    height={360}
                                     data={imageUrls}
                                     renderItem={({ item: imageUrl }) => (
                                         <Image
@@ -397,26 +437,6 @@ export function ClassDetailsModalScreen() {
                                     autoPlay={false}
                                     onSnapToItem={(index) => setCurrentImageIndex(index)}
                                 />
-                                <LinearGradient
-                                    pointerEvents="none"
-                                    colors={[
-                                        'transparent',
-                                        'rgba(0,0,0,0.25)',
-                                        'rgba(0,0,0,0.65)',
-                                    ]}
-                                    locations={[0, 0.5, 1]}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 0, y: 1 }}
-                                    style={styles.bottomGradient}
-                                />
-                                <View pointerEvents="none" style={styles.imageOverlayContainer}>
-                                    <Text style={styles.imageOverlayTitle} numberOfLines={2}>
-                                        {className}
-                                    </Text>
-                                    <Text style={styles.imageOverlaySubtitle} numberOfLines={1}>
-                                        {`with ${instructor} - ${businessName}`}
-                                    </Text>
-                                </View>
                                 {imageUrls.length > 1 && (
                                     <View style={styles.carouselDots}>
                                         {imageUrls.map((_, index) => (
@@ -439,119 +459,153 @@ export function ClassDetailsModalScreen() {
                             </View>
                         )}
 
-                        <View style={styles.priceInfoSection}>
-                            <View style={styles.priceContainer}>
-                                <Text style={styles.priceLabel}>Price</Text>
-                                {discountResult.appliedDiscount ? (
-                                    <View>
+
+                        {/* Class Info Section */}
+                        <View style={styles.classInfoSection}>
+                            <View style={styles.priceInfoSection}>
+                                <View style={styles.priceContainer}>
+                                    <Text style={styles.priceLabel}>Price</Text>
+                                    {discountResult.appliedDiscount ? (
                                         <View style={styles.priceComparisonRow}>
                                             <Text style={styles.originalPriceModal}>
-                                                {discountResult.originalPrice} credits
+                                                {discountResult.originalPrice}
                                             </Text>
                                             <Text style={styles.discountedPriceModal}>
-                                                {discountResult.finalPrice} credits
+                                                {discountResult.finalPrice}
                                             </Text>
+                                            <Text style={styles.creditsText}>credits</Text>
                                         </View>
-                                        <Text style={styles.discountTimingTextModal}>
-                                            {getDiscountTimingText(discountResult, finalClassInstance)}
-                                        </Text>
+                                    ) : (
+                                        <Text style={styles.priceValue}>{priceCredits} credits</Text>
+                                    )}
+                                </View>
+                                <View style={styles.spotsContainer}>
+                                    <Text style={styles.spotsLabel}>Available spots</Text>
+                                    <Text style={styles.spotsValue}>
+                                        {spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.separator} />
+                            {/* Class Name - Centered */}
+                            <Text style={styles.className}>{className}</Text>
+
+
+                            {/* Class Description - Centered, Three Lines */}
+                            <Text style={styles.classDescription} numberOfLines={3}>
+                                {description || `Join ${instructor} for an amazing class at ${businessName}`}
+                            </Text>
+                        </View>
+
+                        {/* Separator */}
+                        <View style={{ paddingHorizontal: 16 }}>
+                            <View style={styles.separator} />
+                        </View>
+
+                        {/* White Content Section with Rounded Top Corners */}
+                        <View style={styles.whiteContentSection}>
+
+                            {/* Discount Banner */}
+                            {discountResult.appliedDiscount && (
+                                <View style={styles.discountBanner}>
+                                    <Text style={styles.discountBannerText}>
+                                        {getDiscountTimingText(discountResult, finalClassInstance)}
+                                    </Text>
+                                </View>
+                            )}
+
+                            {/* Key details */}
+                            <View style={styles.detailsList}>
+                                <View style={styles.detailItem}>
+                                    <Calendar1Icon style={styles.calendarIcon} size={26} />
+                                    <Text style={styles.detailText}>Date: {whenStr}</Text>
+                                </View>
+
+                                <View style={styles.detailItem}>
+                                    <ClockIcon style={styles.clockIcon} size={26} />
+                                    <Text style={styles.detailText}>Duration: {duration} minutes</Text>
+                                </View>
+
+                                {cancelUntilStr && (
+                                    <View style={styles.detailItem}>
+                                        <CalendarOffIcon style={styles.calendarOffIcon} size={26} />
+                                        <Text style={styles.detailText}>Cancel until: {cancelUntilStr}</Text>
                                     </View>
-                                ) : (
-                                    <Text style={styles.priceValue}>{priceCredits} credits</Text>
                                 )}
                             </View>
-                            <View style={styles.spotsContainer}>
-                                <Text style={styles.spotsLabel}>Available spots</Text>
-                                <Text style={styles.spotsValue}>
-                                    {spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left
-                                </Text>
-                            </View>
-                        </View>
 
-                        {/* Key details */}
-                        <View style={styles.detailsList}>
-                            <View style={styles.detailItem}>
-                                <Calendar1Icon style={styles.calendarIcon} size={16} />
-                                <Text style={styles.detailText}>Date: {whenStr}</Text>
+                            {/* Separator */}
+                            <View style={{ paddingHorizontal: 16 }}>
+                                <View style={styles.separator} />
                             </View>
 
-                            <View style={styles.detailItem}>
-                                <ClockIcon style={styles.clockIcon} size={16} />
-                                <Text style={styles.detailText}>Duration: {duration} minutes</Text>
+
+                            {/* Description and Amenities Section */}
+                            <View style={styles.detailsSection}>
+                                {description && (
+                                    <View style={styles.descriptionContainer}>
+                                        <Text style={styles.sectionTitle}>About this class</Text>
+                                        <Text style={styles.descriptionText}>{description}</Text>
+                                    </View>
+                                )}
+
+                                {/* Amenities */}
+                                {venue?.amenities && Object.entries(venue.amenities).some(([_, enabled]) => enabled) && (
+                                    <View style={styles.amenitiesContainer}>
+                                        <Text style={styles.sectionTitle}>Amenities</Text>
+                                        <View style={styles.tagContainer}>
+                                            {Object.entries(venue.amenities)
+                                                .filter(([_, enabled]) => enabled)
+                                                .map(([amenity, _]) => (
+                                                    <View key={amenity} style={styles.tag}>
+                                                        <Text style={styles.tagText}>
+                                                            {amenity.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                                        </Text>
+                                                    </View>
+                                                ))}
+                                        </View>
+                                    </View>
+                                )}
                             </View>
 
-                            {cancelUntilStr && (
-                                <View style={styles.detailItem}>
-                                    <CalendarOffIcon style={styles.calendarOffIcon} size={16} />
-                                    <Text style={styles.detailText}>Cancel until: {cancelUntilStr}</Text>
-                                </View>
-                            )}
-                        </View>
-
-                        {/* Description and Amenities Section */}
-                        <View style={styles.detailsSection}>
-                            {description && (
-                                <View style={styles.descriptionContainer}>
-                                    <Text style={styles.sectionTitle}>About this class</Text>
-                                    <Text style={styles.descriptionText}>{description}</Text>
-                                </View>
-                            )}
-
-                            {/* Amenities */}
-                            {venue?.amenities && Object.entries(venue.amenities).some(([_, enabled]) => enabled) && (
-                                <View style={styles.amenitiesContainer}>
-                                    <Text style={styles.sectionTitle}>Amenities</Text>
-                                    <View style={styles.tagContainer}>
-                                        {Object.entries(venue.amenities)
-                                            .filter(([_, enabled]) => enabled)
-                                            .map(([amenity, _]) => (
-                                                <View key={amenity} style={styles.tag}>
-                                                    <Text style={styles.tagText}>
-                                                        {amenity.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                            {/* Booking History Section */}
+                            {bookingHistory && bookingHistory.length > 1 && (
+                                <View style={styles.bookingHistorySection}>
+                                    <Text style={styles.sectionTitle}>Booking History</Text>
+                                    <View style={styles.bookingHistoryList}>
+                                        {bookingHistory.map((booking, index) => (
+                                            <View key={booking._id} style={styles.bookingHistoryItem}>
+                                                <View style={styles.bookingHistoryLeft}>
+                                                    <Text style={styles.bookingHistoryStatus}>
+                                                        {booking.status === "pending" && "✓ Current Booking"}
+                                                        {booking.status === "completed" && "✓ Completed"}
+                                                        {booking.status === "cancelled_by_consumer" && "✗ You cancelled"}
+                                                        {booking.status === "cancelled_by_business" && "✗ Cancelled by studio"}
+                                                        {booking.status === "cancelled_by_business_rebookable" && "✗ Cancelled by studio"}
+                                                        {booking.status === "no_show" && "⚠ No show"}
                                                     </Text>
+                                                    <Text style={styles.bookingHistoryDate}>
+                                                        {format(new Date(booking.createdAt), 'MMM d, yyyy \'at\' h:mm a', {
+                                                            in: tz('Europe/Athens')
+                                                        })}
+                                                    </Text>
+                                                    {booking.cancelReason && (
+                                                        <Text style={styles.bookingHistoryReason}>
+                                                            {booking.cancelReason}
+                                                        </Text>
+                                                    )}
                                                 </View>
-                                            ))}
+                                                <Text style={styles.bookingHistoryCredits}>
+                                                    {booking.creditsUsed} credits
+                                                </Text>
+                                            </View>
+                                        ))}
                                     </View>
                                 </View>
                             )}
+
                         </View>
-
-                        {/* Booking History Section */}
-                        {bookingHistory && bookingHistory.length > 1 && (
-                            <View style={styles.bookingHistorySection}>
-                                <Text style={styles.sectionTitle}>Booking History</Text>
-                                <View style={styles.bookingHistoryList}>
-                                    {bookingHistory.map((booking, index) => (
-                                        <View key={booking._id} style={styles.bookingHistoryItem}>
-                                            <View style={styles.bookingHistoryLeft}>
-                                                <Text style={styles.bookingHistoryStatus}>
-                                                    {booking.status === "pending" && "✓ Current Booking"}
-                                                    {booking.status === "completed" && "✓ Completed"}
-                                                    {booking.status === "cancelled_by_consumer" && "✗ You cancelled"}
-                                                    {booking.status === "cancelled_by_business" && "✗ Cancelled by studio"}
-                                                    {booking.status === "cancelled_by_business_rebookable" && "✗ Cancelled by studio"}
-                                                    {booking.status === "no_show" && "⚠ No show"}
-                                                </Text>
-                                                <Text style={styles.bookingHistoryDate}>
-                                                    {format(new Date(booking.createdAt), 'MMM d, yyyy \'at\' h:mm a', {
-                                                        in: tz('Europe/Athens')
-                                                    })}
-                                                </Text>
-                                                {booking.cancelReason && (
-                                                    <Text style={styles.bookingHistoryReason}>
-                                                        {booking.cancelReason}
-                                                    </Text>
-                                                )}
-                                            </View>
-                                            <Text style={styles.bookingHistoryCredits}>
-                                                {booking.creditsUsed} credits
-                                            </Text>
-                                        </View>
-                                    ))}
-                                </View>
-                            </View>
-                        )}
-
                         {/* Bottom padding to account for sticky button */}
                         <View style={styles.bottomPadding} />
                     </ScrollView>
@@ -636,41 +690,40 @@ export function ClassDetailsModalScreen() {
                     </View>
                 </>
             )}
-        </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    safeArea: {
+    container: {
         flex: 1,
-        backgroundColor: 'white',
+        backgroundColor: '#fafafa',
     },
-    header: {
-        height: 56,
-        flexDirection: 'row',
+    fixedHeader: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 100, // Height to accommodate status bar + header
+        paddingTop: 48, // Status bar height
+        paddingHorizontal: 20,
+        zIndex: 1000,
+        backgroundColor: 'transparent',
+    },
+    headerBackButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 22,
+        justifyContent: 'center',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: '#e5e7eb',
-    },
-    closeButton: {
-        paddingVertical: 8,
-        paddingHorizontal: 8,
-    },
-    closeText: {
-        fontSize: 16,
-        color: '#111827',
-    },
-    headerTitle: {
-        flex: 1,
-        textAlign: 'center',
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#111827',
-    },
-    headerRightSpacer: {
-        width: 48,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
     },
     contentContainer: {
         paddingBottom: 100,
@@ -680,17 +733,72 @@ const styles = StyleSheet.create({
     },
     fullWidthImage: {
         width: screenWidth,
-        height: 280,
+        height: 360,
     },
     fullWidthPlaceholderContainer: {
         marginBottom: 0,
     },
     fullWidthPlaceholderImage: {
         width: screenWidth,
-        height: 280,
+        height: 360,
         backgroundColor: '#f3f4f6',
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    classInfoSection: {
+        paddingHorizontal: 20,
+        paddingTop: 8,
+        paddingBottom: 16,
+        backgroundColor: '#fafafa',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        marginTop: -24, // Overlap the image slightly for overlay effect
+        position: 'relative',
+        zIndex: 1,
+    },
+    className: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: theme.colors.zinc[950],
+        textAlign: 'center',
+        marginTop: 16,
+        marginBottom: 8,
+    },
+    classDescription: {
+        fontSize: 16,
+        fontWeight: '400',
+        color: theme.colors.zinc[700],
+        textAlign: 'center',
+        lineHeight: 20,
+        paddingHorizontal: 8,
+    },
+    whiteContentSection: {
+        backgroundColor: theme.colors.zinc[50],
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        position: 'relative',
+        zIndex: 1,
+    },
+    separator: {
+        height: 1,
+        backgroundColor: '#e5e7eb',
+        marginVertical: 12,
+    },
+    discountBanner: {
+        backgroundColor: theme.colors.amber[500],
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        marginBottom: 8,
+        marginTop: -14,
+        width: screenWidth,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    discountBannerText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: 'white',
+        textAlign: 'center',
     },
     carouselContainer: {
         marginBottom: 16,
@@ -809,53 +917,46 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         backgroundColor: '#f8fafc',
-        borderBottomWidth: 1,
-        borderBottomColor: '#e2e8f0',
     },
     headerSection: {
         paddingHorizontal: 20,
         paddingTop: 20,
         paddingBottom: 16,
     },
-    className: {
-        fontSize: 28,
-        fontWeight: '700',
-        color: '#111827',
-    },
     detailsList: {
-        paddingHorizontal: 20,
+        paddingHorizontal: 32,
         paddingTop: 16,
         paddingBottom: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f3f4f6',
     },
     detailItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingBottom: 6,
+        paddingBottom: 12,
+        paddingTop: 4,
     },
     calendarIcon: {
-        marginRight: 6,
-        color: '#444444'
+        marginRight: 12,
+        color: '#444444',
+        width: 24,
+        height: 24,
     },
     clockIcon: {
-        marginRight: 6,
-        color: '#444444'
+        marginRight: 12,
+        color: '#444444',
+        width: 24,
+        height: 24,
     },
     calendarOffIcon: {
-        marginRight: 6,
-        color: '#444444'
+        marginRight: 12,
+        color: '#444444',
+        width: 24,
+        height: 24,
     },
     detailText: {
-        fontSize: 12,
-        color: '#374151',
+        fontSize: 16,
+        color: theme.colors.zinc[700],
         fontWeight: '400',
         flex: 1,
-    },
-    instructorName: {
-        fontSize: 18,
-        color: '#6b7280',
-        fontWeight: '500',
     },
     businessSection: {
         paddingHorizontal: 20,
@@ -904,8 +1005,17 @@ const styles = StyleSheet.create({
         color: '#6b7280',
         fontWeight: '500',
         marginTop: 2,
+        marginBottom: 4,
+    },
+    spotsLabel: {
+        fontSize: 12,
+        color: '#6b7280',
+        fontWeight: '500',
+        marginTop: 2,
+        marginBottom: 4,
     },
     priceValue: {
+        marginTop: 2,
         fontSize: 18,
         fontWeight: '700',
         color: theme.colors.zinc[950],
@@ -914,14 +1024,8 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'flex-end',
     },
-    spotsLabel: {
-        fontSize: 12,
-        color: '#6b7280',
-        fontWeight: '500',
-        marginTop: 2,
-    },
     spotsValue: {
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: '600',
         color: theme.colors.emerald[500],
     },
@@ -1114,38 +1218,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 2,
     },
-    imageOverlayContainer: {
-        position: 'absolute',
-        left: 20,
-        right: 20,
-        bottom: 28,
-        zIndex: 2,
-        gap: 4,
-    },
-    imageOverlayTitle: {
-        fontSize: 26,
-        fontWeight: '800',
-        color: 'white',
-        textShadowColor: 'rgba(0,0,0,0.35)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 3,
-    },
-    imageOverlaySubtitle: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: 'rgba(255,255,255,0.92)',
-        textShadowColor: 'rgba(0,0,0,0.35)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 3,
-    },
-    bottomGradient: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        height: '40%',
-        zIndex: 1,
-    },
     bookingHistorySection: {
         paddingTop: 12,
         paddingHorizontal: 20,
@@ -1199,7 +1271,7 @@ const styles = StyleSheet.create({
     priceComparisonRow: {
         flexDirection: 'row',
         alignItems: 'baseline',
-        gap: 12,
+        gap: 4,
     },
     originalPriceModal: {
         fontSize: 18,
@@ -1210,6 +1282,11 @@ const styles = StyleSheet.create({
     discountedPriceModal: {
         fontSize: 18,
         fontWeight: 'bold',
+        color: theme.colors.zinc[950],
+    },
+    creditsText: {
+        fontSize: 18,
+        fontWeight: '700',
         color: theme.colors.zinc[950],
     },
     bookButtonDiscountPriceRow: {
