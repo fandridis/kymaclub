@@ -10,6 +10,7 @@ import { NotFoundScreen } from './screens/NotFoundScreen';
 import { QRScannerScreen } from './screens/QRScannerScreen';
 import { ClassDetailsModalScreen } from './screens/ClassDetailsModalScreen';
 import { VenueDetailsScreen } from './screens/VenueDetailsScreen';
+import { VenueClassInstancesScreen } from './screens/VenueClassInstancesScreen';
 import { SettingsNotificationsPreferenceScreen } from './screens/SettingsNotificationsPreferenceScreen';
 import { SettingsProfileScreen } from './screens/SettingsProfileScreen';
 import { SettingsNotificationsScreen } from './screens/SettingsNotificationsScreen';
@@ -348,6 +349,15 @@ export function RootNavigator() {
             title: 'Create Account',
           }}
         />
+        <RootStack.Screen
+          name="VenueClassInstancesModal"
+          component={VenueClassInstancesScreen}
+          options={{
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+            headerShown: false,
+          }}
+        />
       </RootStack.Group>
     </RootStack.Navigator>
   );
@@ -360,6 +370,7 @@ export type RootStackParamList = {
   Settings: undefined;
   Profile: { user: string };
   VenueDetailsScreen: { venueId: string };
+  VenueClassInstancesModal: { venueId: string; venueName: string };
   ClassDetailsModal: {
     classInstance?: import('@repo/api/convex/_generated/dataModel').Doc<"classInstances">;
     classInstanceId?: import('@repo/api/convex/_generated/dataModel').Id<"classInstances">;
@@ -415,6 +426,7 @@ export type RootStackParamListWithNestedTabs = {
   Settings: undefined;
   Profile: { user: string };
   VenueDetailsScreen: { venueId: string };
+  VenueClassInstancesModal: { venueId: string; venueName: string };
   ClassDetailsModal: {
     classInstance?: import('../hooks/use-class-instances').ClassInstance;
     classInstanceId?: import('@repo/api/convex/_generated/dataModel').Id<"classInstances">;

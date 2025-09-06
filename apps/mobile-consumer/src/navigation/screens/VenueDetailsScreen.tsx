@@ -2,12 +2,13 @@ import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Dimensions, ActivityIndicator, Linking } from 'react-native';
 import { Image } from 'expo-image';
 import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
-import { StarIcon, ArrowLeftIcon, ShowerHeadIcon, AccessibilityIcon, UserIcon } from 'lucide-react-native';
+import { StarIcon, ArrowLeftIcon, ShowerHeadIcon, AccessibilityIcon, UserIcon, ClockIcon } from 'lucide-react-native';
 import Carousel from 'react-native-reanimated-carousel';
 import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { ClassCard } from '../../components/ClassCard';
 import { Divider } from '../../components/Divider';
+import { useClassInstances } from '../../hooks/use-class-instances';
 import type { RootStackParamListWithNestedTabs } from '..';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
 import type { ClassInstance } from '../../hooks/use-class-instances';
@@ -16,56 +17,20 @@ import { formatDistance as formatDistanceMeters, calculateDistance } from '../..
 import { useTypedTranslation } from '../../i18n/typed';
 import { theme } from '../../theme';
 
+const now = Date.now();
+
 type VenueDetailsRoute = RouteProp<RootStackParamListWithNestedTabs, 'VenueDetailsScreen'>;
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-// Date formatting utilities
-const formatDateHeader = (date: Date): string => {
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
+// Carousel constants
+const ITEM_GAP = 8;
+const SECTION_PADDING = 0;
+const CAROUSEL_PADDING = SECTION_PADDING - (ITEM_GAP / 2);
+const CAROUSEL_ITEM_WIDTH = (screenWidth - (SECTION_PADDING * 2)) / 2.5;
+const UPCOMING_CAROUSEL_HEIGHT = 140;
 
-    // Reset hours for comparison
-    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const tomorrowOnly = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
 
-    if (dateOnly.getTime() === todayOnly.getTime()) {
-        return 'Today';
-    } else if (dateOnly.getTime() === tomorrowOnly.getTime()) {
-        return 'Tomorrow';
-    } else {
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric'
-        });
-    }
-};
-
-// Group classes by date
-const groupClassesByDate = (classes: ClassInstance[]): Record<string, ClassInstance[]> => {
-    const grouped: Record<string, ClassInstance[]> = {};
-
-    classes.forEach((classInstance) => {
-        const date = new Date(classInstance.startTime);
-        const dateKey = formatDateHeader(date);
-
-        if (!grouped[dateKey]) {
-            grouped[dateKey] = [];
-        }
-        grouped[dateKey].push(classInstance);
-    });
-
-    // Sort classes within each day by start time
-    Object.keys(grouped).forEach(dateKey => {
-        grouped[dateKey].sort((a, b) => a.startTime - b.startTime);
-    });
-
-    return grouped;
-};
-
-type TabType = 'Details' | 'Classes';
 
 // Amenities icons mapping
 const amenitiesIconsMap: Record<string, React.ComponentType<any>> = {
@@ -78,7 +43,6 @@ export function VenueDetailsScreen() {
     const route = useRoute<VenueDetailsRoute>();
     const { venueId } = route.params;
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
-    const [activeTab, setActiveTab] = useState<TabType>('Details');
     const { t } = useTypedTranslation();
     const [distanceLabel, setDistanceLabel] = useState<string | null>(null);
     const [isHeaderWhite, setIsHeaderWhite] = useState(false);
@@ -114,11 +78,78 @@ export function VenueDetailsScreen() {
         computeDistance();
     }, [venue?.address?.latitude, venue?.address?.longitude, t]);
 
-    // Fetch upcoming classes for this venue
-    const upcomingClasses = useQuery(api.queries.venues.getUpcomingClassesForVenue, {
-        venueId: venueId as Id<"venues">,
-        daysAhead: 14
+
+    // Fetch next 7 days of class instances for upcoming cards
+    const sevenDaysFromNow = useMemo(() => {
+        const now = new Date();
+        const sevenDays = new Date(now);
+        sevenDays.setDate(now.getDate() + 7);
+        sevenDays.setHours(23, 59, 59, 999); // End of 7th day
+        return sevenDays.getTime();
+    }, []);
+
+    const { classInstances: allClassInstances } = useClassInstances({
+        startDate: now,
+        endDate: sevenDaysFromNow
     });
+
+    // Filter class instances for this venue and process for upcoming cards
+    const upcomingVenueClasses = useMemo(() => {
+        if (!allClassInstances?.length) return [];
+
+        const venueClasses = allClassInstances
+            .filter(classInstance => classInstance.venueId === venueId)
+            .slice(0, 10) // Limit to 10 cards max for 7 days
+            .map(classInstance => {
+                const startTime = new Date(classInstance.startTime);
+                const endTime = new Date(classInstance.endTime);
+                const today = new Date();
+                const tomorrow = new Date(today);
+                tomorrow.setDate(today.getDate() + 1);
+                const dayAfterTomorrow = new Date(today);
+                dayAfterTomorrow.setDate(today.getDate() + 2);
+
+                // Format date display
+                let dateDisplay = '';
+                const classDate = startTime.toDateString();
+                if (classDate === today.toDateString()) {
+                    dateDisplay = 'Today, ' + startTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                } else if (classDate === tomorrow.toDateString()) {
+                    dateDisplay = 'Tomorrow, ' + startTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                } else {
+                    dateDisplay = startTime.toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                }
+
+                // Format time range
+                const timeRange = `${startTime.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                })}-${endTime.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                })}`;
+
+                // Calculate spots available
+                const spotsLeft = Math.max(0, (classInstance.capacity ?? 0) - (classInstance.bookedCount ?? 0));
+
+                return {
+                    id: classInstance._id,
+                    date: dateDisplay,
+                    timeRange,
+                    name: classInstance.name,
+                    spotsLeft,
+                    classInstance
+                };
+            });
+
+        return venueClasses;
+    }, [allClassInstances, venueId]);
 
     // Get image storage IDs
     const imageStorageIds = venue?.imageStorageIds ?? [];
@@ -153,52 +184,6 @@ export function VenueDetailsScreen() {
     // Loading state
     const isLoading = !venue || (imageStorageIds.length > 0 && !imageUrlsQuery);
 
-    // Group classes by date for FlashList
-    const classesSections = useMemo(() => {
-        if (!upcomingClasses?.length) return [];
-
-        const grouped = groupClassesByDate(upcomingClasses as ClassInstance[]);
-        return Object.entries(grouped).map(([dateKey, classes]) => ({
-            title: dateKey,
-            data: classes,
-        }));
-    }, [upcomingClasses]);
-
-    // Build flattened list with header indices for FlashList sticky headers
-    const { flattenedItems, headerIndices } = useMemo(() => {
-        const items: Array<{ type: 'header'; title: string } | { type: 'class'; data: ClassInstance }> = [];
-        const headerIdx: number[] = [];
-        let i = 0;
-
-        classesSections.forEach(section => {
-            items.push({ type: 'header', title: section.title });
-            headerIdx.push(i++);
-            section.data.forEach(classItem => {
-                items.push({ type: 'class', data: classItem });
-                i++;
-            });
-        });
-
-        return { flattenedItems: items, headerIndices: headerIdx };
-    }, [classesSections]);
-
-    const renderFlashListItem = useCallback(({ item }: { item: { type: 'header'; title: string } | { type: 'class'; data: ClassInstance } }) => {
-        if (item.type === 'header') {
-            return (
-                <View style={styles.stickyDateHeader}>
-                    <Text style={styles.dateHeaderText}>{item.title}</Text>
-                </View>
-            );
-        }
-        return (
-            <ClassCard
-                classInstance={item.data}
-                onPress={(classInstance) =>
-                    navigation.navigate('ClassDetailsModal', { classInstance })
-                }
-            />
-        );
-    }, [navigation]);
 
     // Venue info
     const venueName = venue?.name ?? 'Venue';
@@ -466,13 +451,85 @@ export function VenueDetailsScreen() {
 
             <Divider />
 
-            {/* Classes Section */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Classes</Text>
-                <View style={styles.classesPlaceholder}>
-                    <Text style={styles.placeholderText}>Coming soon - Browse available classes and book your sessions.</Text>
-                </View>
-            </View>
+            {/* Upcoming Section */}
+            {upcomingVenueClasses.length > 0 && (
+                <>
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Upcoming classes</Text>
+                        <View style={styles.carouselContainer}>
+                            <Carousel
+                                loop={false}
+                                width={CAROUSEL_ITEM_WIDTH + ITEM_GAP}
+                                height={UPCOMING_CAROUSEL_HEIGHT}
+                                data={[...upcomingVenueClasses, { type: 'seeMore' }]}
+                                scrollAnimationDuration={500}
+                                style={styles.carousel}
+                                snapEnabled
+                                renderItem={({ item }) => {
+                                    if ('type' in item && item.type === 'seeMore') {
+                                        return (
+                                            <TouchableOpacity
+                                                style={[styles.baseCarouselCard, styles.upcomingCarouselCard, styles.seeMoreCard]}
+                                                onPress={() => {
+                                                    navigation.navigate('VenueClassInstancesModal', {
+                                                        venueId,
+                                                        venueName: venue?.name || 'Venue'
+                                                    });
+                                                }}
+                                                activeOpacity={0.7}
+                                            >
+                                                <View style={styles.seeMoreCardContent}>
+                                                    <Text style={styles.seeMoreText}>See more</Text>
+                                                    <Text style={styles.seeMoreSubtext}>View all classes</Text>
+                                                </View>
+                                            </TouchableOpacity>
+                                        );
+                                    }
+
+                                    // Type assertion: item is a class instance at this point
+                                    const classItem = item as typeof upcomingVenueClasses[0];
+
+                                    return (
+                                        <TouchableOpacity
+                                            style={[styles.baseCarouselCard, styles.upcomingCarouselCard]}
+                                            onPress={() => {
+                                                navigation.navigate('ClassDetailsModal', {
+                                                    classInstance: classItem.classInstance
+                                                });
+                                            }}
+                                            activeOpacity={0.7}
+                                        >
+                                            <View style={styles.upcomingCardContent}>
+                                                <Text style={styles.upcomingDate} numberOfLines={1}>
+                                                    {classItem.date}
+                                                </Text>
+                                                <Text style={styles.upcomingTime}>
+                                                    {classItem.timeRange}
+                                                </Text>
+                                                <Text style={styles.upcomingClassName} numberOfLines={2}>
+                                                    {classItem.name}
+                                                </Text>
+                                                <View style={styles.upcomingSpotsContainer}>
+                                                    <Text style={styles.upcomingSpotsText}>
+                                                        {classItem.spotsLeft} spots available
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        </TouchableOpacity>
+                                    );
+                                }}
+                                onConfigurePanGesture={(gestureChain) => {
+                                    gestureChain
+                                        .activeOffsetX([-10, 10])
+                                        .failOffsetY([-15, 15]);
+                                }}
+                            />
+                        </View>
+                    </View>
+                    <Divider />
+                </>
+            )}
+
         </ScrollView>
     );
 
@@ -620,14 +677,82 @@ const styles = StyleSheet.create({
         color: '#374151',
         fontWeight: '500',
     },
-    classesPlaceholder: {
-        padding: 24,
-        backgroundColor: theme.colors.zinc[100],
-        borderRadius: 12,
-        alignItems: 'center',
-    },
+
+    // Upcoming carousel styles
     carouselContainer: {
-        marginBottom: 16,
+        paddingHorizontal: CAROUSEL_PADDING,
+    },
+    carousel: {
+        width: screenWidth,
+    },
+    baseCarouselCard: {
+        backgroundColor: '#ffffff',
+        borderRadius: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 3,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: theme.colors.zinc[100],
+    },
+    upcomingCarouselCard: {
+        width: CAROUSEL_ITEM_WIDTH,
+        height: UPCOMING_CAROUSEL_HEIGHT,
+    },
+    upcomingCardContent: {
+        flex: 1,
+        padding: 16,
+        justifyContent: 'space-between',
+    },
+    upcomingDate: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: theme.colors.zinc[600],
+        marginBottom: 4,
+    },
+    upcomingTime: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: theme.colors.zinc[950],
+        marginBottom: 8,
+    },
+    upcomingClassName: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: theme.colors.zinc[800],
+        flex: 1,
+        marginBottom: 8,
+    },
+    upcomingSpotsContainer: {
+        alignSelf: 'flex-start',
+    },
+    upcomingSpotsText: {
+        fontSize: 12,
+        fontWeight: '500',
+        color: theme.colors.emerald[600],
+    },
+    seeMoreCard: {
+        backgroundColor: theme.colors.zinc[100],
+        borderColor: theme.colors.zinc[200],
+    },
+    seeMoreCardContent: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 16,
+    },
+    seeMoreText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: theme.colors.zinc[800],
+        marginBottom: 4,
+    },
+    seeMoreSubtext: {
+        fontSize: 12,
+        fontWeight: '500',
+        color: theme.colors.zinc[600],
     },
     imageContainer: {
         width: screenWidth,
@@ -756,21 +881,6 @@ const styles = StyleSheet.create({
     },
     tagIcon: {
         marginRight: 4,
-    },
-    stickyDateHeader: {
-        backgroundColor: theme.colors.zinc[50],
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e5e7eb',
-        zIndex: 2,
-    },
-    dateHeaderText: {
-        fontSize: 11,
-        fontWeight: '600',
-        color: '#6b7280',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
     },
     loadingContainer: {
         flex: 1,

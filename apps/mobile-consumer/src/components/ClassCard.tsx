@@ -81,6 +81,20 @@ function getDiscountBadgeText(discountResult: DiscountCalculationResult): string
 function getDiscountTimingText(discountResult: DiscountCalculationResult, classInstance: ClassInstance): string {
   if (!discountResult.appliedDiscount) return '';
 
+  // Get discount rules to check the rule type
+  const discountRules: ClassDiscountRule[] =
+    classInstance.discountRules ||
+    classInstance.templateSnapshot?.discountRules ||
+    [];
+
+  // Find the applied rule by name
+  const appliedRule = discountRules.find(rule => rule.name === discountResult.appliedDiscount?.ruleName);
+  
+  // Don't show timing text for "always" type discounts
+  if (appliedRule?.condition.type === 'always') {
+    return '';
+  }
+
   const now = Date.now();
   const hoursUntilClass = Math.max(0, (classInstance.startTime - now) / (1000 * 60 * 60));
   const ruleName = discountResult.appliedDiscount.ruleName;

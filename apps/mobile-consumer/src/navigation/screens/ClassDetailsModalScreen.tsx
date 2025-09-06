@@ -82,7 +82,7 @@ function getDiscountTimingText(discountResult: DiscountCalculationResult, classI
     } else if (ruleName.toLowerCase().includes('last') || ruleName.toLowerCase().includes('minute')) {
         return `Last minute discount: ${Math.round(hoursUntilClass)}h left`;
     } else {
-        return `Discount: ${Math.round(hoursUntilClass)}h left`;
+        return 'This class has a discount!';
     }
 }
 
@@ -322,7 +322,10 @@ export function ClassDetailsModalScreen() {
                         style={styles.headerBackButton}
                         onPress={() => navigation.goBack()}
                     >
-                        <ArrowLeftIcon size={26} />
+                        <ArrowLeftIcon
+                            size={26}
+                            color={theme.colors.zinc[950]}
+                        />
                     </TouchableOpacity>
                 </View>
                 <View style={styles.loadingContainer}>
@@ -341,7 +344,10 @@ export function ClassDetailsModalScreen() {
                         style={styles.headerBackButton}
                         onPress={() => navigation.goBack()}
                     >
-                        <ArrowLeftIcon size={26} />
+                        <ArrowLeftIcon
+                            size={26}
+                            color={theme.colors.zinc[950]}
+                        />
                     </TouchableOpacity>
                 </View>
                 <View style={styles.loadingContainer}>
@@ -398,7 +404,10 @@ export function ClassDetailsModalScreen() {
                     ]}
                     onPress={() => navigation.goBack()}
                 >
-                    <ArrowLeftIcon size={26} />
+                    <ArrowLeftIcon
+                        size={26}
+                        color={theme.colors.zinc[950]}
+                    />
                 </TouchableOpacity>
             </View>
 
