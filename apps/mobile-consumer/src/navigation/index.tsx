@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
     width: 62,
     height: 62,
     borderRadius: 40,
-    backgroundColor: '#ff4747',
+    backgroundColor: theme.colors.emerald[500],
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: -8,
