@@ -52,7 +52,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
     if (result.success) {
       Alert.alert(
         'Review Submitted',
-        'Thank you for your review!',
+        'Thank you for taking the time to share your experience! We review all submissions to ensure quality, so your review will be visible shortly',
         [
           {
             text: 'OK',
@@ -77,8 +77,8 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
         'You have unsaved changes. Are you sure you want to close?',
         [
           { text: 'Continue Writing', style: 'cancel' },
-          { 
-            text: 'Discard', 
+          {
+            text: 'Discard',
             style: 'destructive',
             onPress: () => {
               setRating(0);
@@ -100,7 +100,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
@@ -149,6 +149,8 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
               value={comment}
               onChangeText={setComment}
               textAlignVertical="top"
+              autoCapitalize="sentences"
+              autoCorrect={true}
             />
             <Text style={styles.characterCount}>
               {comment.length}/750

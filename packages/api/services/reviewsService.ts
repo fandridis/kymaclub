@@ -1,7 +1,8 @@
-import type { MutationCtx, QueryCtx } from "../convex/_generated/server";
+import type { MutationCtx, QueryCtx, ActionCtx } from "../convex/_generated/server";
 import type { Doc, Id } from "../convex/_generated/dataModel";
 import { ConvexError } from "convex/values";
 import { ERROR_CODES } from "../utils/errorCodes";
+import { internal } from "../convex/_generated/api";
 
 // Define args types for reviews
 export type CreateVenueReviewArgs = {
@@ -92,7 +93,7 @@ export const reviewsService = {
       name: venue.name,
     };
 
-    // Create the review
+    // Create the review - initially not visible and pending AI moderation
     const reviewId = await ctx.db.insert("venueReviews", {
       businessId: venue.businessId,
       venueId: args.venueId,
@@ -101,14 +102,17 @@ export const reviewsService = {
       comment: args.comment,
       userSnapshot,
       venueSnapshot,
-      isVisible: true,
+      isVisible: false, // Not visible until AI moderation
+      moderationStatus: "pending", // Awaiting AI check
       createdAt: now,
       createdBy: user._id,
+      updatedAt: now,
+      updatedBy: user._id,
       deleted: false,
     });
 
-    // Update venue rating and review count
-    await reviewsService._updateVenueRatingStats(ctx, args.venueId);
+    // Note: Venue rating stats will be updated after AI moderation
+    // The trigger will handle this when the review becomes visible
 
     return { createdReviewId: reviewId };
   },
@@ -141,6 +145,7 @@ export const reviewsService = {
 
   /**
    * Update venue rating and review count (internal helper)
+   * Only considers visible reviews that have been approved
    */
   _updateVenueRatingStats: async (ctx: MutationCtx, venueId: Id<"venues">) => {
     // Get all visible reviews for this venue
@@ -153,7 +158,7 @@ export const reviewsService = {
       .collect();
 
     if (reviews.length === 0) {
-      // No reviews - reset to undefined/0
+      // No visible reviews - reset to undefined/0
       await ctx.db.patch(venueId, {
         rating: undefined,
         reviewCount: 0,
@@ -233,5 +238,225 @@ export const reviewsService = {
       .filter((q) => q.eq(q.field("deleted"), false))
       .order("desc") // Most recent first
       .first();
+  },
+
+  /**
+   * Process AI moderation result for a review
+   */
+  processAIModeration: async ({
+    ctx,
+    reviewId,
+    moderationResult
+  }: {
+    ctx: MutationCtx,
+    reviewId: Id<"venueReviews">,
+    moderationResult: {
+      score: number; // 0-100 confidence score
+      reason?: string;
+      status: "auto_approved" | "flagged" | "auto_rejected";
+    }
+  }): Promise<void> => {
+    const now = Date.now();
+
+    const updateData: Partial<Doc<"venueReviews">> = {
+      moderationStatus: moderationResult.status,
+      aiModerationScore: moderationResult.score,
+      aiModerationReason: moderationResult.reason,
+      aiModeratedAt: now,
+      updatedAt: now,
+    };
+
+    // Determine visibility based on moderation status
+    if (moderationResult.status === "auto_approved") {
+      updateData.isVisible = true;
+    } else if (moderationResult.status === "flagged") {
+      updateData.isVisible = false;
+      updateData.flaggedAt = now;
+      updateData.flaggedReason = moderationResult.reason;
+    } else if (moderationResult.status === "auto_rejected") {
+      updateData.isVisible = false;
+    }
+
+    await ctx.db.patch(reviewId, updateData);
+
+    // If review is now visible, update venue stats
+    if (updateData.isVisible) {
+      const review = await ctx.db.get(reviewId);
+      if (review) {
+        await reviewsService._updateVenueRatingStats(ctx, review.venueId);
+      }
+    }
+  },
+
+  /**
+   * Manually moderate a review (admin function)
+   */
+  manualModerateReview: async ({
+    ctx,
+    reviewId,
+    moderatorId,
+    decision,
+    note
+  }: {
+    ctx: MutationCtx,
+    reviewId: Id<"venueReviews">,
+    moderatorId: Id<"users">,
+    decision: "manual_approved" | "manual_rejected",
+    note?: string;
+  }): Promise<void> => {
+    const now = Date.now();
+
+    const updateData: Partial<Doc<"venueReviews">> = {
+      moderationStatus: decision,
+      moderatedBy: moderatorId,
+      moderatedAt: now,
+      moderationNote: note,
+      updatedAt: now,
+      updatedBy: moderatorId,
+    };
+
+    // Set visibility based on decision
+    updateData.isVisible = decision === "manual_approved";
+
+    await ctx.db.patch(reviewId, updateData);
+
+    // If review is now visible, update venue stats
+    if (updateData.isVisible) {
+      const review = await ctx.db.get(reviewId);
+      if (review) {
+        await reviewsService._updateVenueRatingStats(ctx, review.venueId);
+      }
+    }
+  },
+
+  /**
+   * Get reviews pending manual moderation
+   */
+  getReviewsPendingModeration: async ({
+    ctx,
+    limit = 20,
+    offset = 0
+  }: {
+    ctx: QueryCtx,
+    limit?: number,
+    offset?: number;
+  }): Promise<Doc<"venueReviews">[]> => {
+    const reviews = await ctx.db
+      .query("venueReviews")
+      .withIndex("by_deleted", (q) => q.eq("deleted", false))
+      .filter((q) => q.eq(q.field("moderationStatus"), "flagged"))
+      .order("desc") // Most recent first
+      .collect();
+
+    return reviews.slice(offset, offset + limit);
+  },
+
+  /**
+   * Get review moderation statistics
+   */
+  getModerationStats: async ({
+    ctx
+  }: {
+    ctx: QueryCtx;
+  }): Promise<{
+    pending: number;
+    autoApproved: number;
+    flagged: number;
+    autoRejected: number;
+    manualApproved: number;
+    manualRejected: number;
+  }> => {
+    const allReviews = await ctx.db
+      .query("venueReviews")
+      .filter((q) => q.eq(q.field("deleted"), false))
+      .collect();
+
+    const stats = {
+      pending: 0,
+      autoApproved: 0,
+      flagged: 0,
+      autoRejected: 0,
+      manualApproved: 0,
+      manualRejected: 0,
+    };
+
+    for (const review of allReviews) {
+      switch (review.moderationStatus) {
+        case "pending":
+          stats.pending++;
+          break;
+        case "auto_approved":
+          stats.autoApproved++;
+          break;
+        case "flagged":
+          stats.flagged++;
+          break;
+        case "auto_rejected":
+          stats.autoRejected++;
+          break;
+        case "manual_approved":
+          stats.manualApproved++;
+          break;
+        case "manual_rejected":
+          stats.manualRejected++;
+          break;
+      }
+    }
+
+    return stats;
+  },
+
+  /**
+   * Process AI moderation result for a review (action-compatible version)
+   */
+  processAIModerationFromAction: async ({
+    ctx,
+    reviewId,
+    moderationResult
+  }: {
+    ctx: ActionCtx,
+    reviewId: Id<"venueReviews">,
+    moderationResult: {
+      score: number; // 0-100 confidence score
+      reason?: string;
+      status: "auto_approved" | "flagged" | "auto_rejected";
+    }
+  }): Promise<void> => {
+    const now = Date.now();
+
+    const updateData: Partial<Doc<"venueReviews">> = {
+      moderationStatus: moderationResult.status,
+      aiModerationScore: moderationResult.score,
+      aiModerationReason: moderationResult.reason,
+      aiModeratedAt: now,
+      updatedAt: now,
+    };
+
+    // Determine visibility based on moderation status
+    if (moderationResult.status === "auto_approved") {
+      updateData.isVisible = true;
+    } else if (moderationResult.status === "flagged") {
+      updateData.isVisible = false;
+      updateData.flaggedAt = now;
+      updateData.flaggedReason = moderationResult.reason;
+    } else if (moderationResult.status === "auto_rejected") {
+      updateData.isVisible = false;
+    }
+
+    // Use runMutation to update the review
+    await ctx.runMutation(internal.mutations.reviews.updateReviewForModeration, {
+      reviewId,
+      updateData
+    });
+
+    // If review is now visible, update venue stats
+    if (updateData.isVisible) {
+      const review = await ctx.runQuery(internal.queries.reviews.getReviewById, { reviewId });
+      if (review) {
+        await ctx.runMutation(internal.mutations.reviews.updateVenueRatingStats, {
+          venueId: review.venueId
+        });
+      }
+    }
   },
 };

@@ -8,6 +8,7 @@ import { classInstanceOperations } from "../../operations/classInstance";
 import { venueRules } from "../../rules/venue";
 import { creditService } from "../../services/creditService";
 import { notificationService } from "../../services/notificationService";
+import { reviewsService } from "../../services/reviewsService";
 import { format } from "date-fns";
 
 const triggers = new Triggers<DataModel>();
@@ -161,6 +162,38 @@ triggers.register("bookings", async (ctx, change) => {
                 creditsPaid: newDoc.creditsUsed,
             },
         });
+    }
+});
+
+/***************************************************************
+ * VENUE REVIEWS TRIGGERS
+ ***************************************************************/
+triggers.register("venueReviews", async (ctx, change) => {
+    const { id, newDoc, operation } = change;
+
+    if (operation === 'insert' && newDoc) {
+        // Only process reviews that have comments (text to moderate)
+        if (newDoc.comment && newDoc.comment.trim().length > 0) {
+            // Schedule AI moderation
+            await ctx.scheduler.runAfter(0, internal.actions.ai.moderateVenueReview, {
+                reviewText: newDoc.comment,
+                reviewId: id, // Pass reviewId to the action
+            });
+        } else {
+            // No comment to moderate, auto-approve if it's just a rating
+            const now = Date.now();
+            await ctx.db.patch(id, {
+                moderationStatus: "auto_approved",
+                aiModerationScore: 100,
+                aiModerationReason: "Rating-only review - auto-approved",
+                aiModeratedAt: now,
+                isVisible: true,
+                updatedAt: now,
+            });
+
+            // Update venue rating stats since review is now visible
+            await reviewsService._updateVenueRatingStats(ctx, newDoc.venueId);
+        }
     }
 });
 

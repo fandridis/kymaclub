@@ -719,10 +719,30 @@ export const venueReviewsFields = {
     name: v.string(),
   }),
 
-  // Review status
-  isVisible: v.boolean(), // Can be hidden by business/admin
-  flaggedAt: v.optional(v.number()), // If review was flagged for moderation
-  flaggedReason: v.optional(v.string()),
+  // Review visibility and moderation
+  isVisible: v.boolean(), // Default: false until AI checks
+
+  // AI Moderation fields
+  moderationStatus: v.union(
+    v.literal("pending"),      // Awaiting AI check
+    v.literal("auto_approved"), // AI confidence < 40%
+    v.literal("flagged"),       // AI confidence 40-80%
+    v.literal("auto_rejected"), // AI confidence > 80%
+    v.literal("manual_approved"), // Admin manually approved
+    v.literal("manual_rejected")  // Admin manually rejected
+  ),
+
+  aiModerationScore: v.optional(v.number()), // 0-100 confidence score
+  aiModerationReason: v.optional(v.string()), // Why AI flagged it
+  aiModeratedAt: v.optional(v.number()), // When AI checked it
+
+  // Manual moderation
+  flaggedAt: v.optional(v.number()), // When flagged for manual review
+  flaggedReason: v.optional(v.string()), // Additional context for manual review
+
+  moderatedBy: v.optional(v.id("users")), // Admin who manually reviewed
+  moderatedAt: v.optional(v.number()), // When manually reviewed
+  moderationNote: v.optional(v.string()), // Admin's note on decision
 
   ...auditFields,
   ...softDeleteFields,

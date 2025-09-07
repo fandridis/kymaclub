@@ -1,4 +1,4 @@
-import { query } from "../_generated/server";
+import { query, internalQuery } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthenticatedUserOrThrow } from "../utils";
 import { reviewsService } from "../../services/reviewsService";
@@ -26,10 +26,10 @@ export const canUserReviewVenue = query({
   },
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
-    return reviewsService.canUserReviewVenue({ 
-      ctx, 
-      venueId: args.venueId, 
-      userId: user._id 
+    return reviewsService.canUserReviewVenue({
+      ctx,
+      venueId: args.venueId,
+      userId: user._id
     });
   }
 });
@@ -43,7 +43,7 @@ export const getUserReviewForVenue = query({
   },
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
-    
+
     return reviewsService.getUserMostRecentReviewForVenue({
       ctx,
       venueId: args.venueId,
@@ -63,7 +63,7 @@ export const getVenueRatingSummary = query({
     // Get all visible reviews for this venue
     const reviews = await ctx.db
       .query("venueReviews")
-      .withIndex("by_venue_visible", (q) => 
+      .withIndex("by_venue_visible", (q) =>
         q.eq("venueId", args.venueId).eq("isVisible", true)
       )
       .filter((q) => q.eq(q.field("deleted"), false))
@@ -98,5 +98,17 @@ export const getVenueRatingSummary = query({
       totalReviews: reviews.length,
       ratingDistribution
     };
+  }
+});
+
+/***************************************************************
+ * Get Review by ID (Internal)
+ ***************************************************************/
+export const getReviewById = internalQuery({
+  args: {
+    reviewId: v.id("venueReviews")
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.reviewId);
   }
 });
