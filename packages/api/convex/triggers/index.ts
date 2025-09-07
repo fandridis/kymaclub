@@ -184,7 +184,7 @@ triggers.register("venueReviews", async (ctx, change) => {
             const now = Date.now();
             await ctx.db.patch(id, {
                 moderationStatus: "auto_approved",
-                aiModerationScore: 100,
+                aiModerationScore: 0, // 0% probability of being bad for rating-only reviews
                 aiModerationReason: "Rating-only review - auto-approved",
                 aiModeratedAt: now,
                 isVisible: true,
