@@ -699,6 +699,35 @@ export const subscriptionsFields = {
   ...softDeleteFields,
 };
 
+export const venueReviewsFields = {
+  businessId: v.id("businesses"),
+  venueId: v.id("venues"),
+  userId: v.id("users"),
+
+  // Review content
+  rating: v.number(), // 1-5 star rating
+  comment: v.optional(v.string()), // Optional text review
+
+  // User snapshot for display (denormalized for efficiency)
+  userSnapshot: v.object({
+    name: v.optional(v.string()),
+    email: v.optional(v.string()),
+  }),
+
+  // Venue snapshot for display (denormalized)
+  venueSnapshot: v.object({
+    name: v.string(),
+  }),
+
+  // Review status
+  isVisible: v.boolean(), // Can be hidden by business/admin
+  flaggedAt: v.optional(v.number()), // If review was flagged for moderation
+  flaggedReason: v.optional(v.string()),
+
+  ...auditFields,
+  ...softDeleteFields,
+};
+
 export const subscriptionEventsFields = {
   subscriptionId: v.optional(v.id("subscriptions")), // Database subscription ID (null if not created yet)
   stripeSubscriptionId: v.string(), // Stripe subscription ID
@@ -873,4 +902,18 @@ export default defineSchema({
     .index("by_stripe_event", ["stripeEventId"])
     .index("by_event_type", ["eventType"])
     .index("by_processed_at", ["processedAt"]),
+
+  /**
+   * Venue Reviews - User reviews and ratings for venues
+   */
+  venueReviews: defineTable(venueReviewsFields)
+    .index("by_venue", ["venueId"])
+    .index("by_user", ["userId"])
+    .index("by_business", ["businessId"])
+    .index("by_venue_visible", ["venueId", "isVisible"])
+    .index("by_venue_created", ["venueId", "createdAt"])
+    .index("by_user_venue", ["userId", "venueId"])
+    .index("by_venue_visible_created", ["venueId", "isVisible", "createdAt"])
+    .index("by_business_created", ["businessId", "createdAt"])
+    .index("by_deleted", ["deleted"]),
 });

@@ -1309,7 +1309,7 @@ const styles = StyleSheet.create({
         gap: 2,
     },
     bookButtonOriginalText: {
-        fontSize: 14,
+        fontSize: 18,
         fontWeight: '500',
         color: 'rgba(255, 255, 255, 0.6)',
         textDecorationLine: 'line-through',

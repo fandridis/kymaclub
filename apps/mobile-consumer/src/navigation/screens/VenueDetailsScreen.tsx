@@ -8,6 +8,7 @@ import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { ClassCard } from '../../components/ClassCard';
 import { Divider } from '../../components/Divider';
+import { ReviewsSection } from '../../components/ReviewsSection';
 import { useClassInstances } from '../../hooks/use-class-instances';
 import type { RootStackParamListWithNestedTabs } from '..';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
@@ -27,7 +28,7 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const ITEM_GAP = 8;
 const SECTION_PADDING = 0;
 const CAROUSEL_PADDING = SECTION_PADDING - (ITEM_GAP / 2);
-const CAROUSEL_ITEM_WIDTH = (screenWidth - (SECTION_PADDING * 2)) / 2.5;
+const CAROUSEL_ITEM_WIDTH = (screenWidth - (SECTION_PADDING * 2)) / 2.4;
 const UPCOMING_CAROUSEL_HEIGHT = 140;
 
 
@@ -529,6 +530,14 @@ export function VenueDetailsScreen() {
                     <Divider />
                 </>
             )}
+
+            {/* Reviews Section */}
+            <ReviewsSection
+                venueId={venueId as Id<"venues">}
+                venueName={venue?.name || 'Venue'}
+            />
+
+            <Divider />
 
         </ScrollView>
     );

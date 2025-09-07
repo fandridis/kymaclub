@@ -71,8 +71,7 @@ export function NewsScreen() {
     const user = useAuthenticatedUser();
 
     const now = useCurrentTime();
-    const next8Hours = useMemo(() => new Date(now.getTime() + (8 * 60 * 60 * 1000)), [now]);
-    const thirtyDaysAgo = useMemo(() => new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000)), [now]);
+    const next12Hours = useMemo(() => new Date(now.getTime() + (12 * 60 * 60 * 1000)), [now]);
 
     // Query for user's upcoming bookings
     const userBookings = useQuery(
@@ -85,7 +84,7 @@ export function NewsScreen() {
         api.queries.classInstances.getLastMinuteDiscountedClassInstances,
         {
             startDate: now.getTime(),
-            endDate: next8Hours.getTime(),
+            endDate: next12Hours.getTime(),
             limit: 6
         }
     );
