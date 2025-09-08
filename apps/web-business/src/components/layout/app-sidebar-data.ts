@@ -1,19 +1,14 @@
 import {
-    Monitor,
-    HelpCircle,
     LayoutDashboard,
-    Bell,
-    Palette,
-    Settings,
-    BookmarkMinusIcon,
     CalendarHeartIcon,
     BookTemplateIcon,
     DollarSign,
+    MessageCircle,
 } from 'lucide-react'
 import { AudioWaveform, Command, GalleryVerticalEnd } from 'lucide-react'
 import { type SidebarData } from './types'
 
-export const sidebarData: SidebarData = {
+export const getSidebarData = (unreadMessagesCount?: number): SidebarData => ({
     user: {
         name: 'Gefa',
         email: 'gefa@gmail.com',
@@ -60,6 +55,14 @@ export const sidebarData: SidebarData = {
                     url: '/earnings',
                     icon: DollarSign,
                 },
+                {
+                    title: 'Messages',
+                    url: '/messages',
+                    icon: MessageCircle,
+                    badge: unreadMessagesCount && unreadMessagesCount > 0 ? 
+                        (unreadMessagesCount > 99 ? '99+' : unreadMessagesCount.toString()) : 
+                        undefined,
+                },
                 // {
                 //     title: 'Bookings',
                 //     url: '/bookings',
@@ -101,4 +104,4 @@ export const sidebarData: SidebarData = {
         //     ],
         // },
     ],
-}
+})

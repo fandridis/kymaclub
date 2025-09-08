@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, View, Text, Dimensions, ScrollView, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { MapPinIcon, StarIcon } from 'lucide-react-native';
+import { MapPinIcon, StarIcon, UserIcon } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Carousel from 'react-native-reanimated-carousel';
@@ -313,7 +313,17 @@ export function NewsScreen() {
     if (isInitialLoading) {
         return (
             <SafeAreaView style={styles.container}>
-                <TabScreenHeader title={t('welcome.title')} />
+                <TabScreenHeader 
+                    title={t('welcome.title')} 
+                    renderLeftSide={() => (
+                        <TouchableOpacity 
+                            onPress={() => navigation.navigate('Settings')}
+                            style={styles.profileButton}
+                        >
+                            <UserIcon size={24} color={theme.colors.zinc[700]} />
+                        </TouchableOpacity>
+                    )}
+                />
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#ff4747" />
                     <Text style={styles.loadingText}>Loading news...</Text>
@@ -324,7 +334,17 @@ export function NewsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <TabScreenHeader title={t('welcome.title')} />
+            <TabScreenHeader 
+                title={t('welcome.title')} 
+                renderLeftSide={() => (
+                    <TouchableOpacity 
+                        onPress={() => navigation.navigate('Settings')}
+                        style={styles.profileButton}
+                    >
+                        <UserIcon size={24} color={theme.colors.zinc[700]} />
+                    </TouchableOpacity>
+                )}
+            />
             <ScrollView
                 style={styles.scrollContainer}
                 showsVerticalScrollIndicator={false}
@@ -969,6 +989,13 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#6b7280',
         fontWeight: '500',
+    },
+
+    // Profile button styles
+    profileButton: {
+        padding: 8,
+        borderRadius: 8,
+        backgroundColor: theme.colors.zinc[100],
     },
 
     // Venue card styles (inline from VenueCard component)

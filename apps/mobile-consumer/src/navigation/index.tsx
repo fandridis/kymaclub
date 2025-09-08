@@ -5,6 +5,7 @@ import { NewsScreen } from './screens/NewsScreen';
 import { ExploreScreen } from './screens/ExploreScreen';
 import { ScanScreen } from './screens/ScanScreen';
 import { BookingsScreen } from './screens/BookingsScreen';
+import { MessagesScreen } from './screens/MessagesScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { NotFoundScreen } from './screens/NotFoundScreen';
 import { QRScannerScreen } from './screens/QRScannerScreen';
@@ -23,7 +24,7 @@ import { SuperpowersScreen } from './screens/SuperpowersScreen';
 import { BuyCreditsScreen } from './screens/BuyCreditsScreen';
 import { LandingScreen } from '../features/core/screens/landing-screen';
 import { CreateAccountModalScreen } from '../features/core/screens/create-account-modal-screen';
-import { SearchIcon, NewspaperIcon, ScanQrCodeIcon, TicketIcon, UserCogIcon } from 'lucide-react-native';
+import { SearchIcon, NewspaperIcon, ScanQrCodeIcon, TicketIcon, MessageCircleIcon } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
 import { useTypedTranslation } from '../i18n/typed';
 import { useAuth } from '../stores/auth-store';
@@ -31,8 +32,11 @@ import { LocationObject } from 'expo-location';
 import { SignInModalScreen } from '../features/core/screens/sign-in-modal-screen';
 import { PaymentSuccessScreen } from './screens/PaymentSuccessScreen';
 import { PaymentCancelScreen } from './screens/PaymentCancelScreen';
+import { ConversationScreen } from './screens/ConversationScreen';
 import { useNavigation } from '@react-navigation/native';
 import { theme } from '../theme';
+import { useQuery } from 'convex/react';
+import { api } from '@repo/api/convex/_generated/api';
 
 const Tab = createBottomTabNavigator();
 const RootStack = createNativeStackNavigator();
@@ -53,6 +57,13 @@ const CenterScanIcon = ({ color, size, focused }: { color: string, size: number,
 function HomeTabs() {
   const { t } = useTypedTranslation();
   const navigation = useNavigation();
+  const { user } = useAuth();
+  
+  // Get unread message count for the current user
+  const unreadCount = useQuery(
+    api.queries.chat.getUnreadMessageCount, 
+    user ? {} : "skip"
+  );
 
 
   return (
@@ -144,18 +155,19 @@ function HomeTabs() {
             tabBarIcon: ({ color }) => (
               <TicketIcon color={color} size={26} />
             ),
-            tabBarBadge: 3,
+            // tabBarBadge: 3, // Removed hardcoded badge
           }}
         />
         <Tab.Screen
-          name="Settings"
-          component={SettingsScreen}
+          name="Messages"
+          component={MessagesScreen}
           options={{
-            title: t('navigation.settings'),
-            tabBarLabel: 'Profile',
+            title: 'Messages',
+            tabBarLabel: 'Messages',
             tabBarIcon: ({ color }) => (
-              <UserCogIcon color={color} size={26} />
+              <MessageCircleIcon color={color} size={26} />
             ),
+            tabBarBadge: unreadCount && unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : undefined,
           }}
         />
       </Tab.Navigator>
@@ -305,6 +317,14 @@ export function RootNavigator() {
               headerShown: false,
             }}
           />
+          <RootStack.Screen
+            name="Conversation"
+            component={ConversationScreen}
+            options={{
+              animation: 'slide_from_right',
+              headerShown: false,
+            }}
+          />
         </>
       ) : (
         <>
@@ -400,6 +420,11 @@ export type RootStackParamList = {
   PaymentCancel: {
     type: 'subscription' | 'purchase';
   };
+  Conversation: {
+    threadId: string;
+    venueName: string;
+    venueImage?: string;
+  };
   // Auth screens
   Landing: undefined;
   // Modal screens
@@ -418,7 +443,7 @@ export type TabParamList = {
   Explore: undefined;
   Scan: undefined;
   Bookings: undefined;
-  Settings: undefined;
+  Messages: undefined;
 };
 
 export type RootStackParamListWithNestedTabs = {
@@ -448,6 +473,11 @@ export type RootStackParamListWithNestedTabs = {
     };
   };
   NotFound: undefined;
+  Conversation: {
+    threadId: string;
+    venueName: string;
+    venueImage?: string;
+  };
   // Auth screens
   Landing: undefined;
   // Modal screens

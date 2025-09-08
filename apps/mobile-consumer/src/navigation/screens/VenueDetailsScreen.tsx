@@ -2,9 +2,9 @@ import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Dimensions, ActivityIndicator, Linking } from 'react-native';
 import { Image } from 'expo-image';
 import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
-import { StarIcon, ArrowLeftIcon, ShowerHeadIcon, AccessibilityIcon, UserIcon, ClockIcon, CheckCircleIcon } from 'lucide-react-native';
+import { StarIcon, ArrowLeftIcon, ShowerHeadIcon, AccessibilityIcon, UserIcon, ClockIcon, CheckCircleIcon, MessageCircleIcon } from 'lucide-react-native';
 import Carousel from 'react-native-reanimated-carousel';
-import { useQuery } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { ClassCard } from '../../components/ClassCard';
 import { Divider } from '../../components/Divider';
@@ -53,6 +53,9 @@ export function VenueDetailsScreen() {
     const venue = useQuery(api.queries.venues.getVenueById, {
         venueId: venueId as Id<"venues">
     });
+
+    // Chat mutations
+    const getOrCreateThread = useMutation(api.mutations.chat.getOrCreateThread);
 
     // Compute distance from user to venue when coords are available
     useEffect(() => {
@@ -219,6 +222,25 @@ export function VenueDetailsScreen() {
         }
     };
 
+    const handleMessageVenue = async () => {
+        try {
+            // Create or get existing thread
+            const result = await getOrCreateThread({
+                venueId: venueId as Id<"venues">
+            });
+
+            // Navigate to conversation screen
+            navigation.navigate('Conversation', {
+                threadId: result.threadId,
+                venueName: venue?.name || 'Venue',
+                venueImage: imageUrls[0], // Use first venue image if available
+            });
+        } catch (error) {
+            console.error('Failed to open conversation:', error);
+            // TODO: Show error toast to user
+        }
+    };
+
     const handleScroll = (event: any) => {
         const scrollY = event.nativeEvent.contentOffset.y;
 
@@ -315,6 +337,16 @@ export function VenueDetailsScreen() {
                 <Text style={styles.venueDescription} numberOfLines={2}>
                     {distanceLabel ? `${venueAddress} • ${distanceLabel}` : venueAddress}
                 </Text>
+
+                {/* Message Venue Button */}
+                <TouchableOpacity
+                    style={styles.messageVenueButton}
+                    onPress={handleMessageVenue}
+                    activeOpacity={0.8}
+                >
+                    <MessageCircleIcon size={20} color={theme.colors.zinc[800]} />
+                    <Text style={styles.messageVenueText}>Message Venue</Text>
+                </TouchableOpacity>
 
                 {/* 3-Column Row */}
                 <View style={styles.venueStatsRow}>
@@ -1108,6 +1140,25 @@ const styles = StyleSheet.create({
         lineHeight: 20,
         marginBottom: 16,
         paddingHorizontal: 8,
+    },
+    messageVenueButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: theme.colors.zinc[50],
+        borderWidth: 1,
+        borderColor: theme.colors.zinc[700],
+        borderRadius: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        marginHorizontal: 20,
+        marginBottom: 20,
+        gap: 8,
+    },
+    messageVenueText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: theme.colors.zinc[800],
     },
     venueStatsRow: {
         flexDirection: 'row',

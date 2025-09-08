@@ -18,11 +18,13 @@ import { Route as AppLayoutRouteImport } from './routes/_app-layout'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppLayoutTemplatesRouteImport } from './routes/_app-layout/templates'
 import { Route as AppLayoutSettingsRouteImport } from './routes/_app-layout/settings'
+import { Route as AppLayoutMessagesRouteImport } from './routes/_app-layout/messages'
 import { Route as AppLayoutEarningsRouteImport } from './routes/_app-layout/earnings'
 import { Route as AppLayoutDashboardRouteImport } from './routes/_app-layout/dashboard'
 import { Route as AppLayoutCalendarRouteImport } from './routes/_app-layout/calendar'
 import { Route as AppLayoutBookingsRouteImport } from './routes/_app-layout/bookings'
 import { Route as AppLayoutBetterCalendarRouteImport } from './routes/_app-layout/better-calendar'
+import { Route as AppLayoutMessagesConversationThreadIdRouteImport } from './routes/_app-layout/messages/conversation/$threadId'
 
 const SignInTesterRoute = SignInTesterRouteImport.update({
   id: '/sign-in-tester',
@@ -68,6 +70,11 @@ const AppLayoutSettingsRoute = AppLayoutSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppLayoutRoute,
 } as any)
+const AppLayoutMessagesRoute = AppLayoutMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => AppLayoutRoute,
+} as any)
 const AppLayoutEarningsRoute = AppLayoutEarningsRouteImport.update({
   id: '/earnings',
   path: '/earnings',
@@ -93,6 +100,12 @@ const AppLayoutBetterCalendarRoute = AppLayoutBetterCalendarRouteImport.update({
   path: '/better-calendar',
   getParentRoute: () => AppLayoutRoute,
 } as any)
+const AppLayoutMessagesConversationThreadIdRoute =
+  AppLayoutMessagesConversationThreadIdRouteImport.update({
+    id: '/conversation/$threadId',
+    path: '/conversation/$threadId',
+    getParentRoute: () => AppLayoutMessagesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -106,8 +119,10 @@ export interface FileRoutesByFullPath {
   '/calendar': typeof AppLayoutCalendarRoute
   '/dashboard': typeof AppLayoutDashboardRoute
   '/earnings': typeof AppLayoutEarningsRoute
+  '/messages': typeof AppLayoutMessagesRouteWithChildren
   '/settings': typeof AppLayoutSettingsRoute
   '/templates': typeof AppLayoutTemplatesRoute
+  '/messages/conversation/$threadId': typeof AppLayoutMessagesConversationThreadIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -121,8 +136,10 @@ export interface FileRoutesByTo {
   '/calendar': typeof AppLayoutCalendarRoute
   '/dashboard': typeof AppLayoutDashboardRoute
   '/earnings': typeof AppLayoutEarningsRoute
+  '/messages': typeof AppLayoutMessagesRouteWithChildren
   '/settings': typeof AppLayoutSettingsRoute
   '/templates': typeof AppLayoutTemplatesRoute
+  '/messages/conversation/$threadId': typeof AppLayoutMessagesConversationThreadIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -138,8 +155,10 @@ export interface FileRoutesById {
   '/_app-layout/calendar': typeof AppLayoutCalendarRoute
   '/_app-layout/dashboard': typeof AppLayoutDashboardRoute
   '/_app-layout/earnings': typeof AppLayoutEarningsRoute
+  '/_app-layout/messages': typeof AppLayoutMessagesRouteWithChildren
   '/_app-layout/settings': typeof AppLayoutSettingsRoute
   '/_app-layout/templates': typeof AppLayoutTemplatesRoute
+  '/_app-layout/messages/conversation/$threadId': typeof AppLayoutMessagesConversationThreadIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -155,8 +174,10 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/dashboard'
     | '/earnings'
+    | '/messages'
     | '/settings'
     | '/templates'
+    | '/messages/conversation/$threadId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -170,8 +191,10 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/dashboard'
     | '/earnings'
+    | '/messages'
     | '/settings'
     | '/templates'
+    | '/messages/conversation/$threadId'
   id:
     | '__root__'
     | '/'
@@ -186,8 +209,10 @@ export interface FileRouteTypes {
     | '/_app-layout/calendar'
     | '/_app-layout/dashboard'
     | '/_app-layout/earnings'
+    | '/_app-layout/messages'
     | '/_app-layout/settings'
     | '/_app-layout/templates'
+    | '/_app-layout/messages/conversation/$threadId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -265,6 +290,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLayoutSettingsRouteImport
       parentRoute: typeof AppLayoutRoute
     }
+    '/_app-layout/messages': {
+      id: '/_app-layout/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof AppLayoutMessagesRouteImport
+      parentRoute: typeof AppLayoutRoute
+    }
     '/_app-layout/earnings': {
       id: '/_app-layout/earnings'
       path: '/earnings'
@@ -300,8 +332,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLayoutBetterCalendarRouteImport
       parentRoute: typeof AppLayoutRoute
     }
+    '/_app-layout/messages/conversation/$threadId': {
+      id: '/_app-layout/messages/conversation/$threadId'
+      path: '/conversation/$threadId'
+      fullPath: '/messages/conversation/$threadId'
+      preLoaderRoute: typeof AppLayoutMessagesConversationThreadIdRouteImport
+      parentRoute: typeof AppLayoutMessagesRoute
+    }
   }
 }
+
+interface AppLayoutMessagesRouteChildren {
+  AppLayoutMessagesConversationThreadIdRoute: typeof AppLayoutMessagesConversationThreadIdRoute
+}
+
+const AppLayoutMessagesRouteChildren: AppLayoutMessagesRouteChildren = {
+  AppLayoutMessagesConversationThreadIdRoute:
+    AppLayoutMessagesConversationThreadIdRoute,
+}
+
+const AppLayoutMessagesRouteWithChildren =
+  AppLayoutMessagesRoute._addFileChildren(AppLayoutMessagesRouteChildren)
 
 interface AppLayoutRouteChildren {
   AppLayoutBetterCalendarRoute: typeof AppLayoutBetterCalendarRoute
@@ -309,6 +360,7 @@ interface AppLayoutRouteChildren {
   AppLayoutCalendarRoute: typeof AppLayoutCalendarRoute
   AppLayoutDashboardRoute: typeof AppLayoutDashboardRoute
   AppLayoutEarningsRoute: typeof AppLayoutEarningsRoute
+  AppLayoutMessagesRoute: typeof AppLayoutMessagesRouteWithChildren
   AppLayoutSettingsRoute: typeof AppLayoutSettingsRoute
   AppLayoutTemplatesRoute: typeof AppLayoutTemplatesRoute
 }
@@ -319,6 +371,7 @@ const AppLayoutRouteChildren: AppLayoutRouteChildren = {
   AppLayoutCalendarRoute: AppLayoutCalendarRoute,
   AppLayoutDashboardRoute: AppLayoutDashboardRoute,
   AppLayoutEarningsRoute: AppLayoutEarningsRoute,
+  AppLayoutMessagesRoute: AppLayoutMessagesRouteWithChildren,
   AppLayoutSettingsRoute: AppLayoutSettingsRoute,
   AppLayoutTemplatesRoute: AppLayoutTemplatesRoute,
 }

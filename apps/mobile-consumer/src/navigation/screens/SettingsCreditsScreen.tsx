@@ -153,13 +153,12 @@ export function SettingsCreditsScreen() {
           <SettingsRow
             title="Current Balance"
             subtitle="Available credits for booking classes"
-            rightElement={
+            renderRightSide={() => (
               <View style={styles.creditsBadge}>
                 <DiamondIcon size={16} color={theme.colors.emerald[600]} />
                 <Text style={styles.creditsBadgeText}>{creditBalance?.balance || 0}</Text>
               </View>
-            }
-            showChevron={false}
+            )}
           />
         </SettingsGroup>
 

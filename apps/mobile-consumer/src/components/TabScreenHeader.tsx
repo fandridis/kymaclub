@@ -4,13 +4,19 @@ import { theme } from '../theme';
 
 interface TabScreenHeaderProps {
   title: string;
+  renderLeftSide?: () => React.ReactNode;
   renderRightSide?: () => React.ReactNode;
 }
 
-export function TabScreenHeader({ title, renderRightSide }: TabScreenHeaderProps) {
+export function TabScreenHeader({ title, renderLeftSide, renderRightSide }: TabScreenHeaderProps) {
   return (
     <View style={styles.headerContainer}>
-      <Text style={styles.title}>{title}</Text>
+      {renderLeftSide && (
+        <View style={styles.leftSide}>
+          {renderLeftSide()}
+        </View>
+      )}
+      <Text style={[styles.title, (renderLeftSide || renderRightSide) && styles.titleWithSides]}>{title}</Text>
       {renderRightSide && (
         <View style={styles.rightSide}>
           {renderRightSide()}
@@ -35,6 +41,14 @@ const styles = StyleSheet.create({
     fontWeight: theme.fontWeight.black,
     color: theme.colors.zinc[900],
     flex: 1,
+  },
+  titleWithSides: {
+    textAlign: 'center',
+  },
+  leftSide: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   rightSide: {
     flexDirection: 'row',

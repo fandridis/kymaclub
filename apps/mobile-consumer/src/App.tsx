@@ -233,7 +233,7 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
                   News: 'news',
                   Explore: 'explore',
                   Bookings: 'bookings',
-                  Settings: 'settings',
+                  Messages: 'messages',
                 },
               },
               // Modal screens with parameters

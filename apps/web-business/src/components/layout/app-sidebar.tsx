@@ -9,14 +9,21 @@ import {
 import { NavGroup } from '@/components/layout/nav-group'
 import { NavUser } from '@/components/layout/nav-user'
 // import { TeamSwitcher } from '@/components/layout/team-switcher'
-import { sidebarData } from './app-sidebar-data'
+import { getSidebarData } from './app-sidebar-data'
 import logoSrc from '@/assets/kymaclub-square-logo.png'
 import { cn } from '@/lib/utils'
+import { useQuery } from 'convex/react'
+import { api } from '@repo/api/convex/_generated/api'
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-    const { state, isMobile } = useSidebar()
+    const { state } = useSidebar()
+
+    // Get unread message count for business
+    const unreadCountQuery = useQuery(api.queries.chat.getBusinessUnreadMessageCount, {})
+    const unreadMessagesCount = unreadCountQuery || 0
 
     const isCollapsed = state === 'collapsed'
+    const sidebarData = getSidebarData(unreadMessagesCount)
 
     return (
         <Sidebar collapsible='icon' variant='floating' {...props}>

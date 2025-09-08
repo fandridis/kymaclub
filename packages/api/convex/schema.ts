@@ -748,6 +748,112 @@ export const venueReviewsFields = {
   ...softDeleteFields,
 };
 
+export const chatMessageThreadsFields = {
+  businessId: v.id("businesses"),
+  venueId: v.id("venues"),
+  userId: v.id("users"), // The consumer user
+
+  // Thread status and metadata
+  status: v.union(
+    v.literal("active"),
+    v.literal("archived"),
+    v.literal("blocked")
+  ),
+
+  // Denormalized data for efficient display
+  userSnapshot: v.object({
+    name: v.optional(v.string()),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+  }),
+
+  venueSnapshot: v.object({
+    name: v.string(),
+  }),
+
+  // Thread summary info
+  lastMessageAt: v.number(), // For sorting threads
+  lastMessagePreview: v.optional(v.string()), // First 100 chars of last message
+  lastMessageSender: v.union(v.literal("consumer"), v.literal("venue")),
+
+  // Unread counts (for both sides)
+  unreadCountConsumer: v.number(), // Messages venue sent that consumer hasn't read
+  unreadCountVenue: v.number(), // Messages consumer sent that venue hasn't read
+
+  // Total message count (for pagination)
+  messageCount: v.number(),
+
+  ...auditFields,
+  ...softDeleteFields,
+};
+
+export const chatMessagesFields = {
+  threadId: v.id("chatMessageThreads"),
+  businessId: v.id("businesses"), // For multi-tenancy
+  venueId: v.id("venues"),
+
+  // Message content
+  content: v.string(),
+  messageType: v.union(
+    v.literal("text"),           // Regular text message
+    v.literal("system"),         // System generated message
+    v.literal("cancellation_card"), // Special cancellation notification
+    v.literal("booking_reference"), // Message referencing a specific booking
+    v.literal("image"),          // Image attachment (future)
+    v.literal("file")            // File attachment (future)
+  ),
+
+  // Sender info
+  senderType: v.union(v.literal("consumer"), v.literal("venue"), v.literal("system")),
+  senderId: v.optional(v.id("users")), // null for system messages
+
+  // Sender snapshot for display
+  senderSnapshot: v.optional(v.object({
+    name: v.optional(v.string()),
+    email: v.optional(v.string()),
+    businessRole: v.optional(v.string()), // For venue staff messages
+  })),
+
+  // Read tracking
+  readByConsumer: v.boolean(),
+  readByVenue: v.boolean(),
+  readByConsumerAt: v.optional(v.number()),
+  readByVenueAt: v.optional(v.number()),
+
+  // Optional booking context
+  relatedBookingId: v.optional(v.id("bookings")),
+  relatedClassInstanceId: v.optional(v.id("classInstances")),
+
+  // Cancellation card specific data
+  cancellationData: v.optional(v.object({
+    className: v.string(),
+    instructorName: v.string(),
+    originalDateTime: v.number(),
+    cancellationReason: v.optional(v.string()),
+    canRebook: v.boolean(),
+  })),
+
+  // Message metadata
+  editedAt: v.optional(v.number()),
+  editedBy: v.optional(v.id("users")),
+  isEdited: v.optional(v.boolean()),
+
+  // System message context
+  systemContext: v.optional(v.object({
+    type: v.union(
+      v.literal("booking_confirmed"),
+      v.literal("booking_cancelled"),
+      v.literal("class_cancelled"),
+      v.literal("payment_processed"),
+      v.literal("thread_created")
+    ),
+    metadata: v.optional(v.any()), // Flexible metadata for different system message types
+  })),
+
+  ...auditFields,
+  ...softDeleteFields,
+};
+
 export const subscriptionEventsFields = {
   subscriptionId: v.optional(v.id("subscriptions")), // Database subscription ID (null if not created yet)
   stripeSubscriptionId: v.string(), // Stripe subscription ID
@@ -936,4 +1042,39 @@ export default defineSchema({
     .index("by_venue_visible_created", ["venueId", "isVisible", "createdAt"])
     .index("by_business_created", ["businessId", "createdAt"])
     .index("by_deleted", ["deleted"]),
+
+  /**
+   * Message Threads - One thread per user-venue relationship
+   */
+  chatMessageThreads: defineTable(chatMessageThreadsFields)
+    .index("by_business", ["businessId"])
+    .index("by_venue", ["venueId"])
+    .index("by_user", ["userId"])
+    .index("by_user_venue", ["userId", "venueId"]) // Unique constraint enforced at business logic level
+    .index("by_venue_last_message", ["venueId", "lastMessageAt"])
+    .index("by_business_last_message", ["businessId", "lastMessageAt"])
+    .index("by_user_last_message", ["userId", "lastMessageAt"])
+    .index("by_venue_status", ["venueId", "status"])
+    .index("by_business_status", ["businessId", "status"])
+    .index("by_venue_deleted_last_message", ["venueId", "deleted", "lastMessageAt"])
+    .index("by_business_deleted_status", ["businessId", "deleted", "status"]),
+
+  /**
+   * Messages - Individual messages within threads
+   */
+  chatMessages: defineTable(chatMessagesFields)
+    .index("by_thread", ["threadId"])
+    .index("by_thread_created", ["threadId", "createdAt"])
+    .index("by_business", ["businessId"])
+    .index("by_venue", ["venueId"])
+    .index("by_sender", ["senderId"])
+    .index("by_sender_type", ["senderType"])
+    .index("by_message_type", ["messageType"])
+    .index("by_related_booking", ["relatedBookingId"])
+    .index("by_related_class_instance", ["relatedClassInstanceId"])
+    .index("by_thread_read_consumer", ["threadId", "readByConsumer"])
+    .index("by_thread_read_venue", ["threadId", "readByVenue"])
+    .index("by_venue_created", ["venueId", "createdAt"])
+    .index("by_business_created", ["businessId", "createdAt"])
+    .index("by_thread_deleted_created", ["threadId", "deleted", "createdAt"]),
 });
