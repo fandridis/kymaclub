@@ -223,14 +223,14 @@ export const getLastMinuteDiscountedClassInstances = query({
     args: getLastMinuteDiscountedClassInstancesArgs,
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
-        
+
         // Get all scheduled class instances in the 8-hour window
         const instances = await ctx.db
             .query("classInstances")
             .withIndex("by_start_time", (q) =>
                 q.gte("startTime", args.startDate)
             )
-            .filter(q => 
+            .filter(q =>
                 q.and(
                     q.lte(q.field("startTime"), args.endDate),
                     q.eq(q.field("status"), "scheduled"),
@@ -242,7 +242,7 @@ export const getLastMinuteDiscountedClassInstances = query({
         // Get templates for pricing calculations
         const templateIds = [...new Set(instances.map(i => i.templateId))];
         const templateMap = new Map();
-        
+
         for (const id of templateIds) {
             const template = await ctx.db.get(id);
             if (template) {
@@ -252,14 +252,14 @@ export const getLastMinuteDiscountedClassInstances = query({
 
         // Calculate pricing and filter for discounted classes
         const discountedInstances = [];
-        
+
         for (const instance of instances) {
             const template = templateMap.get(instance.templateId);
             if (!template) continue;
 
             // Calculate pricing with discounts
             const pricingResult = await pricingOperations.calculateFinalPrice(instance, template);
-            
+
             // Only include classes with actual discounts (discount > 0)
             if (pricingResult.discountPercentage > 0) {
                 discountedInstances.push({
@@ -274,5 +274,80 @@ export const getLastMinuteDiscountedClassInstances = query({
         return discountedInstances
             .sort((a, b) => a.startTime - b.startTime)
             .slice(0, args.limit || 10);
+    }
+});
+
+/***************************************************************
+ * Get Consumer Class Instances with Booking Status
+ * 
+ * Optimized query for mobile consumer app that returns class instances
+ * enriched with user's booking status. Performs efficient batch lookup
+ * to avoid N+1 query problems.
+ * 
+ * Performance: 2 DB queries regardless of number of class instances
+ ***************************************************************/
+
+export const getConsumerClassInstancesWithBookingStatusArgs = v.object({
+    startDate: v.number(),
+    endDate: v.number(),
+    limit: v.optional(v.number()),
+});
+
+export const getConsumerClassInstancesWithBookingStatus = query({
+    args: getConsumerClassInstancesWithBookingStatusArgs,
+    handler: async (ctx, args) => {
+        const user = await getAuthenticatedUserOrThrow(ctx);
+        const limit = args.limit || 100; // Reasonable default to prevent performance issues
+
+        // Get class instances for date range (all businesses - consumers see everything)
+        const instances = await ctx.db
+            .query("classInstances")
+            .withIndex("by_start_time", (q) =>
+                q.gte("startTime", args.startDate)
+            )
+            .filter(q =>
+                q.and(
+                    q.lte(q.field("startTime"), args.endDate),
+                    q.eq(q.field("status"), "scheduled"),
+                    q.neq(q.field("deleted"), true)
+                )
+            )
+            .order("asc") // Sort by start time
+            .take(limit);
+
+        if (instances.length === 0) {
+            return [];
+        }
+
+
+        // Get user's active bookings (efficient - typically small dataset per user)
+        const userBookings = await ctx.db
+            .query("bookings")
+            .withIndex("by_user", q => q.eq("userId", user._id))
+            .filter(q =>
+                q.and(
+                    q.neq(q.field("deleted"), true),
+                    // Only include active bookings (not cancelled)
+                    q.neq(q.field("status"), "cancelled_by_consumer"),
+                    q.neq(q.field("status"), "cancelled_by_business")
+                )
+            )
+            .collect();
+
+        // Create efficient lookup: O(n) complexity
+        const instanceIds = new Set(instances.map(i => i._id));
+        const relevantBookings = userBookings.filter(booking =>
+            instanceIds.has(booking.classInstanceId)
+        );
+        const bookingMap = new Map(
+            relevantBookings.map(booking => [booking.classInstanceId, booking])
+        );
+
+        // Enrich instances with booking status: O(n) complexity
+        return instances.map(instance => ({
+            ...instance,
+            userBooking: bookingMap.get(instance._id) || null,
+            isBookedByUser: bookingMap.has(instance._id),
+        }));
     }
 });

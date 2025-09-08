@@ -77,7 +77,8 @@ export function VenueClassInstancesScreen() {
 
     const { classInstances: allClassInstances, loading } = useClassInstances({
         startDate: now,
-        endDate: fourteenDaysFromNow
+        endDate: fourteenDaysFromNow,
+        includeBookingStatus: true, // Enable booking status for venue classes
     });
 
     // Filter class instances for this venue

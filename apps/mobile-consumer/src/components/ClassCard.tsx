@@ -1,6 +1,6 @@
 import React, { memo, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { ClockIcon, DiamondIcon, UserIcon } from 'lucide-react-native';
+import { ClockIcon, DiamondIcon, UserIcon, CheckCircleIcon } from 'lucide-react-native';
 import { useTypedTranslation } from '../i18n/typed';
 import type { ClassInstance } from '../hooks/use-class-instances';
 import { centsToCredits } from '@repo/utils/credits';
@@ -62,19 +62,22 @@ function findBestDiscountRule(rules: ClassDiscountRule[], hoursUntilClass: numbe
   return bestRule ? { rule: bestRule, ruleName: bestRule.name } : null;
 }
 
-// Helper functions for discount display
-function getDiscountBadgeText(discountResult: DiscountCalculationResult): string {
-  if (!discountResult.appliedDiscount) return '';
+// Helper functions for booking window display
+function getBookingWindowText(classInstance: ClassInstance): string {
+  if (!classInstance.bookingWindow?.minHours) return '';
 
-  const percentage = Math.floor((discountResult.appliedDiscount.creditsSaved / discountResult.originalPrice) * 10) / 10;
-  const ruleName = discountResult.appliedDiscount.ruleName;
+  const now = Date.now();
+  const classStartTime = classInstance.startTime;
+  const bookingEndTime = classStartTime - (classInstance.bookingWindow.minHours * 60 * 60 * 1000);
+  const timeUntilBookingEnds = Math.max(0, bookingEndTime - now);
 
-  if (ruleName.toLowerCase().includes('early')) {
-    return `Early Bird: -${percentage.toFixed(1)}%`;
-  } else if (ruleName.toLowerCase().includes('last') || ruleName.toLowerCase().includes('minute')) {
-    return `Last minute: -${percentage.toFixed(1)}%`;
+  const hours = Math.floor(timeUntilBookingEnds / (1000 * 60 * 60));
+  const minutes = Math.floor((timeUntilBookingEnds % (1000 * 60 * 60)) / (1000 * 60));
+
+  if (hours > 0) {
+    return `Closes in: ${hours}h ${minutes}m`;
   } else {
-    return `Discount: -${percentage.toFixed(1)}%`;
+    return `Closes in: ${minutes}m`;
   }
 }
 
@@ -89,7 +92,7 @@ function getDiscountTimingText(discountResult: DiscountCalculationResult, classI
 
   // Find the applied rule by name
   const appliedRule = discountRules.find(rule => rule.name === discountResult.appliedDiscount?.ruleName);
-  
+
   // Don't show timing text for "always" type discounts
   if (appliedRule?.condition.type === 'always') {
     return '';
@@ -179,6 +182,9 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
   const spotsLeft = Math.max(0, (classInstance.capacity ?? 0) - (classInstance.bookedCount ?? 0));
   const isSoldOut = spotsLeft === 0;
 
+  // Check if user has booked this class (available when includeBookingStatus=true)
+  const isBookedByUser = 'isBookedByUser' in classInstance ? Boolean(classInstance.isBookedByUser) : false;
+
   // Calculate discount pricing
   const discountResult = useMemo(() => {
     const result = calculateClassDiscount(classInstance);
@@ -187,7 +193,11 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
 
   return (
     <TouchableOpacity
-      style={[styles.container, isSoldOut && styles.soldOutContainer]}
+      style={[
+        styles.container,
+        isSoldOut && styles.soldOutContainer,
+        isBookedByUser && styles.bookedContainer
+      ]}
       onPress={() => onPress?.(classInstance)}
       activeOpacity={0.7}
       disabled={isSoldOut}
@@ -208,9 +218,11 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
       {/* Right side - Class details */}
       <View style={styles.detailsSection}>
         <View style={styles.headerRow}>
-          <Text style={[styles.title, isSoldOut && styles.soldOutText]} numberOfLines={1}>
-            {classInstance.name}
-          </Text>
+          <View style={styles.titleContainer}>
+            <Text style={[styles.title, isSoldOut && styles.soldOutText]} numberOfLines={1}>
+              {classInstance.name}
+            </Text>
+          </View>
           <View style={styles.priceContainer}>
             {discountResult.appliedDiscount ? (
               <View style={styles.priceRowContainer}>
@@ -252,14 +264,22 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
           </Text>
         </View>
 
-        {/* Discount timing info */}
-        {discountResult.appliedDiscount && (
-          <View style={styles.discountTimingRow}>
-            <Text style={styles.discountTimingText}>
-              {getDiscountTimingText(discountResult, classInstance)}
-            </Text>
-          </View>
-        )}
+        {/* Badges row - always present for consistent spacing */}
+        <View style={styles.badgesRow}>
+          {classInstance.bookingWindow?.minHours && (
+            <View style={styles.bookingWindowBadge}>
+              <Text style={styles.bookingWindowBadgeText}>
+                {getBookingWindowText(classInstance)}
+              </Text>
+            </View>
+          )}
+          {isBookedByUser && (
+            <View style={styles.bookedBadge}>
+              <CheckCircleIcon size={14} color={theme.colors.emerald[950]} strokeWidth={2} />
+              <Text style={styles.bookedText}>Already Booked</Text>
+            </View>
+          )}
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -270,13 +290,17 @@ ClassCard.displayName = 'ClassCard';
 const styles = StyleSheet.create({
   container: {
     backgroundColor: 'transparent',
-    padding: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
   soldOutContainer: {
     opacity: 0.6,
+  },
+  bookedContainer: {
+    backgroundColor: theme.colors.emerald[50],
   },
   timeSection: {
     width: 64,
@@ -313,12 +337,48 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 4,
   },
+  titleContainer: {
+    flex: 1,
+    marginRight: 8,
+  },
   title: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    flex: 1,
-    marginRight: 8,
+    marginBottom: 2,
+  },
+  badgesRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    minHeight: 20,
+    marginTop: 8,
+    gap: 8,
+  },
+  bookingWindowBadge: {
+    backgroundColor: theme.colors.sky[100],
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  bookingWindowBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.sky[800],
+  },
+  bookedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: theme.colors.emerald[100],
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  bookedText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.emerald[950],
   },
   priceContainer: {
     flexDirection: 'row',
@@ -339,14 +399,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  discountTimingRow: {
-    marginTop: 4,
-  },
-  discountTimingText: {
-    fontSize: 13,
-    color: theme.colors.amber[500],
-    fontWeight: '600',
   },
   originalPriceText: {
     fontSize: 14,

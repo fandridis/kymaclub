@@ -2,7 +2,7 @@ import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Dimensions, ActivityIndicator, Linking } from 'react-native';
 import { Image } from 'expo-image';
 import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
-import { StarIcon, ArrowLeftIcon, ShowerHeadIcon, AccessibilityIcon, UserIcon, ClockIcon } from 'lucide-react-native';
+import { StarIcon, ArrowLeftIcon, ShowerHeadIcon, AccessibilityIcon, UserIcon, ClockIcon, CheckCircleIcon } from 'lucide-react-native';
 import Carousel from 'react-native-reanimated-carousel';
 import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
@@ -91,7 +91,8 @@ export function VenueDetailsScreen() {
 
     const { classInstances: allClassInstances } = useClassInstances({
         startDate: now,
-        endDate: sevenDaysFromNow
+        endDate: sevenDaysFromNow,
+        includeBookingStatus: true, // Enable booking status for venue classes
     });
 
     // Filter class instances for this venue and process for upcoming cards
@@ -139,12 +140,16 @@ export function VenueDetailsScreen() {
                 // Calculate spots available
                 const spotsLeft = Math.max(0, (classInstance.capacity ?? 0) - (classInstance.bookedCount ?? 0));
 
+                // Check if user has booked this class
+                const isBookedByUser = 'isBookedByUser' in classInstance ? Boolean(classInstance.isBookedByUser) : false;
+
                 return {
                     id: classInstance._id,
                     date: dateDisplay,
                     timeRange,
                     name: classInstance.name,
                     spotsLeft,
+                    isBookedByUser,
                     classInstance
                 };
             });
@@ -492,7 +497,11 @@ export function VenueDetailsScreen() {
 
                                     return (
                                         <TouchableOpacity
-                                            style={[styles.baseCarouselCard, styles.upcomingCarouselCard]}
+                                            style={[
+                                                styles.baseCarouselCard,
+                                                styles.upcomingCarouselCard,
+                                                classItem.isBookedByUser && styles.bookedCarouselCard
+                                            ]}
                                             onPress={() => {
                                                 navigation.navigate('ClassDetailsModal', {
                                                     classInstance: classItem.classInstance
@@ -511,9 +520,16 @@ export function VenueDetailsScreen() {
                                                     {classItem.name}
                                                 </Text>
                                                 <View style={styles.upcomingSpotsContainer}>
-                                                    <Text style={styles.upcomingSpotsText}>
-                                                        {classItem.spotsLeft} spots available
-                                                    </Text>
+                                                    {classItem.isBookedByUser ? (
+                                                        <View style={styles.bookedBadge}>
+                                                            <CheckCircleIcon size={12} color={theme.colors.emerald[950]} strokeWidth={2} />
+                                                            <Text style={styles.bookedText}>Already Booked</Text>
+                                                        </View>
+                                                    ) : (
+                                                        <Text style={styles.upcomingSpotsText}>
+                                                            {classItem.spotsLeft} spots available
+                                                        </Text>
+                                                    )}
                                                 </View>
                                             </View>
                                         </TouchableOpacity>
@@ -709,6 +725,10 @@ const styles = StyleSheet.create({
     upcomingCarouselCard: {
         width: CAROUSEL_ITEM_WIDTH,
         height: UPCOMING_CAROUSEL_HEIGHT,
+    },
+    bookedCarouselCard: {
+        backgroundColor: theme.colors.emerald[50],
+        borderColor: theme.colors.emerald[200],
     },
     upcomingCardContent: {
         flex: 1,
@@ -1134,5 +1154,20 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '500',
         color: '#6b7280',
+    },
+    bookedBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: theme.colors.emerald[100],
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+        alignSelf: 'flex-start',
+    },
+    bookedText: {
+        fontSize: 10,
+        fontWeight: '600',
+        color: theme.colors.emerald[950],
     },
 });

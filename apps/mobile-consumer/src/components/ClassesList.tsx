@@ -26,6 +26,14 @@ export function ClassesList({ selectedDate, searchFilters }: ClassesListProps) {
   // Get class instances for the selected date
   const selectedDateStart = useMemo(() => {
     const date = new Date(selectedDate);
+    const now = new Date();
+    
+    // If selected date is today, use current time as start to filter out past classes
+    if (date.toDateString() === now.toDateString()) {
+      return now.getTime();
+    }
+    
+    // For future dates, start from midnight
     date.setHours(0, 0, 0, 0);
     return date.getTime();
   }, [selectedDate]);
@@ -39,6 +47,7 @@ export function ClassesList({ selectedDate, searchFilters }: ClassesListProps) {
   const { classInstances, loading: classInstancesLoading } = useClassInstances({
     startDate: selectedDateStart,
     endDate: selectedDateEnd,
+    includeBookingStatus: true, // Enable booking status for consumer app
   });
 
   // Apply filters with debounce
@@ -135,8 +144,8 @@ const styles = StyleSheet.create({
     color: theme.colors.zinc[500],
   },
   listContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
   emptyContainer: {
     flex: 1,
