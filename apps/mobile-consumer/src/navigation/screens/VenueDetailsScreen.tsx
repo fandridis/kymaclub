@@ -2,7 +2,7 @@ import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Dimensions, ActivityIndicator, Linking } from 'react-native';
 import { Image } from 'expo-image';
 import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
-import { StarIcon, ArrowLeftIcon, ShowerHeadIcon, AccessibilityIcon, UserIcon, ClockIcon, CheckCircleIcon, MessageCircleIcon } from 'lucide-react-native';
+import { StarIcon, ArrowLeftIcon, ShowerHeadIcon, AccessibilityIcon, UserIcon, ClockIcon, CheckCircleIcon, MessageCircleIcon, PhoneIcon, MailIcon, GlobeIcon, MapPinIcon } from 'lucide-react-native';
 import Carousel from 'react-native-reanimated-carousel';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
@@ -338,15 +338,6 @@ export function VenueDetailsScreen() {
                     {distanceLabel ? `${venueAddress} • ${distanceLabel}` : venueAddress}
                 </Text>
 
-                {/* Message Venue Button */}
-                <TouchableOpacity
-                    style={styles.messageVenueButton}
-                    onPress={handleMessageVenue}
-                    activeOpacity={0.8}
-                >
-                    <MessageCircleIcon size={20} color={theme.colors.zinc[800]} />
-                    <Text style={styles.messageVenueText}>Message Venue</Text>
-                </TouchableOpacity>
 
                 {/* 3-Column Row */}
                 <View style={styles.venueStatsRow}>
@@ -586,6 +577,82 @@ export function VenueDetailsScreen() {
             />
 
             <Divider />
+
+            {/* Contact Section */}
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Contact</Text>
+
+                <View style={styles.contactContainer}>
+                    {/* Address */}
+                    <View style={[
+                        styles.contactItemRow,
+                        !venuePhone && !venueEmail && !venueWebsite && styles.contactItemRowLast
+                    ]}>
+                        <View style={styles.contactIconContainer}>
+                            <MapPinIcon size={18} color={theme.colors.emerald[600]} />
+                        </View>
+                        <View style={styles.contactContent}>
+                            <Text style={styles.contactLabel}>Address</Text>
+                            <Text style={styles.contactText}>{venueAddress}</Text>
+                        </View>
+                    </View>
+
+                    {/* Phone */}
+                    {venuePhone && (
+                        <TouchableOpacity style={[
+                            styles.contactItemRow,
+                            !venueEmail && !venueWebsite && styles.contactItemRowLast
+                        ]} onPress={handlePhonePress} activeOpacity={0.7}>
+                            <View style={styles.contactIconContainer}>
+                                <PhoneIcon size={18} color={theme.colors.emerald[600]} />
+                            </View>
+                            <View style={styles.contactContent}>
+                                <Text style={styles.contactLabel}>Phone</Text>
+                                <Text style={styles.contactText}>{venuePhone}</Text>
+                            </View>
+                        </TouchableOpacity>
+                    )}
+
+                    {/* Email */}
+                    {venueEmail && (
+                        <TouchableOpacity style={[
+                            styles.contactItemRow,
+                            !venueWebsite && styles.contactItemRowLast
+                        ]} onPress={handleEmailPress} activeOpacity={0.7}>
+                            <View style={styles.contactIconContainer}>
+                                <MailIcon size={18} color={theme.colors.emerald[600]} />
+                            </View>
+                            <View style={styles.contactContent}>
+                                <Text style={styles.contactLabel}>Email</Text>
+                                <Text style={styles.contactText}>{venueEmail}</Text>
+                            </View>
+                        </TouchableOpacity>
+                    )}
+
+                    {/* Website */}
+                    {venueWebsite && (
+                        <TouchableOpacity style={[styles.contactItemRow, styles.contactItemRowLast]} onPress={handleWebsitePress} activeOpacity={0.7}>
+                            <View style={styles.contactIconContainer}>
+                                <GlobeIcon size={18} color={theme.colors.emerald[600]} />
+                            </View>
+                            <View style={styles.contactContent}>
+                                <Text style={styles.contactLabel}>Website</Text>
+                                <Text style={[styles.contactText, styles.contactLink]}>{venueWebsite}</Text>
+                            </View>
+                        </TouchableOpacity>
+                    )}
+                </View>
+
+                {/* Message Venue Button */}
+                <TouchableOpacity
+                    style={styles.contactMessageButton}
+                    onPress={handleMessageVenue}
+                    activeOpacity={0.8}
+                >
+                    <MessageCircleIcon size={20} color={theme.colors.zinc[50]} />
+                    <Text style={styles.contactMessageText}>Message Venue</Text>
+                </TouchableOpacity>
+            </View>
 
         </ScrollView>
     );
@@ -897,19 +964,6 @@ const styles = StyleSheet.create({
         flex: 1,
         lineHeight: 20,
     },
-    contactContainer: {
-        gap: 12,
-    },
-    contactItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    contactText: {
-        fontSize: 16,
-        color: '#111827',
-        fontWeight: '600',
-    },
     statusContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -1034,12 +1088,6 @@ const styles = StyleSheet.create({
     contactInfoRight: {
         alignItems: 'flex-end',
     },
-    contactLabel: {
-        fontSize: 12,
-        color: '#6b7280',
-        fontWeight: '500',
-        marginTop: 2,
-    },
     contactValue: {
         fontSize: 18,
         fontWeight: '700',
@@ -1141,24 +1189,78 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         paddingHorizontal: 8,
     },
-    messageVenueButton: {
+    contactContainer: {
+        backgroundColor: 'white',
+        borderRadius: 12,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: theme.colors.zinc[200],
+        overflow: 'hidden',
+    },
+    contactItemRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.zinc[100],
+    },
+    contactItemRowLast: {
+        borderBottomWidth: 0,
+    },
+    contactIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: theme.colors.zinc[100],
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    contactContent: {
+        flex: 1,
+    },
+    contactLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: theme.colors.zinc[500],
+        marginBottom: 4,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    contactText: {
+        fontSize: 16,
+        fontWeight: '500',
+        color: theme.colors.zinc[900],
+        lineHeight: 22,
+    },
+    contactLink: {
+        color: theme.colors.emerald[600],
+        fontWeight: '600',
+    },
+    contactMessageButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: theme.colors.zinc[50],
-        borderWidth: 1,
-        borderColor: theme.colors.zinc[700],
-        borderRadius: 8,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        marginHorizontal: 20,
-        marginBottom: 20,
-        gap: 8,
+        backgroundColor: theme.colors.emerald[600],
+        borderRadius: 12,
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        marginTop: 8,
+        marginBottom: 24,
+        gap: 10,
+        shadowColor: theme.colors.emerald[600],
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
     },
-    messageVenueText: {
+    contactMessageText: {
         fontSize: 16,
         fontWeight: '600',
-        color: theme.colors.zinc[800],
+        color: theme.colors.zinc[50],
     },
     venueStatsRow: {
         flexDirection: 'row',

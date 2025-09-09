@@ -155,3 +155,19 @@ export const sendReply = mutationWithTriggers({
     return result;
   },
 });
+
+/**
+ * Delete a message thread and all its messages
+ * This is a hard delete that removes the thread completely
+ */
+export const deleteThread = mutation({
+  args: v.object({
+    threadId: v.id("chatMessageThreads"),
+  }),
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUserOrThrow(ctx);
+    
+    const result = await chatService.deleteThread({ ctx, args, user });
+    return result;
+  },
+});

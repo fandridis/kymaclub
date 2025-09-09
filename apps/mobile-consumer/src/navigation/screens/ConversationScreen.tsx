@@ -235,12 +235,21 @@ export function ConversationScreen() {
   const { threadId, venueName, venueImage } = route.params;
 
   const [newMessage, setNewMessage] = useState('');
-  const flashListRef = useRef<FlashListRef<Message>>(null);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [allMessages, setAllMessages] = useState<Message[]>([]);
+  const [paginationCursor, setPaginationCursor] = useState<string | null>(null);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // Fetch messages for this thread
+  const flashListRef = useRef<FlashListRef<Message>>(null);
+  const lastMessageCountRef = useRef(0);
+  const userSentMessageRef = useRef(false);
+
+  // Fetch messages for this thread - start with last 50 messages
   const messagesQuery = useQuery(api.queries.chat.getThreadMessages, {
     threadId: threadId as Id<"chatMessageThreads">,
-    paginationOpts: { numItems: 100, cursor: null }
+    paginationOpts: { numItems: 50, cursor: null }
   });
 
   // Get thread info
@@ -248,28 +257,88 @@ export function ConversationScreen() {
     threadId: threadId as Id<"chatMessageThreads">
   });
 
+  // Query for loading older messages
+  const olderMessagesQuery = useQuery(
+    api.queries.chat.getThreadMessages,
+    loadingOlder && paginationCursor ? {
+      threadId: threadId as Id<"chatMessageThreads">,
+      paginationOpts: { numItems: 100, cursor: paginationCursor }
+    } : "skip"
+  );
+
   // Mutations
   const sendMessageMutation = useMutation(api.mutations.chat.sendMessage);
   const markAsReadMutation = useMutation(api.mutations.chat.markMessagesAsRead);
 
-  const messages = messagesQuery?.page || [];
-
+  // Handle initial message load
   useEffect(() => {
-    // Scroll to bottom when messages load or new message arrives
-    if (messages.length > 0) {
-      setTimeout(() => {
+    if (messagesQuery?.page && isInitialLoad) {
+      const newMessages = messagesQuery.page.slice().reverse(); // Reverse to show oldest first in UI
+      setAllMessages(newMessages);
+      setPaginationCursor(messagesQuery.continueCursor);
+      setHasMoreMessages(!messagesQuery.isDone);
+      lastMessageCountRef.current = newMessages.length;
+      setIsInitialLoad(false);
+
+      // Scroll to bottom on initial load with multiple attempts to ensure it works
+      const scrollToBottom = () => {
         flashListRef.current?.scrollToEnd({ animated: false });
-      }, 100);
-    }
-  }, [messages.length]);
+      };
 
+      // Multiple timeouts to handle different loading scenarios
+      setTimeout(scrollToBottom, 50);
+      setTimeout(scrollToBottom, 150);
+      setTimeout(scrollToBottom, 300);
+    }
+  }, [messagesQuery?.page, isInitialLoad]);
+
+  // Handle real-time message updates
   useEffect(() => {
-    // Mark messages as read when screen opens or when new messages arrive
-    if (threadId && messages.length > 0) {
+    if (messagesQuery?.page && !isInitialLoad && !loadingOlder) {
+      const newMessages = messagesQuery.page.slice().reverse();
+      const existingMessageIds = new Set(allMessages.map(m => m._id));
+      const actuallyNewMessages = newMessages.filter(m => !existingMessageIds.has(m._id));
+
+      if (actuallyNewMessages.length > 0) {
+        setAllMessages(prev => [...prev, ...actuallyNewMessages]);
+
+        // Only scroll if user is at bottom or they sent the message
+        if (isAtBottom || userSentMessageRef.current) {
+          setTimeout(() => {
+            flashListRef.current?.scrollToEnd({ animated: true });
+          }, 100);
+        }
+
+        // Reset user sent flag
+        userSentMessageRef.current = false;
+      }
+    }
+  }, [messagesQuery?.page, isInitialLoad, loadingOlder, allMessages, isAtBottom]);
+
+  // Handle loading older messages
+  useEffect(() => {
+    if (olderMessagesQuery?.page) {
+      const olderMessages = olderMessagesQuery.page.reverse();
+      setAllMessages(prev => [...olderMessages, ...prev]);
+      setPaginationCursor(olderMessagesQuery.continueCursor);
+      setHasMoreMessages(!olderMessagesQuery.isDone);
+      setLoadingOlder(false);
+      // Note: We don't scroll here - FlashList should maintain position
+    }
+  }, [olderMessagesQuery?.page]);
+
+  // Mark messages as read
+  useEffect(() => {
+    if (threadId && allMessages.length > 0) {
       markAsReadMutation({ threadId: threadId as Id<"chatMessageThreads"> })
         .catch(error => console.error('Failed to mark messages as read:', error));
     }
-  }, [threadId, messages.length]);
+  }, [threadId, allMessages.length]);
+
+  const handleLoadOlderMessages = () => {
+    if (loadingOlder || !hasMoreMessages || !paginationCursor) return;
+    setLoadingOlder(true);
+  };
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !threadQuery) return;
@@ -278,21 +347,34 @@ export function ConversationScreen() {
     setNewMessage(''); // Clear input immediately for better UX
 
     try {
+      // Flag that user sent a message (should always scroll)
+      userSentMessageRef.current = true;
+
       await sendMessageMutation({
         venueId: threadQuery.venueId,
         content: messageContent,
         messageType: 'text'
       });
 
-      // Scroll to bottom after sending
-      setTimeout(() => {
-        flashListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+      // The scroll will happen in the useEffect when the new message arrives
     } catch (error) {
       console.error('Failed to send message:', error);
       // Restore message text on error
       setNewMessage(messageContent);
+      userSentMessageRef.current = false; // Reset flag on error
       Alert.alert('Error', 'Failed to send message. Please try again.');
+    }
+  };
+
+  const handleScroll = (event: any) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    // Check if user is within 100px of the bottom
+    const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
+    const newIsAtBottom = distanceFromBottom <= 100;
+
+    // Only update if it actually changed to prevent unnecessary re-renders
+    if (newIsAtBottom !== isAtBottom) {
+      setIsAtBottom(newIsAtBottom);
     }
   };
 
@@ -302,6 +384,27 @@ export function ConversationScreen() {
       isConsumer={item.senderType === 'consumer'}
     />
   ), []);
+
+  const LoadOlderMessagesButton = () => {
+    if (!hasMoreMessages) return null;
+
+    return (
+      <View style={styles.loadOlderContainer}>
+        <TouchableOpacity
+          style={styles.loadOlderButton}
+          onPress={handleLoadOlderMessages}
+          disabled={loadingOlder}
+          activeOpacity={0.7}
+        >
+          {loadingOlder ? (
+            <ActivityIndicator size="small" color={theme.colors.emerald[500]} />
+          ) : (
+            <Text style={styles.loadOlderText}>Load older messages</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   // Loading state
   if (messagesQuery === undefined || threadQuery === undefined) {
@@ -358,7 +461,7 @@ export function ConversationScreen() {
         {/* Messages */}
         <FlashList
           ref={flashListRef}
-          data={messages}
+          data={allMessages}
           keyExtractor={(item) => item._id}
           renderItem={renderMessage}
           getItemType={(item) => {
@@ -366,10 +469,23 @@ export function ConversationScreen() {
             if (item.messageType === 'cancellation_card') return 'cancellation';
             return item.senderType === 'consumer' ? 'consumer' : 'venue';
           }}
+          ListHeaderComponent={LoadOlderMessagesButton}
           contentContainerStyle={styles.messagesContainer}
           showsVerticalScrollIndicator={false}
-          onContentSizeChange={() => flashListRef.current?.scrollToEnd({ animated: true })}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
           removeClippedSubviews={true}
+          maintainVisibleContentPosition={{
+            autoscrollToTopThreshold: 20,
+          }}
+          onLayout={() => {
+            // Additional scroll to bottom when FlashList layout is complete
+            if (isInitialLoad === false && allMessages.length > 0) {
+              setTimeout(() => {
+                flashListRef.current?.scrollToEnd({ animated: false });
+              }, 50);
+            }
+          }}
         />
 
         {/* Input */}
@@ -464,6 +580,7 @@ const styles = StyleSheet.create({
   },
   messageBubble: {
     maxWidth: '80%',
+    minWidth: 60,
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 24,
@@ -689,5 +806,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: theme.colors.zinc[600],
     fontWeight: '500',
+  },
+
+  // Load older messages button
+  loadOlderContainer: {
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+  },
+  loadOlderButton: {
+    backgroundColor: 'white',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: theme.colors.emerald[200],
+    minWidth: 120,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  loadOlderText: {
+    fontSize: 14,
+    color: theme.colors.emerald[600],
+    fontWeight: '600',
   },
 });

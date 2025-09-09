@@ -74,12 +74,12 @@ export const chatService = {
             }
         }
 
-        // Get paginated messages for thread, ordered by creation time (oldest first for chat)
+        // Get paginated messages for thread, ordered by creation time (newest first for chat pagination)
         const result = await ctx.db
             .query("chatMessages")
             .withIndex("by_thread_created", q => q.eq("threadId", args.threadId))
             .filter(q => q.neq(q.field("deleted"), true))
-            .order("asc") // Oldest first for chronological chat display
+            .order("desc") // Newest first for chat-style pagination
             .paginate(args.paginationOpts);
 
         return result;
@@ -849,5 +849,65 @@ export const chatService = {
         });
 
         return { threadId: thread._id, messageId };
+    },
+
+    /***************************************************************
+     * Delete Thread Handler
+     * Hard delete thread and all related messages
+     ***************************************************************/
+    deleteThread: async ({
+        ctx,
+        args,
+        user,
+    }: {
+        ctx: MutationCtx;
+        args: {
+            threadId: Id<"chatMessageThreads">;
+        };
+        user: Doc<"users">;
+    }): Promise<{ success: boolean }> => {
+        const { threadId } = args;
+        const now = Date.now();
+
+        // Verify thread exists and user has access
+        const thread = await ctx.db.get(threadId);
+        if (!thread) {
+            throw new ConvexError({
+                message: "Message thread not found",
+                code: ERROR_CODES.CHAT_THREAD_NOT_FOUND,
+            });
+        }
+
+        // Check access permissions - only consumer who owns the thread can delete it
+        const isConsumer = thread.userId === user._id;
+        const isVenueStaff = user.businessId && thread.businessId === user.businessId;
+        
+        if (!isConsumer && !isVenueStaff) {
+            throw new ConvexError({
+                message: "You don't have permission to delete this thread",
+                code: ERROR_CODES.CHAT_THREAD_ACCESS_DENIED,
+            });
+        }
+
+        // Delete all messages in the thread
+        const messages = await ctx.db
+            .query("chatMessages")
+            .withIndex("by_thread", q => q.eq("threadId", threadId))
+            .collect();
+
+        for (const message of messages) {
+            await ctx.db.delete(message._id);
+        }
+
+        // Delete the thread itself
+        await ctx.db.delete(threadId);
+
+        logger.info(`Thread deleted by user ${user._id}`, {
+            threadId,
+            messagesDeleted: messages.length,
+            deletedBy: isConsumer ? 'consumer' : 'venue_staff',
+        });
+
+        return { success: true };
     },
 };

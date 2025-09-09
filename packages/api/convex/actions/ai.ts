@@ -176,21 +176,29 @@ Field Definitions:
   * 1.0 = definitely fake/scam/inappropriate
 - summary: brief explanation of your assessment (under 100 words)
 
+IMPORTANT: Be lenient with short, simple reviews. Many genuine users leave brief positive reviews like "Great class!", "Love this gym!", or "Best instructor ever!" - these are normal human expressions and should be considered legitimate unless there are clear red flags.
+
 Red Flags (increase probabilityToBeBad):
-- Generic language lacking specific details
 - Excessive promotional content or suspicious links
 - Inappropriate/offensive content
-- Repetitive phrases or unnatural language patterns
-- Extreme sentiment without substantiation
-- Off-topic content unrelated to fitness services
 - Contact information or solicitation attempts
-- Multiple grammar/spelling errors suggesting bot generation
+- Off-topic content completely unrelated to fitness services
+- Obvious spam or bot-generated content with unnatural patterns
+- Reviews that seem designed to manipulate ratings maliciously
+
+Neutral/Acceptable (keep probabilityToBeBad low):
+- Short, enthusiastic reviews ("Best class ever!", "Amazing gym!")
+- Generic but positive language without other red flags
+- Simple expressions of satisfaction or dissatisfaction
+- Brief reviews lacking detail but showing genuine sentiment
 
 Green Flags (decrease probabilityToBeBad):
 - Specific details about classes, equipment, or instructors
 - Balanced perspective (pros and cons)
 - Natural, conversational language
 - Relevant personal experience descriptions
-- Appropriate length and detail level
+- Any review that feels like a genuine human expression, regardless of length
+
+Remember: Err on the side of approving reviews unless there are clear indicators of spam, inappropriate content, or malicious intent. Short positive reviews are common and legitimate.
 
 Important: Respond with ONLY the JSON object, no additional text or formatting.`;
