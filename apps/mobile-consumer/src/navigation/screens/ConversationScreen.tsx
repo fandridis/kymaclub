@@ -277,7 +277,7 @@ export function ConversationScreen() {
   // Handle initial message load
   useEffect(() => {
     if (messagesQuery?.page && isInitialLoad) {
-      const newMessages = messagesQuery.page.slice().reverse(); // Reverse to show oldest first in UI
+      const newMessages = messagesQuery.page;
       setAllMessages(newMessages);
       setPaginationCursor(messagesQuery.continueCursor);
       setHasMoreMessages(!messagesQuery.isDone);
@@ -299,7 +299,7 @@ export function ConversationScreen() {
   // Handle real-time message updates
   useEffect(() => {
     if (messagesQuery?.page && !isInitialLoad && !loadingOlder) {
-      const newMessages = messagesQuery.page.slice().reverse();
+      const newMessages = messagesQuery.page;
       const existingMessageIds = new Set(allMessages.map(m => m._id));
       const actuallyNewMessages = newMessages.filter(m => !existingMessageIds.has(m._id));
 
@@ -322,7 +322,7 @@ export function ConversationScreen() {
   // Handle loading older messages
   useEffect(() => {
     if (olderMessagesQuery?.page) {
-      const olderMessages = olderMessagesQuery.page.reverse();
+      const olderMessages = olderMessagesQuery.page;
       setAllMessages(prev => [...olderMessages, ...prev]);
       setPaginationCursor(olderMessagesQuery.continueCursor);
       setHasMoreMessages(!olderMessagesQuery.isDone);
