@@ -274,7 +274,7 @@ export function ConversationView({ threadId, userName, venueName, onBack, showBa
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
                 {messages.length > 0 ? (
-                    messages.map((message) => (
+                    [...messages].reverse().map((message) => (
                         <MessageBubble
                             key={message._id}
                             message={message}
