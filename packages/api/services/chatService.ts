@@ -81,7 +81,7 @@ export const chatService = {
             .query("chatMessages")
             .withIndex("by_thread_created", q => q.eq("threadId", args.threadId))
             .filter(q => q.neq(q.field("deleted"), true))
-            .order("desc") // Newest first for chat-style pagination
+            .order("asc") // Oldest first
             .paginate(args.paginationOpts);
 
         return result;
