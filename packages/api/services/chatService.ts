@@ -81,7 +81,7 @@ export const chatService = {
             .query("chatMessages")
             .withIndex("by_thread_created", q => q.eq("threadId", args.threadId))
             .filter(q => q.neq(q.field("deleted"), true))
-            .order("asc") // Oldest first
+            .order("desc") // Newest first for proper chat pagination
             .paginate(args.paginationOpts);
 
         return result;
@@ -314,9 +314,9 @@ export const chatService = {
                     .query("users")
                     .filter(q => q.eq(q.field("businessId"), venue.businessId))
                     .collect();
-                
+
                 const businessOwner = businessUsers.find(u => u.businessRole === "owner") || businessUsers[0];
-                
+
                 if (businessOwner) {
                     const deliveryDecision = await presenceService.shouldDeliverNotification({
                         ctx,
@@ -326,7 +326,7 @@ export const chatService = {
                             messageTimestamp: now,
                         },
                     });
-                    
+
                     if (deliveryDecision.shouldSend) {
                         // Send push notification via internal mutation
                         await ctx.runMutation(internal.mutations.pushNotifications.sendPushNotification, {
@@ -345,7 +345,7 @@ export const chatService = {
                                 channelId: 'chat_messages',
                             },
                         });
-                        
+
                         logger.debug("Push notification sent for chat message", {
                             recipientId: businessOwner._id,
                             threadId: thread._id,
@@ -928,7 +928,7 @@ export const chatService = {
                     messageTimestamp: now,
                 },
             });
-            
+
             if (deliveryDecision.shouldSend) {
                 // Send push notification via internal mutation
                 await ctx.runMutation(internal.mutations.pushNotifications.sendPushNotification, {
@@ -947,7 +947,7 @@ export const chatService = {
                         channelId: 'chat_messages',
                     },
                 });
-                
+
                 logger.debug("Push notification sent for venue reply", {
                     recipientId: thread.userId,
                     threadId: thread._id,
@@ -1002,7 +1002,7 @@ export const chatService = {
         // Check access permissions - only consumer who owns the thread can delete it
         const isConsumer = thread.userId === user._id;
         const isVenueStaff = user.businessId && thread.businessId === user.businessId;
-        
+
         if (!isConsumer && !isVenueStaff) {
             throw new ConvexError({
                 message: "You don't have permission to delete this thread",

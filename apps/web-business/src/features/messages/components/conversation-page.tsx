@@ -178,12 +178,12 @@ export function ConversationPage() {
     
     const messages = messagesQuery?.page || []
     
-    // Scroll to bottom when messages load or change
+    // Scroll to bottom when messages load, change, or when threadId changes (switching chats)
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, [messages])
+    }, [messages, threadId])
     
-    // Mark messages as read when the page loads
+    // Mark messages as read when the page loads or threadId changes
     useEffect(() => {
         if (threadId) {
             markAsReadMutation({ 

@@ -277,7 +277,8 @@ export function ConversationScreen() {
   // Handle initial message load
   useEffect(() => {
     if (messagesQuery?.page && isInitialLoad) {
-      const newMessages = messagesQuery.page;
+      // Backend returns newest first, reverse for chat display (oldest first)
+      const newMessages = [...messagesQuery.page].reverse();
       setAllMessages(newMessages);
       setPaginationCursor(messagesQuery.continueCursor);
       setHasMoreMessages(!messagesQuery.isDone);
@@ -299,11 +300,13 @@ export function ConversationScreen() {
   // Handle real-time message updates
   useEffect(() => {
     if (messagesQuery?.page && !isInitialLoad && !loadingOlder) {
+      // Backend returns newest first, but we need to check for new messages
       const newMessages = messagesQuery.page;
       const existingMessageIds = new Set(allMessages.map(m => m._id));
       const actuallyNewMessages = newMessages.filter(m => !existingMessageIds.has(m._id));
 
       if (actuallyNewMessages.length > 0) {
+        // New messages should be appended to the end (newest messages)
         setAllMessages(prev => [...prev, ...actuallyNewMessages]);
 
         // Only scroll if user is at bottom or they sent the message
@@ -322,7 +325,8 @@ export function ConversationScreen() {
   // Handle loading older messages
   useEffect(() => {
     if (olderMessagesQuery?.page) {
-      const olderMessages = olderMessagesQuery.page;
+      // Backend returns newest first, reverse for chat display (oldest first)
+      const olderMessages = [...olderMessagesQuery.page].reverse();
       setAllMessages(prev => [...olderMessages, ...prev]);
       setPaginationCursor(olderMessagesQuery.continueCursor);
       setHasMoreMessages(!olderMessagesQuery.isDone);
@@ -344,7 +348,7 @@ export function ConversationScreen() {
     if (threadId) {
       // Enter conversation - notify presence system
       presence.enterConversation(threadId as Id<"chatMessageThreads">);
-      
+
       // Cleanup: leave conversation when component unmounts
       return () => {
         presence.leaveConversation();
