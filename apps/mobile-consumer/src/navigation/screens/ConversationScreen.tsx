@@ -19,6 +19,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { theme } from '../../theme';
 import type { Doc, Id } from '@repo/api/convex/_generated/dataModel';
+import { usePresence } from '../../hooks/usePresence';
 
 // Type alias for better readability
 type Message = Doc<"chatMessages">;
@@ -246,6 +247,9 @@ export function ConversationScreen() {
   const lastMessageCountRef = useRef(0);
   const userSentMessageRef = useRef(false);
 
+  // Initialize presence tracking for smart notifications
+  const presence = usePresence();
+
   // Fetch messages for this thread - start with last 50 messages
   const messagesQuery = useQuery(api.queries.chat.getThreadMessages, {
     threadId: threadId as Id<"chatMessageThreads">,
@@ -334,6 +338,19 @@ export function ConversationScreen() {
         .catch(error => console.error('Failed to mark messages as read:', error));
     }
   }, [threadId, allMessages.length]);
+
+  // Handle presence tracking when entering/leaving conversation
+  useEffect(() => {
+    if (threadId) {
+      // Enter conversation - notify presence system
+      presence.enterConversation(threadId as Id<"chatMessageThreads">);
+      
+      // Cleanup: leave conversation when component unmounts
+      return () => {
+        presence.leaveConversation();
+      };
+    }
+  }, [threadId, presence]);
 
   const handleLoadOlderMessages = () => {
     if (loadingOlder || !hasMoreMessages || !paginationCursor) return;

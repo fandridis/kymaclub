@@ -4,6 +4,8 @@ import type { MutationCtx, QueryCtx } from "../convex/_generated/server";
 import { ERROR_CODES } from "../utils/errorCodes";
 import { ConvexError } from "convex/values";
 import { logger } from "../utils/logger";
+import { presenceService } from "./presenceService";
+import { internal } from "../convex/_generated/api";
 
 /***************************************************************
  * Chat Service - All messaging-related operations
@@ -299,6 +301,73 @@ export const chatService = {
             messageId,
             messageType,
         });
+
+        // ADR-020: Smart Notification Delivery for Chat Messages
+        // Check if we should send push notification based on recipient presence
+        try {
+            // For consumer messages, notify venue staff (business owner)
+            // In the future, this could be expanded to notify specific venue staff members
+            const business = await ctx.db.get(venue.businessId);
+            if (business) {
+                // Find business owner/admin to notify
+                const businessUsers = await ctx.db
+                    .query("users")
+                    .filter(q => q.eq(q.field("businessId"), venue.businessId))
+                    .collect();
+                
+                const businessOwner = businessUsers.find(u => u.businessRole === "owner") || businessUsers[0];
+                
+                if (businessOwner) {
+                    const deliveryDecision = await presenceService.shouldDeliverNotification({
+                        ctx,
+                        context: {
+                            recipientUserId: businessOwner._id,
+                            threadId: thread._id,
+                            messageTimestamp: now,
+                        },
+                    });
+                    
+                    if (deliveryDecision.shouldSend) {
+                        // Send push notification via internal mutation
+                        await ctx.runMutation(internal.mutations.pushNotifications.sendPushNotification, {
+                            to: businessOwner._id,
+                            notification: {
+                                title: `New message from ${user.name || 'Customer'}`,
+                                body: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
+                                data: {
+                                    type: 'chat_message',
+                                    threadId: thread._id,
+                                    venueName: venue.name,
+                                    venueId: venue._id,
+                                },
+                                sound: 'default',
+                                priority: 'high' as const,
+                                channelId: 'chat_messages',
+                            },
+                        });
+                        
+                        logger.debug("Push notification sent for chat message", {
+                            recipientId: businessOwner._id,
+                            threadId: thread._id,
+                            reason: deliveryDecision.reason,
+                        });
+                    } else {
+                        logger.debug("Push notification skipped for chat message", {
+                            recipientId: businessOwner._id,
+                            threadId: thread._id,
+                            reason: deliveryDecision.reason,
+                        });
+                    }
+                }
+            }
+        } catch (error) {
+            // Don't fail the message sending if notification fails
+            logger.error("Failed to send push notification for chat message", {
+                error: error instanceof Error ? error.message : String(error),
+                threadId: thread._id,
+                messageId,
+            });
+        }
 
         return { threadId: thread._id, messageId };
     },
@@ -847,6 +916,58 @@ export const chatService = {
             messageId,
             messageType,
         });
+
+        // ADR-020: Smart Notification Delivery for Chat Messages (Venue Staff Replies)
+        // Check if we should send push notification to the consumer
+        try {
+            const deliveryDecision = await presenceService.shouldDeliverNotification({
+                ctx,
+                context: {
+                    recipientUserId: thread.userId, // Consumer who started the thread
+                    threadId: thread._id,
+                    messageTimestamp: now,
+                },
+            });
+            
+            if (deliveryDecision.shouldSend) {
+                // Send push notification via internal mutation
+                await ctx.runMutation(internal.mutations.pushNotifications.sendPushNotification, {
+                    to: thread.userId,
+                    notification: {
+                        title: `New message from ${thread.venueSnapshot.name}`,
+                        body: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
+                        data: {
+                            type: 'chat_message',
+                            threadId: thread._id,
+                            venueName: thread.venueSnapshot.name,
+                            venueId: thread.venueId,
+                        },
+                        sound: 'default',
+                        priority: 'high' as const,
+                        channelId: 'chat_messages',
+                    },
+                });
+                
+                logger.debug("Push notification sent for venue reply", {
+                    recipientId: thread.userId,
+                    threadId: thread._id,
+                    reason: deliveryDecision.reason,
+                });
+            } else {
+                logger.debug("Push notification skipped for venue reply", {
+                    recipientId: thread.userId,
+                    threadId: thread._id,
+                    reason: deliveryDecision.reason,
+                });
+            }
+        } catch (error) {
+            // Don't fail the message sending if notification fails
+            logger.error("Failed to send push notification for venue reply", {
+                error: error instanceof Error ? error.message : String(error),
+                threadId: thread._id,
+                messageId,
+            });
+        }
 
         return { threadId: thread._id, messageId };
     },

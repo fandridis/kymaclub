@@ -854,6 +854,38 @@ export const chatMessagesFields = {
   ...softDeleteFields,
 };
 
+// ADR-020: User Presence Tracking for Smart Notifications
+// Real-time presence tracking to detect if users are actively in conversations
+// Used for smart notification delivery to avoid spam when user is already chatting
+export const userPresenceFields = {
+  userId: v.id("users"),
+  
+  // Current active thread (null if not in any chat)
+  activeThreadId: v.optional(v.union(v.id("chatMessageThreads"), v.null())),
+  
+  // Presence status
+  isActive: v.boolean(), // Is user currently active in the app
+  lastSeen: v.number(), // Last activity timestamp
+  
+  // App state tracking
+  appState: v.union(
+    v.literal("active"),      // App is in foreground
+    v.literal("background"),  // App is in background
+    v.literal("inactive")     // App is not running/closed
+  ),
+  
+  // Device info for multi-device support
+  deviceId: v.optional(v.string()), // Unique device identifier
+  deviceType: v.optional(v.union(
+    v.literal("mobile"),
+    v.literal("web"),
+    v.literal("desktop")
+  )),
+  
+  // Metadata
+  ...auditFields,
+};
+
 export const subscriptionEventsFields = {
   subscriptionId: v.optional(v.id("subscriptions")), // Database subscription ID (null if not created yet)
   stripeSubscriptionId: v.string(), // Stripe subscription ID
@@ -1077,4 +1109,18 @@ export default defineSchema({
     .index("by_venue_created", ["venueId", "createdAt"])
     .index("by_business_created", ["businessId", "createdAt"])
     .index("by_thread_deleted_created", ["threadId", "deleted", "createdAt"]),
+
+  /**
+   * User Presence - Real-time tracking for smart notifications
+   * ADR-020: Prevents notification spam by detecting active users in conversations
+   */
+  userPresence: defineTable(userPresenceFields)
+    .index("by_user", ["userId"])
+    .index("by_thread", ["activeThreadId"])
+    .index("by_user_active", ["userId", "isActive"])
+    .index("by_user_last_seen", ["userId", "lastSeen"])
+    .index("by_last_seen", ["lastSeen"]) // For cleanup queries
+    .index("by_thread_active", ["activeThreadId", "isActive"])
+    .index("by_device", ["deviceId"])
+    .index("by_user_device", ["userId", "deviceId"]),
 });
