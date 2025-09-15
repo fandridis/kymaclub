@@ -12,6 +12,7 @@ const SCHEME = 'kymaclub://';
 export type DeepLinkType =
   | 'class-details'
   | 'venue-details'
+  | 'chat'
   | 'bookings'
   | 'home'
   | 'explore'
@@ -38,6 +39,23 @@ export function generateClassDetailsLink(classInstanceId: Id<"classInstances">):
  */
 export function generateVenueDetailsLink(venueId: Id<"venues">): string {
   return `${SCHEME}venue/${venueId}`;
+}
+
+/**
+ * Generate deep link URL for a chat conversation
+ */
+export function generateConversationLink(
+  threadId: Id<"chatMessageThreads">,
+  options?: { venueName?: string; venueImage?: string }
+): string {
+  const params = new URLSearchParams();
+  if (options?.venueName) params.set('venueName', options.venueName);
+  if (options?.venueImage) params.set('venueImage', options.venueImage);
+
+  const query = params.toString();
+  return query
+    ? `${SCHEME}chat/${threadId}?${query}`
+    : `${SCHEME}chat/${threadId}`;
 }
 
 /**
@@ -208,12 +226,15 @@ export function parseDeepLink(url: string): { route: string; params: Record<stri
     // Remove scheme and decode
     const cleanUrl = url.replace(SCHEME, '').replace(/^\/+/, '');
 
+    // Separate path and query explicitly to avoid mixing params into segments
+    const [pathPart, queryString] = cleanUrl.split('?');
+
     if (!cleanUrl) {
       return { route: 'home', params: {} };
     }
 
     // Split path segments
-    const segments = cleanUrl.split('/');
+    const segments = pathPart.split('/');
 
     // Handle different URL patterns
     if (segments[0] === 'class' && segments[1]) {
@@ -228,6 +249,29 @@ export function parseDeepLink(url: string): { route: string; params: Record<stri
         route: 'VenueDetailsScreen',
         params: { venueId: segments[1] }
       };
+    }
+
+    if (segments[0] === 'chat' && segments[1]) {
+      // Parse query parameters for optional display data
+      const queryParams: Record<string, string> = {};
+      if (queryString) {
+        queryString.split('&').forEach(param => {
+          const [key, raw] = param.split('=');
+          if (key && raw !== undefined) {
+            // Convert "+" to spaces then decode
+            const value = decodeURIComponent(raw.replace(/\+/g, ' '));
+            queryParams[key] = value;
+          }
+        });
+      }
+      const result = {
+        route: 'Conversation',
+        params: {
+          threadId: segments[1],
+          ...queryParams,
+        },
+      };
+      return result;
     }
 
     if (segments[0] === 'home') {
@@ -285,7 +329,6 @@ export function parseDeepLink(url: string): { route: string; params: Record<stri
 
     return { route: 'Home', params: {} };
   } catch (error) {
-
     return null;
   }
 }

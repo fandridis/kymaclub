@@ -315,7 +315,7 @@ export function NewsScreen() {
             <SafeAreaView style={styles.container}>
                 <TabScreenHeader 
                     title={t('welcome.title')} 
-                    renderLeftSide={() => (
+                    renderRightSide={() => (
                         <TouchableOpacity 
                             onPress={() => navigation.navigate('Settings')}
                             style={styles.profileButton}
@@ -336,7 +336,7 @@ export function NewsScreen() {
         <SafeAreaView style={styles.container}>
             <TabScreenHeader 
                 title={t('welcome.title')} 
-                renderLeftSide={() => (
+                renderRightSide={() => (
                     <TouchableOpacity 
                         onPress={() => navigation.navigate('Settings')}
                         style={styles.profileButton}

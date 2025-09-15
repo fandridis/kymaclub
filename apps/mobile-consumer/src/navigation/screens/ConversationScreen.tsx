@@ -274,6 +274,17 @@ export function ConversationScreen() {
   const sendMessageMutation = useMutation(api.mutations.chat.sendMessage);
   const markAsReadMutation = useMutation(api.mutations.chat.markMessagesAsRead);
 
+  // Reset local state when switching to a different thread (e.g., from a push)
+  useEffect(() => {
+    setAllMessages([]);
+    setPaginationCursor(null);
+    setHasMoreMessages(true);
+    setIsAtBottom(true);
+    setIsInitialLoad(true);
+    lastMessageCountRef.current = 0;
+    userSentMessageRef.current = false;
+  }, [threadId]);
+
   // Handle initial message load
   useEffect(() => {
     if (messagesQuery?.page && isInitialLoad) {
@@ -306,8 +317,9 @@ export function ConversationScreen() {
       const actuallyNewMessages = newMessages.filter(m => !existingMessageIds.has(m._id));
 
       if (actuallyNewMessages.length > 0) {
-        // New messages should be appended to the end (newest messages)
-        setAllMessages(prev => [...prev, ...actuallyNewMessages]);
+        // Convert to oldest-first before appending to keep list ascending
+        const ascendingNew = [...actuallyNewMessages].reverse();
+        setAllMessages(prev => [...prev, ...ascendingNew]);
 
         // Only scroll if user is at bottom or they sent the message
         if (isAtBottom || userSentMessageRef.current) {
@@ -481,6 +493,7 @@ export function ConversationScreen() {
 
         {/* Messages */}
         <FlashList
+          key={threadId}
           ref={flashListRef}
           data={allMessages}
           keyExtractor={(item) => item._id}

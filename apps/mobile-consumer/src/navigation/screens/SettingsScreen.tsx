@@ -9,7 +9,7 @@ import { useAuth, useAuthenticatedUser } from '../../stores/auth-store';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { useCompressedImageUpload } from '../../hooks/useCompressedImageUpload';
-import { TabScreenHeader } from '../../components/TabScreenHeader';
+import { StackScreenHeader } from '../../components/StackScreenHeader';
 import { MembershipCard } from '../../components/MembershipCard';
 
 export function SettingsScreen() {
@@ -144,7 +144,7 @@ export function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TabScreenHeader title="Settings" />
+      <StackScreenHeader title="Settings" />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}

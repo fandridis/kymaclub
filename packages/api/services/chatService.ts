@@ -5,6 +5,7 @@ import { ERROR_CODES } from "../utils/errorCodes";
 import { ConvexError } from "convex/values";
 import { logger } from "../utils/logger";
 import { presenceService } from "./presenceService";
+import { generateConversationLink } from "../utils/deep-linking";
 import { internal } from "../convex/_generated/api";
 
 /***************************************************************
@@ -339,12 +340,14 @@ export const chatService = {
                                     threadId: thread._id,
                                     venueName: venue.name,
                                     venueId: venue._id,
+                                    deepLink: generateConversationLink(thread._id, { venueName: venue.name }),
                                 },
                                 sound: 'default',
                                 priority: 'high' as const,
                                 channelId: 'chat_messages',
                             },
                         });
+                        
 
                         logger.debug("Push notification sent for chat message", {
                             recipientId: businessOwner._id,
@@ -941,12 +944,14 @@ export const chatService = {
                             threadId: thread._id,
                             venueName: thread.venueSnapshot.name,
                             venueId: thread.venueId,
+                            deepLink: generateConversationLink(thread._id, { venueName: thread.venueSnapshot.name }),
                         },
                         sound: 'default',
                         priority: 'high' as const,
                         channelId: 'chat_messages',
                     },
                 });
+                
 
                 logger.debug("Push notification sent for venue reply", {
                     recipientId: thread.userId,

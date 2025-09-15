@@ -33,7 +33,6 @@ export function AuthGuard({ children }: AuthGuardProps) {
     // Handle pending deep link after authentication
     useEffect(() => {
         if (user && pendingDeepLink) {
-
             // Use Linking to handle the deep link (the navigation system will handle it)
             setTimeout(() => {
                 Linking.openURL(pendingDeepLink);

@@ -58,7 +58,8 @@ function needsAuthentication(route: string): boolean {
     'VenueDetailsScreen',
     'QRScannerModal',
     'PaymentSuccess',
-    'PaymentCancel'
+    'PaymentCancel',
+    'Conversation',
   ];
 
   return protectedRoutes.includes(route);
@@ -129,44 +130,83 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
         if (token) {
           recordPushNotificationToken({ token });
         } else {
-          console.warn("No push token received");
+          console.warn('No push token received');
         }
       })
       .catch(err => {
-        console.error("Push registration failed", err);
+        console.error('Push registration failed', err);
       });
+  }, [user?._id]);
+
+  // Helper: process a notification response and navigate appropriately
+  const processNotificationResponse = React.useCallback((response: Notifications.NotificationResponse | null) => {
+    if (!response) return;
+    const data: any = response.notification.request.content.data;
+    const tryNavigate = (route: string, params: any) => {
+      if (navigationRef.isReady()) {
+        // @ts-expect-error - navigation types are complex with nested navigators
+        navigationRef.navigate(route, params);
+      } else {
+        // Slight delay if nav container isn't ready yet
+        setTimeout(() => {
+          if (navigationRef.isReady()) {
+            // @ts-expect-error - navigation types are complex with nested navigators
+            navigationRef.navigate(route, params);
+          }
+        }, 200);
+      }
+    };
+
+    // Prefer deepLink when present
+    if (data?.deepLink) {
+      const parsedLink = parseDeepLink(data.deepLink as string);
+      if (parsedLink) {
+        if (needsAuthentication(parsedLink.route)) {
+          if (user?._id) {
+            tryNavigate(parsedLink.route, parsedLink.params);
+          } else {
+            useAuthStore.getState().setPendingDeepLink(data.deepLink as string);
+            tryNavigate('SignInModal', {});
+          }
+        } else {
+          tryNavigate(parsedLink.route, parsedLink.params);
+        }
+      }
+      return;
+    }
+
+    // Fallback for older notifications without deepLink (chat only)
+    if (data?.type === 'chat_message' && data?.threadId) {
+      if (user?._id) {
+        tryNavigate('Conversation', {
+          threadId: data.threadId,
+          venueName: data.venueName,
+          venueImage: data.venueImage,
+        });
+      } else {
+        // Construct a deep link so auth guard can handle after sign-in
+        const deepLink = `kymaclub://chat/${data.threadId}${data.venueName ? `?venueName=${encodeURIComponent(data.venueName)}` : ''}`;
+        useAuthStore.getState().setPendingDeepLink(deepLink);
+        tryNavigate('SignInModal', {});
+      }
+    }
   }, [user?._id]);
 
   // Handle notification interactions (when user taps on a notification)
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener(response => {
-      const data = response.notification.request.content.data;
-
-      // Handle deep link from notification data
-      if (data?.deepLink && navigationRef.isReady()) {
-        const parsedLink = parseDeepLink(data.deepLink as string);
-        if (parsedLink) {
-          // Check if user is authenticated for protected routes
-          if (needsAuthentication(parsedLink.route)) {
-            if (user?._id) {
-              // @ts-ignore - navigation types are complex with nested navigators
-              navigationRef.navigate(parsedLink.route, parsedLink.params);
-            } else {
-              // Store the pending deep link and navigate to sign-in
-              useAuthStore.getState().setPendingDeepLink(data.deepLink as string);
-              navigationRef.navigate('SignInModal' as never);
-            }
-          } else {
-            // Public routes can be navigated to directly
-            // @ts-ignore - navigation types are complex with nested navigators
-            navigationRef.navigate(parsedLink.route, parsedLink.params);
-          }
-        }
-      }
+      processNotificationResponse(response);
     });
 
+    // Also handle the case when the app is opened from a killed state
+    Notifications.getLastNotificationResponseAsync().then(lastResponse => {
+      if (lastResponse) {
+        processNotificationResponse(lastResponse);
+      }
+    }).catch(() => { });
+
     return () => subscription.remove();
-  }, [user?._id]);
+  }, [processNotificationResponse]);
 
   // Handle notification received while app is in foreground
   useEffect(() => {
@@ -234,6 +274,14 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
                   Explore: 'explore',
                   Bookings: 'bookings',
                   Messages: 'messages',
+                },
+              },
+              Conversation: {
+                path: 'chat/:threadId',
+                parse: {
+                  threadId: (id: string) => id,
+                  venueName: (v: string) => decodeURIComponent(v.replace(/\+/g, ' ')),
+                  venueImage: (v: string) => v,
                 },
               },
               // Modal screens with parameters

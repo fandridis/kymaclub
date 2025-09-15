@@ -12,11 +12,11 @@ interface MembershipCardProps {
   daysUntilExpiry?: number;
 }
 
-export function MembershipCard({ 
-  creditBalance, 
-  allTimeBookings, 
-  expiringCredits, 
-  daysUntilExpiry 
+export function MembershipCard({
+  creditBalance,
+  allTimeBookings,
+  expiringCredits,
+  daysUntilExpiry
 }: MembershipCardProps) {
   const tier = getMembershipTier(allTimeBookings);
   const badgeInfo = getMembershipBadgeInfo(tier);
@@ -45,11 +45,12 @@ export function MembershipCard({
             <DiamondIcon size={20} color="white" />
             <Text style={styles.creditsAmount}>{creditBalance}</Text>
           </View>
-          {expiringCredits && daysUntilExpiry && (
-            <Text style={styles.expiryText}>
-              {expiringCredits} credits expire in {daysUntilExpiry} days
-            </Text>
-          )}
+          <Text style={styles.expiryText}>
+            {expiringCredits && daysUntilExpiry
+              ? `${expiringCredits} credits expire in ${daysUntilExpiry} days`
+              : ' '
+            }
+          </Text>
         </View>
       </LinearGradient>
     </View>
