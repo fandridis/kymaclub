@@ -320,7 +320,7 @@ export function NewsScreen() {
                             onPress={() => navigation.navigate('Settings')}
                             style={styles.profileButton}
                         >
-                            <UserIcon size={24} color={theme.colors.zinc[700]} />
+                            <UserIcon size={20} color={theme.colors.zinc[700]} />
                         </TouchableOpacity>
                     )}
                 />
@@ -341,7 +341,7 @@ export function NewsScreen() {
                         onPress={() => navigation.navigate('Settings')}
                         style={styles.profileButton}
                     >
-                        <UserIcon size={24} color={theme.colors.zinc[700]} />
+                        <UserIcon size={20} color={theme.colors.zinc[700]} />
                     </TouchableOpacity>
                 )}
             />
@@ -993,9 +993,12 @@ const styles = StyleSheet.create({
 
     // Profile button styles
     profileButton: {
-        padding: 8,
+        paddingVertical: 4,
+        paddingHorizontal: 8,
         borderRadius: 8,
         backgroundColor: theme.colors.zinc[100],
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 
     // Venue card styles (inline from VenueCard component)

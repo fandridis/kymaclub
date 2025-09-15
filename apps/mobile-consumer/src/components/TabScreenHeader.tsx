@@ -16,7 +16,7 @@ export function TabScreenHeader({ title, renderLeftSide, renderRightSide }: TabS
           {renderLeftSide()}
         </View>
       )}
-      <Text style={[styles.title, (renderLeftSide || renderRightSide) && styles.titleWithSides]}>{title}</Text>
+      <Text style={styles.title}>{title}</Text>
       {renderRightSide && (
         <View style={styles.rightSide}>
           {renderRightSide()}
@@ -42,9 +42,9 @@ const styles = StyleSheet.create({
     color: theme.colors.zinc[900],
     flex: 1,
   },
-  titleWithSides: {
-    textAlign: 'center',
-  },
+  // Keep title left-aligned even when side content exists
+  // (was centered previously causing awkward positioning)
+  titleWithSides: {},
   leftSide: {
     flexDirection: 'row',
     alignItems: 'center',

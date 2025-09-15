@@ -246,6 +246,13 @@ export function SubscriptionScreen() {
                             ⚠️ Subscription will end on {getNextBillingDate()}
                         </Text>
                     )}
+                    {isSubscriptionActive() && !isSubscriptionCanceling() && (
+                        <View style={styles.statusActions}>
+                            <TouchableOpacity onPress={handleCancelSubscription} accessibilityRole="button">
+                                <Text style={styles.inlineButtonText}>Cancel subscripion</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </View>
 
                 {/* Plan Selection Card */}
@@ -322,17 +329,6 @@ export function SubscriptionScreen() {
                                         {isSubscriptionActive() ? 'Update Plan' : 'Start Subscription'}
                                     </Text>
                                 </TouchableOpacity>
-
-                                {isSubscriptionActive() && (
-                                    <TouchableOpacity
-                                        style={styles.secondaryButton}
-                                        onPress={handleCancelSubscription}
-                                    >
-                                        <Text style={styles.secondaryButtonText}>
-                                            Cancel Subscription
-                                        </Text>
-                                    </TouchableOpacity>
-                                )}
                             </>
                         )}
                     </View>
@@ -415,6 +411,16 @@ const styles = StyleSheet.create({
         fontSize: theme.fontSize.sm,
         color: theme.colors.amber[600],
         marginTop: theme.spacing.xs,
+        fontWeight: theme.fontWeight.medium,
+    },
+    statusActions: {
+        marginTop: theme.spacing.sm,
+        flexDirection: 'row',
+        justifyContent: 'flex-start',
+    },
+    inlineButtonText: {
+        fontSize: theme.fontSize.sm,
+        color: theme.colors.rose[500],
         fontWeight: theme.fontWeight.medium,
     },
 

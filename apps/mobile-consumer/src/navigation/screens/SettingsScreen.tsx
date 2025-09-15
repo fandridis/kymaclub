@@ -135,8 +135,10 @@ export function SettingsScreen() {
   };
 
   const isSubscriptionActiveAndNotExpiring = () => {
-    return subscription && subscription.status === 'active';
+    return subscription && subscription.status === 'active' && !subscription.cancelAtPeriodEnd;
   };
+
+  console.log('=? subscription', subscription?.cancelAtPeriodEnd, subscription?.status);
 
   const isSubscriptionActiveAndExpiring = () => {
     return subscription && subscription.status === 'active' && subscription.cancelAtPeriodEnd;
