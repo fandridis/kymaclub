@@ -119,7 +119,7 @@ export const updateReviewForModerationArgs = v.object({
 });
 export type UpdateReviewForModerationArgs = Infer<typeof updateReviewForModerationArgs>;
 
-export const updateReviewForModeration = internalMutation({
+export const updateReviewForModeration = internalMutationWithTriggers({
   args: updateReviewForModerationArgs,
   handler: async (ctx, args) => {
     await ctx.db.patch(args.reviewId, args.updateData);

@@ -7,6 +7,7 @@ import { createBusinessNotificationEmail } from "../emails/templates";
 import { createBookingConfirmationEmail } from "../emails/templates";
 import { createClassCancellationEmail } from "../emails/templates";
 import { createEmailTemplate } from "../emails/templates";
+import { createReviewNotificationEmail } from "../emails/templates";
 
 /***************************************************************
  * Email Service - Production-ready email operations with Resend
@@ -69,6 +70,51 @@ export const emailService = {
         } catch (error) {
             throw new ConvexError({
                 message: "Failed to send email notification",
+                code: ERROR_CODES.UNKNOWN_ERROR
+            });
+        }
+    },
+
+    /**
+     * Send review notification email to business
+     */
+    sendReviewNotificationEmail: async ({
+        ctx,
+        args,
+    }: {
+        ctx: ActionCtx;
+        args: {
+            businessEmail: string;
+            businessName: string;
+            venueName: string;
+            reviewerName?: string;
+            rating: number;
+            comment?: string;
+        };
+    }): Promise<{ emailId: string; success: boolean }> => {
+        try {
+            const subject = "New user review!";
+
+            const htmlContent = createReviewNotificationEmail({
+                businessName: args.businessName,
+                venueName: args.venueName,
+                reviewerName: args.reviewerName,
+                rating: args.rating,
+                comment: args.comment,
+            });
+
+            const emailId = await resend.sendEmail(ctx, {
+                from: "KymaClub <notifications@app.orcavo.com>",
+                to: args.businessEmail,
+                subject,
+                html: htmlContent,
+                replyTo: ["support@orcavo.com"],
+            });
+
+            return { emailId, success: true };
+        } catch (error) {
+            throw new ConvexError({
+                message: "Failed to send review notification email",
                 code: ERROR_CODES.UNKNOWN_ERROR
             });
         }

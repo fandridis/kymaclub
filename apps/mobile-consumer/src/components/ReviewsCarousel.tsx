@@ -39,7 +39,7 @@ export const ReviewsCarousel: React.FC<ReviewsCarouselProps> = ({
         <Carousel
           loop={false}
           width={CAROUSEL_ITEM_WIDTH}
-          height={250}
+          height={200}
           data={reviews}
           scrollAnimationDuration={500}
           snapEnabled

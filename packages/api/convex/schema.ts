@@ -533,6 +533,7 @@ export const notificationsFields = {
     // Business notifications
     v.literal("booking_created"),
     v.literal("booking_cancelled_by_consumer"),
+    v.literal("review_received"),
     v.literal("payment_received"),
 
     // Consumer notifications  
@@ -601,6 +602,11 @@ export const businessNotificationSettingsFields = {
       email: v.boolean(),
       web: v.boolean(),
     }),
+    // Optional to avoid breaking existing settings docs
+    review_received: v.optional(v.object({
+      email: v.boolean(),
+      web: v.boolean(),
+    })),
   }),
 
   ...auditFields,

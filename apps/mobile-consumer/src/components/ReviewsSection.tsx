@@ -46,7 +46,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
   console.log('isEligible', isEligible);
 
   return (
-    <View style={styles.container}>
+    <View>
       {/* Section Title */}
       <View style={styles.titleContainer}>
         <Text style={styles.sectionTitle}>Rating & Reviews</Text>
@@ -109,9 +109,6 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: {
-    // Container styling handled by parent
-  },
   loadingContainer: {
     padding: 20,
     alignItems: 'center',

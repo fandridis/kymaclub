@@ -93,6 +93,7 @@ export const createTestBusiness = internalMutation({
                 booking_cancelled_by_consumer: { email: true, web: true },
                 booking_cancelled_by_business: { email: true, web: true },
                 payment_received: { email: true, web: true },
+                review_received: { email: true, web: true },
             },
             createdAt: Date.now(),
             createdBy: args.userId,

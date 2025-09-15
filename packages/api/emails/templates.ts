@@ -389,3 +389,44 @@ export {
   createClassCancellationEmail,
   createBusinessNotificationEmail
 };
+
+// New: Review notification email to businesses
+export const createReviewNotificationEmail = ({
+  businessName,
+  venueName,
+  reviewerName,
+  rating,
+  comment,
+}: {
+  businessName: string;
+  venueName: string;
+  reviewerName?: string;
+  rating: number;
+  comment?: string;
+}) => {
+  const safeReviewer = reviewerName || "A customer";
+  const stars = "★".repeat(Math.max(0, Math.min(5, Math.round(rating)))) +
+    "☆".repeat(Math.max(0, 5 - Math.round(rating)));
+
+  return createEmailTemplate({
+    title: "New user review!",
+    preheader: `New review for ${venueName}`,
+    content: `
+      <h1 class="content-title">New user review!</h1>
+      <p class="content-body">
+        ${safeReviewer} left a new review for ${venueName}.
+      </p>
+
+      <div class="details-box" style="border: 2px solid #16a34a; border-radius: 12px; padding: 24px; margin: 24px 0; background: #f0fdf4;">
+        <p style="margin: 0 0 8px 0;"><strong>Business:</strong> ${businessName}</p>
+        <p style="margin: 0 0 8px 0;"><strong>Venue:</strong> ${venueName}</p>
+        <p style="margin: 0 0 8px 0;"><strong>Rating:</strong> ${stars} (${rating}/5)</p>
+        ${comment ? `<p style="margin: 8px 0 0 0;"><strong>Comment:</strong> ${comment}</p>` : ''}
+      </div>
+
+      <div style="text-align: center; margin: 32px 0;">
+        <a href="https://business.orcavo.com/dashboard" class="cta-button">View in Dashboard</a>
+      </div>
+    `,
+  });
+};

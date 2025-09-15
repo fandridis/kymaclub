@@ -197,3 +197,18 @@ export const handleSubscriptionCreditsReceivedEvent = internalMutation({
         return await notificationService.handleSubscriptionCreditsReceivedEvent({ ctx, payload: args.payload });
     }
 });
+
+/***************************************************************
+ * Handle Review Approved Event
+ ***************************************************************/
+export const handleReviewApprovedEvent = internalMutation({
+    args: v.object({
+        payload: v.object({
+            reviewId: v.id("venueReviews"),
+            businessId: v.id("businesses"),
+        })
+    }),
+    handler: async (ctx, args) => {
+        return await notificationService.handleReviewApprovedEvent({ ctx, payload: args.payload });
+    }
+});

@@ -186,3 +186,45 @@ export const sendCreditsReceivedEmail = internalAction({
         }
     }
 });
+
+/**
+ * Send review notification email to business
+ */
+export const sendReviewNotificationEmail = internalAction({
+    args: v.object({
+        businessEmail: v.string(),
+        businessName: v.string(),
+        venueName: v.string(),
+        reviewerName: v.optional(v.string()),
+        rating: v.number(),
+        comment: v.optional(v.string()),
+    }),
+    handler: async (ctx, args) => {
+        try {
+            const result = await emailService.sendReviewNotificationEmail({
+                ctx,
+                args: {
+                    businessEmail: args.businessEmail,
+                    businessName: args.businessName,
+                    venueName: args.venueName,
+                    reviewerName: args.reviewerName,
+                    rating: args.rating,
+                    comment: args.comment,
+                }
+            });
+
+            return {
+                success: true,
+                emailSent: true,
+                emailId: result.emailId,
+                reason: "Email sent successfully",
+            };
+        } catch (error) {
+            return {
+                success: false,
+                emailSent: false,
+                reason: error instanceof Error ? error.message : "Unknown error",
+            };
+        }
+    }
+});

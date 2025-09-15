@@ -169,7 +169,7 @@ triggers.register("bookings", async (ctx, change) => {
  * VENUE REVIEWS TRIGGERS
  ***************************************************************/
 triggers.register("venueReviews", async (ctx, change) => {
-    const { id, newDoc, operation } = change;
+    const { id, oldDoc, newDoc, operation } = change;
 
     if (operation === 'insert' && newDoc) {
         // Only process reviews that have comments (text to moderate)
@@ -193,6 +193,38 @@ triggers.register("venueReviews", async (ctx, change) => {
 
             // Update venue rating stats since review is now visible
             await reviewsService._updateVenueRatingStats(ctx, newDoc.venueId);
+            // Notify business per preferences
+            await ctx.scheduler.runAfter(0, internal.mutations.notifications.handleReviewApprovedEvent, {
+                payload: {
+                    reviewId: id,
+                    businessId: newDoc.businessId,
+                },
+            });
+        }
+        // Edge: if inserted already approved/visible (external path), schedule centralized handler
+        const isApproved = newDoc.moderationStatus === 'auto_approved' || newDoc.moderationStatus === 'manual_approved';
+        if (isApproved && newDoc.isVisible && !newDoc.deleted) {
+            await ctx.scheduler.runAfter(0, internal.mutations.notifications.handleReviewApprovedEvent, {
+                payload: {
+                    reviewId: id,
+                    businessId: newDoc.businessId,
+                },
+            });
+        }
+    }
+
+    if (operation === 'update' && oldDoc && newDoc) {
+        const wasApproved = oldDoc.moderationStatus === 'auto_approved' || oldDoc.moderationStatus === 'manual_approved';
+        const isApproved = newDoc.moderationStatus === 'auto_approved' || newDoc.moderationStatus === 'manual_approved';
+        const becameApproved = !wasApproved && isApproved && newDoc.isVisible && !newDoc.deleted;
+
+        if (becameApproved) {
+            await ctx.scheduler.runAfter(0, internal.mutations.notifications.handleReviewApprovedEvent, {
+                payload: {
+                    reviewId: id,
+                    businessId: newDoc.businessId,
+                },
+            });
         }
     }
 });

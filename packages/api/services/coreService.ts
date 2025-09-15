@@ -58,6 +58,22 @@ export const coreService = {
                 cleanArgs.venue.address.country,
         });
 
+        // Seed default business notification settings (email+web enabled)
+        await ctx.db.insert("businessNotificationSettings", {
+            businessId,
+            notificationPreferences: {
+                booking_created: { email: true, web: true },
+                booking_cancelled_by_consumer: { email: true, web: true },
+                booking_cancelled_by_business: { email: true, web: true },
+                payment_received: { email: true, web: true },
+                review_received: { email: true, web: true },
+            },
+            createdAt: Date.now(),
+            createdBy: user._id,
+            updatedAt: Date.now(),
+            updatedBy: user._id,
+        });
+
         return { createdBusinessId: businessId, createdVenueId: venueId };
     },
 

@@ -169,7 +169,7 @@ export const notificationService = {
         const { unreadOnly = false } = args;
 
         // Get all business notification types
-        const businessTypes = ["booking_created", "booking_cancelled_by_consumer", "booking_cancelled_by_business", "payment_received"];
+        const businessTypes = ["booking_created", "booking_cancelled_by_consumer", "booking_cancelled_by_business", "payment_received", "review_received"];
 
         const allNotifications: Doc<"notifications">[] = [];
 
@@ -422,6 +422,7 @@ export const notificationService = {
                 booking_cancelled_by_consumer: { email: boolean; web: boolean; };
                 booking_cancelled_by_business: { email: boolean; web: boolean; };
                 payment_received: { email: boolean; web: boolean; };
+                review_received?: { email: boolean; web: boolean; };
             };
         };
         user: Doc<"users">;
@@ -1017,5 +1018,94 @@ export const notificationService = {
         }
 
         return { success: true };
+    },
+
+    /**
+     * Handle review approved event (auto or manual)
+     */
+    handleReviewApprovedEvent: async ({
+        ctx,
+        payload,
+    }: {
+        ctx: MutationCtx;
+        payload: {
+            reviewId: Id<"venueReviews">;
+            businessId: Id<"businesses">;
+        };
+    }): Promise<{ createdNotificationId: Id<"notifications"> | null }> => {
+        const { reviewId, businessId } = payload;
+
+        const [review, business] = await Promise.all([
+            ctx.db.get(reviewId),
+            ctx.db.get(businessId),
+        ]);
+
+        if (!review || !business) {
+            throw new ConvexError({
+                message: "Review or business not found",
+                field: "reviewId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND,
+            });
+        }
+
+        // Guard: only proceed if approved + visible + not deleted
+        const isApproved = (review.moderationStatus === 'auto_approved' || review.moderationStatus === 'manual_approved') && review.isVisible && !review.deleted;
+        if (!isApproved) {
+            return { createdNotificationId: null };
+        }
+
+        // Preferences
+        const businessNotificationSettings = await ctx.db
+            .query("businessNotificationSettings")
+            .withIndex("by_business", q => q.eq("businessId", businessId))
+            .filter(q => q.neq(q.field("deleted"), true))
+            .first();
+
+        const pref = businessNotificationSettings?.notificationPreferences?.review_received;
+
+        let createdNotificationId: Id<"notifications"> | null = null;
+
+        if (pref?.web) {
+            const message = `New review for ${review.venueSnapshot?.name || 'your venue'}: ${review.rating}/5${review.userSnapshot?.name ? ' by ' + review.userSnapshot.name : ''}`;
+            createdNotificationId = await ctx.db.insert("notifications", {
+                businessId,
+                recipientType: "business",
+                // For consistency with other business notifications, associate to the consumer user
+                recipientUserId: review.userId,
+                type: "review_received",
+                title: "New user review!",
+                message,
+                relatedBookingId: undefined,
+                relatedClassInstanceId: undefined,
+                seen: false,
+                deliveryStatus: "pending",
+                retryCount: 0,
+                sentToEmail: false,
+                sentToWeb: false,
+                sentToPush: false,
+                metadata: {
+                    userName: review.userSnapshot?.name,
+                },
+                createdAt: Date.now(),
+                createdBy: review.userId,
+            });
+        }
+
+        if (pref?.email && process.env.NODE_ENV === "production") {
+            try {
+                await ctx.scheduler.runAfter(0, internal.actions.email.sendReviewNotificationEmail, {
+                    businessEmail: business.email,
+                    businessName: business.name,
+                    venueName: review.venueSnapshot?.name || "Venue",
+                    reviewerName: review.userSnapshot?.name || undefined,
+                    rating: review.rating,
+                    comment: review.comment || undefined,
+                });
+            } catch (error) {
+                console.error('Error sending review email notification:', error);
+            }
+        }
+
+        return { createdNotificationId };
     },
 };

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Bell, Mail, MessageSquare, Calendar, CreditCard, UserX } from 'lucide-react';
+import { Bell, UserX, CalendarX, CreditCard, Star } from 'lucide-react';
 import { useBusinessNotificationSettings } from '../hooks/use-business-notification-settings';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -11,6 +11,7 @@ type NotificationPreferences = {
     booking_cancelled_by_consumer: { email: boolean; web: boolean; };
     booking_cancelled_by_business: { email: boolean; web: boolean; };
     payment_received: { email: boolean; web: boolean; };
+    review_received?: { email: boolean; web: boolean; };
 };
 
 const defaultPreferences: NotificationPreferences = {
@@ -18,6 +19,7 @@ const defaultPreferences: NotificationPreferences = {
     booking_cancelled_by_consumer: { email: true, web: true },
     booking_cancelled_by_business: { email: true, web: true },
     payment_received: { email: true, web: true },
+    review_received: { email: true, web: true },
 };
 
 type NotificationMode = 'none' | 'email' | 'web' | 'both';
@@ -43,14 +45,32 @@ const notificationTypes = [
         key: 'booking_created' as const,
         icon: Bell,
         title: 'New Booking',
-        description: 'When a customer books a class'
+        description: 'When a customer books a class',
     },
     {
         key: 'booking_cancelled_by_consumer' as const,
         icon: UserX,
         title: 'Customer Cancellation',
-        description: 'When a customer cancels their booking'
-    }
+        description: 'When a customer cancels their booking',
+    },
+    {
+        key: 'booking_cancelled_by_business' as const,
+        icon: CalendarX,
+        title: 'Business Cancellation',
+        description: 'When you cancel a class',
+    },
+    {
+        key: 'payment_received' as const,
+        icon: CreditCard,
+        title: 'Payment Received',
+        description: 'When a payment is received',
+    },
+    {
+        key: 'review_received' as const,
+        icon: Star,
+        title: 'New Review',
+        description: 'When a user review is approved',
+    },
 ];
 
 export function NotificationsTab() {
@@ -62,7 +82,11 @@ export function NotificationsTab() {
     // Update local state when settings are loaded
     useEffect(() => {
         if (settings?.notificationPreferences) {
-            setPreferences(settings.notificationPreferences);
+            // Merge with defaults to ensure newly added keys exist
+            setPreferences({
+                ...defaultPreferences,
+                ...settings.notificationPreferences,
+            });
             setHasChanges(false);
         }
     }, [settings]);
@@ -133,7 +157,8 @@ export function NotificationsTab() {
                         {/* Notification rows */}
                         {notificationTypes.map((notificationType) => {
                             const Icon = notificationType.icon;
-                            const currentMode = getNotificationMode(preferences[notificationType.key]);
+                            const currentPrefs = preferences[notificationType.key] ?? { email: true, web: true };
+                            const currentMode = getNotificationMode(currentPrefs);
 
                             return (
                                 <div key={notificationType.key} className="flex justify-between items-center gap-4">
