@@ -191,6 +191,8 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
     return result;
   }, [classInstance]);
 
+  const hasBookingWindowBadge = Boolean(classInstance.bookingWindow?.minHours);
+
   return (
     <TouchableOpacity
       style={[
@@ -266,7 +268,7 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
 
         {/* Badges row - always present for consistent spacing */}
         <View style={styles.badgesRow}>
-          {classInstance.bookingWindow?.minHours && (
+          {hasBookingWindowBadge && (
             <View style={styles.bookingWindowBadge}>
               <Text style={styles.bookingWindowBadgeText}>
                 {getBookingWindowText(classInstance)}

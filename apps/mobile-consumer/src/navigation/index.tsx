@@ -37,6 +37,7 @@ import { useNavigation } from '@react-navigation/native';
 import { theme } from '../theme';
 import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
+import { BlurView } from 'expo-blur';
 
 const Tab = createBottomTabNavigator();
 const RootStack = createNativeStackNavigator();
@@ -58,10 +59,10 @@ function HomeTabs() {
   const { t } = useTypedTranslation();
   const navigation = useNavigation();
   const { user } = useAuth();
-  
+
   // Get unread message count for the current user
   const unreadCount = useQuery(
-    api.queries.chat.getUnreadMessageCount, 
+    api.queries.chat.getUnreadMessageCount,
     user ? {} : "skip"
   );
 
@@ -83,7 +84,7 @@ function HomeTabs() {
             right: 20,
             borderRadius: 40,
             height: 62,
-            backgroundColor: 'white',
+            backgroundColor: 'transparent',
 
             borderTopWidth: 0,
             elevation: 10,
@@ -101,9 +102,9 @@ function HomeTabs() {
           },
           tabBarActiveTintColor: theme.colors.emerald[600],
           tabBarInactiveTintColor: theme.colors.zinc[500],
-          // tabBarBackground: () => (
-          //   <BlurView intensity={30} style={styles.blurContainer} />
-          // ),
+          tabBarBackground: () => (
+            <BlurView intensity={30} style={styles.blurContainer} />
+          ),
           animation: 'shift',
         }}
       >

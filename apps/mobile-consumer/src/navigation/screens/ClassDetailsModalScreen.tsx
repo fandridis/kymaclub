@@ -86,8 +86,8 @@ function getDiscountTimingText(discountResult: DiscountCalculationResult, classI
     }
 }
 
-function calculateClassDiscount(classInstance: any, template: any): DiscountCalculationResult {
-    const priceInCents = classInstance?.price ?? template?.price ?? 1000;
+function calculateClassDiscount(classInstance: any, templateData: any): DiscountCalculationResult {
+    const priceInCents = classInstance?.price ?? templateData?.price ?? 1000;
     const originalPrice = priceInCents / 50; // Convert cents to credits
 
     if (!classInstance) {
@@ -104,7 +104,7 @@ function calculateClassDiscount(classInstance: any, template: any): DiscountCalc
     const discountRules: ClassDiscountRule[] =
         classInstance.discountRules ||
         classInstance.templateSnapshot?.discountRules ||
-        template?.discountRules ||
+        templateData?.discountRules ||
         [];
 
     if (discountRules.length === 0) {
@@ -175,19 +175,15 @@ export function ClassDetailsModalScreen() {
         finalClassInstance && user ? { classInstanceId: finalClassInstance._id } : "skip"
     );
 
-    const template = useQuery(
-        api.queries.classTemplates.getClassTemplateById,
-        finalClassInstance ? { templateId: finalClassInstance.templateId } : "skip"
-    );
-
     const venue = useQuery(
         api.queries.venues.getVenueById,
         finalClassInstance ? { venueId: finalClassInstance.venueId } : "skip"
     );
 
     // Get image IDs with null-safe access
-    const templateImageIds = template?.imageStorageIds ?? [];
-    const venueImageIds = venue?.imageStorageIds ?? [];
+    const templateSnapshot = finalClassInstance?.templateSnapshot;
+    const templateImageIds = templateSnapshot?.imageStorageIds ?? [];
+    const venueImageIds = venue?.imageStorageIds ?? finalClassInstance?.venueSnapshot?.imageStorageIds ?? [];
     const allImageIds = [...templateImageIds, ...venueImageIds];
 
     const imageUrlsQuery = useQuery(
@@ -220,8 +216,8 @@ export function ClassDetailsModalScreen() {
     }, [templateImageIds, venueImageIds, storageIdToUrl]);
 
     const discountResult = useMemo(
-        () => calculateClassDiscount(finalClassInstance, template),
-        [finalClassInstance, template]
+        () => calculateClassDiscount(finalClassInstance, templateSnapshot),
+        [finalClassInstance, templateSnapshot]
     );
 
     // Event handlers
@@ -359,20 +355,20 @@ export function ClassDetailsModalScreen() {
     }
 
     // Calculate derived values
-    const className = finalClassInstance.name ?? template?.name ?? 'Class';
-    const description = finalClassInstance.description ?? template?.description ?? '';
-    const instructor = finalClassInstance.instructor ?? template?.instructor ?? 'TBD';
-    const capacity = finalClassInstance.capacity ?? template?.capacity ?? 0;
-    const price = finalClassInstance.price ?? template?.price ?? 0;
-    const businessName = venue?.name ?? 'Unknown Venue';
+    const className = finalClassInstance.name ?? templateSnapshot?.name ?? 'Class';
+    const description = finalClassInstance.description ?? templateSnapshot?.description ?? '';
+    const instructor = finalClassInstance.instructor ?? templateSnapshot?.instructor ?? 'TBD';
+    const capacity = finalClassInstance.capacity ?? 0;
+    const price = finalClassInstance.price ?? 0;
+    const businessName = venue?.name ?? finalClassInstance.venueSnapshot?.name ?? 'Unknown Venue';
     const startTime = new Date(finalClassInstance.startTime);
     const whenStr = format(startTime, 'eeee, dd MMMM, HH:mm', {
         in: tz('Europe/Athens')
     });
-    const cancelUntilStr = template?.cancellationWindowHours
+    const cancelUntilStr = finalClassInstance.cancellationWindowHours != null
         ? (() => {
             const cancelUntilDate = new Date(
-                finalClassInstance.startTime - template.cancellationWindowHours * 60 * 60 * 1000,
+                finalClassInstance.startTime - finalClassInstance.cancellationWindowHours * 60 * 60 * 1000,
             );
             return format(cancelUntilDate, 'eeee, dd MMMM, HH:mm', {
                 in: tz('Europe/Athens')
@@ -382,7 +378,7 @@ export function ClassDetailsModalScreen() {
     const duration = Math.round((finalClassInstance.endTime - finalClassInstance.startTime) / (1000 * 60));
     const priceCredits = centsToCredits(price);
     const spotsLeft = Math.max(0, capacity - (finalClassInstance.bookedCount ?? 0));
-    const isLoading = !template || !venue || (allImageIds.length > 0 && !imageUrlsQuery) || existingBooking === undefined;
+    const isLoading = (allImageIds.length > 0 && !imageUrlsQuery) || existingBooking === undefined;
 
     return (
         <View style={styles.container}>

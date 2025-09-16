@@ -27,12 +27,12 @@ export function ClassesList({ selectedDate, searchFilters }: ClassesListProps) {
   const selectedDateStart = useMemo(() => {
     const date = new Date(selectedDate);
     const now = new Date();
-    
+
     // If selected date is today, use current time as start to filter out past classes
     if (date.toDateString() === now.toDateString()) {
       return now.getTime();
     }
-    
+
     // For future dates, start from midnight
     date.setHours(0, 0, 0, 0);
     return date.getTime();
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingHorizontal: 0,
-    paddingVertical: 0,
+    paddingBottom: 70,
   },
   emptyContainer: {
     flex: 1,
