@@ -6,8 +6,9 @@ import {
   TouchableOpacity,
   Modal,
   ScrollView,
-  SafeAreaView
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { XIcon } from 'lucide-react-native';
 import { StarRating } from './StarRating';
 import { formatDistanceToNow } from 'date-fns';

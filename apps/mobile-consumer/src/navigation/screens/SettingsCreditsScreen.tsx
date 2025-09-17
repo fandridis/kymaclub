@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, Switch } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, Switch } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { useNavigation } from '@react-navigation/native';
 import { DiamondIcon, CrownIcon, CheckIcon, InfoIcon } from 'lucide-react-native';
 import { theme } from '../../theme';

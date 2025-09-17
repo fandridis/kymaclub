@@ -1,5 +1,7 @@
 import React, { useMemo, useCallback } from 'react';
-import { View, StyleSheet, SafeAreaView, ActivityIndicator, Text } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
 import { XIcon } from 'lucide-react-native';
 import { useQuery } from 'convex/react';

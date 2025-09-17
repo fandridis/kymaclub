@@ -1,5 +1,7 @@
 import { Text } from '@react-navigation/elements';
-import { StyleSheet, View, SafeAreaView, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { useActionSheet } from '@expo/react-native-action-sheet';
 import { useQuery, useMutation } from 'convex/react';
 import { usePaginatedQuery } from 'convex/react';

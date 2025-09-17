@@ -1,20 +1,16 @@
 // App.tsx - Clean implementation with modal auth flows
 import { Assets as NavigationAssets } from '@react-navigation/elements';
-import { DarkTheme, DefaultTheme } from '@react-navigation/native';
-import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
-import { createNavigationContainerRef } from '@react-navigation/native';
+import {
+  DarkTheme,
+  DefaultTheme,
+  NavigationContainer,
+  createNavigationContainerRef,
+} from '@react-navigation/native';
 import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import { Asset } from 'expo-asset';
 import * as SplashScreen from 'expo-splash-screen';
 import * as React from 'react';
-import {
-  ActivityIndicator,
-  Button,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, useColorScheme, View } from 'react-native';
 import { ConvexProvider, ConvexReactClient, useMutation } from "convex/react";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexQueryCacheProvider } from "convex-helpers/react/cache";
@@ -27,6 +23,7 @@ import { ErrorBoundary } from './components/error-boundary';
 import { convexAuthStorage } from './utils/storage';
 import { RootNavigator } from './navigation';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import OnboardingWizard from './components/OnboardingWizard';
 
 import * as Device from 'expo-device';
@@ -93,14 +90,16 @@ export function App() {
     <ErrorBoundary>
       <ConvexProvider client={convex}>
         <ConvexAuthProvider client={convex} storage={convexAuthStorage}>
-          <ConvexQueryCacheProvider>
+          <ConvexQueryCacheProvider expiration={60 * 1000}>
             <AuthSync>
               <AuthGuard>
                 <ActionSheetProvider>
-                  <InnerApp
-                    theme={theme}
-                    onReady={() => SplashScreen.hideAsync()}
-                  />
+                  <SafeAreaProvider>
+                    <InnerApp
+                      theme={theme}
+                      onReady={() => SplashScreen.hideAsync()}
+                    />
+                  </SafeAreaProvider>
                 </ActionSheetProvider>
               </AuthGuard>
             </AuthSync>
@@ -124,19 +123,20 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
 
   useEffect(() => {
     if (!user?._id) return;
+    if (Platform.OS === 'web' || !Device.isDevice) {
+      return;
+    }
 
     registerForPushNotificationsAsync()
       .then(token => {
         if (token) {
           recordPushNotificationToken({ token });
-        } else {
-          console.warn('No push token received');
         }
       })
       .catch(err => {
         console.error('Push registration failed', err);
       });
-  }, [user?._id]);
+  }, [recordPushNotificationToken, user?._id]);
 
   // Helper: process a notification response and navigate appropriately
   const processNotificationResponse = React.useCallback((response: Notifications.NotificationResponse | null) => {
@@ -347,10 +347,10 @@ const styles = StyleSheet.create({
  * Utils
  */
 function handleRegistrationError(errorMessage: string) {
-  alert(errorMessage);
+  console.warn(`[notifications] ${errorMessage}`);
 }
 
-async function registerForPushNotificationsAsync() {
+async function registerForPushNotificationsAsync(): Promise<string | null> {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
       name: 'default',
@@ -360,33 +360,44 @@ async function registerForPushNotificationsAsync() {
     });
   }
 
-  if (Device.isDevice) {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-    if (finalStatus !== 'granted') {
-      handleRegistrationError('Permission not granted to get push token for push notification!');
-      return;
-    }
-    const projectId =
-      Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
-    if (!projectId) {
-      handleRegistrationError('Project ID not found');
-    }
-    try {
-      const pushTokenString = (
-        await Notifications.getExpoPushTokenAsync({
-          projectId,
-        })
-      ).data;
-      return pushTokenString;
-    } catch (e: unknown) {
-      handleRegistrationError(`${e}`);
-    }
-  } else {
-    handleRegistrationError('Must use physical device for push notifications');
+  if (Platform.OS === 'web') {
+    console.info('[notifications] Web platform does not support Expo push tokens');
+    return null;
+  }
+
+  if (!Device.isDevice) {
+    console.info('[notifications] Skipping push registration on a simulator or emulator');
+    return null;
+  }
+
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
+  if (existingStatus !== 'granted') {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
+  }
+
+  if (finalStatus !== 'granted') {
+    handleRegistrationError('Permission not granted to get push token for push notification');
+    return null;
+  }
+
+  const projectId =
+    Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+  if (!projectId) {
+    handleRegistrationError('Project ID not found');
+    return null;
+  }
+
+  try {
+    const pushTokenString = (
+      await Notifications.getExpoPushTokenAsync({
+        projectId,
+      })
+    ).data;
+    return pushTokenString;
+  } catch (error: unknown) {
+    handleRegistrationError(`Failed to fetch Expo push token: ${error}`);
+    return null;
   }
 }

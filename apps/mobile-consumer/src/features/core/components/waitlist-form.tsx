@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   StatusBar,
   TextInput,
   ScrollView,
@@ -13,6 +12,8 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import * as Location from 'expo-location';
 
 interface WaitlistFormProps {

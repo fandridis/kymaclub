@@ -4,12 +4,13 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   StatusBar,
   Alert,
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import * as Location from 'expo-location';
 import { checkServiceAreaAccess, formatDistance } from '../../../utils/location';
 

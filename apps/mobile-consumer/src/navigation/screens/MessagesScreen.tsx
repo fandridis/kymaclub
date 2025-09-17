@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, SafeAreaView, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert, Animated } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert, Animated } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { MessageCircleIcon, ChevronRightIcon, TrashIcon } from 'lucide-react-native';
 import { useQuery, useMutation } from 'convex/react';

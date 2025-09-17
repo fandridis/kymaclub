@@ -1,5 +1,7 @@
 import React from 'react';
-import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Image, Alert, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Image, Alert, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { useNavigation } from '@react-navigation/native';
 import { BellIcon, CreditCardIcon, ShieldIcon, CameraIcon, LogOutIcon, RefreshCwIcon, DiamondIcon, CrownIcon, ZapIcon } from 'lucide-react-native';
 import { theme } from '../../theme';

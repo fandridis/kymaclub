@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert, SafeAreaView, TouchableOpacity, Switch } from 'react-native';
+import { View, Text, StyleSheet, Alert, TouchableOpacity, Switch } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { useUserNotificationSettings } from '../../hooks/use-user-notification-settings';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { SettingsGroup, SettingsHeader, SettingsRow } from '../../components/Settings';

@@ -3,15 +3,16 @@ import {
   StyleSheet,
   View,
   Text,
-  SafeAreaView,
   TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   Image,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { ArrowLeftIcon, SendIcon, MapPinIcon, CalendarIcon } from 'lucide-react-native';

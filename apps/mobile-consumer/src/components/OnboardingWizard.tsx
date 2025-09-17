@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Dimensions, StatusBar, TextInput, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, Dimensions, StatusBar, TextInput, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 

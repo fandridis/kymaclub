@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, StyleSheet, Text, ScrollView, View } from 'react-native';
+import { StyleSheet, Text, ScrollView, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { useUserNotificationSettings } from '../../hooks/use-user-notification-settings';
 import { useNavigation } from '@react-navigation/native';
 import { theme } from '../../theme';

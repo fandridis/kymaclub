@@ -1,5 +1,7 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Dimensions, ActivityIndicator, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, Linking } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { Image } from 'expo-image';
 import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
 import { StarIcon, ArrowLeftIcon, ShowerHeadIcon, AccessibilityIcon, UserIcon, ClockIcon, CheckCircleIcon, MessageCircleIcon, PhoneIcon, MailIcon, GlobeIcon, MapPinIcon } from 'lucide-react-native';

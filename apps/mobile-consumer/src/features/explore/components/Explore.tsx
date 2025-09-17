@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { SafeAreaView, View, ActivityIndicator, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, ActivityIndicator, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import * as Location from 'expo-location';
 import { TabType } from './ExploreHeader';
 import { FilterBar, FilterOptions } from '../../../components/FilterBar';
