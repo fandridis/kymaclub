@@ -14,6 +14,8 @@ import { useAuth } from '../../stores/auth-store';
 import { centsToCredits } from '@repo/utils/credits';
 import { theme } from '../../theme';
 import { BlurView } from 'expo-blur';
+import { getCancellationInfo, getCancellationMessage } from '../../utils/cancellationUtils';
+import type { Id } from '@repo/api/convex/_generated/dataModel';
 
 type ClassDetailsRoute = RouteProp<RootStackParamList, 'ClassDetailsModal'>;
 
@@ -151,7 +153,9 @@ export function ClassDetailsModalScreen() {
     const { showActionSheetWithOptions } = useActionSheet();
     const { user } = useAuth();
     const bookClass = useMutation(api.mutations.bookings.bookClass);
+    const cancelBookingMutation = useMutation(api.mutations.bookings.cancelBooking);
     const [isBooking, setIsBooking] = useState(false);
+    const [isCancelling, setIsCancelling] = useState(false);
     const [isHeaderWhite, setIsHeaderWhite] = useState(false);
     const [headerOpacity, setHeaderOpacity] = useState(0);
 
@@ -280,6 +284,69 @@ export function ClassDetailsModalScreen() {
                     }
                 ],
             })
+        );
+    };
+
+    const handleCancelBooking = () => {
+        if (!existingBooking || existingBooking.status !== 'pending') {
+            return;
+        }
+
+        const classLabel = existingBooking.classInstanceSnapshot?.name ?? 'this class';
+
+        let message = 'This action cannot be undone. You may not get a full refund depending on the cancellation policy.';
+
+        if (
+            existingBooking.classInstanceSnapshot?.startTime &&
+            existingBooking.classInstanceSnapshot?.cancellationWindowHours
+        ) {
+            const cancellationInfo = getCancellationInfo(
+                existingBooking.classInstanceSnapshot.startTime,
+                existingBooking.classInstanceSnapshot.cancellationWindowHours
+            );
+            message = getCancellationMessage(classLabel, cancellationInfo);
+        }
+
+        const options = ['Cancel booking', 'Keep booking'];
+        const destructiveButtonIndex = 0;
+        const cancelButtonIndex = 1;
+
+        showActionSheetWithOptions(
+            {
+                title: `Cancel "${classLabel}"?`,
+                message,
+                options,
+                destructiveButtonIndex,
+                cancelButtonIndex,
+            },
+            async (selectedIndex?: number) => {
+                if (selectedIndex !== destructiveButtonIndex) {
+                    return;
+                }
+
+                try {
+                    setIsCancelling(true);
+                    await cancelBookingMutation({
+                        bookingId: existingBooking._id as Id<'bookings'>,
+                        reason: 'Cancelled by user via class modal',
+                        cancelledBy: 'consumer',
+                    });
+
+                    Alert.alert(
+                        'Booking cancelled',
+                        'Your booking has been cancelled. Any applicable refund will follow the cancellation policy.'
+                    );
+                } catch (error: any) {
+                    const errorMessage =
+                        error?.data?.message ||
+                        error?.message ||
+                        'Failed to cancel booking. Please try again later.';
+
+                    Alert.alert('Cancellation failed', errorMessage);
+                } finally {
+                    setIsCancelling(false);
+                }
+            }
         );
     };
 
@@ -620,18 +687,32 @@ export function ClassDetailsModalScreen() {
                         {existingBooking ? (
                             existingBooking.status === "pending" ? (
                                 /* Already Attending Container */
-                                <TouchableOpacity
-                                    style={styles.alreadyAttendingContainer}
-                                    onPress={handleGoToBookings}
-                                    activeOpacity={0.8}
-                                >
+                                <View style={styles.alreadyAttendingContainer}>
                                     <BlurView intensity={20} style={[StyleSheet.absoluteFill, styles.blurContainer]} />
                                     <View style={styles.attendingTitleContainer}>
                                         <CheckCircleIcon size={22} color={theme.colors.emerald[600]} />
                                         <Text style={styles.alreadyAttendingTitle}>You're Attending</Text>
                                     </View>
-                                    <Text style={styles.alreadyAttendingSubtext}>Tap to view your bookings</Text>
-                                </TouchableOpacity>
+                                    <View style={styles.attendingActionsRow}>
+                                        <TouchableOpacity
+                                            style={styles.attendingPrimaryButton}
+                                            onPress={handleGoToBookings}
+                                            activeOpacity={0.85}
+                                        >
+                                            <Text style={styles.attendingPrimaryText}>View bookings</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={[styles.attendingSecondaryButton, isCancelling && styles.attendingSecondaryButtonDisabled]}
+                                            onPress={handleCancelBooking}
+                                            activeOpacity={0.85}
+                                            disabled={isCancelling}
+                                        >
+                                            <Text style={styles.attendingSecondaryText}>
+                                                {isCancelling ? 'Cancelling…' : 'Cancel booking'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
                             ) : (
                                 (existingBooking.status === "cancelled_by_consumer" || existingBooking.status === "cancelled_by_business_rebookable") ? (
                                     /* Rebookable Container - Allow rebooking */
@@ -675,7 +756,6 @@ export function ClassDetailsModalScreen() {
                                 disabled={spotsLeft === 0 || isBooking}
                                 onPress={onPress}
                             >
-                                <BlurView intensity={15} style={[StyleSheet.absoluteFill, styles.blurContainer]} />
                                 <View style={styles.bookButtonLeft}>
                                     <Text style={[styles.bookButtonText, spotsLeft === 0 && styles.bookButtonTextDisabled]}>
                                         {spotsLeft === 0 ? 'Fully Booked' : isBooking ? 'Booking…' : 'Book Class'}
@@ -686,17 +766,17 @@ export function ClassDetailsModalScreen() {
                                         {discountResult.appliedDiscount ? (
                                             <View style={styles.bookButtonDiscountPriceRow}>
                                                 <View style={styles.bookButtonOriginalPrice}>
-                                                    <DiamondIcon size={14} color="rgba(0, 0, 0, 0.4)" />
+                                                    <DiamondIcon size={14} color="rgba(255, 255, 255, 0.7)" />
                                                     <Text style={styles.bookButtonOriginalText}>{discountResult.originalPrice}</Text>
                                                 </View>
                                                 <View style={styles.bookButtonFinalPrice}>
-                                                    <DiamondIcon size={18} color="rgba(0, 0, 0, 0.8)" />
+                                                    <DiamondIcon size={18} color="rgba(255, 255, 255, 0.9)" />
                                                     <Text style={styles.bookButtonSubtext}>{discountResult.finalPrice}</Text>
                                                 </View>
                                             </View>
                                         ) : (
                                             <>
-                                                <DiamondIcon size={18} color="rgba(0, 0, 0, 0.8)" />
+                                                <DiamondIcon size={18} color="rgba(255, 255, 255, 0.9)" />
                                                 <Text style={styles.bookButtonSubtext}>{priceCredits}</Text>
                                             </>
                                         )}
@@ -802,11 +882,11 @@ const styles = StyleSheet.create({
         marginVertical: 12,
     },
     blurContainer: {
-        borderRadius: 40,
+        borderRadius: 30,
         overflow: 'hidden',
-        backgroundColor: 'rgba(255, 255, 255, 0.6)',
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.3)',
+        borderColor: 'rgba(255, 255, 255, 0.5)',
     },
     discountBanner: {
         backgroundColor: theme.colors.amber[500],
@@ -1108,7 +1188,7 @@ const styles = StyleSheet.create({
         elevation: 0,
     },
     bookButton: {
-        backgroundColor: 'transparent',
+        backgroundColor: theme.colors.zinc[800],
         borderRadius: 40,
         height: 56,
         paddingHorizontal: 28,
@@ -1142,7 +1222,7 @@ const styles = StyleSheet.create({
     bookButtonText: {
         fontSize: 18,
         fontWeight: '600',
-        color: theme.colors.zinc[950],
+        color: '#ffffff',
     },
     bookButtonTextDisabled: {
         color: '#9ca3af',
@@ -1150,15 +1230,15 @@ const styles = StyleSheet.create({
     bookButtonSubtext: {
         fontSize: 18,
         fontWeight: '600',
-        color: 'rgba(0, 0, 0, 0.8)',
+        color: 'rgba(255, 255, 255, 0.9)',
     },
     alreadyAttendingContainer: {
         backgroundColor: 'transparent',
-        borderRadius: 40,
-        height: 56,
-        paddingHorizontal: 28,
-        flexDirection: 'column',
-        justifyContent: 'center',
+        borderRadius: 30,
+
+        paddingHorizontal: 24,
+        paddingVertical: 16,
+        gap: 20,
         alignItems: 'center',
         shadowColor: '#000',
         shadowOffset: {
@@ -1178,13 +1258,54 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '700',
         color: theme.colors.zinc[950],
+        marginBlock: 12
     },
-    alreadyAttendingSubtext: {
-        fontSize: 13,
-        fontWeight: '500',
+    attendingActionsRow: {
+        flexDirection: 'row',
+        gap: 12,
+        width: '100%',
+        justifyContent: 'center',
+    },
+    attendingPrimaryButton: {
+        flex: 1,
+        backgroundColor: theme.colors.emerald[500],
+        paddingVertical: 12,
+        borderRadius: 999,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    attendingPrimaryText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#ffffff',
+    },
+    attendingSecondaryButton: {
+        flex: 1,
+        backgroundColor: '#ffffff',
+        paddingVertical: 12,
+        borderRadius: 999,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: theme.colors.zinc[200],
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+        elevation: 2,
+    },
+    attendingSecondaryButtonDisabled: {
+        opacity: 0.6,
+    },
+    attendingSecondaryText: {
+        fontSize: 15,
+        fontWeight: '600',
         color: theme.colors.zinc[700],
-        textAlign: 'center',
-        marginTop: 2,
     },
     statusContainer: {
         backgroundColor: 'transparent',
@@ -1334,7 +1455,7 @@ const styles = StyleSheet.create({
     bookButtonOriginalText: {
         fontSize: 18,
         fontWeight: '500',
-        color: 'rgba(0, 0, 0, 0.4)',
+        color: 'rgba(255, 255, 255, 0.7)',
         textDecorationLine: 'line-through',
     },
     bookButtonFinalPrice: {

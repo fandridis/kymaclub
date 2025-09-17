@@ -1,319 +1,251 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { ClockIcon, XIcon } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { tz } from '@date-fns/tz';
-import { useTypedTranslation } from '../i18n/typed';
-import { getCancellationInfo, formatCancellationStatus } from '../utils/cancellationUtils';
-import { Doc } from '@repo/api/convex/_generated/dataModel';
+
+import type { Doc } from '@repo/api/convex/_generated/dataModel';
 import { theme } from '../theme';
+import { MapPinIcon, TicketIcon } from 'lucide-react-native';
 
 interface BookingCardProps {
-  booking: Doc<"bookings">;
-  onCancel?: (booking: Doc<"bookings">) => void;
-  onViewClass?: (booking: Doc<"bookings">) => void;
-  isCanceling?: boolean;
+  booking: Doc<'bookings'>;
+  onViewClass?: (booking: Doc<'bookings'>) => void;
+  onViewTicket?: (booking: Doc<'bookings'>) => void;
+  showFooterIcons?: boolean;
 }
 
-export const BookingCard = ({ booking, onCancel, onViewClass, isCanceling = false }: BookingCardProps) => {
-  const { t } = useTypedTranslation();
+const ATHENS_TZ = 'Europe/Athens';
 
-  // Extract booking details
-  const className = booking.classInstanceSnapshot?.name ?? 'Class';
-  const instructor = booking.classInstanceSnapshot?.instructor ?? 'TBD';
-  const venueName = booking.venueSnapshot?.name ?? 'Unknown Venue';
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Confirmed',
+  attended: 'Attended',
+  waitlist: 'Waitlisted',
+  cancelled_by_consumer: 'Cancelled by you',
+  cancelled_by_business: 'Cancelled by studio',
+  cancelled_by_business_rebookable: 'Cancelled by studio',
+};
 
-  // Time formatting in Europe/Athens timezone - use classInstanceSnapshot.startTime first
+const getStatusLabel = (status?: string): string | null => {
+  if (!status) {
+    return null;
+  }
+
+  return STATUS_LABELS[status] ?? status.replace(/_/g, ' ');
+};
+
+const getStatusVariant = (status?: string): 'success' | 'warning' | 'danger' | 'info' => {
+  switch (status) {
+    case 'pending':
+    case 'attended':
+      return 'success';
+    case 'waitlist':
+      return 'warning';
+    case 'cancelled_by_consumer':
+    case 'cancelled_by_business':
+    case 'cancelled_by_business_rebookable':
+      return 'danger';
+    default:
+      return 'info';
+  }
+};
+
+export const BookingCard: React.FC<BookingCardProps> = ({
+  booking,
+  onViewClass,
+  onViewTicket,
+  showFooterIcons = true,
+}) => {
   const startTimeValue = booking.classInstanceSnapshot?.startTime;
-  const endTimeValue = booking.classInstanceSnapshot?.endTime;
   const startTime = startTimeValue ? new Date(startTimeValue) : null;
-  const endTime = endTimeValue ? new Date(endTimeValue) : null;
 
-  // Check if booking is in the past
-  const isPastBooking = startTime ? startTime.getTime() < Date.now() : false;
+  const dateLabel = startTime ? format(startTime, 'MMM d', { in: tz(ATHENS_TZ) }) : '—';
+  const timeLabel = startTime ? format(startTime, 'HH:mm', { in: tz(ATHENS_TZ) }) : '—';
 
-  // Check if booking is cancelled and determine cancellation source
-  const isCancelled = booking.status === 'cancelled_by_business' || booking.status === 'cancelled_by_consumer' || booking.status === 'cancelled_by_business_rebookable';
-  const cancelledByBusiness = booking.status === 'cancelled_by_business' || booking.status === 'cancelled_by_business_rebookable';
-  const cancelledByConsumer = booking.status === 'cancelled_by_consumer';
-  const isRebookable = booking.status === 'cancelled_by_business_rebookable' || booking.status === 'cancelled_by_consumer';
+  const className = booking.classInstanceSnapshot?.name ?? 'Class';
+  const instructor = booking.classInstanceSnapshot?.instructor ?? '';
+  const venueName = booking.venueSnapshot?.name ?? booking.venueSnapshot?.name ?? '';
 
-  const startTimeStr = startTime ? format(startTime, 'HH:mm', { in: tz('Europe/Athens') }) : '';
-  const duration = startTime && endTime ? Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60)) : 0;
-
-  // Calculate cancellation window information
-  const cancellationInfo = useMemo(() => {
-    if (!startTime || !booking.classInstanceSnapshot?.cancellationWindowHours) {
-      return null;
+  const metaLine = useMemo(() => {
+    if (venueName && instructor) {
+      return `${venueName} · ${instructor}`;
     }
 
-    return getCancellationInfo(
-      startTime.getTime(),
-      booking.classInstanceSnapshot?.cancellationWindowHours
-    );
-  }, [startTime, booking.classInstanceSnapshot?.cancellationWindowHours]);
+    return venueName || instructor || '';
+  }, [venueName, instructor]);
 
-  const cancellationStatusText = cancellationInfo ? formatCancellationStatus(cancellationInfo) : null;
+  const statusLabel = getStatusLabel(booking.status);
+  const statusVariant = getStatusVariant(booking.status);
+  const statusStyle = useMemo(() => {
+    switch (statusVariant) {
+      case 'success':
+        return styles.status_success;
+      case 'warning':
+        return styles.status_warning;
+      case 'danger':
+        return styles.status_danger;
+      default:
+        return styles.status_info;
+    }
+  }, [statusVariant]);
+  const isUpcoming = booking.status === 'pending';
+  const shouldShowStatus = statusLabel && !isUpcoming;
 
   return (
-    <TouchableOpacity
-      style={styles.container}
-      onPress={() => onViewClass?.(booking)}
-      activeOpacity={0.7}
-      disabled={isCanceling}
-    >
-      {/* Left side - Time and Duration */}
-      <View style={styles.timeSection}>
-        <Text style={styles.startTime}>
-          {startTimeStr}
+    <TouchableOpacity activeOpacity={0.85} onPress={() => onViewClass?.(booking)} style={styles.card}>
+      <View style={styles.dateColumn}>
+        <Text style={styles.dateText}>{dateLabel}</Text>
+        <Text style={styles.timeText}>{timeLabel}</Text>
+      </View>
+
+      <View style={styles.divider} />
+
+      <View style={styles.contentColumn}>
+        <Text style={styles.className} numberOfLines={1}>
+          {className}
         </Text>
-        <View style={styles.durationContainer}>
-          <ClockIcon size={10} color="#666" />
-          <Text style={styles.durationText}>
-            {duration}min
+        {!!metaLine && (
+          <Text style={styles.metaText} numberOfLines={1}>
+            {metaLine}
           </Text>
-        </View>
-      </View>
+        )}
 
-      {/* Middle - Class details */}
-      <View style={styles.detailsSection}>
-        <View style={styles.headerRow}>
-          <Text style={styles.title} numberOfLines={1}>
-            {className}
-          </Text>
-        </View>
-
-        <View style={styles.businessRow}>
-          <Text style={styles.businessName} numberOfLines={1}>
-            {venueName}
-          </Text>
-          <Text style={styles.separator}>•</Text>
-          <Text style={styles.instructor} numberOfLines={1}>
-            {instructor}
-          </Text>
-        </View>
-
-        {/* Cancellation info - only show for future, non-cancelled bookings */}
-        {!isPastBooking && !isCancelled && cancellationStatusText && (
-          <View style={styles.cancellationRow}>
-            <Text style={[
-              styles.cancellationText,
-              cancellationInfo?.isWithinWindow ? styles.freeCancelText : styles.partialRefundText
-            ]}>
-              {cancellationStatusText}
-            </Text>
+        {shouldShowStatus && (
+          <View style={[styles.statusPill, statusStyle]}>
+            <Text style={styles.statusText}>{statusLabel}</Text>
           </View>
         )}
 
-        {/* Cancellation badge - moved to bottom */}
-        {isCancelled && (
-          <View style={styles.badgeContainer}>
-            <View style={[
-              styles.badge,
-              cancelledByBusiness ? styles.badgeBusiness : styles.badgeConsumer
-            ]}>
-              <Text style={styles.badgeText}>
-                {booking.status === 'cancelled_by_business_rebookable'
-                  ? 'Cancelled by the studio'
-                  : cancelledByBusiness
-                    ? 'Cancelled by the studio'
-                    : 'Cancelled by you'}
-              </Text>
-            </View>
-            {/* Show cancel reason if it exists */}
-            {booking.cancelReason && (
-              <Text style={styles.cancelReasonText}>
-                {booking.cancelReason}
-              </Text>
-            )}
+        {showFooterIcons && isUpcoming && (
+          <View style={styles.footerIcons}>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={(event) => {
+                event.stopPropagation?.();
+                onViewClass?.(booking);
+              }}
+              style={styles.footerIconButton}
+            >
+              <MapPinIcon size={19} color={theme.colors.zinc[500]} strokeWidth={1.9} />
+            </TouchableOpacity>
 
-            {/* Rebook button removed from list view - users can rebook from class details modal */}
-
-            {/* Show "You cannot book this class again" only for non-rebookable cancellations */}
-            {/* {isCancelled && !isRebookable && (
-              <Text style={styles.noRebookText}>
-                You cannot book this class again
-              </Text>
-            )} */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={(event) => {
+                event.stopPropagation?.();
+                onViewTicket?.(booking);
+              }}
+              style={[styles.footerIconButton, !onViewTicket && styles.footerIconButtonDisabled]}
+              disabled={!onViewTicket}
+            >
+              <TicketIcon size={19} color={theme.colors.zinc[500]} strokeWidth={1.9} />
+            </TouchableOpacity>
           </View>
         )}
       </View>
 
-      {/* Right side - Action buttons */}
-      <View style={styles.actionsSection}>
-        {/* Only show cancel button for future, non-cancelled bookings */}
-        {!isPastBooking && !isCancelled && (
-          <TouchableOpacity
-            style={[styles.actionButton, styles.cancelButton, isCanceling && styles.actionButtonDisabled]}
-            onPress={(e) => {
-              e.stopPropagation();
-              onCancel?.(booking);
-            }}
-            disabled={isCanceling}
-          >
-            <XIcon size={20} color={isCanceling ? "#9ca3af" : "#dc2626"} />
-          </TouchableOpacity>
-        )}
-      </View>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: 'transparent',
-    padding: 12,
+  card: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 22,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 1)',
   },
-  timeSection: {
-    width: 64,
+  dateColumn: {
+    minWidth: 68,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
-    borderRightWidth: 1,
-    borderRightColor: '#e0e0e0',
-    paddingRight: 12,
+    gap: 4,
   },
-  startTime: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
+  dateText: {
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 0.3,
+    color: theme.colors.zinc[600],
+    textTransform: 'uppercase',
   },
-  durationContainer: {
+  timeText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.colors.zinc[900],
+  },
+  divider: {
+    width: 1,
+    alignSelf: 'stretch',
+    backgroundColor: theme.colors.zinc[200],
+    opacity: 0.8,
+  },
+  contentColumn: {
+    flex: 1,
+    gap: 8,
+  },
+  className: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: theme.colors.zinc[900],
+  },
+  metaText: {
+    fontSize: 14,
+    color: theme.colors.zinc[500],
+  },
+  footerIcons: {
+    marginTop: 13,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.zinc[100],
     flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 16,
+  },
+  footerIconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 3,
+    backgroundColor: theme.colors.zinc[100],
+    borderWidth: 1,
+    borderColor: theme.colors.zinc[200],
   },
-  durationText: {
-    fontSize: 10,
-    color: '#666',
-    fontWeight: '500',
+  footerIconButtonDisabled: {
+    opacity: 0.5,
   },
-  detailsSection: {
-    flex: 1,
-    justifyContent: 'space-between',
-    marginRight: 12,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 4,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    flex: 1,
-  },
-  businessRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-    flex: 1,
-  },
-  businessName: {
-    fontSize: 13,
-    color: '#666',
-    fontWeight: '500',
-    flexShrink: 1,
-  },
-  separator: {
-    fontSize: 12,
-    color: '#ccc',
-    marginHorizontal: 6,
-  },
-  instructor: {
-    fontSize: 13,
-    color: '#666',
-    fontStyle: 'italic',
-    flex: 1,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  statusPill: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
   },
   statusText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#22c55e',
+    color: '#ffffff',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  cancellationRow: {
-    marginTop: 4,
+  status_success: {
+    backgroundColor: theme.colors.emerald[500],
   },
-  cancellationText: {
-    fontSize: 12,
-    fontWeight: '500',
+  status_warning: {
+    backgroundColor: theme.colors.amber[500],
   },
-  freeCancelText: {
-    color: '#16a34a', // Green for free cancellation
+  status_danger: {
+    backgroundColor: theme.colors.rose[500],
   },
-  partialRefundText: {
-    color: '#d97706', // Orange for partial refund
-  },
-  actionsSection: {
-    width: 40,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-  },
-  actionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  cancelButton: {
-    backgroundColor: '#fff',
-    borderColor: theme.colors.rose[500],
-  },
-  actionButtonDisabled: {
-    opacity: 0.5,
-    borderColor: '#9ca3af',
-  },
-  badgeContainer: {
-    marginTop: 4,
-    marginBottom: 4,
-  },
-  badge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-    maxWidth: '100%',
-  },
-  badgeBusiness: {
-    backgroundColor: '#fef3c7', // Light amber background
-    borderWidth: 1,
-    borderColor: '#f59e0b', // Amber border
-  },
-  badgeConsumer: {
-    backgroundColor: '#e5e7eb', // Light gray background  
-    borderWidth: 1,
-    borderColor: '#9ca3af', // Gray border
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#374151', // Dark gray text
-  },
-  cancelReasonText: {
-    fontSize: 11,
-    fontStyle: 'italic',
-    color: '#6b7280', // Lighter gray for reason text
-    marginTop: 4,
-    lineHeight: 14,
-  },
-  noRebookText: {
-    fontSize: 11,
-    fontStyle: 'italic',
-    color: '#9ca3af', // Light gray
-    marginTop: 6,
-    textAlign: 'center',
+  status_info: {
+    backgroundColor: theme.colors.sky[500],
   },
 });

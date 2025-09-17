@@ -3,13 +3,12 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { NavigatorScreenParams } from '@react-navigation/native';
 import { NewsScreen } from './screens/NewsScreen';
 import { ExploreScreen } from './screens/ExploreScreen';
-import { ScanScreen } from './screens/ScanScreen';
 import { BookingsScreen } from './screens/BookingsScreen';
 import { MessagesScreen } from './screens/MessagesScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { NotFoundScreen } from './screens/NotFoundScreen';
-import { QRScannerScreen } from './screens/QRScannerScreen';
 import { ClassDetailsModalScreen } from './screens/ClassDetailsModalScreen';
+import { BookingTicketModalScreen } from './screens/BookingTicketModalScreen';
 import { VenueDetailsScreen } from './screens/VenueDetailsScreen';
 import { VenueClassInstancesScreen } from './screens/VenueClassInstancesScreen';
 import { SettingsNotificationsPreferenceScreen } from './screens/SettingsNotificationsPreferenceScreen';
@@ -24,8 +23,8 @@ import { SuperpowersScreen } from './screens/SuperpowersScreen';
 import { BuyCreditsScreen } from './screens/BuyCreditsScreen';
 import { LandingScreen } from '../features/core/screens/landing-screen';
 import { CreateAccountModalScreen } from '../features/core/screens/create-account-modal-screen';
-import { SearchIcon, NewspaperIcon, ScanQrCodeIcon, TicketIcon, MessageCircleIcon } from 'lucide-react-native';
-import { StyleSheet, View } from 'react-native';
+import { SearchIcon, NewspaperIcon, TicketIcon, MessageCircleIcon } from 'lucide-react-native';
+import { StyleSheet } from 'react-native';
 import { useTypedTranslation } from '../i18n/typed';
 import { useAuth } from '../stores/auth-store';
 import { LocationObject } from 'expo-location';
@@ -33,31 +32,17 @@ import { SignInModalScreen } from '../features/core/screens/sign-in-modal-screen
 import { PaymentSuccessScreen } from './screens/PaymentSuccessScreen';
 import { PaymentCancelScreen } from './screens/PaymentCancelScreen';
 import { ConversationScreen } from './screens/ConversationScreen';
-import { useNavigation } from '@react-navigation/native';
 import { theme } from '../theme';
 import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { BlurView } from 'expo-blur';
 
-const Tab = createBottomTabNavigator();
-const RootStack = createNativeStackNavigator();
-
-// Your existing CenterScanIcon component stays the same...
-const CenterScanIcon = ({ color, size, focused }: { color: string, size: number, focused: boolean }) => {
-  return (
-    <View style={[
-      styles.centerIconContainer,
-      focused && styles.centerIconContainerActive
-    ]}>
-      <ScanQrCodeIcon color="white" size={size + 2} strokeWidth={2} />
-    </View>
-  );
-};
+const Tab = createBottomTabNavigator<TabParamList>();
+const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 // Your existing HomeTabs component stays the same...
 function HomeTabs() {
   const { t } = useTypedTranslation();
-  const navigation = useNavigation();
   const { user } = useAuth();
 
   // Get unread message count for the current user
@@ -101,7 +86,7 @@ function HomeTabs() {
             color: 'white',
           },
           tabBarActiveTintColor: theme.colors.emerald[600],
-          tabBarInactiveTintColor: theme.colors.zinc[700],
+          tabBarInactiveTintColor: theme.colors.zinc[600],
           tabBarBackground: () => (
             <BlurView intensity={20} style={styles.blurContainer} />
           ),
@@ -128,23 +113,6 @@ function HomeTabs() {
             tabBarIcon: ({ color }) => (
               <SearchIcon color={color} size={26} />
             ),
-          }}
-        />
-        <Tab.Screen
-          name="Scan"
-          component={ScanScreen}
-          options={{
-            title: t('navigation.scan'),
-            tabBarLabel: () => null,
-            tabBarIcon: ({ color, size, focused }) => (
-              <CenterScanIcon color={color} size={size + 4} focused={focused} />
-            ),
-          }}
-          listeners={{
-            tabPress: (e) => {
-              e.preventDefault();
-              navigation.navigate('QRScannerModal' as never);
-            },
           }}
         />
         <Tab.Screen
@@ -348,13 +316,12 @@ export function RootNavigator() {
         }}
       >
         <RootStack.Screen
-          name="QRScannerModal"
-          component={QRScannerScreen}
+          name="BookingTicketModal"
+          component={BookingTicketModalScreen}
           options={{
             headerShown: false,
             animation: 'slide_from_bottom',
           }}
-
         />
         <RootStack.Screen
           name="SignInModal"
@@ -429,7 +396,9 @@ export type RootStackParamList = {
   // Auth screens
   Landing: undefined;
   // Modal screens
-  QRScannerModal: undefined;
+  BookingTicketModal: {
+    booking: import('@repo/api/convex/_generated/dataModel').Doc<"bookings">;
+  };
   SignInModal: undefined;
   CreateAccountModal: {
     waitlistData?: {
@@ -442,7 +411,6 @@ export type RootStackParamList = {
 export type TabParamList = {
   News: undefined;
   Explore: undefined;
-  Scan: undefined;
   Bookings: undefined;
   Messages: undefined;
 };
@@ -482,7 +450,9 @@ export type RootStackParamListWithNestedTabs = {
   // Auth screens
   Landing: undefined;
   // Modal screens
-  QRScannerModal: undefined;
+  BookingTicketModal: {
+    booking: import('@repo/api/convex/_generated/dataModel').Doc<"bookings">;
+  };
   SignInModal: undefined;
   CreateAccountModal: {
     waitlistData?: {
@@ -505,28 +475,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  centerIconContainer: {
-    width: 62,
-    height: 62,
-    borderRadius: 40,
-    backgroundColor: theme.colors.emerald[500],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: -8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  centerIconContainerActive: {
-    // backgroundColor: '#000000',
   },
 });

@@ -144,7 +144,8 @@ const styles = StyleSheet.create({
     color: theme.colors.zinc[500],
   },
   listContainer: {
-    paddingHorizontal: 0,
+    paddingHorizontal: 8,
+    paddingTop: 8,
     paddingBottom: 70,
   },
   emptyContainer: {

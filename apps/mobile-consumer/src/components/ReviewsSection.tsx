@@ -43,8 +43,6 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
     );
   }
 
-  console.log('isEligible', isEligible);
-
   return (
     <View>
       {/* Section Title */}

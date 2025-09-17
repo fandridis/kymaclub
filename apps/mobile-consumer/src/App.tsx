@@ -53,7 +53,6 @@ function needsAuthentication(route: string): boolean {
     'SettingsSubscription',
     'SettingsAccount',
     'VenueDetailsScreen',
-    'QRScannerModal',
     'PaymentSuccess',
     'PaymentCancel',
     'Conversation',
@@ -302,7 +301,6 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
               SettingsNotifications: 'settings/notifications',
               SettingsSubscription: 'settings/subscription',
               SettingsAccount: 'settings/account',
-              QRScannerModal: 'scanner',
               // Payment result screens
               PaymentSuccess: {
                 path: 'payment/success',
