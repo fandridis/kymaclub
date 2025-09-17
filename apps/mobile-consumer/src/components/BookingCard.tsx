@@ -6,6 +6,7 @@ import { tz } from '@date-fns/tz';
 import { useTypedTranslation } from '../i18n/typed';
 import { getCancellationInfo, formatCancellationStatus } from '../utils/cancellationUtils';
 import { Doc } from '@repo/api/convex/_generated/dataModel';
+import { theme } from '../theme';
 
 interface BookingCardProps {
   booking: Doc<"bookings">;
@@ -262,14 +263,14 @@ const styles = StyleSheet.create({
   actionButton: {
     width: 32,
     height: 32,
-    borderRadius: 4,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
   },
   cancelButton: {
     backgroundColor: '#fff',
-    borderColor: '#dc2626',
+    borderColor: theme.colors.rose[500],
   },
   actionButtonDisabled: {
     opacity: 0.5,

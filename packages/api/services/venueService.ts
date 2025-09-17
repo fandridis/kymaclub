@@ -85,7 +85,7 @@ export const venueService = {
         venueRules.lastVenueCannotBeDeleted(existingVenue, activeVenues, user);
 
         // Check if the venue is used in any class templates
-        const classTemplates = await ctx.db.query("classTemplates").withIndex("by_venue", q => q.eq("venueId", args.venueId)).collect();
+        const classTemplates = await ctx.db.query("classTemplates").withIndex("by_venue_deleted", q => q.eq("venueId", args.venueId).eq("deleted", false)).collect();
         if (classTemplates.length > 0) {
             throw new ConvexError({
                 message: "Venue is used in class templates. Please update the templates first.",
@@ -123,7 +123,7 @@ export const venueService = {
         venueRules.lastVenueCannotBeDeleted(existingVenue, [], user);
 
         // Check if the venue is used in any class templates
-        const classTemplates = await ctx.db.query("classTemplates").withIndex("by_venue", q => q.eq("venueId", args.venueId)).collect();
+        const classTemplates = await ctx.db.query("classTemplates").withIndex("by_venue_deleted", q => q.eq("venueId", args.venueId).eq("deleted", false)).collect();
         if (classTemplates.length > 0) {
             throw new ConvexError({
                 message: "Venue is used in class templates. Cannot permanently delete.",

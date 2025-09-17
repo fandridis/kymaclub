@@ -101,9 +101,9 @@ function HomeTabs() {
             color: 'white',
           },
           tabBarActiveTintColor: theme.colors.emerald[600],
-          tabBarInactiveTintColor: theme.colors.zinc[500],
+          tabBarInactiveTintColor: theme.colors.zinc[700],
           tabBarBackground: () => (
-            <BlurView intensity={30} style={styles.blurContainer} />
+            <BlurView intensity={20} style={styles.blurContainer} />
           ),
           animation: 'shift',
         }}
@@ -505,7 +505,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   centerIconContainer: {
     width: 62,

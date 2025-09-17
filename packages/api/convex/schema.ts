@@ -865,21 +865,21 @@ export const chatMessagesFields = {
 // Used for smart notification delivery to avoid spam when user is already chatting
 export const userPresenceFields = {
   userId: v.id("users"),
-  
+
   // Current active thread (null if not in any chat)
   activeThreadId: v.optional(v.union(v.id("chatMessageThreads"), v.null())),
-  
+
   // Presence status
   isActive: v.boolean(), // Is user currently active in the app
   lastSeen: v.number(), // Last activity timestamp
-  
+
   // App state tracking
   appState: v.union(
     v.literal("active"),      // App is in foreground
     v.literal("background"),  // App is in background
     v.literal("inactive")     // App is not running/closed
   ),
-  
+
   // Device info for multi-device support
   deviceId: v.optional(v.string()), // Unique device identifier
   deviceType: v.optional(v.union(
@@ -887,7 +887,7 @@ export const userPresenceFields = {
     v.literal("web"),
     v.literal("desktop")
   )),
-  
+
   // Metadata
   ...auditFields,
 };
@@ -960,6 +960,7 @@ export default defineSchema({
   classTemplates: defineTable(classTemplatesFields)
     .index("by_business", ["businessId"])
     .index("by_venue", ["venueId"])
+    .index("by_venue_deleted", ["venueId", "deleted"])
     .index("by_business_deleted", ["businessId", "deleted"])
     .index("by_business_deleted_active", ["businessId", "deleted", "isActive"]),
 

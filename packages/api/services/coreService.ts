@@ -43,6 +43,7 @@ export const coreService = {
             address: cleanArgs.venue.address,
             primaryCategory: cleanArgs.venue.primaryCategory,
             isActive: true,
+            deleted: false,
             createdAt: Date.now(),
             createdBy: user._id,
         });

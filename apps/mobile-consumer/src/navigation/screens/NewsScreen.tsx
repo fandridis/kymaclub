@@ -313,10 +313,10 @@ export function NewsScreen() {
     if (isInitialLoading) {
         return (
             <SafeAreaView style={styles.container}>
-                <TabScreenHeader 
-                    title={t('welcome.title')} 
+                <TabScreenHeader
+                    title={t('welcome.title')}
                     renderRightSide={() => (
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             onPress={() => navigation.navigate('Settings')}
                             style={styles.profileButton}
                         >
@@ -334,10 +334,10 @@ export function NewsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <TabScreenHeader 
-                title={t('welcome.title')} 
+            <TabScreenHeader
+                title={t('welcome.title')}
                 renderRightSide={() => (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         onPress={() => navigation.navigate('Settings')}
                         style={styles.profileButton}
                     >
@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
         elevation: 3,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: theme.colors.zinc[100],
+        borderColor: 'rgba(255, 255, 255, 0.3)',
     },
 
     // Specific carousel card styles

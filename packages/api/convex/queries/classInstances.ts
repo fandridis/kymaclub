@@ -1,8 +1,9 @@
 import { query } from "../_generated/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { classInstanceService } from "../../services/classInstanceService";
 import { getAuthenticatedUserOrThrow } from "../utils";
 import { pricingOperations } from "../../operations/pricing";
+import { ERROR_CODES } from "../../utils/errorCodes";
 
 /***************************************************************
  * Get Class Instance By ID
@@ -17,6 +18,37 @@ export const getClassInstanceById = query({
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
         return await classInstanceService.getInstanceById({ ctx, args, user });
+    }
+});
+
+/***************************************************************
+ * Get Class Instance By ID (Consumer Access)
+ *
+ * Allows authenticated consumers to load class details without
+ * requiring a business association. Ensures the instance exists
+ * and is not deleted.
+ ***************************************************************/
+
+export const getConsumerClassInstanceByIdArgs = v.object({
+    instanceId: v.id("classInstances"),
+});
+
+export const getConsumerClassInstanceById = query({
+    args: getConsumerClassInstanceByIdArgs,
+    handler: async (ctx, args) => {
+        await getAuthenticatedUserOrThrow(ctx);
+
+        const instance = await ctx.db.get(args.instanceId);
+
+        if (!instance || instance.deleted) {
+            throw new ConvexError({
+                message: "Instance not found",
+                field: "instanceId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND,
+            });
+        }
+
+        return instance;
     }
 });
 

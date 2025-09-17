@@ -50,8 +50,8 @@ export const validateWebsite = (website: string): ValidationResult<string> => {
 
 export const validateDescription = (description: string): ValidationResult<string> => {
     const trimmed = description.trim();
-    if (trimmed.length > 500) {
-        return { success: false, error: "Description cannot exceed 500 characters" };
+    if (trimmed.length > 2000) {
+        return { success: false, error: "Description cannot exceed 2000 characters" };
     }
     return { success: true, value: trimmed };
 };

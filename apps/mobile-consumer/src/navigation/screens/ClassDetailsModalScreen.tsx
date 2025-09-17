@@ -1,8 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Dimensions, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import { Image } from 'expo-image';
-import { Calendar1Icon, ClockIcon, CalendarOffIcon, DiamondIcon, ArrowLeftIcon } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Calendar1Icon, ClockIcon, CalendarOffIcon, DiamondIcon, ArrowLeftIcon, CheckIcon, CheckCircleIcon } from 'lucide-react-native';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import Carousel from 'react-native-reanimated-carousel';
 import { useQuery, useMutation } from 'convex/react';
@@ -14,6 +13,7 @@ import { useActionSheet } from '@expo/react-native-action-sheet';
 import { useAuth } from '../../stores/auth-store';
 import { centsToCredits } from '@repo/utils/credits';
 import { theme } from '../../theme';
+import { BlurView } from 'expo-blur';
 
 type ClassDetailsRoute = RouteProp<RootStackParamList, 'ClassDetailsModal'>;
 
@@ -157,7 +157,7 @@ export function ClassDetailsModalScreen() {
 
     // Fetch classInstance if not provided directly
     const fetchedClassInstance = useQuery(
-        api.queries.classInstances.getClassInstanceById,
+        api.queries.classInstances.getConsumerClassInstanceById,
         classInstance || !classInstanceId ? "skip" : { instanceId: classInstanceId }
     );
 
@@ -625,7 +625,11 @@ export function ClassDetailsModalScreen() {
                                     onPress={handleGoToBookings}
                                     activeOpacity={0.8}
                                 >
-                                    <Text style={styles.alreadyAttendingTitle}>✓ You're Attending</Text>
+                                    <BlurView intensity={20} style={[StyleSheet.absoluteFill, styles.blurContainer]} />
+                                    <View style={styles.attendingTitleContainer}>
+                                        <CheckCircleIcon size={22} color={theme.colors.emerald[600]} />
+                                        <Text style={styles.alreadyAttendingTitle}>You're Attending</Text>
+                                    </View>
                                     <Text style={styles.alreadyAttendingSubtext}>Tap to view your bookings</Text>
                                 </TouchableOpacity>
                             ) : (
@@ -637,6 +641,7 @@ export function ClassDetailsModalScreen() {
                                         activeOpacity={0.8}
                                         disabled={isBooking}
                                     >
+                                        <BlurView intensity={20} style={[StyleSheet.absoluteFill, styles.blurContainer]} />
                                         <Text style={styles.rebookTitle}>
                                             {existingBooking.status === "cancelled_by_consumer" && "✗ You cancelled"}
                                             {existingBooking.status === "cancelled_by_business_rebookable" && "✗ Cancelled by studio"}
@@ -648,11 +653,17 @@ export function ClassDetailsModalScreen() {
                                 ) : (
                                     /* Status Display Container - Not clickable */
                                     <View style={styles.statusContainer}>
-                                        <Text style={styles.statusTitle}>
-                                            {existingBooking.status === "completed" && "✓ Completed"}
-                                            {existingBooking.status === "cancelled_by_business" && "✗ Cancelled by studio"}
-                                            {existingBooking.status === "no_show" && "⚠ No show"}
-                                        </Text>
+                                        <BlurView intensity={20} style={[StyleSheet.absoluteFill, styles.blurContainer]} />
+                                        <View style={styles.statusTitleContainer}>
+                                            {existingBooking.status === "completed" &&
+                                                <>
+                                                    <CheckIcon size={20} color={styles.statusTitle.color} />
+                                                    <Text style={styles.statusTitle}>Completed</Text>
+                                                </>
+                                            }
+                                            {existingBooking.status === "cancelled_by_business" && <Text style={styles.statusTitle}>✗ Cancelled by studio</Text>}
+                                            {existingBooking.status === "no_show" && <Text style={styles.statusTitle}>⚠ No show</Text>}
+                                        </View>
                                         <Text style={styles.statusSubtext}>You cannot book this class again</Text>
                                     </View>
                                 )
@@ -664,6 +675,7 @@ export function ClassDetailsModalScreen() {
                                 disabled={spotsLeft === 0 || isBooking}
                                 onPress={onPress}
                             >
+                                <BlurView intensity={15} style={[StyleSheet.absoluteFill, styles.blurContainer]} />
                                 <View style={styles.bookButtonLeft}>
                                     <Text style={[styles.bookButtonText, spotsLeft === 0 && styles.bookButtonTextDisabled]}>
                                         {spotsLeft === 0 ? 'Fully Booked' : isBooking ? 'Booking…' : 'Book Class'}
@@ -674,17 +686,17 @@ export function ClassDetailsModalScreen() {
                                         {discountResult.appliedDiscount ? (
                                             <View style={styles.bookButtonDiscountPriceRow}>
                                                 <View style={styles.bookButtonOriginalPrice}>
-                                                    <DiamondIcon size={14} color="rgba(255, 255, 255, 0.6)" />
+                                                    <DiamondIcon size={14} color="rgba(0, 0, 0, 0.4)" />
                                                     <Text style={styles.bookButtonOriginalText}>{discountResult.originalPrice}</Text>
                                                 </View>
                                                 <View style={styles.bookButtonFinalPrice}>
-                                                    <DiamondIcon size={18} color="rgba(255, 255, 255, 0.9)" />
+                                                    <DiamondIcon size={18} color="rgba(0, 0, 0, 0.8)" />
                                                     <Text style={styles.bookButtonSubtext}>{discountResult.finalPrice}</Text>
                                                 </View>
                                             </View>
                                         ) : (
                                             <>
-                                                <DiamondIcon size={18} color="rgba(255, 255, 255, 0.9)" />
+                                                <DiamondIcon size={18} color="rgba(0, 0, 0, 0.8)" />
                                                 <Text style={styles.bookButtonSubtext}>{priceCredits}</Text>
                                             </>
                                         )}
@@ -788,6 +800,13 @@ const styles = StyleSheet.create({
         height: 1,
         backgroundColor: '#e5e7eb',
         marginVertical: 12,
+    },
+    blurContainer: {
+        borderRadius: 40,
+        overflow: 'hidden',
+        backgroundColor: 'rgba(255, 255, 255, 0.6)',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.3)',
     },
     discountBanner: {
         backgroundColor: theme.colors.amber[500],
@@ -1089,7 +1108,7 @@ const styles = StyleSheet.create({
         elevation: 0,
     },
     bookButton: {
-        backgroundColor: '#222',
+        backgroundColor: 'transparent',
         borderRadius: 40,
         height: 56,
         paddingHorizontal: 28,
@@ -1123,7 +1142,7 @@ const styles = StyleSheet.create({
     bookButtonText: {
         fontSize: 18,
         fontWeight: '600',
-        color: 'white',
+        color: theme.colors.zinc[950],
     },
     bookButtonTextDisabled: {
         color: '#9ca3af',
@@ -1131,10 +1150,10 @@ const styles = StyleSheet.create({
     bookButtonSubtext: {
         fontSize: 18,
         fontWeight: '600',
-        color: 'rgba(255, 255, 255, 0.9)',
+        color: 'rgba(0, 0, 0, 0.8)',
     },
     alreadyAttendingContainer: {
-        backgroundColor: '#16a34a',
+        backgroundColor: 'transparent',
         borderRadius: 40,
         height: 56,
         paddingHorizontal: 28,
@@ -1149,22 +1168,26 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.15,
         shadowRadius: 8,
         elevation: 8,
+    },
+    attendingTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
     },
     alreadyAttendingTitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: 'white',
-        textAlign: 'center',
+        color: theme.colors.zinc[950],
     },
     alreadyAttendingSubtext: {
         fontSize: 13,
         fontWeight: '500',
-        color: 'rgba(255, 255, 255, 0.9)',
+        color: theme.colors.zinc[700],
         textAlign: 'center',
         marginTop: 2,
     },
     statusContainer: {
-        backgroundColor: '#fbbf24',
+        backgroundColor: 'transparent',
         borderRadius: 40,
         height: 56,
         paddingHorizontal: 28,
@@ -1179,12 +1202,16 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.15,
         shadowRadius: 8,
         elevation: 8,
+    },
+    statusTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
     },
     statusTitle: {
         fontSize: 18,
         fontWeight: '700',
         color: '#7c2d12',
-        textAlign: 'center',
     },
     statusSubtext: {
         fontSize: 13,
@@ -1194,7 +1221,7 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     rebookContainer: {
-        backgroundColor: '#3b82f6',
+        backgroundColor: 'transparent',
         borderRadius: 40,
         height: 56,
         paddingHorizontal: 28,
@@ -1213,13 +1240,13 @@ const styles = StyleSheet.create({
     rebookTitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: 'white',
+        color: theme.colors.zinc[950],
         textAlign: 'center',
     },
     rebookSubtext: {
         fontSize: 13,
         fontWeight: '500',
-        color: 'rgba(255, 255, 255, 0.9)',
+        color: theme.colors.zinc[700],
         textAlign: 'center',
         marginTop: 2,
     },
@@ -1307,7 +1334,7 @@ const styles = StyleSheet.create({
     bookButtonOriginalText: {
         fontSize: 18,
         fontWeight: '500',
-        color: 'rgba(255, 255, 255, 0.6)',
+        color: 'rgba(0, 0, 0, 0.4)',
         textDecorationLine: 'line-through',
     },
     bookButtonFinalPrice: {

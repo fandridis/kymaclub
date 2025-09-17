@@ -88,11 +88,11 @@ export const prepareCreateVenue = (args: CreateVenueArgs): CreateVenueArgs['venu
         // Date: 2024-08, Context: Need backward compatibility for venue extensions
         // Alternative considered: Strict schema enforcement, rejected due to migration complexity
         ...v,
-        
+
         // Mandatory fields - comprehensive validation for core venue data
         name: throwIfError(venueValidations.validateName(v.name), 'name'),
         email: throwIfError(coreValidations.validateEmail(v.email), 'email'), // Required for venue contact
-        
+
         // Address validation - comprehensive geographic data validation
         address: {
             street: throwIfError(coreValidations.validateStreet(v.address.street), 'address.street'),
@@ -157,6 +157,7 @@ export const createDefaultVenue = (
     return {
         businessId,
         isActive: true,
+        deleted: false,
         createdAt: Date.now(),
         createdBy: userId,
     };
@@ -227,7 +228,7 @@ export const prepareUpdateVenue = (updates: UpdateVenueArgs, existingVenue: Doc<
         // Rationale: Allows partial address updates without losing existing geographic data
         // Date: 2024-08, Context: Geocoding updates shouldn't require re-entering full address
         // Alternative considered: Replace entire address object, rejected due to data loss risk
-        
+
         // Address merging - preserve existing fields, validate and update only provided fields
         address: {
             ...existingVenue.address, // Preserve all existing address data
