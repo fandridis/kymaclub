@@ -72,19 +72,46 @@ function findBestDiscountRule(rules: ClassDiscountRule[], hoursUntilClass: numbe
     return bestRule ? { rule: bestRule, ruleName: bestRule.name } : null;
 }
 
+function formatTimeRemaining(hoursUntilClass: number): string {
+    const totalMinutes = Math.max(0, Math.round(hoursUntilClass * 60));
+    const minutesInDay = 60 * 24;
+
+    const days = Math.floor(totalMinutes / minutesInDay);
+    const remainingMinutesAfterDays = totalMinutes % minutesInDay;
+    const hours = Math.floor(remainingMinutesAfterDays / 60);
+    const minutes = remainingMinutesAfterDays % 60;
+
+    const parts: string[] = [];
+
+    if (days > 0) {
+        parts.push(`${days}d`);
+    }
+
+    if (hours > 0 || days > 0) {
+        parts.push(`${hours}h`);
+    }
+
+    if (minutes > 0 || parts.length === 0) {
+        parts.push(`${minutes}m`);
+    }
+
+    return parts.join(' ');
+}
+
 function getDiscountTimingText(discountResult: DiscountCalculationResult, classInstance: any): string {
     if (!discountResult.appliedDiscount) return '';
 
     const now = Date.now();
     const hoursUntilClass = Math.max(0, (classInstance.startTime - now) / (1000 * 60 * 60));
     const ruleName = discountResult.appliedDiscount.ruleName;
+    const formattedTime = formatTimeRemaining(hoursUntilClass);
 
     if (ruleName.toLowerCase().includes('early')) {
-        return `Early bird discount: ${Math.round(hoursUntilClass)}h left`;
+        return `Early bird discount: ${formattedTime}`;
     } else if (ruleName.toLowerCase().includes('last') || ruleName.toLowerCase().includes('minute')) {
-        return `Last minute discount: ${Math.round(hoursUntilClass)}h left`;
+        return `Last minute discount: ${formattedTime}`;
     } else {
-        return 'This class has a discount!';
+        return `Discount active: ${formattedTime}`;
     }
 }
 

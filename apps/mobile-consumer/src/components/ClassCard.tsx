@@ -79,14 +79,27 @@ function getBookingWindowText(classInstance: ClassInstance): string {
   const bookingEndTime = classStartTime - classInstance.bookingWindow.minHours * 60 * 60 * 1000;
   const timeUntilBookingEnds = Math.max(0, bookingEndTime - now);
 
-  const hours = Math.floor(timeUntilBookingEnds / (1000 * 60 * 60));
-  const minutes = Math.floor((timeUntilBookingEnds % (1000 * 60 * 60)) / (1000 * 60));
+  const totalMinutes = Math.floor(timeUntilBookingEnds / (1000 * 60));
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const remainingMinutesAfterDays = totalMinutes % (60 * 24);
+  const hours = Math.floor(remainingMinutesAfterDays / 60);
+  const minutes = remainingMinutesAfterDays % 60;
 
-  if (hours > 0) {
-    return `Closes in ${hours}h ${minutes}m`;
-  } else {
-    return `Closes in ${minutes}m`;
+  const parts: string[] = [];
+
+  if (days > 0) {
+    parts.push(`${days}d`);
   }
+
+  if (hours > 0 || days > 0) {
+    parts.push(`${hours}h`);
+  }
+
+  if (minutes > 0 || parts.length === 0) {
+    parts.push(`${minutes}m`);
+  }
+
+  return `Closes in ${parts.join(' ')}`;
 }
 
 function calculateClassDiscount(classInstance: ClassInstance): DiscountCalculationResult {
@@ -152,7 +165,6 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
 
   const discountResult = useMemo(() => calculateClassDiscount(classInstance), [classInstance]);
   const bookingWindowText = getBookingWindowText(classInstance);
-  const closingText = bookingWindowText || `Duration ${durationLabel}`;
 
   const metaLine = useMemo(() => {
     const instructor = classInstance.instructor ?? '';
@@ -219,23 +231,27 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
 
         <View style={styles.infoRow}>
           <View style={styles.infoItem}>
-            <UserIcon size={14} color={isSoldOut ? theme.colors.rose[500] : theme.colors.emerald[500]} />
+            <UserIcon size={14} color={isSoldOut ? theme.colors.rose[600] : theme.colors.emerald[600]} />
             <Text style={[styles.infoText, styles.spotsInfoText, isSoldOut && styles.soldOutText]}>
               {isSoldOut ? t('explore.soldOut') : t('explore.spotsLeft', { count: spotsLeft })}
             </Text>
           </View>
 
-          <View style={styles.infoSeparator} />
+          {bookingWindowText ? (
+            <>
+              <View style={styles.infoSeparator} />
 
-          <View style={styles.infoItem}>
-            <ClockIcon size={14} color={theme.colors.rose[500]} />
-            <Text style={[styles.infoText, styles.closesInfoText]}>
-              {closingText}
-            </Text>
-          </View>
+              <View style={styles.infoItem}>
+                <ClockIcon size={14} color={theme.colors.rose[500]} />
+                <Text style={[styles.infoText, styles.closesInfoText]}>
+                  {bookingWindowText}
+                </Text>
+              </View>
+            </>
+          ) : null}
         </View>
 
-        <View style={styles.badgesRow}>
+        {/* <View style={styles.badgesRow}>
           {discountResult.appliedDiscount && (
             <View style={styles.discountBadge}>
               <Text style={styles.discountBadgeText}>{discountResult.appliedDiscount.ruleName}</Text>
@@ -247,7 +263,7 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
               <Text style={styles.bookedText}>Already Booked</Text>
             </View>
           )}
-        </View>
+        </View> */}
       </View>
     </TouchableOpacity>
   );
@@ -280,7 +296,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.emerald[50],
   },
   timeColumn: {
-    minWidth: 68,
+    minWidth: 52,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
@@ -305,7 +321,7 @@ const styles = StyleSheet.create({
   },
   contentColumn: {
     flex: 1,
-    gap: 10,
+    gap: 4,
   },
   headerRow: {
     flexDirection: 'row',
