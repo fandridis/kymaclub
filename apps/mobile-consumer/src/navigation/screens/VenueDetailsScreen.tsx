@@ -404,7 +404,7 @@ export function VenueDetailsScreen() {
             )}
 
             {/* Who we are Section */}
-            <View style={styles.section}>
+            {/* <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Who we are</Text>
                 <View style={styles.teamMember}>
                     <View style={styles.avatarContainer}>
@@ -426,7 +426,7 @@ export function VenueDetailsScreen() {
                 </View>
             </View>
 
-            <Divider />
+            <Divider /> */}
 
             {/* Services Section */}
             {/* <View style={styles.section}>

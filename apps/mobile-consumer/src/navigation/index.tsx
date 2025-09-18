@@ -82,7 +82,7 @@ function HomeTabs() {
             shadowRadius: 8,
           },
           tabBarBadgeStyle: {
-            backgroundColor: 'tomato',
+            backgroundColor: theme.colors.rose[600],
             color: 'white',
           },
           tabBarActiveTintColor: theme.colors.emerald[600],
@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    //  borderWidth: 1,
+    //  borderColor: 'rgba(255, 255, 255, 1)',
   },
 });

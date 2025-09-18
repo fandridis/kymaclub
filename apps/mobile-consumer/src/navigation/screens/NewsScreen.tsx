@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { StyleSheet, View, Text, Dimensions, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { MapPinIcon, StarIcon, UserIcon } from 'lucide-react-native';
+import { MapPinIcon, StarIcon, UserIcon, DiamondIcon, ClockIcon } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Carousel from 'react-native-reanimated-carousel';
@@ -18,27 +18,20 @@ import { useCurrentTime } from '../../hooks/use-current-time';
 import { useAllVenues } from '../../features/explore/hooks/useAllVenues';
 import type { RootStackParamListWithNestedTabs } from '../index';
 import { centsToCredits } from '@repo/utils/credits';
+import { NewsClassCard } from '../../components/news/NewsCard';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 // Unified carousel constants
-const DEFAULT_CAROUSEL_HEIGHT = 220; // Unified height for all carousels
+const DEFAULT_CAROUSEL_HEIGHT = 260; // Unified height for all carousels
 const SCHEDULE_CAROUSEL_HEIGHT = 160;
-const NEW_STUDIOS_CAROUSEL_HEIGHT = 180;
+const NEW_STUDIOS_CAROUSEL_HEIGHT = 200;
 
-const ITEM_GAP = 8; // Gap between items
-const SECTION_PADDING = 20; // Horizontal padding for sections
+const ITEM_GAP = 0; // Gap between items
+const SECTION_PADDING = 12; // Horizontal padding for sections
 const CAROUSEL_PADDING = SECTION_PADDING - (ITEM_GAP / 2); // Adjust for item gaps
 
-const CAROUSEL_ITEM_WIDTH = (screenWidth - (SECTION_PADDING * 2)) / 2.05;
-
-
-const mockCategories = [
-    { id: 1, name: 'Yoga', count: '24 classes', image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=300&fit=crop' },
-    { id: 2, name: 'Strength', count: '18 classes', image: 'https://images.unsplash.com/photo-1571019613454-1fcb009e0b?w=400&h=300&fit=crop' },
-    { id: 3, name: 'Cardio', count: '15 classes', image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=300&fit=crop' },
-    { id: 4, name: 'Mind & Body', count: '12 classes', image: 'https://images.unsplash.com/photo-1571019613454-1fcb009e0b?w=400&h=300&fit=crop' },
-];
+const CAROUSEL_ITEM_WIDTH = (screenWidth - (SECTION_PADDING * 2)) / 1.40;
 
 const WhatsNewBanner = () => (
     <View style={styles.whatsNewBanner}>
@@ -362,6 +355,7 @@ export function NewsScreen() {
                 {upcomingClasses.length > 0 ? (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Your Schedule</Text>
+                        <Text style={styles.sectionSubtitle}>Here's what you've got coming up.</Text>
                         <View style={styles.carouselContainer}>
                             <Carousel
                                 loop={false}
@@ -373,7 +367,7 @@ export function NewsScreen() {
                                 snapEnabled
                                 renderItem={({ item }) => (
                                     <TouchableOpacity
-                                        style={[styles.baseCarouselCard, styles.scheduleCarouselCard]}
+                                        style={styles.scheduleCarouselCard}
                                         onPress={() => {
                                             if (item.classInstanceId) {
                                                 navigation.navigate('ClassDetailsModal', {
@@ -383,23 +377,27 @@ export function NewsScreen() {
                                         }}
                                         activeOpacity={0.7}
                                     >
-                                        <View style={styles.scheduleTopHalf}>
-                                            <Text style={styles.scheduleDate}>{item.date}</Text>
-                                            <Text style={styles.scheduleTime}>{item.time}</Text>
-                                        </View>
+                                        <View style={styles.scheduleShadowContainer}>
+                                            <View style={styles.scheduleCard}>
+                                                <View style={styles.scheduleTopHalf}>
+                                                    <Text style={styles.scheduleDate}>{item.date}</Text>
+                                                    <Text style={styles.scheduleTime}>{item.time}</Text>
+                                                </View>
 
-                                        <View style={styles.scheduleBottomHalf}>
-                                            <Text style={styles.scheduleTitle} numberOfLines={1}>
-                                                {item.title}
-                                            </Text>
-                                            <Text style={styles.scheduleInstructor} numberOfLines={1}>
-                                                with {item.instructor}
-                                            </Text>
-                                            <View style={styles.locationContainer}>
-                                                <MapPinIcon size={12} color="#9ca3af" />
-                                                <Text style={styles.scheduleLocation} numberOfLines={1}>
-                                                    {item.venueAddress || item.venue}
-                                                </Text>
+                                                <View style={styles.scheduleBottomHalf}>
+                                                    <Text style={styles.scheduleTitle} numberOfLines={1}>
+                                                        {item.title}
+                                                    </Text>
+                                                    <Text style={styles.scheduleInstructor} numberOfLines={1}>
+                                                        with {item.instructor}
+                                                    </Text>
+                                                    <View style={styles.locationContainer}>
+                                                        <MapPinIcon size={12} color="#9ca3af" />
+                                                        <Text style={styles.scheduleLocation} numberOfLines={1}>
+                                                            {item.venueAddress || item.venue}
+                                                        </Text>
+                                                    </View>
+                                                </View>
                                             </View>
                                         </View>
                                     </TouchableOpacity>
@@ -415,6 +413,7 @@ export function NewsScreen() {
                 ) : (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Your Schedule</Text>
+                        <Text style={styles.sectionSubtitle}>Here's what you've got coming up.</Text>
                         <NoUpcomingClassesMessage onExplorePress={handleExplorePress} />
                     </View>
                 )}
@@ -423,6 +422,7 @@ export function NewsScreen() {
                 {lastMinuteOffers.length > 0 && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Last minute offers</Text>
+                        <Text style={styles.sectionSubtitle}>Who doesn't like a good deal? These classes are starting soon.</Text>
                         <View style={styles.carouselContainer}>
                             <Carousel
                                 loop={false}
@@ -432,71 +432,118 @@ export function NewsScreen() {
                                 scrollAnimationDuration={500}
                                 style={styles.carousel}
                                 snapEnabled
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity
-                                        style={[styles.baseCarouselCard, styles.lastMinuteCarouselCard]}
-                                        onPress={() => {
-                                            if (item.classInstanceId) {
-                                                navigation.navigate('ClassDetailsModal', {
-                                                    classInstanceId: item.classInstanceId
-                                                });
-                                            }
-                                        }}
-                                        activeOpacity={0.7}
-                                    >
-                                        <View style={styles.cardImageContainer}>
-                                            {item.imageUrl ? (
-                                                <Image
-                                                    source={{ uri: item.imageUrl }}
-                                                    style={styles.cardImage}
-                                                    contentFit="cover"
-                                                    transition={200}
-                                                    cachePolicy="memory-disk"
-                                                />
-                                            ) : (
-                                                <View style={[styles.cardImage, styles.placeholderImage]} />
-                                            )}
-                                            <LinearGradient
-                                                pointerEvents="none"
-                                                colors={['transparent', 'rgba(0,0,0,0.25)', 'rgba(0,0,0,0.65)']}
-                                                locations={[0, 0.5, 1]}
-                                                start={{ x: 0, y: 0 }}
-                                                end={{ x: 0, y: 1 }}
-                                                style={styles.imageGradient}
-                                            />
-                                            <View style={styles.imageOverlay}>
-                                                <Text style={styles.overlayTitle} numberOfLines={1}>
-                                                    {item.title}
-                                                </Text>
-                                                <Text style={styles.overlaySubtitle} numberOfLines={1}>
-                                                    with {item.instructor}
-                                                </Text>
-                                            </View>
-                                            <View style={[styles.badge, styles.offerBadge]}>
-                                                <Text style={styles.badgeText}>{item.subtitle}</Text>
-                                            </View>
-                                        </View>
-                                        <View style={styles.cardContent}>
-                                            <View style={styles.contentRow}>
-                                                <View style={styles.priceContainer}>
-                                                    <Text style={styles.originalPrice}>{item.originalPrice}</Text>
-                                                    <Text style={styles.discountedPrice}>{item.discountedPrice} credits</Text>
+                                renderItem={({ item }) => {
+                                    const discountBadge = item.discountPercentage ? `-${item.discountPercentage}` : null;
+
+                                    const subtitleText = item.instructor
+                                        ? `with ${item.instructor}`
+                                        : item.venueName || undefined;
+
+                                    const startTime = new Date(item.startTime).toLocaleTimeString('en-US', {
+                                        hour: 'numeric',
+                                        minute: '2-digit',
+                                        hour12: true,
+                                    });
+
+                                    let startsInText: string | null = null;
+                                    if (item.subtitle) {
+                                        const trimmed = item.subtitle.trim();
+                                        if (/^in\s/i.test(trimmed)) {
+                                            const suffix = trimmed.slice(3).trim().toLowerCase();
+                                            startsInText = suffix ? `starts in ${suffix}` : 'starts soon';
+                                        } else {
+                                            startsInText = trimmed.toLowerCase();
+                                        }
+                                    }
+
+                                    return (
+                                        <NewsClassCard
+                                            title={item.title}
+                                            subtitle={subtitleText}
+                                            imageUrl={item.imageUrl}
+                                            renderTopLeft={() => {
+                                                if (!startsInText) return null;
+                                                return (
+                                                    <View style={styles.startsInPill}>
+                                                        <Text style={styles.startsInPillText} numberOfLines={1}>
+                                                            {startsInText}
+                                                        </Text>
+                                                    </View>
+                                                );
+                                            }}
+                                            renderTopRight={() => {
+                                                if (!discountBadge) {
+                                                    return null;
+                                                }
+
+                                                return (
+                                                    <View style={[styles.lastMinuteBadge, styles.offerBadge]}>
+                                                        <Text style={styles.badgeText}>{discountBadge}</Text>
+                                                    </View>
+                                                );
+                                            }}
+                                            renderFooter={() => (
+                                                <View style={styles.newsClassCardFooterRow}>
+                                                    <View style={styles.newsClassCardFooterMetric}>
+                                                        <View style={styles.newsClassCardFooterIcon}>
+                                                            <DiamondIcon
+                                                                size={14}
+                                                                color={theme.colors.zinc[700]}
+                                                                strokeWidth={2}
+                                                            />
+                                                        </View>
+                                                        <Text
+                                                            style={styles.newsClassCardFooterText}
+                                                            numberOfLines={1}
+                                                        >
+                                                            {item.discountedPrice}
+                                                        </Text>
+                                                    </View>
+                                                    <View style={styles.newsClassCardFooterMetric}>
+                                                        <View style={styles.newsClassCardFooterIcon}>
+                                                            <ClockIcon
+                                                                size={14}
+                                                                color={theme.colors.zinc[700]}
+                                                                strokeWidth={2}
+                                                            />
+                                                        </View>
+                                                        <Text
+                                                            style={styles.newsClassCardFooterText}
+                                                            numberOfLines={1}
+                                                        >
+                                                            {startTime}
+                                                        </Text>
+                                                    </View>
+                                                    {item.venueCity ? (
+                                                        <View style={styles.newsClassCardFooterMetric}>
+                                                            <View style={styles.newsClassCardFooterIcon}>
+                                                                <MapPinIcon
+                                                                    size={14}
+                                                                    color={theme.colors.zinc[600]}
+                                                                    strokeWidth={2}
+                                                                />
+                                                            </View>
+                                                            <Text
+                                                                style={styles.newsClassCardFooterText}
+                                                                numberOfLines={1}
+                                                            >
+                                                                {item.venueCity}
+                                                            </Text>
+                                                        </View>
+                                                    ) : null}
                                                 </View>
-                                                <View style={styles.discountBadge}>
-                                                    <Text style={styles.discountText}>-{item.discountPercentage}</Text>
-                                                </View>
-                                            </View>
-                                            <Text style={styles.secondaryText} numberOfLines={1}>
-                                                {item.venueName}
-                                            </Text>
-                                            {item.venueCity && (
-                                                <Text style={styles.tertiaryText} numberOfLines={1}>
-                                                    {item.venueCity}
-                                                </Text>
                                             )}
-                                        </View>
-                                    </TouchableOpacity>
-                                )}
+                                            onPress={() => {
+                                                if (item.classInstanceId) {
+                                                    navigation.navigate('ClassDetailsModal', {
+                                                        classInstanceId: item.classInstanceId,
+                                                    });
+                                                }
+                                            }}
+                                            style={styles.lastMinuteCarouselCard}
+                                        />
+                                    );
+                                }}
                                 onConfigurePanGesture={(gestureChain) => {
                                     gestureChain
                                         .activeOffsetX([-10, 10])
@@ -511,111 +558,47 @@ export function NewsScreen() {
                 {newVenuesForCards.length > 0 && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>New studios</Text>
+                        <Text style={styles.sectionSubtitle}>The latest additions to the Kyma network.</Text>
                         <View style={styles.carouselContainer}>
                             <Carousel
                                 width={CAROUSEL_ITEM_WIDTH + ITEM_GAP}
                                 height={NEW_STUDIOS_CAROUSEL_HEIGHT}
                                 data={newVenuesForCards}
-                                scrollAnimationDuration={600}
+                                scrollAnimationDuration={500}
                                 style={styles.carousel}
                                 loop={false}
                                 snapEnabled
-                                renderItem={({ item: venue }) => (
-                                    <TouchableOpacity
-                                        style={[styles.baseCarouselCard, styles.newStudiosCarouselCard]}
-                                        onPress={() => {
-                                            navigation.navigate('VenueDetailsScreen', {
-                                                venueId: venue._id
-                                            });
-                                        }}
-                                        activeOpacity={0.8}
-                                    >
-                                        <View style={styles.venueImageWrapper}>
-                                            {venue.imageStorageIds?.[0] && storageIdToUrl.get(venue.imageStorageIds[0]) ? (
-                                                <Image
-                                                    source={{ uri: storageIdToUrl.get(venue.imageStorageIds[0])! }}
-                                                    style={styles.venueImage}
-                                                    contentFit="cover"
-                                                    transition={200}
-                                                    cachePolicy="memory-disk"
-                                                />
-                                            ) : (
-                                                <View style={[styles.venueImage, styles.venuePlaceholderImage]}>
-                                                    <Text style={styles.venuePlaceholderText}>No Images Available</Text>
+                                renderItem={({ item: venue }) => {
+                                    const imageUrl = venue.imageStorageIds?.[0]
+                                        ? storageIdToUrl.get(venue.imageStorageIds[0])
+                                        : null;
+
+                                    return (
+                                        <NewsClassCard
+                                            title={venue.name}
+                                            subtitle={venue.primaryCategory}
+                                            imageUrl={imageUrl}
+                                            onPress={() => {
+                                                navigation.navigate('VenueDetailsScreen', {
+                                                    venueId: venue._id,
+                                                });
+                                            }}
+                                            style={styles.newStudiosCarouselCard}
+                                            renderTopLeft={() => (
+                                                <View style={styles.venueRatingBadgeContent}>
+                                                    <StarIcon size={12} color="#fff" fill="#ffd700" />
+                                                    <Text style={styles.venueRatingText}>
+                                                        {venue.rating?.toFixed(1)} ({venue.reviewCount || 0})
+                                                    </Text>
                                                 </View>
                                             )}
-
-                                            {/* Top-left rating badge */}
-                                            <View style={styles.venueRatingBadge}>
-                                                <StarIcon size={12} color="#fff" fill="#ffd700" />
-                                                <Text style={styles.venueRatingText}>{venue.rating?.toFixed(1)} ({venue.reviewCount || 0})</Text>
-                                            </View>
-
-                                            {/* Bottom gradient overlay */}
-                                            <LinearGradient
-                                                pointerEvents="none"
-                                                colors={[
-                                                    'transparent',
-                                                    'rgba(0,0,0,0.25)',
-                                                    'rgba(0,0,0,0.65)',
-                                                ]}
-                                                locations={[0, 0.5, 1]}
-                                                start={{ x: 0, y: 0 }}
-                                                end={{ x: 0, y: 1 }}
-                                                style={styles.venueBottomGradient}
-                                            />
-
-                                            {/* Bottom-left overlay text */}
-                                            <View pointerEvents="none" style={styles.venueImageOverlayContainer}>
-                                                <Text style={styles.venueImageOverlayTitle} numberOfLines={1}>
-                                                    {venue.name}
-                                                </Text>
-                                                <Text style={styles.venueImageOverlaySubtitle} numberOfLines={1}>
-                                                    {venue.primaryCategory}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                    </TouchableOpacity>
-                                )}
+                                        />
+                                    );
+                                }}
                             />
                         </View>
                     </View>
                 )}
-
-                {/* Categories Section */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Categories</Text>
-                    <View style={styles.carouselContainer}>
-                        <Carousel
-                            loop={false}
-                            width={CAROUSEL_ITEM_WIDTH + ITEM_GAP}
-                            height={DEFAULT_CAROUSEL_HEIGHT}
-                            data={mockCategories}
-                            scrollAnimationDuration={500}
-                            style={styles.carousel}
-                            snapEnabled
-                            renderItem={({ item }) => (
-                                <View style={[styles.baseCarouselCard, styles.categoriesCarouselCard]}>
-                                    <View style={styles.cardImageContainer}>
-                                        <View style={[styles.cardImage, styles.placeholderImage]} />
-                                        <View style={[styles.badge, styles.categoryBadge]}>
-                                            <Text style={styles.badgeText}>Popular</Text>
-                                        </View>
-                                    </View>
-                                    <View style={styles.cardContent}>
-                                        <Text style={styles.categoryTitle}>{item.name}</Text>
-                                        <Text style={styles.secondaryText}>{item.count}</Text>
-                                    </View>
-                                </View>
-                            )}
-                            onConfigurePanGesture={(gestureChain) => {
-                                gestureChain
-                                    .activeOffsetX([-10, 10])
-                                    .failOffsetY([-15, 15]);
-                            }}
-                        />
-                    </View>
-                </View>
             </ScrollView>
         </SafeAreaView>
     );
@@ -628,7 +611,6 @@ const styles = StyleSheet.create({
     },
     scrollContainer: {
         flex: 1,
-        backgroundColor: theme.colors.zinc[50],
     },
     scrollContent: {
         paddingBottom: 80,
@@ -636,7 +618,6 @@ const styles = StyleSheet.create({
     subtitleContainer: {
         paddingHorizontal: SECTION_PADDING,
         paddingBottom: 16,
-        backgroundColor: theme.colors.zinc[50],
     },
     subtitleText: {
         fontSize: 16,
@@ -651,8 +632,14 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: '600',
         color: '#1a1a1a',
-        marginBottom: 10,
+        marginBottom: 4,
         paddingHorizontal: SECTION_PADDING,
+    },
+    sectionSubtitle: {
+        fontSize: 14,
+        color: '#6c757d',
+        paddingHorizontal: SECTION_PADDING,
+        marginBottom: 12,
     },
 
     // Unified carousel styles
@@ -662,25 +649,27 @@ const styles = StyleSheet.create({
     carousel: {
         width: screenWidth,
     },
-
-    // Base carousel card styles
-    baseCarouselCard: {
-        backgroundColor: '#ffffff',
-        borderRadius: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 3,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.3)',
-    },
-
-    // Specific carousel card styles
     scheduleCarouselCard: {
         width: CAROUSEL_ITEM_WIDTH,
         height: SCHEDULE_CAROUSEL_HEIGHT,
+        paddingTop: 6,
+        paddingBottom: 8,
+        paddingRight: 8,
+    },
+    scheduleShadowContainer: {
+        flex: 1,
+        borderRadius: 18,
+        shadowColor: theme.colors.zinc[500],
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 4,
+    },
+    scheduleCard: {
+        flex: 1,
+        borderRadius: 18,
+        overflow: 'hidden',
+        backgroundColor: '#ffffff',
     },
 
     lastMinuteCarouselCard: {
@@ -691,11 +680,6 @@ const styles = StyleSheet.create({
     newStudiosCarouselCard: {
         width: CAROUSEL_ITEM_WIDTH,
         height: NEW_STUDIOS_CAROUSEL_HEIGHT,
-    },
-
-    categoriesCarouselCard: {
-        width: CAROUSEL_ITEM_WIDTH,
-        height: DEFAULT_CAROUSEL_HEIGHT,
     },
 
     scheduleTopHalf: {
@@ -712,7 +696,7 @@ const styles = StyleSheet.create({
     },
     scheduleDate: {
         fontSize: 14,
-        fontWeight: '600',
+        fontWeight: '700',
         color: 'rgba(255,255,255,0.9)',
         marginBottom: 4,
     },
@@ -753,7 +737,7 @@ const styles = StyleSheet.create({
     cardImageContainer: {
         width: '100%',
         height: 140,
-        overflow: 'hidden',
+        // overflow: 'hidden',
         position: 'relative',
     },
     cardImage: {
@@ -812,13 +796,39 @@ const styles = StyleSheet.create({
     offerBadge: {
         backgroundColor: theme.colors.rose[500],
     },
-    categoryBadge: {
-        backgroundColor: theme.colors.emerald[500],
-    },
     badgeText: {
         fontSize: 11,
         fontWeight: '700',
         color: 'white',
+    },
+    lastMinuteBadge: {
+        borderRadius: 999,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+    },
+    lastMinuteStartsPill: {
+        backgroundColor: 'rgba(17, 24, 39, 0.75)',
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+    },
+    lastMinuteStartsText: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: '600',
+        letterSpacing: 0.2,
+    },
+    startsInPill: {
+        backgroundColor: theme.colors.emerald[600],
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+    },
+    startsInPillText: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: '600',
+        letterSpacing: 0.2,
     },
 
     // Card content section
@@ -827,66 +837,33 @@ const styles = StyleSheet.create({
         padding: 12,
         justifyContent: 'space-between',
     },
-    contentRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 4,
-    },
-    primaryText: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: '#1a1a1a',
-    },
     secondaryText: {
         fontSize: 13,
         fontWeight: '500',
         color: '#6b7280',
     },
-    tertiaryText: {
-        fontSize: 11,
-        color: '#9ca3af',
+    newsClassCardFooterRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
     },
-    priceText: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: theme.colors.emerald[600],
-    },
-    categoryTitle: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#1a1a1a',
-        marginBottom: 4,
-    },
-
-    // Price styles
-    priceContainer: {
+    newsClassCardFooterMetric: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
     },
-    originalPrice: {
-        fontSize: 14,
-        color: '#9ca3af',
-        textDecorationLine: 'line-through',
+    newsClassCardFooterIcon: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    discountedPrice: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: theme.colors.emerald[600],
+    newsClassCardFooterText: {
+        color: theme.colors.zinc[600],
+        fontSize: 12,
+        fontWeight: '600',
     },
-    discountBadge: {
-        backgroundColor: theme.colors.emerald[50],
-        borderRadius: 6,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-    },
-    discountText: {
-        fontSize: 11,
-        fontWeight: '700',
-        color: theme.colors.emerald[700],
-    },
-
     // WhatsNew Banner styles
     whatsNewBanner: {
         flexDirection: 'row',
@@ -1003,30 +980,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
 
-    // Venue card styles (inline from VenueCard component)
-    venueImageWrapper: {
-        position: 'relative',
-        width: '100%',
-        height: NEW_STUDIOS_CAROUSEL_HEIGHT,
-    },
-    venueImage: {
-        width: '100%',
-        height: '100%',
-        backgroundColor: '#f3f4f6',
-    },
-    venuePlaceholderImage: {
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    venuePlaceholderText: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#6b7280',
-    },
-    venueRatingBadge: {
-        position: 'absolute',
-        top: 8,
-        left: 8,
+    // Venue card styles
+    venueRatingBadgeContent: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
@@ -1039,34 +994,5 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 13,
         fontWeight: '800',
-    },
-    venueBottomGradient: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        height: '55%',
-        zIndex: 1,
-    },
-    venueImageOverlayContainer: {
-        position: 'absolute',
-        left: 12,
-        right: 12,
-        bottom: 12,
-        zIndex: 2,
-        gap: 2,
-    },
-    venueImageOverlayTitle: {
-        fontSize: 20,
-        fontWeight: '900',
-        color: 'white',
-        textShadowColor: 'rgba(0,0,0,0.35)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 3,
-    },
-    venueImageOverlaySubtitle: {
-        fontSize: 13,
-        fontWeight: '700',
-        color: 'rgba(255,255,255,0.92)',
     },
 });
