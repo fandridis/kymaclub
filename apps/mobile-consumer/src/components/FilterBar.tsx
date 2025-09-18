@@ -1,14 +1,6 @@
-import React, { memo, useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-  Dimensions,
-} from 'react-native';
-import { SearchIcon, SlidersHorizontalIcon, XIcon, MapIcon } from 'lucide-react-native';
+import React, { memo, useState, useCallback, ReactNode } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { SlidersHorizontalIcon, MapIcon } from 'lucide-react-native';
 import { useTypedTranslation } from '../i18n/typed';
 
 export interface FilterOptions {
@@ -19,6 +11,7 @@ export interface FilterOptions {
 }
 
 interface FilterBarProps {
+  leading?: ReactNode;
   onFilterChange: (filters: FilterOptions) => void;
   showCategoryFilters?: boolean;
   showMapToggle?: boolean;
@@ -26,50 +19,38 @@ interface FilterBarProps {
   onMapToggle?: () => void;
 }
 
-const { width } = Dimensions.get('window');
-
-// Mock categories
 const BUSINESS_CATEGORIES = ['Fitness', 'Yoga', 'Dance', 'Martial Arts', 'Swimming'];
-const CLASS_CATEGORIES = ['Beginner', 'Intermediate', 'Advanced', 'All Levels'];
 
-export const FilterBar = memo<FilterBarProps>(({ 
-  onFilterChange, 
+export const FilterBar = memo<FilterBarProps>(({
+  leading,
+  onFilterChange,
   showCategoryFilters = true,
   showMapToggle = false,
   isMapView = false,
-  onMapToggle 
+  onMapToggle,
 }) => {
   const { t } = useTypedTranslation();
-  const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-  const handleSearchChange = useCallback((text: string) => {
-    setSearchQuery(text);
-    onFilterChange({
-      searchQuery: text,
-      categories: selectedCategories,
-      priceRange: { min: 0, max: 100 },
-      rating: 0,
-    });
-  }, [selectedCategories, onFilterChange]);
-
   const handleCategoryToggle = useCallback((category: string) => {
-    const updatedCategories = selectedCategories.includes(category)
-      ? selectedCategories.filter(c => c !== category)
-      : [...selectedCategories, category];
-    
-    setSelectedCategories(updatedCategories);
-    onFilterChange({
-      searchQuery,
-      categories: updatedCategories,
-      priceRange: { min: 0, max: 100 },
-      rating: 0,
+    setSelectedCategories(prev => {
+      const updatedCategories = prev.includes(category)
+        ? prev.filter(item => item !== category)
+        : [...prev, category];
+
+      onFilterChange({
+        searchQuery: '',
+        categories: updatedCategories,
+        priceRange: { min: 0, max: 100 },
+        rating: 0,
+      });
+
+      return updatedCategories;
     });
-  }, [searchQuery, selectedCategories, onFilterChange]);
+  }, [onFilterChange]);
 
   const clearFilters = useCallback(() => {
-    setSearchQuery('');
     setSelectedCategories([]);
     onFilterChange({
       searchQuery: '',
@@ -79,72 +60,63 @@ export const FilterBar = memo<FilterBarProps>(({
     });
   }, [onFilterChange]);
 
-  const hasActiveFilters = searchQuery.length > 0 || selectedCategories.length > 0;
+  const toggleFilters = useCallback(() => {
+    setShowFilters(prev => !prev);
+  }, []);
+
+  const hasActiveFilters = selectedCategories.length > 0;
+  const isFilterActive = showFilters || hasActiveFilters;
 
   return (
     <View style={styles.container}>
-      {/* Search bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputContainer}>
-          <SearchIcon size={16} color="#666" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder={t('explore.searchPlaceholder')}
-            value={searchQuery}
-            onChangeText={handleSearchChange}
-            placeholderTextColor="#666"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity
-              style={styles.clearButton}
-              onPress={() => handleSearchChange('')}
-            >
-              <XIcon size={16} color="#666" />
-            </TouchableOpacity>
-          )}
-        </View>
+      <View style={[styles.toolbar, !leading && styles.toolbarNoLeading]}>
+        {leading ? <View style={styles.leading}>{leading}</View> : null}
 
-        <View style={styles.toggleButtons}>
+        <View style={styles.actions}>
           <TouchableOpacity
-            style={[styles.filterToggle, showFilters && styles.filterToggleActive]}
-            onPress={() => setShowFilters(!showFilters)}
+            style={[styles.filterButton, isFilterActive && styles.filterButtonActive]}
+            onPress={toggleFilters}
+            accessibilityRole="button"
+            accessibilityLabel={t('explore.filters')}
           >
-            <SlidersHorizontalIcon size={16} color={showFilters ? 'white' : '#666'} />
+            <SlidersHorizontalIcon
+              size={16}
+              color={isFilterActive ? '#ffffff' : '#1f2937'}
+            />
+            <Text
+              style={[styles.filterButtonLabel, isFilterActive && styles.filterButtonLabelActive]}
+            >
+              {t('explore.filters')}
+            </Text>
           </TouchableOpacity>
 
-          {showMapToggle && (
+          {showMapToggle && onMapToggle && (
             <TouchableOpacity
-              style={[styles.filterToggle, isMapView && styles.filterToggleActive]}
+              style={[styles.mapButton, isMapView && styles.mapButtonActive]}
               onPress={onMapToggle}
+              accessibilityRole="button"
+              accessibilityLabel={isMapView ? t('explore.showList') : t('explore.showMap')}
             >
-              <MapIcon size={16} color={isMapView ? 'white' : '#666'} />
+              <MapIcon size={16} color={isMapView ? '#ffffff' : '#1f2937'} />
             </TouchableOpacity>
           )}
         </View>
       </View>
 
-      {/* Extended filters */}
       {showFilters && (
         <View style={styles.filtersContainer}>
           {showCategoryFilters && (
             <View style={styles.filterRow}>
-              <Text style={styles.filterLabel}>{t('explore.filters')}:</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View style={styles.categoryContainer}>
-                  {BUSINESS_CATEGORIES.map((category) => (
+                  {BUSINESS_CATEGORIES.map(category => (
                     <TouchableOpacity
                       key={category}
-                      style={[
-                        styles.categoryFilter,
-                        selectedCategories.includes(category) && styles.categoryFilterActive
-                      ]}
+                      style={[styles.categoryChip, selectedCategories.includes(category) && styles.categoryChipActive]}
                       onPress={() => handleCategoryToggle(category)}
                     >
                       <Text
-                        style={[
-                          styles.categoryFilterText,
-                          selectedCategories.includes(category) && styles.categoryFilterTextActive
-                        ]}
+                        style={[styles.categoryChipText, selectedCategories.includes(category) && styles.categoryChipTextActive]}
                       >
                         {category}
                       </Text>
@@ -156,11 +128,9 @@ export const FilterBar = memo<FilterBarProps>(({
           )}
 
           {hasActiveFilters && (
-            <View style={styles.filterRow}>
-              <TouchableOpacity style={styles.clearFilters} onPress={clearFilters}>
-                <Text style={styles.clearFiltersText}>Clear all filters</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity style={styles.clearFilters} onPress={clearFilters}>
+              <Text style={styles.clearFiltersText}>Clear all filters</Text>
+            </TouchableOpacity>
           )}
         </View>
       )}
@@ -172,93 +142,96 @@ FilterBar.displayName = 'FilterBar';
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
-  searchContainer: {
+  toolbar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
-  },
-  searchInputContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
+    justifyContent: 'space-between',
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 8,
+    gap: 10,
   },
-  searchIcon: {
-    marginRight: 8,
+  toolbarNoLeading: {
+    justifyContent: 'flex-end',
   },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: '#333',
-  },
-  clearButton: {
-    padding: 4,
-  },
-  toggleButtons: {
+  leading: {
     flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
-  filterToggle: {
-    padding: 10,
-    borderRadius: 8,
-    backgroundColor: '#f5f5f5',
-  },
-  filterToggleActive: {
-    backgroundColor: '#ff4747',
-  },
-  filtersContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-  },
-  filterRow: {
-    marginBottom: 8,
-  },
-  filterLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  categoryContainer: {
+  filterButton: {
     flexDirection: 'row',
-    gap: 8,
-  },
-  categoryFilter: {
+    alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: '#f5f5f5',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
+    backgroundColor: '#f4f4f5',
   },
-  categoryFilterActive: {
+  filterButtonActive: {
+    backgroundColor: '#ff4747',
+  },
+  filterButtonLabel: {
+    marginLeft: 6,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1f2937',
+  },
+  filterButtonLabelActive: {
+    color: '#ffffff',
+  },
+  mapButton: {
+    padding: 6,
+    borderRadius: 14,
+    backgroundColor: '#f4f4f5',
+  },
+  mapButtonActive: {
+    backgroundColor: '#ff4747',
+  },
+  filtersContainer: {
+    borderTopWidth: 1,
+    borderTopColor: '#f4f4f5',
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 10,
+    gap: 10,
+  },
+  filterRow: {
+    gap: 8,
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  categoryChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#f4f4f5',
+    borderWidth: 1,
+    borderColor: '#e4e4e7',
+  },
+  categoryChipActive: {
     backgroundColor: '#ff4747',
     borderColor: '#ff4747',
   },
-  categoryFilterText: {
+  categoryChipText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#666',
+    color: '#4b5563',
   },
-  categoryFilterTextActive: {
-    color: 'white',
+  categoryChipTextActive: {
+    color: '#ffffff',
   },
   clearFilters: {
     alignSelf: 'flex-start',
-    paddingVertical: 8,
   },
   clearFiltersText: {
     fontSize: 12,
-    color: '#ff4747',
     fontWeight: '600',
+    color: '#ff4747',
   },
 });

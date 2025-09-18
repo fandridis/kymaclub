@@ -111,27 +111,27 @@ export function Explore() {
     return (
         <SafeAreaView style={styles.container}>
             <TabScreenHeader title="Explore" renderRightSide={renderCreditsBadge} />
-            <View style={styles.tabsContainer}>
-                <View style={styles.tabContainer}>
-                    <TouchableOpacity
-                        style={[styles.tab, activeTab === 'businesses' && styles.activeTab]}
-                        onPress={() => handleTabChange('businesses')}
-                    >
-                        <Text style={[styles.tabText, activeTab === 'businesses' && styles.activeTabText]}>
-                            {t('explore.businesses')}
-                        </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.tab, activeTab === 'classes' && styles.activeTab]}
-                        onPress={() => handleTabChange('classes')}
-                    >
-                        <Text style={[styles.tabText, activeTab === 'classes' && styles.activeTabText]}>
-                            {t('explore.classes')}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
             <FilterBar
+                leading={(
+                    <View style={styles.tabsRow}>
+                        <TouchableOpacity
+                            style={[styles.tabButton, activeTab === 'businesses' && styles.tabButtonActive]}
+                            onPress={() => handleTabChange('businesses')}
+                        >
+                            <Text style={[styles.tabText, activeTab === 'businesses' && styles.tabTextActive]}>
+                                {t('explore.businesses')}
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.tabButton, activeTab === 'classes' && styles.tabButtonActive]}
+                            onPress={() => handleTabChange('classes')}
+                        >
+                            <Text style={[styles.tabText, activeTab === 'classes' && styles.tabTextActive]}>
+                                {t('explore.classes')}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
                 onFilterChange={handleFilterChange}
                 showCategoryFilters={true}
                 showMapToggle={activeTab === 'businesses'}
@@ -185,44 +185,27 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         paddingHorizontal: 20,
     },
-    tabsContainer: {
-        backgroundColor: 'white',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0',
-    },
-    tabContainer: {
+    tabsRow: {
         flexDirection: 'row',
-        backgroundColor: '#f5f5f5',
-        borderRadius: 8,
-        padding: 4,
-    },
-    tab: {
-        flex: 1,
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        borderRadius: 6,
         alignItems: 'center',
+        gap: 16,
     },
-    activeTab: {
-        backgroundColor: 'white',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 1,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 1,
+    tabButton: {
+        paddingVertical: 6,
+        borderBottomWidth: 2,
+        borderBottomColor: 'transparent',
+    },
+    tabButtonActive: {
+        borderBottomColor: '#111827',
     },
     tabText: {
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: '500',
-        color: '#666',
+        color: '#6b7280',
     },
-    activeTabText: {
-        color: '#333',
+    tabTextActive: {
+        color: '#111827',
+        fontWeight: '600',
     },
     creditsBadge: {
         flexDirection: 'row',
@@ -238,4 +221,4 @@ const styles = StyleSheet.create({
         color: theme.colors.zinc[50],
         marginLeft: 4,
     },
-}); 
+});

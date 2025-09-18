@@ -13,29 +13,29 @@ export const BookingsTabs = memo<BookingsTabsProps>(({ activeTab, onTabChange })
     const { t } = useTypedTranslation();
 
     return (
-        <View style={styles.header}>
-            <View style={styles.tabContainer}>
+        <View style={styles.container}>
+            <View style={styles.tabsRow}>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'upcoming' && styles.activeTab]}
+                    style={[styles.tabButton, activeTab === 'upcoming' && styles.tabButtonActive]}
                     onPress={() => onTabChange('upcoming')}
                 >
-                    <Text style={[styles.tabText, activeTab === 'upcoming' && styles.activeTabText]}>
+                    <Text style={[styles.tabText, activeTab === 'upcoming' && styles.tabTextActive]}>
                         Upcoming
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'cancelled' && styles.activeTab]}
+                    style={[styles.tabButton, activeTab === 'cancelled' && styles.tabButtonActive]}
                     onPress={() => onTabChange('cancelled')}
                 >
-                    <Text style={[styles.tabText, activeTab === 'cancelled' && styles.activeTabText]}>
+                    <Text style={[styles.tabText, activeTab === 'cancelled' && styles.tabTextActive]}>
                         Cancelled
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'history' && styles.activeTab]}
+                    style={[styles.tabButton, activeTab === 'history' && styles.tabButtonActive]}
                     onPress={() => onTabChange('history')}
                 >
-                    <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>
+                    <Text style={[styles.tabText, activeTab === 'history' && styles.tabTextActive]}>
                         History
                     </Text>
                 </TouchableOpacity>
@@ -47,44 +47,30 @@ export const BookingsTabs = memo<BookingsTabsProps>(({ activeTab, onTabChange })
 BookingsTabs.displayName = 'BookingsTabs';
 
 const styles = StyleSheet.create({
-    header: {
-        backgroundColor: 'white',
-        paddingHorizontal: 16,
-        paddingTop: 8,
-        paddingBottom: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0',
-    },
-    tabContainer: {
-        flexDirection: 'row',
-        backgroundColor: '#f5f5f5',
-        borderRadius: 8,
-        padding: 4,
-    },
-    tab: {
-        flex: 1,
+    container: {
+        paddingHorizontal: 12,
         paddingVertical: 10,
-        paddingHorizontal: 16,
-        borderRadius: 6,
-        alignItems: 'center',
     },
-    activeTab: {
-        backgroundColor: 'white',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 1,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 1,
+    tabsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    tabButton: {
+        paddingVertical: 5,
+        borderBottomWidth: 2,
+        borderBottomColor: 'transparent',
+    },
+    tabButtonActive: {
+        borderBottomColor: '#111827',
     },
     tabText: {
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: '500',
-        color: '#666',
+        color: '#6b7280',
     },
-    activeTabText: {
-        color: '#333',
+    tabTextActive: {
+        color: '#111827',
+        fontWeight: '600',
     },
 });

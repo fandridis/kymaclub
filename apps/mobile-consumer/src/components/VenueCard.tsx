@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StarIcon, MapPinIcon } from 'lucide-react-native';
 import { useTypedTranslation } from '../i18n/typed';
 import { Doc } from '@repo/api/convex/_generated/dataModel';
+import { theme } from '../theme';
 
 
 interface VenueCardProps {
@@ -29,75 +30,79 @@ export const VenueCard = ({ venue, storageIdToUrl, onPress }: VenueCardProps) =>
   };
 
   return (
-    <TouchableOpacity
-      style={styles.container}
-      onPress={() => onPress?.(venue)}
-      activeOpacity={0.8}
-    >
-      {/* Image */}
-      <View style={styles.imageWrapper}>
-        {venue.imageStorageIds?.[0] && storageIdToUrl.get(venue.imageStorageIds[0]) ? (
-          <Image
-            source={{ uri: storageIdToUrl.get(venue.imageStorageIds[0])! }}
-            style={styles.image}
-            contentFit="cover"
-            transition={200}
-            cachePolicy="memory-disk"
-          />
-        ) : (
-          <View style={[styles.image, styles.placeholderImage]}>
-            <Text style={styles.placeholderText}>No Images Available</Text>
+    <View style={styles.shadowContainer}>
+      <TouchableOpacity
+        style={styles.container}
+        onPress={() => onPress?.(venue)}
+        activeOpacity={0.8}
+      >
+        {/* Image */}
+        <View style={styles.imageWrapper}>
+          {venue.imageStorageIds?.[0] && storageIdToUrl.get(venue.imageStorageIds[0]) ? (
+            <Image
+              source={{ uri: storageIdToUrl.get(venue.imageStorageIds[0])! }}
+              style={styles.image}
+              contentFit="cover"
+              transition={200}
+              cachePolicy="memory-disk"
+            />
+          ) : (
+            <View style={[styles.image, styles.placeholderImage]}>
+              <Text style={styles.placeholderText}>No Images Available</Text>
+            </View>
+          )}
+
+          {/* Top-left rating badge */}
+          <View style={styles.ratingBadge}>
+            <StarIcon size={12} color="#fff" fill="#ffd700" />
+            <Text style={styles.ratingText}>{venue.rating?.toFixed(1)} ({venue.reviewCount || 0})</Text>
           </View>
-        )}
 
-        {/* Top-left rating badge */}
-        <View style={styles.ratingBadge}>
-          <StarIcon size={12} color="#fff" fill="#ffd700" />
-          <Text style={styles.ratingText}>{venue.rating?.toFixed(1)} ({venue.reviewCount || 0})</Text>
+          {/* Bottom gradient overlay */}
+          <LinearGradient
+            pointerEvents="none"
+            colors={[
+              'transparent',
+              'rgba(0,0,0,0.25)',
+              'rgba(0,0,0,0.65)',
+            ]}
+            locations={[0, 0.5, 1]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.bottomGradient}
+          />
+
+          {/* Bottom-left overlay text */}
+          <View pointerEvents="none" style={styles.imageOverlayContainer}>
+            <Text style={styles.imageOverlayTitle} numberOfLines={1}>
+              {venue.name}
+            </Text>
+            <Text style={styles.imageOverlaySubtitle} numberOfLines={1}>
+              {venue.primaryCategory}
+            </Text>
+          </View>
         </View>
-
-        {/* Bottom gradient overlay */}
-        <LinearGradient
-          pointerEvents="none"
-          colors={[
-            'transparent',
-            'rgba(0,0,0,0.25)',
-            'rgba(0,0,0,0.65)',
-          ]}
-          locations={[0, 0.5, 1]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={styles.bottomGradient}
-        />
-
-        {/* Bottom-left overlay text */}
-        <View pointerEvents="none" style={styles.imageOverlayContainer}>
-          <Text style={styles.imageOverlayTitle} numberOfLines={1}>
-            {venue.name}
-          </Text>
-          <Text style={styles.imageOverlaySubtitle} numberOfLines={1}>
-            {venue.primaryCategory}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  shadowContainer: {
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: theme.colors.zinc[500],
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: theme.colors.zinc[400],
+  },
   container: {
     backgroundColor: 'white',
     borderRadius: 12,
-    marginBottom: 12,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   imageWrapper: {
     position: 'relative',

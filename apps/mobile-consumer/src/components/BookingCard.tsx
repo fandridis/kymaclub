@@ -91,63 +91,73 @@ export const BookingCard: React.FC<BookingCardProps> = ({
   const shouldShowStatus = statusLabel && !isUpcoming;
 
   return (
-    <TouchableOpacity activeOpacity={0.85} onPress={() => onViewClass?.(booking)} style={styles.card}>
-      <View style={styles.dateColumn}>
-        <Text style={styles.dateText}>{dateLabel}</Text>
-        <Text style={styles.timeText}>{timeLabel}</Text>
-      </View>
+    <View style={styles.shadowContainer}>
+      <TouchableOpacity activeOpacity={0.85} onPress={() => onViewClass?.(booking)} style={styles.card}>
+        <View style={styles.dateColumn}>
+          <Text style={styles.dateText}>{dateLabel}</Text>
+          <Text style={styles.timeText}>{timeLabel}</Text>
+        </View>
 
-      <View style={styles.divider} />
+        <View style={styles.divider} />
 
-      <View style={styles.contentColumn}>
-        <Text style={styles.className} numberOfLines={1}>
-          {className}
-        </Text>
-        {!!metaLine && (
-          <Text style={styles.metaText} numberOfLines={1}>
-            {metaLine}
+        <View style={styles.contentColumn}>
+          <Text style={styles.className} numberOfLines={1}>
+            {className}
           </Text>
-        )}
+          {!!metaLine && (
+            <Text style={styles.metaText} numberOfLines={1}>
+              {metaLine}
+            </Text>
+          )}
 
-        {shouldShowStatus && (
-          <View style={[styles.statusPill, statusStyle]}>
-            <Text style={styles.statusText}>{statusLabel}</Text>
-          </View>
-        )}
+          {shouldShowStatus && (
+            <View style={[styles.statusPill, statusStyle]}>
+              <Text style={styles.statusText}>{statusLabel}</Text>
+            </View>
+          )}
 
-        {showFooterIcons && isUpcoming && (
-          <View style={styles.footerIcons}>
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={(event) => {
-                event.stopPropagation?.();
-                onViewClass?.(booking);
-              }}
-              style={styles.footerIconButton}
-            >
-              <MapPinIcon size={19} color={theme.colors.zinc[500]} strokeWidth={1.9} />
-            </TouchableOpacity>
+          {showFooterIcons && isUpcoming && (
+            <View style={styles.footerIcons}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={(event) => {
+                  event.stopPropagation?.();
+                  onViewClass?.(booking);
+                }}
+                style={styles.footerIconButton}
+              >
+                <MapPinIcon size={19} color={theme.colors.zinc[500]} strokeWidth={1.9} />
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={(event) => {
-                event.stopPropagation?.();
-                onViewTicket?.(booking);
-              }}
-              style={[styles.footerIconButton, !onViewTicket && styles.footerIconButtonDisabled]}
-              disabled={!onViewTicket}
-            >
-              <TicketIcon size={19} color={theme.colors.zinc[500]} strokeWidth={1.9} />
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={(event) => {
+                  event.stopPropagation?.();
+                  onViewTicket?.(booking);
+                }}
+                style={[styles.footerIconButton, !onViewTicket && styles.footerIconButtonDisabled]}
+                disabled={!onViewTicket}
+              >
+                <TicketIcon size={19} color={theme.colors.zinc[500]} strokeWidth={1.9} />
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
 
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  shadowContainer: {
+    borderRadius: 22,
+    shadowColor: theme.colors.zinc[500],
+    shadowOffset: { width: 1, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -156,13 +166,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
     gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 1)',
+    overflow: 'hidden',
   },
   dateColumn: {
     minWidth: 68,
