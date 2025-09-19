@@ -2,7 +2,7 @@ import React, { memo, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { format } from 'date-fns';
 import { tz } from '@date-fns/tz';
-import { DiamondIcon, UserIcon, CheckCircleIcon, ClockIcon } from 'lucide-react-native';
+import { DiamondIcon, UserIcon, ClockIcon } from 'lucide-react-native';
 
 import { useTypedTranslation } from '../i18n/typed';
 import type { ClassInstance } from '../hooks/use-class-instances';
@@ -181,12 +181,16 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
       style={[
         styles.card,
         isSoldOut && styles.cardDisabled,
-        isBookedByUser && styles.cardBooked,
       ]}
       onPress={() => onPress?.(classInstance)}
       activeOpacity={0.85}
       disabled={isSoldOut}
     >
+      {isBookedByUser && (
+        <View style={styles.attendingBadge}>
+          <Text style={styles.attendingBadgeText}>Booked</Text>
+        </View>
+      )}
       <View style={styles.timeColumn}>
         <Text style={[styles.timeText, isSoldOut && styles.soldOutText]}>{startTimeLabel}</Text>
         <Text style={[styles.durationText, isSoldOut && styles.soldOutText]}>{durationLabel}</Text>
@@ -231,7 +235,7 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
 
         <View style={styles.infoRow}>
           <View style={styles.infoItem}>
-            <UserIcon size={14} color={isSoldOut ? theme.colors.rose[600] : theme.colors.emerald[600]} />
+            <UserIcon size={14} color={isSoldOut ? theme.colors.rose[700] : theme.colors.emerald[700]} />
             <Text style={[styles.infoText, styles.spotsInfoText, isSoldOut && styles.soldOutText]}>
               {isSoldOut ? t('explore.soldOut') : t('explore.spotsLeft', { count: spotsLeft })}
             </Text>
@@ -242,7 +246,7 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
               <View style={styles.infoSeparator} />
 
               <View style={styles.infoItem}>
-                <ClockIcon size={14} color={theme.colors.rose[500]} />
+                <ClockIcon size={14} color={theme.colors.rose[600]} />
                 <Text style={[styles.infoText, styles.closesInfoText]}>
                   {bookingWindowText}
                 </Text>
@@ -286,14 +290,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 3,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
+    position: 'relative',
   },
   cardDisabled: {
     opacity: 0.55,
-  },
-  cardBooked: {
-    backgroundColor: theme.colors.emerald[50],
   },
   timeColumn: {
     minWidth: 52,
@@ -395,10 +395,10 @@ const styles = StyleSheet.create({
     color: theme.colors.zinc[600],
   },
   spotsInfoText: {
-    color: theme.colors.emerald[500],
+    color: theme.colors.emerald[600],
   },
   closesInfoText: {
-    color: theme.colors.rose[500],
+    color: theme.colors.rose[600],
   },
   badgesRow: {
     flexDirection: 'row',
@@ -433,5 +433,21 @@ const styles = StyleSheet.create({
   },
   soldOutText: {
     color: theme.colors.rose[500],
+  },
+  attendingBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: theme.colors.emerald[500],
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+  },
+  attendingBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: theme.colors.zinc[50],
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
 });
