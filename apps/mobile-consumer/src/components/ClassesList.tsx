@@ -123,15 +123,6 @@ export function ClassesList({ selectedDate, searchFilters, userLocation }: Class
     }
   }, [classInstances.length, classInstancesLoading, classInstances]);
 
-  const renderClassItem = useCallback(({ item }: { item: ClassInstance }) => (
-    <ClassCard
-      classInstance={item}
-      onPress={(classInstance) =>
-        navigation.navigate('ClassDetailsModal', { classInstance })
-      }
-    />
-  ), [navigation]);
-
   if (classInstancesLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -141,11 +132,17 @@ export function ClassesList({ selectedDate, searchFilters, userLocation }: Class
     );
   }
 
-
   return (
     <FlashList
       data={filteredClasses}
-      renderItem={renderClassItem}
+      renderItem={({ item }) => (
+        <ClassCard
+          classInstance={item}
+          onPress={(classInstance) =>
+            navigation.navigate('ClassDetailsModal', { classInstance })
+          }
+        />
+      )}
       keyExtractor={item => item._id}
       getItemType={() => 'class'}
       contentContainerStyle={styles.listContainer}

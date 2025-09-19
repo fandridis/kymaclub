@@ -77,9 +77,16 @@ function getBookingWindowText(classInstance: ClassInstance): string {
   const now = Date.now();
   const classStartTime = classInstance.startTime;
   const bookingEndTime = classStartTime - classInstance.bookingWindow.minHours * 60 * 60 * 1000;
-  const timeUntilBookingEnds = Math.max(0, bookingEndTime - now);
+  const timeUntilBookingEnds = bookingEndTime - now;
+
+  // If booking window has passed, show "Registrations closed"
+  if (timeUntilBookingEnds <= 0) return 'Registrations closed';
 
   const totalMinutes = Math.floor(timeUntilBookingEnds / (1000 * 60));
+
+  // Only show booking window text if it closes in less than 24 hours (1440 minutes)
+  if (totalMinutes >= 1440) return '';
+
   const days = Math.floor(totalMinutes / (60 * 24));
   const remainingMinutesAfterDays = totalMinutes % (60 * 24);
   const hours = Math.floor(remainingMinutesAfterDays / 60);

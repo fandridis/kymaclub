@@ -1,0 +1,38 @@
+---
+globs: **/*subscription*.ts,**/*useQuery*.ts,**/*useMutation*.ts
+---
+
+# Real-time Data Patterns
+
+## Convex Subscriptions
+- **Use subscriptions** for all live data (bookings, classes, venues)
+- **Specific queries** - avoid over-fetching with broad subscriptions
+- **Loading states** - handle loading and error states properly
+- **Optimistic updates** - update UI immediately, sync with backend
+
+## Hook Patterns
+```typescript
+// Good: Specific subscription
+const instances = useQuery(api.classes.instances.getInstances, { businessId });
+
+// Avoid: Over-broad subscriptions
+const allData = useQuery(api.core.getAllData);
+```
+
+## Performance Optimization
+- **Debounced filtering** - use timeouts for search/filter operations
+- **Memoized calculations** - use `useMemo` for expensive computations
+- **Conditional subscriptions** - only subscribe when needed
+- **Cleanup** - unsubscribe when components unmount
+
+## Error Handling
+- **Graceful degradation** - show fallback UI when data unavailable
+- **Retry logic** - implement retry for failed subscriptions
+- **User feedback** - show loading states and error messages
+- **Offline support** - handle network connectivity issues
+
+## Data Consistency
+- **Single source of truth** - backend is authoritative
+- **Conflict resolution** - handle concurrent updates gracefully
+- **Audit trails** - maintain history of changes
+- **Validation** - validate data before displaying

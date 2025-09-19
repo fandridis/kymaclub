@@ -1,0 +1,47 @@
+---
+globs: **/*.ts,**/*.tsx
+---
+
+# Security Patterns & Best Practices
+
+## Authentication & Authorization
+- **@convex-dev/auth** - Use for all authentication flows
+- **Multi-tenant isolation** - Always scope by businessId/user._id
+- **Role-based access** - Check user roles before operations
+- **Session management** - Proper session handling and expiration
+
+## Data Protection
+- **Input validation** - Validate all inputs with Zod schemas
+- **SQL injection prevention** - Use parameterized queries (Convex handles this)
+- **XSS prevention** - Sanitize user inputs and use proper escaping
+- **CSRF protection** - Use proper CSRF tokens for state-changing operations
+
+## API Security
+- **Rate limiting** - Implement rate limiting for API endpoints
+- **Input sanitization** - Clean and validate all inputs
+- **Output encoding** - Properly encode outputs
+- **Error information** - Don't leak sensitive information in errors
+
+## Payment Security
+- **Stripe integration** - Use Stripe for all payment processing
+- **Webhook validation** - Verify Stripe webhook signatures
+- **Idempotency** - Use idempotency keys for payment operations
+- **PCI compliance** - Never store card details, use Stripe tokens
+
+## Data Privacy
+- **Personal data** - Handle user data according to privacy laws
+- **Data retention** - Implement proper data retention policies
+- **Data deletion** - Support user data deletion requests
+- **Audit trails** - Log access to sensitive data
+
+## Environment Security
+- **Environment variables** - Store secrets in environment variables
+- **Secret rotation** - Regularly rotate API keys and secrets
+- **Access controls** - Limit access to production environments
+- **Monitoring** - Monitor for suspicious activities
+
+## Mobile Security
+- **Deep linking** - Validate deep link URLs
+- **Biometric auth** - Use device biometrics when available
+- **Secure storage** - Use secure storage for sensitive data
+- **Certificate pinning** - Pin SSL certificates for API calls

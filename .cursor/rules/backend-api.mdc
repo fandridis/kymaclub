@@ -1,0 +1,46 @@
+---
+globs: packages/api/**/*
+---
+
+# Backend API (Convex + TypeScript)
+
+## Architecture
+- **Convex 1.23** - Real-time database with serverless functions
+- **@convex-dev/auth** - Authentication with GitHub OAuth + email/phone OTP
+- **TypeScript 5.8** - Strict typing throughout backend operations
+- **Vitest** - Comprehensive unit and integration testing
+
+## Folder Structure
+- **`convex/`** - Convex functions (queries, mutations, actions, http, triggers)
+- **`operations/`** - Pure business logic with comprehensive JSDoc
+- **`services/`** - Service layer integrating operations
+- **`rules/`** - Pure business rules (booking limits, cancellation, etc.)
+- **`validations/`** - Input validation helpers with field attribution
+- **`types/`** - TypeScript type definitions
+- **`utils/`** - Utility functions and helpers
+
+## Business Rules (Critical)
+- **Credit system**: 1 credit = 50 cents spending value
+- **Timezone priority**: All scheduling based on business local time
+- **Payment safety**: Credits allocated only after payment confirmation
+- **Double-entry ledger**: All credit transactions use bookkeeping
+- **20% system cut**: Platform takes 20% of completed booking revenue
+
+## Code Patterns
+- **Pure functions** in `rules/` and `operations/` (no context dependencies)
+- **Service layer** for database operations and external calls
+- **ConvexError** with centralized error codes
+- **Comprehensive JSDoc** for all business operations
+- **Field attribution** for validation errors
+
+## Testing
+- **Unit tests** for pure functions in `rules/` and `operations/`
+- **Integration tests** for end-to-end workflows
+- **Vitest** with proper test setup and teardown
+- **Mock external services** (Stripe, email, etc.)
+
+## Security & Tenancy
+- **Multi-tenant** - always scope by `businessId`/`user._id`
+- **Never leak** data across tenants
+- **Validate ownership** on read/update operations
+- **Soft deletes** - use `deleted` flags instead of hard deletes

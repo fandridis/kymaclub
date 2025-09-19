@@ -1,0 +1,50 @@
+---
+globs: **/*.test.ts,**/*.spec.ts,**/tests/**/*
+---
+
+# Testing Patterns & Guidelines
+
+## Test Types
+- **Unit tests** - Pure functions in `rules/` and `operations/`
+- **Integration tests** - End-to-end workflows in `integrationTests/`
+- **E2E tests** - Playwright for critical user journeys
+- **Component tests** - React Testing Library for UI components
+
+## Test Organization
+- **Co-located tests** - `*.test.ts` files next to source code
+- **Test utilities** - Shared helpers in `tests/` directories
+- **Mock external services** - Stripe, email, file uploads
+- **Test data factories** - Consistent test data generation
+
+## Backend Testing (Vitest)
+```typescript
+// Unit test for pure functions
+describe('calculateFinalPrice', () => {
+  it('applies early bird discount correctly', () => {
+    const result = calculateFinalPrice(instance, template);
+    expect(result.discountPercentage).toBe(0.1);
+  });
+});
+```
+
+## Frontend Testing (Playwright)
+```typescript
+// E2E test for critical workflows
+test('business can create and schedule class', async ({ page }) => {
+  await page.goto('/calendar');
+  await page.click('[data-testid="create-class"]');
+  // ... test steps
+});
+```
+
+## Test Data
+- **Consistent fixtures** - Use same test data across tests
+- **Cleanup** - Reset state between tests
+- **Isolation** - Tests should not depend on each other
+- **Realistic data** - Use data that matches production patterns
+
+## Coverage Goals
+- **Core business logic** - 90%+ coverage for pricing, booking, credit operations
+- **Critical user flows** - E2E tests for booking, payment, calendar management
+- **Edge cases** - Test error conditions and boundary values
+- **Performance** - Test with large datasets and concurrent users

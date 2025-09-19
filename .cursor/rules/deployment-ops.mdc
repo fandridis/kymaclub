@@ -1,0 +1,63 @@
+---
+globs: **/*.json,**/*.yml,**/*.yaml,**/*.toml,**/*.config.*
+---
+
+# Deployment & Operations
+
+## Build & Development
+- **pnpm** - Use pnpm for package management (version 9.0.0)
+- **Turborepo** - Use turbo for build orchestration
+- **Node.js** - Require Node.js >= 18
+- **TypeScript** - Use TypeScript 5.8+ with strict mode
+
+## Development Commands
+```bash
+# Install dependencies
+pnpm i
+
+# Start development
+pnpm dev
+
+# Build all packages
+pnpm build
+
+# Lint all packages
+pnpm lint
+
+# Type check
+pnpm check-types
+
+# Format code
+pnpm format
+```
+
+## Deployment Targets
+- **Mobile**: Expo EAS Build for iOS/Android
+- **Web Business**: Cloudflare Workers via Wrangler
+- **Web Consumer**: Cloudflare Workers via Wrangler  
+- **Web Landing**: Cloudflare Workers via Wrangler
+- **Backend**: Convex cloud deployment
+
+## Environment Management
+- **Environment files** - Use .env.local for local development
+- **Secrets** - Store secrets in environment variables
+- **Configuration** - Use wrangler.jsonc for Cloudflare config
+- **Build optimization** - Use Vite for fast builds
+
+## CI/CD Patterns
+- **Automated testing** - Run tests on every PR
+- **Type checking** - Ensure TypeScript compilation
+- **Linting** - Enforce code quality standards
+- **Security scanning** - Check for vulnerabilities
+
+## Monitoring & Observability
+- **Error tracking** - Monitor application errors
+- **Performance monitoring** - Track app performance
+- **User analytics** - Understand user behavior
+- **Uptime monitoring** - Ensure service availability
+
+## Database Operations
+- **Convex migrations** - Handle schema changes
+- **Data backups** - Regular data backups
+- **Index optimization** - Monitor query performance
+- **Connection management** - Efficient database connections

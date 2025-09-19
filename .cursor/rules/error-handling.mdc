@@ -1,0 +1,49 @@
+---
+globs: **/*.ts,**/*.tsx
+---
+
+# Error Handling Patterns
+
+## Backend Error Handling
+- **ConvexError** - Use for all backend errors with structured data
+- **Centralized error codes** - Use `ERROR_CODES` constants
+- **Field attribution** - Include field name for validation errors
+- **User-friendly messages** - Clear, actionable error messages
+
+```typescript
+throw new ConvexError({
+  message: "Name too long",
+  field: "name", 
+  code: ERROR_CODES.VALIDATION_ERROR
+});
+```
+
+## Frontend Error Handling
+- **Error boundaries** - Catch component errors gracefully
+- **Loading states** - Show loading indicators during async operations
+- **Retry mechanisms** - Allow users to retry failed operations
+- **Toast notifications** - Show success/error feedback
+
+## Form Error Handling
+- **Field-specific errors** - Display errors next to relevant fields
+- **Real-time validation** - Show errors as user types
+- **Server validation** - Handle backend validation errors
+- **Optimistic updates** - Update UI immediately, handle errors
+
+## Network Error Handling
+- **Offline support** - Handle network connectivity issues
+- **Timeout handling** - Set reasonable timeouts for requests
+- **Retry logic** - Implement exponential backoff for retries
+- **Fallback UI** - Show appropriate fallback when data unavailable
+
+## Error Logging
+- **Structured logging** - Use consistent log format
+- **Error context** - Include relevant context in logs
+- **User identification** - Include user ID in error logs
+- **Sensitive data** - Never log passwords or tokens
+
+## Graceful Degradation
+- **Feature flags** - Disable features that are failing
+- **Fallback content** - Show alternative content when possible
+- **Progressive enhancement** - Core functionality works without JS
+- **User communication** - Inform users about issues and solutions

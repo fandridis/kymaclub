@@ -1,0 +1,44 @@
+---
+globs: apps/mobile-consumer/**/*
+---
+
+# Mobile Consumer App (React Native + Expo)
+
+## Tech Stack
+- **React Native 0.79.5** + **React 19** with Expo SDK 53
+- **TypeScript 5.7.2** with strict typing
+- **React Navigation** for navigation (stack + bottom tabs)
+- **Zustand** for state management
+- **FlashList** for high-performance lists
+- **Expo Image** for optimized image handling
+
+## Key Features
+- **Class discovery** with real-time filtering and search
+- **Booking management** with credit-based payments
+- **QR code scanning** for quick check-ins
+- **Push notifications** with deep-linking
+- **Multi-language support** (EN, EL, LT)
+
+## Component Patterns
+- **Memo components** - use `React.memo()` for list items and cards
+- **StyleSheet.create()** - always use StyleSheet for styles
+- **Theme consistency** - use `theme` object from [theme.ts](mdc:apps/mobile-consumer/src/theme.ts)
+- **Accessibility** - include proper accessibility props
+
+## Navigation Structure
+- **Stack navigation** for modals and details
+- **Bottom tabs** for main app sections
+- **Deep linking** with `kymaclub://` scheme
+- **Auth guards** - protect routes requiring authentication
+
+## State Management
+- **Zustand stores** in `src/stores/` for global state
+- **Convex subscriptions** for real-time data
+- **Local storage** with AsyncStorage for persistence
+- **Optimistic updates** for better UX
+
+## Performance
+- **FlashList** instead of FlatList for large lists
+- **Image optimization** with Expo Image and caching
+- **Lazy loading** for screens and components
+- **Memory management** - clean up subscriptions and timers
