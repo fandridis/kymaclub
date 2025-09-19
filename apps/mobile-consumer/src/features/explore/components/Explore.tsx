@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, ActivityIndicator, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import * as Location from 'expo-location';
 import { TabType } from './ExploreHeader';
 import { FilterBar, FilterOptions } from '../../../components/FilterBar';
+import { AppTabs, AppTabItem } from '../../../components/AppTabs';
 import { ClassesSection } from './ClassesSection';
 import { useTypedTranslation } from '../../../i18n/typed';
 import { useAllVenues } from '../hooks/useAllVenues';
@@ -20,6 +21,13 @@ export function Explore() {
     const { t } = useTypedTranslation();
     const user = useAuthenticatedUser();
     const [activeTab, setActiveTab] = useState<TabType>('businesses');
+    const tabItems = useMemo<AppTabItem<TabType>[]>(
+        () => [
+            { key: 'businesses', label: t('explore.businesses') },
+            { key: 'classes', label: t('explore.classes') },
+        ],
+        [t]
+    );
     const [isMapView, setIsMapView] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
@@ -113,24 +121,12 @@ export function Explore() {
             <TabScreenHeader title="Explore" renderRightSide={renderCreditsBadge} />
             <FilterBar
                 leading={(
-                    <View style={styles.tabsRow}>
-                        <TouchableOpacity
-                            style={[styles.tabButton, activeTab === 'businesses' && styles.tabButtonActive]}
-                            onPress={() => handleTabChange('businesses')}
-                        >
-                            <Text style={[styles.tabText, activeTab === 'businesses' && styles.tabTextActive]}>
-                                {t('explore.businesses')}
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.tabButton, activeTab === 'classes' && styles.tabButtonActive]}
-                            onPress={() => handleTabChange('classes')}
-                        >
-                            <Text style={[styles.tabText, activeTab === 'classes' && styles.tabTextActive]}>
-                                {t('explore.classes')}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
+                    <AppTabs
+                        items={tabItems}
+                        activeKey={activeTab}
+                        onChange={handleTabChange}
+                        tabsRowStyle={styles.tabsRow}
+                    />
                 )}
                 onFilterChange={handleFilterChange}
                 showCategoryFilters={true}
@@ -186,26 +182,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
     },
     tabsRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
         gap: 16,
-    },
-    tabButton: {
-        paddingVertical: 6,
-        borderBottomWidth: 2,
-        borderBottomColor: 'transparent',
-    },
-    tabButtonActive: {
-        borderBottomColor: '#111827',
-    },
-    tabText: {
-        fontSize: 15,
-        fontWeight: '500',
-        color: '#6b7280',
-    },
-    tabTextActive: {
-        color: '#111827',
-        fontWeight: '600',
     },
     creditsBadge: {
         flexDirection: 'row',

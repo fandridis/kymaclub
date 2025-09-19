@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: 16,
     backgroundColor: '#f4f4f5',
   },
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   mapButton: {
-    padding: 6,
+    padding: 8,
     borderRadius: 14,
     backgroundColor: '#f4f4f5',
   },

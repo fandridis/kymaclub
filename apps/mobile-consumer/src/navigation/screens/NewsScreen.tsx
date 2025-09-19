@@ -613,7 +613,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        paddingBottom: 80,
+        paddingBottom: 60,
     },
     subtitleContainer: {
         paddingHorizontal: SECTION_PADDING,

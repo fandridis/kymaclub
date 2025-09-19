@@ -5,7 +5,7 @@ import { usePaginatedQuery } from 'convex/react';
 import { useNavigation } from '@react-navigation/native';
 
 import { BookingCard } from '../../components/BookingCard';
-import { BookingsTabs, BookingTabType } from '../../components/BookingsTabs';
+import { AppTabs, AppTabItem } from '../../components/AppTabs';
 import { useAuthenticatedUser } from '../../stores/auth-store';
 import { TabScreenHeader } from '../../components/TabScreenHeader';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,6 +16,8 @@ import type { Doc } from '@repo/api/convex/_generated/dataModel';
 
 const INITIAL_BOOKINGS_COUNT = 100;
 const LOAD_MORE_COUNT = 50;
+
+type BookingTabType = 'upcoming' | 'cancelled' | 'history';
 
 type BookingSection = {
     title: string;
@@ -120,6 +122,15 @@ export function BookingsScreen() {
 
     const [activeTab, setActiveTab] = useState<BookingTabType>('upcoming');
 
+    const tabItems = useMemo<AppTabItem<BookingTabType>[]>(
+        () => [
+            { key: 'upcoming', label: 'Upcoming' },
+            { key: 'cancelled', label: 'Cancelled' },
+            { key: 'history', label: 'History' },
+        ],
+        []
+    );
+
     const {
         results: allBookings,
         status,
@@ -191,7 +202,12 @@ export function BookingsScreen() {
     return (
         <SafeAreaView style={styles.container}>
             <TabScreenHeader title="My Bookings" />
-            <BookingsTabs activeTab={activeTab} onTabChange={handleTabChange} />
+            <AppTabs
+                items={tabItems}
+                activeKey={activeTab}
+                onChange={handleTabChange}
+                containerStyle={styles.tabsContainer}
+            />
 
             {isInitialLoading ? (
                 <View style={styles.loadingContainer}>
@@ -244,6 +260,10 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#f9fafb',
+    },
+    tabsContainer: {
+        paddingHorizontal: 12,
+        paddingVertical: 10,
     },
     loadingContainer: {
         flex: 1,

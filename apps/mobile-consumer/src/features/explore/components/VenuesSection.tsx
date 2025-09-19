@@ -65,8 +65,8 @@ export const VenuesSection = ({ venues, storageIdToUrl, userLocation, filters, i
 const styles = StyleSheet.create({
     listContainer: {
         paddingHorizontal: 16,
-        paddingTop: 8,
-        paddingBottom: 100,
+        paddingTop: 6,
+        paddingBottom: 60,
     },
     emptyContainer: {
         flex: 1,

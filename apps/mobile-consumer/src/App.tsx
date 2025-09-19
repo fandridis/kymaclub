@@ -89,7 +89,7 @@ export function App() {
     <ErrorBoundary>
       <ConvexProvider client={convex}>
         <ConvexAuthProvider client={convex} storage={convexAuthStorage}>
-          <ConvexQueryCacheProvider>
+          <ConvexQueryCacheProvider expiration={60 * 1000}>
             <AuthSync>
               <AuthGuard>
                 <ActionSheetProvider>
