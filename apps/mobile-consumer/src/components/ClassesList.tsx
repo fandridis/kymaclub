@@ -8,16 +8,21 @@ import { useTypedTranslation } from '../i18n/typed';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation';
 import { theme } from '../theme';
+import { ExploreCategoryId, getExploreCategoryTag } from '@repo/utils/exploreFilters';
+import * as Location from 'expo-location';
+import { calculateDistance } from '../utils/location';
 
 interface ClassesListProps {
   selectedDate: string;
   searchFilters: {
     searchQuery: string;
-    categories: string[];
+    categories: ExploreCategoryId[];
+    distanceKm: number;
   };
+  userLocation: Location.LocationObject | null;
 }
 
-export function ClassesList({ selectedDate, searchFilters }: ClassesListProps) {
+export function ClassesList({ selectedDate, searchFilters, userLocation }: ClassesListProps) {
   const { t } = useTypedTranslation();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [filteredClasses, setFilteredClasses] = useState<ClassInstance[]>([]);
@@ -52,7 +57,8 @@ export function ClassesList({ selectedDate, searchFilters }: ClassesListProps) {
 
   // Apply filters with debounce
   const applyFilters = useCallback(() => {
-    const { searchQuery, categories } = searchFilters;
+    const { searchQuery, categories, distanceKm } = searchFilters;
+    const selectedCategoryTags = categories.map((categoryId) => getExploreCategoryTag(categoryId).toLowerCase());
 
     const filtered = classInstances.filter((instance) => {
       const name = instance.name?.toLowerCase() ?? '';
@@ -62,13 +68,36 @@ export function ClassesList({ selectedDate, searchFilters }: ClassesListProps) {
       const q = (searchQuery ?? '').toLowerCase();
 
       const matchesSearch = !q || name.includes(q) || business.includes(q) || tags.some((t) => t.includes(q));
-      const matchesCategory = categories.length === 0 || categories.some((cat) => tags.includes(cat.toLowerCase()));
+      const matchesCategory = selectedCategoryTags.length === 0 || selectedCategoryTags.some((tag) => tags.includes(tag));
 
-      return matchesSearch && matchesCategory;
+      const matchesDistance = (() => {
+        if (!distanceKm || distanceKm <= 0 || !userLocation) {
+          return true;
+        }
+
+        const venueAddress = instance.venueSnapshot?.address;
+        const latitude = typeof venueAddress?.latitude === 'number' ? venueAddress.latitude : null;
+        const longitude = typeof venueAddress?.longitude === 'number' ? venueAddress.longitude : null;
+
+        if (latitude === null || longitude === null) {
+          return true;
+        }
+
+        const distanceMeters = calculateDistance(
+          userLocation.coords.latitude,
+          userLocation.coords.longitude,
+          latitude,
+          longitude
+        );
+
+        return distanceMeters <= distanceKm * 1000;
+      })();
+
+      return matchesSearch && matchesCategory && matchesDistance;
     });
 
     setFilteredClasses(filtered);
-  }, [classInstances, searchFilters]);
+  }, [classInstances, searchFilters, userLocation]);
 
   // Debounced filtering
   useEffect(() => {

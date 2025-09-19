@@ -6,7 +6,7 @@ import { MapPinIcon, StarIcon, UserIcon, DiamondIcon, ClockIcon } from 'lucide-r
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Carousel from 'react-native-reanimated-carousel';
-import { useQuery } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { api } from '@repo/api/convex/_generated/api';
 import { useTypedTranslation } from '../../i18n/typed';
@@ -19,6 +19,7 @@ import { useAllVenues } from '../../features/explore/hooks/useAllVenues';
 import type { RootStackParamListWithNestedTabs } from '../index';
 import { centsToCredits } from '@repo/utils/credits';
 import { NewsClassCard } from '../../components/news/NewsCard';
+import { XIcon } from 'lucide-react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -33,18 +34,36 @@ const CAROUSEL_PADDING = SECTION_PADDING - (ITEM_GAP / 2); // Adjust for item ga
 
 const CAROUSEL_ITEM_WIDTH = (screenWidth - (SECTION_PADDING * 2)) / 1.40;
 
-const WhatsNewBanner = () => (
-    <View style={styles.whatsNewBanner}>
-        <View style={styles.bannerIcon}>
-            <Text style={styles.bannerIconText}>🎉</Text>
-        </View>
+const WelcomeBanner = ({
+    onDismiss,
+    onExplore
+}: {
+    onDismiss: () => void;
+    onExplore: () => void;
+}) => (
+    <View style={styles.welcomeBanner}>
+        <TouchableOpacity
+            onPress={onDismiss}
+            style={styles.bannerDismissButton}
+            activeOpacity={0.7}
+        >
+            <XIcon size={20} color={theme.colors.zinc[600]} />
+        </TouchableOpacity>
+
         <View style={styles.bannerContent}>
-            <Text style={styles.bannerTitle}>What's New!!!</Text>
-            <Text style={styles.bannerSubtitle}>New yoga studio opening next week</Text>
+            <Text style={styles.bannerTitle}>Welcome aboard! 🎉</Text>
+            <Text style={styles.bannerSubtitle}>
+                We are excited to have you! Look around, browse the different businesses and book any class you like!
+            </Text>
         </View>
-        <View style={styles.bannerAction}>
-            <Text style={styles.bannerActionText}>Learn More</Text>
-        </View>
+
+        <TouchableOpacity
+            onPress={onExplore}
+            style={styles.bannerAction}
+            activeOpacity={0.8}
+        >
+            <Text style={styles.bannerActionText}>Explore</Text>
+        </TouchableOpacity>
     </View>
 );
 
@@ -67,6 +86,17 @@ export function NewsScreen() {
 
     const now = useCurrentTime();
     const next12Hours = useMemo(() => new Date(now.getTime() + (12 * 60 * 60 * 1000)), [now]);
+
+    // Query for user settings to check if welcome banner was dismissed
+    // TODO: Update to use api.queries.settings.getUserSettings once API is regenerated
+    const userSettings = useQuery(
+        api.queries.settings.getUserSettings,
+        user ? {} : "skip"
+    );
+
+    // Mutation to dismiss the welcome banner
+    // TODO: Update to use api.mutations.settings.updateUserBannerSettings once API is regenerated
+    const dismissWelcomeBanner = useMutation(api.mutations.settings.upsertUserSettings);
 
     // Query for user's upcoming bookings
     const userBookings = useQuery(
@@ -298,6 +328,44 @@ export function NewsScreen() {
         navigation.navigate('Home', { screen: 'Explore' });
     };
 
+    // Handle banner dismissal
+    const handleDismissBanner = async () => {
+        if (user) {
+            try {
+                // TODO: Update to use new banner settings API once available
+                await dismissWelcomeBanner({
+                    notifications: {
+                        globalOptOut: userSettings?.notifications?.globalOptOut || false,
+                        notificationPreferences: userSettings?.notifications?.notificationPreferences || {
+                            booking_confirmation: { email: true, web: true, push: true },
+                            booking_reminder: { email: true, web: true, push: true },
+                            class_cancelled: { email: true, web: true, push: true },
+                            class_rebookable: { email: true, web: true, push: true },
+                            booking_cancelled_by_business: { email: true, web: true, push: true },
+                            payment_receipt: { email: true, web: true, push: true },
+                            credits_received_subscription: { email: true, web: true, push: true },
+                        }
+                    },
+                    banners: {
+                        welcomeBannerDismissed: true
+                    }
+                });
+            } catch (error) {
+                console.error('Error dismissing welcome banner:', error);
+            }
+        }
+    };
+
+    // Handle explore press (also dismisses banner)
+    const handleExplorePressWithDismiss = async () => {
+        await handleDismissBanner();
+        handleExplorePress();
+    };
+
+    // Check if welcome banner should be shown
+    // TODO: Update to use userSettings?.banners?.welcomeBannerDismissed once new API is available
+    const shouldShowWelcomeBanner = user && !userSettings?.banners?.welcomeBannerDismissed;
+
     // Loading state
     const isInitialLoading = user && (
         userBookings === undefined &&
@@ -349,7 +417,13 @@ export function NewsScreen() {
                     <Text style={styles.subtitleText}>Discover amazing fitness classes</Text>
                 </View>
 
-                <WhatsNewBanner />
+                {/* Welcome Banner - only show for new users */}
+                {shouldShowWelcomeBanner && (
+                    <WelcomeBanner
+                        onDismiss={handleDismissBanner}
+                        onExplore={handleExplorePressWithDismiss}
+                    />
+                )}
 
                 {/* Your Schedule Section */}
                 {upcomingClasses.length > 0 ? (
@@ -864,53 +938,61 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '600',
     },
-    // WhatsNew Banner styles
-    whatsNewBanner: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#e3f2fd',
-        paddingVertical: 12,
-        paddingHorizontal: SECTION_PADDING,
-        borderRadius: 12,
+    // Welcome Banner styles
+    welcomeBanner: {
+        backgroundColor: '#f0f9ff',
+        borderRadius: 16,
         marginTop: 16,
         marginBottom: 16,
         marginHorizontal: SECTION_PADDING,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: '#e0f2fe',
+        position: 'relative',
     },
-    bannerIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#64b5f6',
+    bannerDismissButton: {
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 12,
-    },
-    bannerIconText: {
-        fontSize: 24,
+        zIndex: 1,
     },
     bannerContent: {
-        flex: 1,
+        paddingRight: 40, // Space for dismiss button
+        marginBottom: 12,
     },
     bannerTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#1a1a1a',
-        marginBottom: 4,
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#0f172a',
+        marginBottom: 8,
     },
     bannerSubtitle: {
-        fontSize: 12,
-        color: '#6c757d',
+        fontSize: 14,
+        color: '#475569',
+        lineHeight: 20,
     },
     bannerAction: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        backgroundColor: '#42a5f5',
+        alignSelf: 'flex-start',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        backgroundColor: theme.colors.sky[600],
         borderRadius: 8,
+        shadowColor: theme.colors.sky[600],
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 3,
     },
     bannerActionText: {
         fontSize: 14,
         color: '#ffffff',
-        fontWeight: '500',
+        fontWeight: '600',
     },
 
     // No upcoming classes styles

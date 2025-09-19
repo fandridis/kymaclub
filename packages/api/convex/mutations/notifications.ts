@@ -2,7 +2,7 @@ import { internalMutation } from "../_generated/server";
 import { Infer, v } from "convex/values";
 import { getAuthenticatedUserOrThrow } from "../utils";
 import { notificationService } from "../../services/notificationService";
-import { notificationsFields, userNotificationSettingsFields, businessNotificationSettingsFields } from "../schema";
+import { notificationsFields } from "../schema";
 import { omit } from "convex-helpers";
 import { mutationWithTriggers } from "../triggers";
 
@@ -62,48 +62,6 @@ export const updateNotificationDeliveryStatus = mutationWithTriggers({
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
         return notificationService.updateNotificationDeliveryStatus({ ctx, args, user });
-    }
-});
-
-/***************************************************************
- * Upsert User Notification Settings
- ***************************************************************/
-export const upsertUserNotificationSettingsArgs = v.object({
-    settings: v.object({
-        ...omit(userNotificationSettingsFields, [
-            'userId', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy',
-            'deleted', 'deletedAt', 'deletedBy'
-        ])
-    })
-});
-export type UpsertUserNotificationSettingsArgs = Infer<typeof upsertUserNotificationSettingsArgs>;
-
-export const upsertUserNotificationSettings = mutationWithTriggers({
-    args: upsertUserNotificationSettingsArgs,
-    handler: async (ctx, args) => {
-        const user = await getAuthenticatedUserOrThrow(ctx);
-        return notificationService.upsertUserNotificationSettings({ ctx, args: args.settings, user });
-    }
-});
-
-/***************************************************************
- * Upsert Business Notification Settings
- ***************************************************************/
-export const upsertBusinessNotificationSettingsArgs = v.object({
-    settings: v.object({
-        ...omit(businessNotificationSettingsFields, [
-            'businessId', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy',
-            'deleted', 'deletedAt', 'deletedBy'
-        ])
-    })
-});
-export type UpsertBusinessNotificationSettingsArgs = Infer<typeof upsertBusinessNotificationSettingsArgs>;
-
-export const upsertBusinessNotificationSettings = mutationWithTriggers({
-    args: upsertBusinessNotificationSettingsArgs,
-    handler: async (ctx, args) => {
-        const user = await getAuthenticatedUserOrThrow(ctx);
-        return notificationService.upsertBusinessNotificationSettings({ ctx, args: args.settings, user });
     }
 });
 

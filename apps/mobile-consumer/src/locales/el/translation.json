@@ -22,7 +22,8 @@
         "edit": "Επεξεργασία",
         "loading": "Φόρτωση...",
         "error": "Σφάλμα",
-        "tryAgain": "Δοκιμάστε ξανά"
+        "tryAgain": "Δοκιμάστε ξανά",
+        "clearAll": "Καθαρισμός όλων"
     },
     "explore": {
         "businesses": "Επιχειρήσεις",
@@ -31,7 +32,7 @@
         "filters": "Φίλτρα",
         "showMap": "Εμφάνιση Χάρτη",
         "showList": "Εμφάνιση Λίστας",
-        "distance": "{{distance}} μακριά",
+        "distance": "Απόσταση",
         "openNow": "Ανοιχτό τώρα",
         "closedNow": "Κλειστό τώρα",
         "rating": "{{rating}} αστέρια",
@@ -42,6 +43,11 @@
         "soldOut": "Εξαντλήθηκε",
         "noBusinesses": "Δεν βρέθηκαν επιχειρήσεις κοντά",
         "noClasses": "Δεν βρέθηκαν μαθήματα",
-        "searchPlaceholder": "Αναζήτηση επιχειρήσεων ή μαθημάτων..."
+        "searchPlaceholder": "Αναζήτηση επιχειρήσεων ή μαθημάτων...",
+        "categories": "Κατηγορίες",
+        "applyFilters": "Εφαρμογή φίλτρων ({{count}})",
+        "applyFiltersNoCount": "Εφαρμογή φίλτρων",
+        "distanceWithin": "Έως {{distance}} χλμ",
+        "distanceAny": "Οποιαδήποτε απόσταση"
     }
 }

@@ -22,7 +22,8 @@
         "edit": "Edit",
         "loading": "Loading...",
         "error": "Error",
-        "tryAgain": "Try Again"
+        "tryAgain": "Try Again",
+        "clearAll": "Clear all"
     },
     "explore": {
         "businesses": "Businesses",
@@ -31,7 +32,7 @@
         "filters": "Filters",
         "showMap": "Show Map",
         "showList": "Show List",
-        "distance": "{{distance}} away",
+        "distance": "Distance",
         "openNow": "Open Now",
         "closedNow": "Closed Now",
         "rating": "{{rating}} stars",
@@ -42,6 +43,11 @@
         "soldOut": "Sold Out",
         "noBusinesses": "No businesses found nearby",
         "noClasses": "No classes found",
-        "searchPlaceholder": "Search businesses or classes..."
+        "searchPlaceholder": "Search businesses or classes...",
+        "categories": "Categories",
+        "applyFilters": "Apply filters ({{count}})",
+        "applyFiltersNoCount": "Apply filters",
+        "distanceWithin": "Within {{distance}} km",
+        "distanceAny": "Any distance"
     }
 }

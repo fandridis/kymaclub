@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Bell, UserX, CalendarX, CreditCard, Star } from 'lucide-react';
-import { useBusinessNotificationSettings } from '../hooks/use-business-notification-settings';
+import { useBusinessSettings } from '../hooks/use-business-settings';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -74,18 +74,18 @@ const notificationTypes = [
 ];
 
 export function NotificationsTab() {
-    const { settings, loading, updateSettings } = useBusinessNotificationSettings();
+    const { settings, loading, updateSettings } = useBusinessSettings();
     const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
     const [hasChanges, setHasChanges] = useState(false);
     const [saving, setSaving] = useState(false);
 
     // Update local state when settings are loaded
     useEffect(() => {
-        if (settings?.notificationPreferences) {
+        if (settings?.notifications?.preferences) {
             // Merge with defaults to ensure newly added keys exist
             setPreferences({
                 ...defaultPreferences,
-                ...settings.notificationPreferences,
+                ...settings.notifications.preferences,
             });
             setHasChanges(false);
         }
@@ -103,8 +103,8 @@ export function NotificationsTab() {
         setSaving(true);
         try {
             await updateSettings({
-                settings: {
-                    notificationPreferences: preferences
+                notifications: {
+                    preferences
                 }
             });
             setHasChanges(false);

@@ -1,14 +1,15 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../../../navigation';
 import * as Location from 'expo-location';
 import { VenueCard } from '../../../components/VenueCard';
-import { FilterOptions } from '../../../components/FilterBar';
+import { FilterOptions } from '../../../stores/explore-filters-store';
 import { ExploreMapView } from '../../../components/ExploreMapView';
 import { useTypedTranslation } from '../../../i18n/typed';
 import { Doc } from '@repo/api/convex/_generated/dataModel';
+import { calculateDistance } from '../../../utils/location';
 
 interface VenuesSectionProps {
     venues: Doc<'venues'>[];
@@ -23,6 +24,30 @@ export const VenuesSection = ({ venues, storageIdToUrl, userLocation, filters, i
     const { t } = useTypedTranslation();
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
+    const filteredVenues = useMemo(() => {
+        if (!filters.distanceKm || filters.distanceKm <= 0 || !userLocation) {
+            return venues;
+        }
+
+        return venues.filter((venue) => {
+            const latitude = typeof venue.address?.latitude === 'number' ? venue.address.latitude : null;
+            const longitude = typeof venue.address?.longitude === 'number' ? venue.address.longitude : null;
+
+            if (latitude === null || longitude === null) {
+                return true;
+            }
+
+            const distanceMeters = calculateDistance(
+                userLocation.coords.latitude,
+                userLocation.coords.longitude,
+                latitude,
+                longitude
+            );
+
+            return distanceMeters <= filters.distanceKm * 1000;
+        });
+    }, [filters.distanceKm, userLocation, venues]);
+
     const renderVenueItem = useCallback(({ item }: { item: Doc<'venues'> }) => {
         return (
             <VenueCard
@@ -31,12 +56,12 @@ export const VenuesSection = ({ venues, storageIdToUrl, userLocation, filters, i
                 onPress={(venue) => navigation.navigate('VenueDetailsScreen', { venueId: venue._id })}
             />
         );
-    }, [navigation]);
+    }, [navigation, storageIdToUrl]);
 
     if (isMapView) {
         return (
             <ExploreMapView
-                venues={venues}
+                venues={filteredVenues}
                 storageIdToUrl={storageIdToUrl}
                 userLocation={userLocation}
                 onCloseSheet={onCloseMapSheet}
@@ -46,7 +71,7 @@ export const VenuesSection = ({ venues, storageIdToUrl, userLocation, filters, i
 
     return (
         <FlashList
-            data={venues}
+            data={filteredVenues}
             renderItem={renderVenueItem}
             keyExtractor={item => item._id}
             getItemType={() => 'venue'}

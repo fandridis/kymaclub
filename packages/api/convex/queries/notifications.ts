@@ -52,24 +52,4 @@ export const getBusinessNotifications = query({
     }
 });
 
-/***************************************************************
- * Get User Notification Settings
- ***************************************************************/
-export const getUserNotificationSettings = query({
-    args: {},
-    handler: async (ctx) => {
-        const user = await getAuthenticatedUserOrThrow(ctx);
-        return await notificationService.getUserNotificationSettings({ ctx, user });
-    }
-});
 
-/***************************************************************
- * Get Business Notification Settings
- ***************************************************************/
-export const getBusinessNotificationSettings = query({
-    args: {},
-    handler: async (ctx) => {
-        const user = await getAuthenticatedUserOrThrow(ctx);
-        return await notificationService.getBusinessNotificationSettings({ ctx, user });
-    }
-});

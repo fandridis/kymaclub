@@ -328,7 +328,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.zinc[50],
     paddingVertical: 16,
     paddingHorizontal: 20,
-    marginBottom: 16,
   },
   greeting: {
     fontSize: theme.fontSize['3xl'],

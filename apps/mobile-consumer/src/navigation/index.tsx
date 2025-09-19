@@ -11,6 +11,7 @@ import { ClassDetailsModalScreen } from './screens/ClassDetailsModalScreen';
 import { BookingTicketModalScreen } from './screens/BookingTicketModalScreen';
 import { VenueDetailsScreen } from './screens/VenueDetailsScreen';
 import { VenueClassInstancesScreen } from './screens/VenueClassInstancesScreen';
+import { ExploreFiltersModalScreen } from './screens/ExploreFiltersModalScreen';
 import { SettingsNotificationsPreferenceScreen } from './screens/SettingsNotificationsPreferenceScreen';
 import { SettingsProfileScreen } from './screens/SettingsProfileScreen';
 import { SettingsNotificationsScreen } from './screens/SettingsNotificationsScreen';
@@ -346,6 +347,13 @@ export function RootNavigator() {
             headerShown: false,
           }}
         />
+        <RootStack.Screen
+          name="ExploreFiltersModal"
+          component={ExploreFiltersModalScreen}
+          options={{
+            headerShown: false,
+          }}
+        />
       </RootStack.Group>
     </RootStack.Navigator>
   );
@@ -359,6 +367,7 @@ export type RootStackParamList = {
   Profile: { user: string };
   VenueDetailsScreen: { venueId: string };
   VenueClassInstancesModal: { venueId: string; venueName: string };
+  ExploreFiltersModal: undefined;
   ClassDetailsModal: {
     classInstance?: import('@repo/api/convex/_generated/dataModel').Doc<"classInstances">;
     classInstanceId?: import('@repo/api/convex/_generated/dataModel').Id<"classInstances">;
@@ -421,6 +430,7 @@ export type RootStackParamListWithNestedTabs = {
   Profile: { user: string };
   VenueDetailsScreen: { venueId: string };
   VenueClassInstancesModal: { venueId: string; venueName: string };
+  ExploreFiltersModal: undefined;
   ClassDetailsModal: {
     classInstance?: import('../hooks/use-class-instances').ClassInstance;
     classInstanceId?: import('@repo/api/convex/_generated/dataModel').Id<"classInstances">;

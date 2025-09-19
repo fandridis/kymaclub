@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import * as Location from 'expo-location';
 import { TabType } from './ExploreHeader';
-import { FilterBar, FilterOptions } from '../../../components/FilterBar';
+import { FilterBar } from '../../../components/FilterBar';
 import { AppTabs, AppTabItem } from '../../../components/AppTabs';
 import { ClassesSection } from './ClassesSection';
 import { useTypedTranslation } from '../../../i18n/typed';
@@ -16,9 +16,13 @@ import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { DiamondIcon } from 'lucide-react-native';
 import { theme } from '../../../theme';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { RootStackParamList } from '../../../navigation';
+import { countActiveFilters, useExploreFiltersStore } from '../../../stores/explore-filters-store';
 
 export function Explore() {
     const { t } = useTypedTranslation();
+    const navigation = useNavigation<NavigationProp<RootStackParamList>>();
     const user = useAuthenticatedUser();
     const [activeTab, setActiveTab] = useState<TabType>('businesses');
     const tabItems = useMemo<AppTabItem<TabType>[]>(
@@ -31,8 +35,7 @@ export function Explore() {
     const [isMapView, setIsMapView] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
-    const [filters, setFilters] = useState<FilterOptions>({ searchQuery: '', categories: [], priceRange: { min: 0, max: 100 }, rating: 0 });
-    const [mapSheetOpen, setMapSheetOpen] = useState(false);
+    const filters = useExploreFiltersStore((state) => state.filters);
 
     const { venues, venuesLoading, storageIdToUrl } = useAllVenues();
 
@@ -78,17 +81,9 @@ export function Explore() {
         setIsMapView(prev => !prev);
     }, []);
 
-    const handleFilterChange = useCallback((next: FilterOptions) => {
-        setFilters(next);
-        // Close map sheet when filters change
-        if (mapSheetOpen) {
-            setMapSheetOpen(false);
-        }
-    }, [mapSheetOpen]);
-
-    const handleCloseMapSheet = useCallback(() => {
-        setMapSheetOpen(false);
-    }, []);
+    const handleOpenFilters = useCallback(() => {
+        navigation.navigate('ExploreFiltersModal');
+    }, [navigation]);
 
     const isLoading = loadingLocation || venuesLoading;
 
@@ -128,8 +123,8 @@ export function Explore() {
                         tabsRowStyle={styles.tabsRow}
                     />
                 )}
-                onFilterChange={handleFilterChange}
-                showCategoryFilters={true}
+                onPressFilters={handleOpenFilters}
+                activeFilterCount={countActiveFilters(filters)}
                 showMapToggle={activeTab === 'businesses'}
                 isMapView={isMapView}
                 onMapToggle={handleMapToggle}
@@ -143,11 +138,15 @@ export function Explore() {
                         userLocation={userLocation}
                         filters={filters}
                         isMapView={isMapView}
-                        onCloseMapSheet={handleCloseMapSheet}
                     />
                 ) : (
                     <ClassesSection
-                        searchFilters={{ searchQuery: filters.searchQuery, categories: filters.categories }}
+                        searchFilters={{
+                            searchQuery: filters.searchQuery,
+                            categories: filters.categories,
+                            distanceKm: filters.distanceKm,
+                        }}
+                        userLocation={userLocation}
                     />
                 )}
             </View>

@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert, TouchableOpacity, Switch } from 'react-native';
+import { View, Text, StyleSheet, Alert, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useUserNotificationSettings } from '../../hooks/use-user-notification-settings';
+import { useUserSettings } from '../../hooks/use-user-notification-settings';
 import { useRoute, RouteProp } from '@react-navigation/native';
-import { SettingsGroup, SettingsHeader, SettingsRow } from '../../components/Settings';
+import { SettingsGroup, SettingsRow } from '../../components/Settings';
 import { StackScreenHeader } from '../../components/StackScreenHeader';
-import { getDefaultUserNotificationSettings } from '../../../../../packages/api/operations/notifications';
 import { theme } from '../../theme';
+
+const defaultPreferences = {
+    booking_confirmation: { email: false, web: false, push: false },
+    booking_reminder: { email: false, web: false, push: false },
+    class_cancelled: { email: false, web: false, push: false },
+    booking_cancelled_by_business: { email: false, web: false, push: false },
+    payment_receipt: { email: false, web: false, push: false },
+    class_rebookable: { email: false, web: false, push: false },
+    credits_received_subscription: { email: true, web: true, push: true },
+};
 
 type NotificationChannels = { email: boolean; web: boolean; push: boolean; };
 
@@ -26,16 +35,18 @@ type SettingsNotificationsPreferenceScreenRouteProp = RouteProp<RootStackParamLi
 export function SettingsNotificationsPreferenceScreen() {
     const route = useRoute<SettingsNotificationsPreferenceScreenRouteProp>();
     const { notificationType } = route.params;
-    const { settings, updateSettings } = useUserNotificationSettings();
+    const { settings, updateSettings } = useUserSettings();
     const [channels, setChannels] = useState<NotificationChannels>({ email: false, web: false, push: false });
     const [globalOptOut, setGlobalOptOut] = useState(false);
 
     // Update local state when settings are loaded
     useEffect(() => {
-        if (settings && settings.notificationPreferences[notificationType.key as keyof typeof settings.notificationPreferences]) {
-            const typePreferences = settings.notificationPreferences[notificationType.key as keyof typeof settings.notificationPreferences];
-            setChannels(typePreferences);
-            setGlobalOptOut(settings.globalOptOut);
+        if (settings?.notifications?.preferences) {
+            const typePreferences = settings.notifications.preferences[notificationType.key as keyof typeof settings.notifications.preferences];
+            if (typePreferences) {
+                setChannels(typePreferences);
+            }
+            setGlobalOptOut(settings.notifications.globalOptOut);
         }
     }, [settings, notificationType.key]);
 
@@ -46,10 +57,8 @@ export function SettingsNotificationsPreferenceScreen() {
         };
         setChannels(newChannels);
 
-        const notificationPreferences = settings?.notificationPreferences || getDefaultUserNotificationSettings();
+        const notificationPreferences = settings?.notifications?.preferences || defaultPreferences;
 
-        // Save immediately
-        // if (settings) {
         try {
             const updatedPreferences = {
                 ...notificationPreferences,
@@ -57,9 +66,9 @@ export function SettingsNotificationsPreferenceScreen() {
             };
 
             await updateSettings({
-                settings: {
+                notifications: {
                     globalOptOut,
-                    notificationPreferences: updatedPreferences
+                    preferences: updatedPreferences
                 }
             });
         } catch (error) {
@@ -67,7 +76,6 @@ export function SettingsNotificationsPreferenceScreen() {
             Alert.alert('Error', 'Failed to save notification preferences');
             // Revert the change on error
             setChannels(channels);
-            // }
         }
     };
 

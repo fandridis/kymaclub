@@ -1,71 +1,37 @@
-import React, { memo, useState, useCallback, ReactNode } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { memo, ReactNode, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SlidersHorizontalIcon, MapIcon } from 'lucide-react-native';
-import { useTypedTranslation } from '../i18n/typed';
 
-export interface FilterOptions {
-  searchQuery: string;
-  categories: string[];
-  priceRange: { min: number; max: number };
-  rating: number;
-}
+import { useTypedTranslation } from '../i18n/typed';
 
 interface FilterBarProps {
   leading?: ReactNode;
-  onFilterChange: (filters: FilterOptions) => void;
-  showCategoryFilters?: boolean;
+  onPressFilters: () => void;
+  activeFilterCount?: number;
   showMapToggle?: boolean;
   isMapView?: boolean;
   onMapToggle?: () => void;
 }
 
-const BUSINESS_CATEGORIES = ['Fitness', 'Yoga', 'Dance', 'Martial Arts', 'Swimming'];
-
 export const FilterBar = memo<FilterBarProps>(({
   leading,
-  onFilterChange,
-  showCategoryFilters = true,
+  onPressFilters,
+  activeFilterCount = 0,
   showMapToggle = false,
   isMapView = false,
   onMapToggle,
 }) => {
   const { t } = useTypedTranslation();
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-  const handleCategoryToggle = useCallback((category: string) => {
-    setSelectedCategories(prev => {
-      const updatedCategories = prev.includes(category)
-        ? prev.filter(item => item !== category)
-        : [...prev, category];
+  const isFilterActive = activeFilterCount > 0;
 
-      onFilterChange({
-        searchQuery: '',
-        categories: updatedCategories,
-        priceRange: { min: 0, max: 100 },
-        rating: 0,
-      });
+  const filterLabel = useMemo(() => {
+    if (!isFilterActive) {
+      return t('explore.filters');
+    }
 
-      return updatedCategories;
-    });
-  }, [onFilterChange]);
-
-  const clearFilters = useCallback(() => {
-    setSelectedCategories([]);
-    onFilterChange({
-      searchQuery: '',
-      categories: [],
-      priceRange: { min: 0, max: 100 },
-      rating: 0,
-    });
-  }, [onFilterChange]);
-
-  const toggleFilters = useCallback(() => {
-    setShowFilters(prev => !prev);
-  }, []);
-
-  const hasActiveFilters = selectedCategories.length > 0;
-  const isFilterActive = showFilters || hasActiveFilters;
+    return `${t('explore.filters')} (${activeFilterCount})`;
+  }, [activeFilterCount, isFilterActive, t]);
 
   return (
     <View style={styles.container}>
@@ -75,9 +41,9 @@ export const FilterBar = memo<FilterBarProps>(({
         <View style={styles.actions}>
           <TouchableOpacity
             style={[styles.filterButton, isFilterActive && styles.filterButtonActive]}
-            onPress={toggleFilters}
+            onPress={onPressFilters}
             accessibilityRole="button"
-            accessibilityLabel={t('explore.filters')}
+            accessibilityLabel={filterLabel}
           >
             <SlidersHorizontalIcon
               size={16}
@@ -86,7 +52,7 @@ export const FilterBar = memo<FilterBarProps>(({
             <Text
               style={[styles.filterButtonLabel, isFilterActive && styles.filterButtonLabelActive]}
             >
-              {t('explore.filters')}
+              {filterLabel}
             </Text>
           </TouchableOpacity>
 
@@ -102,38 +68,6 @@ export const FilterBar = memo<FilterBarProps>(({
           )}
         </View>
       </View>
-
-      {showFilters && (
-        <View style={styles.filtersContainer}>
-          {showCategoryFilters && (
-            <View style={styles.filterRow}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.categoryContainer}>
-                  {BUSINESS_CATEGORIES.map(category => (
-                    <TouchableOpacity
-                      key={category}
-                      style={[styles.categoryChip, selectedCategories.includes(category) && styles.categoryChipActive]}
-                      onPress={() => handleCategoryToggle(category)}
-                    >
-                      <Text
-                        style={[styles.categoryChipText, selectedCategories.includes(category) && styles.categoryChipTextActive]}
-                      >
-                        {category}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
-          )}
-
-          {hasActiveFilters && (
-            <TouchableOpacity style={styles.clearFilters} onPress={clearFilters}>
-              <Text style={styles.clearFiltersText}>Clear all filters</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
     </View>
   );
 });
@@ -141,8 +75,7 @@ export const FilterBar = memo<FilterBarProps>(({
 FilterBar.displayName = 'FilterBar';
 
 const styles = StyleSheet.create({
-  container: {
-  },
+  container: {},
   toolbar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -190,48 +123,5 @@ const styles = StyleSheet.create({
   },
   mapButtonActive: {
     backgroundColor: '#ff4747',
-  },
-  filtersContainer: {
-    borderTopWidth: 1,
-    borderTopColor: '#f4f4f5',
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 10,
-    gap: 10,
-  },
-  filterRow: {
-    gap: 8,
-  },
-  categoryContainer: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  categoryChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#f4f4f5',
-    borderWidth: 1,
-    borderColor: '#e4e4e7',
-  },
-  categoryChipActive: {
-    backgroundColor: '#ff4747',
-    borderColor: '#ff4747',
-  },
-  categoryChipText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#4b5563',
-  },
-  categoryChipTextActive: {
-    color: '#ffffff',
-  },
-  clearFilters: {
-    alignSelf: 'flex-start',
-  },
-  clearFiltersText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#ff4747',
   },
 });

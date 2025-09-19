@@ -23,36 +23,38 @@ export function MembershipCard({
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#10b981', '#6ee7b7']} // emerald-500 to emerald-300
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.card}
-      >
-        {/* Header Row */}
-        <View style={styles.header}>
-          <Text style={styles.membershipText}>KymaClub membership</Text>
-          <View style={[styles.badge, { backgroundColor: badgeInfo.backgroundColor }]}>
-            <Text style={[styles.badgeText, { color: badgeInfo.color }]}>
-              {badgeInfo.tier}
+      <View style={styles.cardWrapper}>
+        <LinearGradient
+          colors={['#10b981', '#6ee7b7']} // emerald-500 to emerald-300
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.card}
+        >
+          {/* Header Row */}
+          <View style={styles.header}>
+            <Text style={styles.membershipText}>KymaClub membership</Text>
+            <View style={[styles.badge, { backgroundColor: badgeInfo.backgroundColor }]}>
+              <Text style={[styles.badgeText, { color: badgeInfo.color }]}>
+                {badgeInfo.tier}
+              </Text>
+            </View>
+          </View>
+
+          {/* Credits Display */}
+          <View style={styles.creditsSection}>
+            <View style={styles.creditsRow}>
+              <DiamondIcon size={20} color="white" />
+              <Text style={styles.creditsAmount}>{creditBalance}</Text>
+            </View>
+            <Text style={styles.expiryText}>
+              {expiringCredits && daysUntilExpiry
+                ? `${expiringCredits} credits expire in ${daysUntilExpiry} days`
+                : ' '
+              }
             </Text>
           </View>
-        </View>
-
-        {/* Credits Display */}
-        <View style={styles.creditsSection}>
-          <View style={styles.creditsRow}>
-            <DiamondIcon size={20} color="white" />
-            <Text style={styles.creditsAmount}>{creditBalance}</Text>
-          </View>
-          <Text style={styles.expiryText}>
-            {expiringCredits && daysUntilExpiry
-              ? `${expiringCredits} credits expire in ${daysUntilExpiry} days`
-              : ' '
-            }
-          </Text>
-        </View>
-      </LinearGradient>
+        </LinearGradient>
+      </View>
     </View>
   );
 }
@@ -61,6 +63,21 @@ const styles = StyleSheet.create({
   container: {
     marginHorizontal: 20,
     marginBottom: 16,
+    // Add padding to prevent shadow clipping
+    padding: 4
+  },
+  cardWrapper: {
+    borderRadius: 16,
+    // iOS shadow
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    // Android elevation
+    elevation: 8,
   },
   card: {
     borderRadius: 16,

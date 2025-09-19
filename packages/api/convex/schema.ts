@@ -580,84 +580,109 @@ export const notificationsFields = {
   ...softDeleteFields,
 };
 
-// Business notification preferences - stored at business level
-export const businessNotificationSettingsFields = {
+// Business settings - All business-specific preferences and settings
+export const businessSettingsFields = {
   businessId: v.id("businesses"),
 
-  // Per-type channel preferences
-  notificationPreferences: v.object({
-    booking_created: v.object({
-      email: v.boolean(),
-      web: v.boolean(),
+  // Notification preferences
+  notifications: v.optional(v.object({
+    // Per-type channel preferences
+    preferences: v.object({
+      booking_created: v.object({
+        email: v.boolean(),
+        web: v.boolean(),
+      }),
+      booking_cancelled_by_consumer: v.object({
+        email: v.boolean(),
+        web: v.boolean(),
+      }),
+      booking_cancelled_by_business: v.object({
+        email: v.boolean(),
+        web: v.boolean(),
+      }),
+      payment_received: v.object({
+        email: v.boolean(),
+        web: v.boolean(),
+      }),
+      // Optional to avoid breaking existing settings docs
+      review_received: v.optional(v.object({
+        email: v.boolean(),
+        web: v.boolean(),
+      })),
     }),
-    booking_cancelled_by_consumer: v.object({
-      email: v.boolean(),
-      web: v.boolean(),
-    }),
-    booking_cancelled_by_business: v.object({
-      email: v.boolean(),
-      web: v.boolean(),
-    }),
-    payment_received: v.object({
-      email: v.boolean(),
-      web: v.boolean(),
-    }),
-    // Optional to avoid breaking existing settings docs
-    review_received: v.optional(v.object({
-      email: v.boolean(),
-      web: v.boolean(),
-    })),
-  }),
+  })),
+
+  // UI preferences and banners
+  banners: v.optional(v.object({
+    // Future business banners can be added here
+    // announcementBannerDismissed: v.optional(v.boolean()),
+  })),
+
+  // Future settings can be added here
+  // theme: v.optional(v.string()),
+  // dashboardLayout: v.optional(v.string()),
 
   ...auditFields,
   ...softDeleteFields,
 };
 
-// User notification preferences - for when they're acting as consumers
-export const userNotificationSettingsFields = {
+// User settings - All user-specific preferences and settings
+export const userSettingsFields = {
   userId: v.id("users"),
 
-  // Global opt-out (MVP critical field)
-  globalOptOut: v.boolean(),
+  // Notification preferences
+  notifications: v.optional(v.object({
+    // Global opt-out (MVP critical field)
+    globalOptOut: v.boolean(),
 
-  // Per-type channel preferences
-  notificationPreferences: v.object({
-    booking_confirmation: v.object({
-      email: v.boolean(),
-      web: v.boolean(),
-      push: v.boolean(),
+    // Per-type channel preferences
+    preferences: v.object({
+      booking_confirmation: v.object({
+        email: v.boolean(),
+        web: v.boolean(),
+        push: v.boolean(),
+      }),
+      booking_reminder: v.object({
+        email: v.boolean(),
+        web: v.boolean(),
+        push: v.boolean(),
+      }),
+      class_cancelled: v.object({
+        email: v.boolean(),
+        web: v.boolean(),
+        push: v.boolean(),
+      }),
+      class_rebookable: v.object({
+        email: v.boolean(),
+        web: v.boolean(),
+        push: v.boolean(),
+      }),
+      booking_cancelled_by_business: v.object({
+        email: v.boolean(),
+        web: v.boolean(),
+        push: v.boolean(),
+      }),
+      payment_receipt: v.object({
+        email: v.boolean(),
+        web: v.boolean(),
+        push: v.boolean(),
+      }),
+      credits_received_subscription: v.object({
+        email: v.boolean(),
+        web: v.boolean(),
+        push: v.boolean(),
+      }),
     }),
-    booking_reminder: v.object({
-      email: v.boolean(),
-      web: v.boolean(),
-      push: v.boolean(),
-    }),
-    class_cancelled: v.object({
-      email: v.boolean(),
-      web: v.boolean(),
-      push: v.boolean(),
-    }),
-    class_rebookable: v.object({
-      email: v.boolean(),
-      web: v.boolean(),
-      push: v.boolean(),
-    }),
-    booking_cancelled_by_business: v.object({
-      email: v.boolean(),
-      web: v.boolean(),
-      push: v.boolean(),
-    }),
-    payment_receipt: v.object({
-      email: v.boolean(),
-      web: v.boolean(),
-      push: v.boolean(),
-    }),
-    credits_received_subscription: v.object({
-      email: v.boolean(),
-      web: v.boolean(),
-      push: v.boolean(),
-    }),
-  }),
+  })),
+
+  // UI preferences and banners
+  banners: v.optional(v.object({
+    welcomeBannerDismissed: v.optional(v.boolean()),
+  })),
+
+  // Future settings can be added here
+  // theme: v.optional(v.string()),
+  // language: v.optional(v.string()),
 
   ...auditFields,
   ...softDeleteFields,
@@ -1037,17 +1062,16 @@ export default defineSchema({
     .index("by_business_recipient_seen", ["businessId", "recipientUserId", "seen"]),
 
   /**
-   * Business notification settings - How businesses want to receive notifications
+   * Business settings - All business-specific preferences and settings
    */
-  businessNotificationSettings: defineTable(businessNotificationSettingsFields)
+  businessSettings: defineTable(businessSettingsFields)
     .index("by_business", ["businessId"]),
 
   /**
-   * User notification settings - How users want to receive consumer notifications
+   * User settings - All user-specific preferences and settings
    */
-  userNotificationSettings: defineTable(userNotificationSettingsFields)
-    .index("by_user", ["userId"])
-    .index("by_global_opt_out", ["globalOptOut"]),
+  userSettings: defineTable(userSettingsFields)
+    .index("by_user", ["userId"]),
 
   /**
    * User subscriptions - Monthly credit subscriptions via Stripe

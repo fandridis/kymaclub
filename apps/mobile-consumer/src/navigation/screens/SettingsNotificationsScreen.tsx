@@ -2,16 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useUserNotificationSettings } from '../../hooks/use-user-notification-settings';
+import { useUserSettings } from '../../hooks/use-user-notification-settings';
 import { useNavigation } from '@react-navigation/native';
 import { theme } from '../../theme';
 import { SettingsGroup, SettingsRow } from '../../components/Settings';
 import { Clock, Calendar, CreditCard } from 'lucide-react-native';
 import { StackScreenHeader } from '../../components/StackScreenHeader';
-import type { UserNotificationSettingsNotificationPreferences } from '@repo/api/types/notification';
 import { LucideIcon } from 'lucide-react-native';
 
-type ConsumerNotificationType = keyof UserNotificationSettingsNotificationPreferences;
+type ConsumerNotificationType = 'booking_confirmation' | 'booking_reminder' | 'class_cancelled' | 'booking_cancelled_by_business' | 'payment_receipt' | 'class_rebookable' | 'credits_received_subscription';
 
 type NotificationGroup = {
     id: string;
@@ -21,7 +20,9 @@ type NotificationGroup = {
     notificationKeys: readonly ConsumerNotificationType[];
 };
 
-const defaultPreferences: UserNotificationSettingsNotificationPreferences = {
+type NotificationChannels = { email: boolean; web: boolean; push: boolean; };
+
+const defaultPreferences: Record<ConsumerNotificationType, NotificationChannels> = {
     booking_confirmation: { email: false, web: false, push: false },
     booking_reminder: { email: false, web: false, push: false },
     class_cancelled: { email: false, web: false, push: false },
@@ -58,13 +59,13 @@ const notificationGroups: NotificationGroup[] = [
 
 export function SettingsNotificationsScreen() {
     const navigation = useNavigation();
-    const { settings, loading } = useUserNotificationSettings();
-    const [preferences, setPreferences] = useState<UserNotificationSettingsNotificationPreferences>(defaultPreferences);
+    const { settings, loading } = useUserSettings();
+    const [preferences, setPreferences] = useState<Record<ConsumerNotificationType, NotificationChannels>>(defaultPreferences);
 
     // Update local state when settings are loaded
     useEffect(() => {
-        if (settings) {
-            setPreferences(settings.notificationPreferences);
+        if (settings?.notifications?.preferences) {
+            setPreferences(settings.notifications.preferences);
         }
     }, [settings]);
 

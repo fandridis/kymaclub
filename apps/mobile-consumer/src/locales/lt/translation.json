@@ -22,7 +22,8 @@
         "edit": "Redaguoti",
         "loading": "Kraunama...",
         "error": "Klaida",
-        "tryAgain": "Bandyti dar kartą"
+        "tryAgain": "Bandyti dar kartą",
+        "clearAll": "Išvalyti viską"
     },
     "explore": {
         "businesses": "Verslas",
@@ -31,7 +32,7 @@
         "filters": "Filtrai",
         "showMap": "Rodyti žemėlapį",
         "showList": "Rodyti sąrašą",
-        "distance": "{{distance}} atstumas",
+        "distance": "Atstumas",
         "openNow": "Atidaryta dabar",
         "closedNow": "Uždaryta dabar",
         "rating": "{{rating}} žvaigždutės",
@@ -42,6 +43,11 @@
         "soldOut": "Išparduota",
         "noBusinesses": "Šalia nerastas verslas",
         "noClasses": "Nerastos pamokos",
-        "searchPlaceholder": "Ieškoti verslo ar pamokų..."
+        "searchPlaceholder": "Ieškoti verslo ar pamokų...",
+        "categories": "Kategorijos",
+        "applyFilters": "Taikyti filtrus ({{count}})",
+        "applyFiltersNoCount": "Taikyti filtrus",
+        "distanceWithin": "Iki {{distance}} km",
+        "distanceAny": "Bet koks atstumas"
     }
 }
