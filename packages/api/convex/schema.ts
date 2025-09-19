@@ -678,6 +678,7 @@ export const userSettingsFields = {
   // UI preferences and banners
   banners: v.optional(v.object({
     welcomeBannerDismissed: v.optional(v.boolean()),
+    exampleNewFeatureBannerDismissed: v.optional(v.boolean()),
   })),
 
   // Future settings can be added here

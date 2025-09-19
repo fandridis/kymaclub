@@ -334,18 +334,6 @@ export function NewsScreen() {
             try {
                 // TODO: Update to use new banner settings API once available
                 await dismissWelcomeBanner({
-                    notifications: {
-                        globalOptOut: userSettings?.notifications?.globalOptOut || false,
-                        notificationPreferences: userSettings?.notifications?.notificationPreferences || {
-                            booking_confirmation: { email: true, web: true, push: true },
-                            booking_reminder: { email: true, web: true, push: true },
-                            class_cancelled: { email: true, web: true, push: true },
-                            class_rebookable: { email: true, web: true, push: true },
-                            booking_cancelled_by_business: { email: true, web: true, push: true },
-                            payment_receipt: { email: true, web: true, push: true },
-                            credits_received_subscription: { email: true, web: true, push: true },
-                        }
-                    },
                     banners: {
                         welcomeBannerDismissed: true
                     }
@@ -363,7 +351,6 @@ export function NewsScreen() {
     };
 
     // Check if welcome banner should be shown
-    // TODO: Update to use userSettings?.banners?.welcomeBannerDismissed once new API is available
     const shouldShowWelcomeBanner = user && !userSettings?.banners?.welcomeBannerDismissed;
 
     // Loading state
