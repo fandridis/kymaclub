@@ -8,10 +8,10 @@ import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { ClassCard } from '../../components/ClassCard';
 import { ScheduleList } from '../../components/ScheduleList';
-import { useClassInstances } from '../../hooks/use-class-instances';
+import { useVenueClassInstances } from '../../hooks/use-venue-class-instances';
 import type { RootStackParamListWithNestedTabs } from '..';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
-import type { ClassInstance } from '../../hooks/use-class-instances';
+import type { VenueClassInstance } from '../../hooks/use-venue-class-instances';
 import { theme } from '../../theme';
 
 const now = Date.now();
@@ -42,8 +42,8 @@ const formatDateHeader = (date: Date): string => {
 };
 
 // Group classes by date (same as VenueDetailsScreen)
-const groupClassesByDate = (classes: ClassInstance[]): Record<string, ClassInstance[]> => {
-    const grouped: Record<string, ClassInstance[]> = {};
+const groupClassesByDate = (classes: VenueClassInstance[]): Record<string, VenueClassInstance[]> => {
+    const grouped: Record<string, VenueClassInstance[]> = {};
 
     classes.forEach((classInstance) => {
         const date = new Date(classInstance.startTime);
@@ -77,18 +77,13 @@ export function VenueClassInstancesScreen() {
         return fourteenDays.getTime();
     }, []);
 
-    const { classInstances: allClassInstances, loading } = useClassInstances({
+    // 🚀 OPTIMIZED: Use venue-specific hook instead of filtering all classes
+    const { classInstances: venueClasses, loading } = useVenueClassInstances({
+        venueId: venueId as Id<"venues">,
         startDate: now,
         endDate: fourteenDaysFromNow,
-        includeBookingStatus: true, // Enable booking status for venue classes
+        includeBookingStatus: true,
     });
-
-    // Filter class instances for this venue
-    const venueClasses = useMemo(() => {
-        if (!allClassInstances?.length) return [];
-        
-        return allClassInstances.filter(classInstance => classInstance.venueId === venueId);
-    }, [allClassInstances, venueId]);
 
     // Group classes by date for ScheduleList
     const scheduleSections = useMemo(() => {
@@ -102,9 +97,9 @@ export function VenueClassInstancesScreen() {
     }, [venueClasses]);
 
     // Render function for individual class items
-    const renderClassItem = useCallback((classInstance: ClassInstance) => (
+    const renderClassItem = useCallback((classInstance: VenueClassInstance) => (
         <ClassCard
-            classInstance={classInstance}
+            classInstance={classInstance as any}
             onPress={(classInstance) =>
                 navigation.navigate('ClassDetailsModal', { classInstance })
             }
@@ -123,9 +118,9 @@ export function VenueClassInstancesScreen() {
                     <Text style={styles.headerTitle}>{venueName}</Text>
                     <Text style={styles.headerSubtitle}>All Classes</Text>
                 </View>
-                <XIcon 
-                    size={24} 
-                    color={theme.colors.zinc[600]} 
+                <XIcon
+                    size={24}
+                    color={theme.colors.zinc[600]}
                     onPress={handleBackPress}
                     style={styles.closeButton}
                 />

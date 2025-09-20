@@ -11,7 +11,7 @@ import { api } from '@repo/api/convex/_generated/api';
 import { ClassCard } from '../../components/ClassCard';
 import { Divider } from '../../components/Divider';
 import { ReviewsSection } from '../../components/ReviewsSection';
-import { useClassInstances } from '../../hooks/use-class-instances';
+import { useVenueClassInstances } from '../../hooks/use-venue-class-instances';
 import type { RootStackParamListWithNestedTabs } from '..';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
 import type { ClassInstance } from '../../hooks/use-class-instances';
@@ -94,20 +94,21 @@ export function VenueDetailsScreen() {
         return sevenDays.getTime();
     }, []);
 
-    const { classInstances: allClassInstances } = useClassInstances({
+    // 🚀 OPTIMIZED: Use venue-specific hook instead of filtering all classes
+    const { classInstances: venueClasses } = useVenueClassInstances({
+        venueId: venueId as Id<"venues">,
         startDate: now,
         endDate: sevenDaysFromNow,
-        includeBookingStatus: true, // Enable booking status for venue classes
+        includeBookingStatus: true,
     });
 
-    // Filter class instances for this venue and process for upcoming cards
+    // Process venue classes for upcoming cards
     const upcomingVenueClasses = useMemo(() => {
-        if (!allClassInstances?.length) return [];
+        if (!venueClasses?.length) return [];
 
-        const venueClasses = allClassInstances
-            .filter(classInstance => classInstance.venueId === venueId)
+        return venueClasses
             .slice(0, 10) // Limit to 10 cards max for 7 days
-            .map(classInstance => {
+            .map((classInstance: any) => {
                 const startTime = new Date(classInstance.startTime);
                 const endTime = new Date(classInstance.endTime);
                 const today = new Date();
@@ -160,7 +161,7 @@ export function VenueDetailsScreen() {
             });
 
         return venueClasses;
-    }, [allClassInstances, venueId]);
+    }, [venueClasses, venueId]);
 
     // Get image storage IDs
     const imageStorageIds = venue?.imageStorageIds ?? [];
@@ -483,7 +484,7 @@ export function VenueDetailsScreen() {
             <Divider />
 
             {/* Upcoming Section */}
-            {upcomingVenueClasses.length > 0 && (
+            {upcomingVenueClasses && upcomingVenueClasses.length > 0 && (
                 <>
                     <View style={styles.section}>
                         <View style={styles.sectionHeader}>
@@ -505,7 +506,7 @@ export function VenueDetailsScreen() {
                                 loop={false}
                                 width={CAROUSEL_ITEM_WIDTH + ITEM_GAP}
                                 height={UPCOMING_CAROUSEL_HEIGHT}
-                                data={[...upcomingVenueClasses, { type: 'seeMore' }]}
+                                data={[...(upcomingVenueClasses || []), { type: 'seeMore' }]}
                                 scrollAnimationDuration={500}
                                 style={styles.carousel}
                                 snapEnabled
@@ -531,7 +532,7 @@ export function VenueDetailsScreen() {
                                     }
 
                                     // Type assertion: item is a class instance at this point
-                                    const classItem = item as typeof upcomingVenueClasses[0];
+                                    const classItem = item as any;
 
                                     return (
                                         <TouchableOpacity

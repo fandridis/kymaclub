@@ -3,8 +3,6 @@ import { StyleSheet, View, Text, Dimensions, ScrollView, ActivityIndicator, Touc
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MapPinIcon, StarIcon, UserIcon, DiamondIcon, ClockIcon } from 'lucide-react-native';
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import Carousel from 'react-native-reanimated-carousel';
 import { useQuery, useMutation } from 'convex/react';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
@@ -490,7 +488,7 @@ export function NewsScreen() {
                                 width={CAROUSEL_ITEM_WIDTH + ITEM_GAP}
                                 height={DEFAULT_CAROUSEL_HEIGHT}
                                 data={lastMinuteOffers}
-                                scrollAnimationDuration={500}
+                                scrollAnimationDuration={300}
                                 style={styles.carousel}
                                 snapEnabled
                                 renderItem={({ item }) => {
