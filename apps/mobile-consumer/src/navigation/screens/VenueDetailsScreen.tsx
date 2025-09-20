@@ -486,7 +486,20 @@ export function VenueDetailsScreen() {
             {upcomingVenueClasses.length > 0 && (
                 <>
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Upcoming classes</Text>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>Upcoming classes</Text>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    navigation.navigate('VenueClassInstancesModal', {
+                                        venueId,
+                                        venueName: venue?.name || 'Venue'
+                                    });
+                                }}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={styles.seeAllButton}>See all</Text>
+                            </TouchableOpacity>
+                        </View>
                         <View style={styles.carouselContainer}>
                             <Carousel
                                 loop={false}
@@ -747,6 +760,20 @@ const styles = StyleSheet.create({
     section: {
         paddingHorizontal: 20,
         paddingBottom: 8,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    seeAllButton: {
+        marginBottom: 10,
+        fontSize: 14,
+        fontWeight: '600',
+        color: theme.colors.emerald[600],
+        paddingVertical: 8,
+        paddingHorizontal: 12
     },
     teamMember: {
         flexDirection: 'row',
