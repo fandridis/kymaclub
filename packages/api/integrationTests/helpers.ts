@@ -180,7 +180,6 @@ export async function createTestUserNotificationSettings(
         settings: {
             globalOptOut: settings.globalOptOut ?? false,
             createdAt: Date.now(),
-            updatedAt: Date.now(),
         }
     });
 }
@@ -194,7 +193,6 @@ export async function createTestBusinessNotificationSettings(
         businessId,
         settings: {
             createdAt: Date.now(),
-            updatedAt: Date.now(),
         }
     });
 }

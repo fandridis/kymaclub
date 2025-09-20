@@ -85,19 +85,20 @@ export const createTestBusiness = internalMutation({
             createdBy: args.userId,
         });
 
-        // Create notification settings for the business with all notifications enabled
-        await ctx.db.insert("businessNotificationSettings", {
+        // Create business settings with all notifications enabled
+        await ctx.db.insert("businessSettings", {
             businessId: businessId,
-            notificationPreferences: {
-                booking_created: { email: true, web: true },
-                booking_cancelled_by_consumer: { email: true, web: true },
-                booking_cancelled_by_business: { email: true, web: true },
-                payment_received: { email: true, web: true },
-                review_received: { email: true, web: true },
+            notifications: {
+                preferences: {
+                    booking_created: { email: true, web: true },
+                    booking_cancelled_by_consumer: { email: true, web: true },
+                    booking_cancelled_by_business: { email: true, web: true },
+                    payment_received: { email: true, web: true },
+                    review_received: { email: true, web: true },
+                },
             },
             createdAt: Date.now(),
             createdBy: args.userId,
-            updatedAt: Date.now(),
         });
 
         return businessId;
@@ -608,52 +609,53 @@ export const createTestUserNotificationSettings = internalMutation({
             updatedAt: v.optional(v.number()),
         })
     },
-    returns: v.id("userNotificationSettings"),
+    returns: v.id("userSettings"),
     handler: async (ctx, args) => {
         const { user } = await getAuthenticatedUserAndBusinessOrThrow(ctx);
-        const settingsId = await ctx.db.insert("userNotificationSettings", {
+        const settingsId = await ctx.db.insert("userSettings", {
             userId: args.userId,
-            globalOptOut: args.settings.globalOptOut ?? false,
-            notificationPreferences: {
-                booking_confirmation: {
-                    email: true,
-                    web: true,
-                    push: true,
-                },
-                booking_reminder: {
-                    email: true,
-                    web: true,
-                    push: true,
-                },
-                class_cancelled: {
-                    email: true,
-                    web: true,
-                    push: true,
-                },
-                booking_cancelled_by_business: {
-                    email: true,
-                    web: true,
-                    push: true,
-                },
-                payment_receipt: {
-                    email: true,
-                    web: true,
-                    push: true,
-                },
-                class_rebookable: {
-                    email: true,
-                    web: true,
-                    push: true,
-                },
-                credits_received_subscription: {
-                    email: true,
-                    web: true,
-                    push: true,
+            notifications: {
+                globalOptOut: args.settings.globalOptOut ?? false,
+                preferences: {
+                    booking_confirmation: {
+                        email: true,
+                        web: true,
+                        push: true,
+                    },
+                    booking_reminder: {
+                        email: true,
+                        web: true,
+                        push: true,
+                    },
+                    class_cancelled: {
+                        email: true,
+                        web: true,
+                        push: true,
+                    },
+                    booking_cancelled_by_business: {
+                        email: true,
+                        web: true,
+                        push: true,
+                    },
+                    payment_receipt: {
+                        email: true,
+                        web: true,
+                        push: true,
+                    },
+                    class_rebookable: {
+                        email: true,
+                        web: true,
+                        push: true,
+                    },
+                    credits_received_subscription: {
+                        email: true,
+                        web: true,
+                        push: true,
+                    },
                 },
             },
             createdAt: args.settings.createdAt || Date.now(),
             createdBy: user._id,
-            updatedAt: args.settings.updatedAt || Date.now(),
         });
         return settingsId;
     },
@@ -667,32 +669,33 @@ export const createTestBusinessNotificationSettings = internalMutation({
             updatedAt: v.optional(v.number()),
         })
     },
-    returns: v.id("businessNotificationSettings"),
+    returns: v.id("businessSettings"),
     handler: async (ctx, args) => {
         const { user } = await getAuthenticatedUserAndBusinessOrThrow(ctx);
-        const settingsId = await ctx.db.insert("businessNotificationSettings", {
+        const settingsId = await ctx.db.insert("businessSettings", {
             businessId: args.businessId,
-            notificationPreferences: {
-                booking_created: {
-                    email: true,
-                    web: true,
-                },
-                booking_cancelled_by_consumer: {
-                    email: true,
-                    web: true,
-                },
-                booking_cancelled_by_business: {
-                    email: true,
-                    web: true,
-                },
-                payment_received: {
-                    email: true,
-                    web: true,
+            notifications: {
+                preferences: {
+                    booking_created: {
+                        email: true,
+                        web: true,
+                    },
+                    booking_cancelled_by_consumer: {
+                        email: true,
+                        web: true,
+                    },
+                    booking_cancelled_by_business: {
+                        email: true,
+                        web: true,
+                    },
+                    payment_received: {
+                        email: true,
+                        web: true,
+                    },
                 },
             },
             createdAt: args.settings.createdAt || Date.now(),
             createdBy: user._id,
-            updatedAt: args.settings.updatedAt || Date.now(),
         });
         return settingsId;
     },

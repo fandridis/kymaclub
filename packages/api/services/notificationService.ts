@@ -7,8 +7,7 @@ import { components, internal } from "../convex/_generated/api";
 import { format } from "date-fns";
 import { PushNotifications } from "@convex-dev/expo-push-notifications";
 import { createNotificationWithDeepLink, type NotificationType } from "../utils/deep-linking";
-import type { UserNotificationSettingsNotificationPreferences } from "../types/notification";
-import { getDefaultUserNotificationSettings } from "../operations/userSettings";
+import { UserSettings, UserSettingsNotifications } from "../types/userSettings";
 
 /***************************************************************
  * Notification Service - All notification-related operations
@@ -343,7 +342,7 @@ export const notificationService = {
         ctx: MutationCtx;
         args: {
             globalOptOut: boolean;
-            notificationPreferences: UserNotificationSettingsNotificationPreferences;
+            notificationPreferences: UserSettingsNotifications['preferences'];
         };
         user: Doc<"users">;
     }): Promise<{ settingsId: Id<"userSettings"> }> => {
@@ -361,7 +360,7 @@ export const notificationService = {
             await ctx.db.patch(existingSettings._id, {
                 notifications: {
                     globalOptOut: args.globalOptOut,
-                    notificationPreferences: args.notificationPreferences,
+                    preferences: args.notificationPreferences,
                 },
                 updatedAt: now,
                 updatedBy: user._id,
@@ -374,7 +373,7 @@ export const notificationService = {
                 userId: user._id,
                 notifications: {
                     globalOptOut: args.globalOptOut,
-                    notificationPreferences: args.notificationPreferences,
+                    preferences: args.notificationPreferences,
                 },
                 createdAt: now,
                 createdBy: user._id,
@@ -452,7 +451,7 @@ export const notificationService = {
             // Update existing settings
             await ctx.db.patch(existingSettings._id, {
                 notifications: {
-                    notificationPreferences: args.notificationPreferences,
+                    preferences: args.notificationPreferences,
                 },
                 updatedAt: now,
                 updatedBy: user._id,
@@ -464,7 +463,7 @@ export const notificationService = {
             const settingsId = await ctx.db.insert("businessSettings", {
                 businessId: user.businessId!,
                 notifications: {
-                    notificationPreferences: args.notificationPreferences,
+                    preferences: args.notificationPreferences,
                 },
                 createdAt: now,
                 createdBy: user._id,
@@ -518,7 +517,7 @@ export const notificationService = {
         // Only send notification if business has opted in for this type
         let notificationId: Id<"notifications"> | undefined;
 
-        if (businessNotificationSettings?.notifications?.notificationPreferences?.booking_created?.web) {
+        if (businessNotificationSettings?.notifications?.preferences?.booking_created?.web) {
             // Send web notification to business
             notificationId = await ctx.db.insert("notifications", {
                 businessId,
@@ -548,7 +547,7 @@ export const notificationService = {
         }
 
         // Send email notification to business
-        if (businessNotificationSettings?.notifications?.notificationPreferences?.booking_created?.email && process.env.NODE_ENV === "production") {
+        if (businessNotificationSettings?.notifications?.preferences?.booking_created?.email && process.env.NODE_ENV === "production") {
             try {
                 await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
                     businessEmail: business.email,
@@ -619,7 +618,7 @@ export const notificationService = {
         // Only send notification if business has opted in for this type
         let notificationId: Id<"notifications"> | undefined;
 
-        if (businessNotificationSettings?.notifications?.notificationPreferences?.booking_cancelled_by_consumer?.web) {
+        if (businessNotificationSettings?.notifications?.preferences?.booking_cancelled_by_consumer?.web) {
             // Send web notification to business
             notificationId = await ctx.db.insert("notifications", {
                 businessId,
@@ -649,7 +648,7 @@ export const notificationService = {
         }
 
         // Send email notification to business
-        if (businessNotificationSettings?.notifications?.notificationPreferences?.booking_cancelled_by_consumer?.email && process.env.NODE_ENV === "production") {
+        if (businessNotificationSettings?.notifications?.preferences?.booking_cancelled_by_consumer?.email && process.env.NODE_ENV === "production") {
             try {
                 await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
                     businessEmail: business.email,
@@ -716,7 +715,7 @@ export const notificationService = {
             .filter(q => q.neq(q.field("deleted"), true))
             .first();
 
-        if (userNotificationSettings?.notifications?.notificationPreferences?.booking_cancelled_by_business?.web) {
+        if (userNotificationSettings?.notifications?.preferences?.booking_cancelled_by_business?.web) {
 
             // Send web notification to business
             await ctx.db.insert("notifications", {
@@ -748,7 +747,7 @@ export const notificationService = {
         }
 
         // Send email notification to user
-        if (userNotificationSettings?.notifications?.notificationPreferences?.booking_cancelled_by_business?.email && process.env.NODE_ENV === "production") {
+        if (userNotificationSettings?.notifications?.preferences?.booking_cancelled_by_business?.email && process.env.NODE_ENV === "production") {
 
             await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
                 businessEmail: business.email,
@@ -765,7 +764,7 @@ export const notificationService = {
 
         }
 
-        if (userNotificationSettings?.notifications?.notificationPreferences?.booking_cancelled_by_business?.push) {
+        if (userNotificationSettings?.notifications?.preferences?.booking_cancelled_by_business?.push) {
             const notificationContent = createNotificationWithDeepLink(
                 'booking_cancelled_by_business',
                 'Booking cancelled',
@@ -837,7 +836,7 @@ export const notificationService = {
 
 
         // Send web notification to user if they have opted in
-        if (userNotificationSettings?.notifications?.notificationPreferences?.class_rebookable?.web) {
+        if (userNotificationSettings?.notifications?.preferences?.class_rebookable?.web) {
             await ctx.db.insert("notifications", {
                 businessId,
                 recipientType: "consumer",
@@ -866,7 +865,7 @@ export const notificationService = {
         }
 
         // Send email notification to user if they have opted in
-        if (userNotificationSettings?.notifications?.notificationPreferences?.class_rebookable?.email && process.env.NODE_ENV === "production") {
+        if (userNotificationSettings?.notifications?.preferences?.class_rebookable?.email && process.env.NODE_ENV === "production") {
             try {
                 await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingConfirmationEmail, {
                     customerEmail: user.email || "",
@@ -885,7 +884,7 @@ export const notificationService = {
         }
 
         // Send push notification to user if they have opted in
-        if (userNotificationSettings?.notifications?.notificationPreferences?.class_rebookable?.push) {
+        if (userNotificationSettings?.notifications?.preferences?.class_rebookable?.push) {
             const notificationContent = createNotificationWithDeepLink(
                 'class_rebookable',
                 'Booking Available Again',
@@ -968,7 +967,7 @@ export const notificationService = {
         // Since this is a consumer notification about their credits, we can use businessId as the platform
 
         // Send web notification if user has opted in (or use defaults if no settings exist)
-        const shouldSendWeb = userNotificationSettings?.notifications?.notificationPreferences?.credits_received_subscription?.web ?? true;
+        const shouldSendWeb = userNotificationSettings?.notifications?.preferences?.credits_received_subscription?.web ?? true;
 
         if (shouldSendWeb) {
 
@@ -978,7 +977,7 @@ export const notificationService = {
         }
 
         // Send email notification if user has opted in
-        const shouldSendEmail = userNotificationSettings?.notifications?.notificationPreferences?.credits_received_subscription?.email ?? true;
+        const shouldSendEmail = userNotificationSettings?.notifications?.preferences?.credits_received_subscription?.email ?? true;
 
         if (shouldSendEmail && process.env.NODE_ENV === "production" && user.email) {
 
@@ -999,7 +998,7 @@ export const notificationService = {
         }
 
         // Send push notification if user has opted in
-        const shouldSendPush = userNotificationSettings?.notifications?.notificationPreferences?.credits_received_subscription?.push ?? true;
+        const shouldSendPush = userNotificationSettings?.notifications?.preferences?.credits_received_subscription?.push ?? true;
 
         if (shouldSendPush) {
 
@@ -1069,7 +1068,7 @@ export const notificationService = {
             .filter(q => q.neq(q.field("deleted"), true))
             .first();
 
-        const pref = businessNotificationSettings?.notifications?.notificationPreferences?.review_received;
+        const pref = businessNotificationSettings?.notifications?.preferences?.review_received;
 
         let createdNotificationId: Id<"notifications"> | null = null;
 
