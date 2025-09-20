@@ -4,6 +4,7 @@ import { classInstanceService } from "../../services/classInstanceService";
 import { getAuthenticatedUserOrThrow } from "../utils";
 import { pricingOperations } from "../../operations/pricing";
 import { ERROR_CODES } from "../../utils/errorCodes";
+import { calculateDistance } from "@repo/utils/distances";
 
 /***************************************************************
  * Get Class Instance By ID
@@ -308,17 +309,27 @@ export const getLastMinuteDiscountedClassInstances = query({
  * Performance: 2 DB queries regardless of number of class instances
  ***************************************************************/
 
+const locationFilterArgs = v.object({
+    latitude: v.number(),
+    longitude: v.number(),
+    maxDistanceKm: v.number(),
+});
+
 export const getConsumerClassInstancesWithBookingStatusArgs = v.object({
     startDate: v.number(),
     endDate: v.number(),
     limit: v.optional(v.number()),
+    locationFilter: v.optional(locationFilterArgs),
 });
 
 export const getConsumerClassInstancesWithBookingStatus = query({
     args: getConsumerClassInstancesWithBookingStatusArgs,
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
-        const limit = args.limit || 100; // Reasonable default to prevent performance issues
+        const requestedLimit = args.limit || 100; // Reasonable default to prevent performance issues
+        const locationFilter = args.locationFilter;
+        const shouldFilterByDistance = Boolean(locationFilter && locationFilter.maxDistanceKm > 0);
+        const fetchLimit = shouldFilterByDistance ? Math.min(requestedLimit * 3, 500) : requestedLimit;
 
         // Get class instances for date range (all businesses - consumers see everything)
         const instances = await ctx.db
@@ -334,9 +345,40 @@ export const getConsumerClassInstancesWithBookingStatus = query({
                 )
             )
             .order("asc") // Sort by start time
-            .take(limit);
+            .take(fetchLimit);
 
         if (instances.length === 0) {
+            return [];
+        }
+
+        const filteredInstances = shouldFilterByDistance && locationFilter
+            ? instances.filter((instance) => {
+                const venueAddress = instance.venueSnapshot?.address;
+                const latitude = typeof venueAddress?.latitude === "number" ? venueAddress.latitude : null;
+                const longitude = typeof venueAddress?.longitude === "number" ? venueAddress.longitude : null;
+
+                if (latitude === null || longitude === null) {
+                    return true;
+                }
+
+                const distanceMeters = calculateDistance(
+                    locationFilter.latitude,
+                    locationFilter.longitude,
+                    latitude,
+                    longitude
+                );
+
+                return distanceMeters <= locationFilter.maxDistanceKm * 1000;
+            })
+            : instances;
+
+        if (filteredInstances.length === 0) {
+            return [];
+        }
+
+        const limitedInstances = filteredInstances.slice(0, requestedLimit);
+
+        if (limitedInstances.length === 0) {
             return [];
         }
 
@@ -356,7 +398,7 @@ export const getConsumerClassInstancesWithBookingStatus = query({
             .collect();
 
         // Create efficient lookup: O(n) complexity
-        const instanceIds = new Set(instances.map(i => i._id));
+        const instanceIds = new Set(limitedInstances.map(i => i._id));
         const relevantBookings = userBookings.filter(booking =>
             instanceIds.has(booking.classInstanceId)
         );
@@ -365,7 +407,7 @@ export const getConsumerClassInstancesWithBookingStatus = query({
         );
 
         // Enrich instances with booking status: O(n) complexity
-        return instances.map(instance => ({
+        return limitedInstances.map(instance => ({
             ...instance,
             userBooking: bookingMap.get(instance._id) || null,
             isBookedByUser: bookingMap.has(instance._id),

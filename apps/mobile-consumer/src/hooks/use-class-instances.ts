@@ -6,6 +6,11 @@ interface UseClassInstancesProps {
     endDate?: number;
     includeBookingStatus?: boolean;
     limit?: number;
+    locationFilter?: {
+        latitude: number;
+        longitude: number;
+        maxDistanceKm: number;
+    };
 }
 
 const THIRTY_DAYS_IN_MS = 1000 * 60 * 60 * 24 * 30;
@@ -14,7 +19,8 @@ export function useClassInstances({
     startDate, 
     endDate, 
     includeBookingStatus = false,
-    limit 
+    limit,
+    locationFilter,
 }: UseClassInstancesProps) {
     const finalEndDate = endDate ?? startDate + THIRTY_DAYS_IN_MS;
     
@@ -25,6 +31,7 @@ export function useClassInstances({
             startDate,
             endDate: finalEndDate,
             limit,
+            ...(locationFilter ? { locationFilter } : {}),
         } : "skip"
     );
     

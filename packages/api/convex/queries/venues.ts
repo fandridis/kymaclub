@@ -1,4 +1,3 @@
-import { paginationOptsValidator } from "convex/server";
 import { query } from "../_generated/server";
 import { v } from "convex/values";
 import { venueService } from "../../services/venueService";
@@ -18,11 +17,19 @@ export const getVenues = query({
 /***************************************************************
  * Get all venues of the application
  ***************************************************************/
+const locationFilterArgs = v.object({
+    latitude: v.number(),
+    longitude: v.number(),
+    maxDistanceKm: v.number(),
+});
+
 export const getAllVenues = query({
-    args: {},
-    handler: async (ctx) => {
+    args: {
+        locationFilter: v.optional(locationFilterArgs),
+    },
+    handler: async (ctx, args) => {
         await getAuthenticatedUserOrThrow(ctx);
-        return await venueService.getAllVenues({ ctx });
+        return await venueService.getAllVenues({ ctx, args });
     }
 });
 

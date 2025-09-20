@@ -8,6 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StarIcon, X } from 'lucide-react-native';
 import { useTypedTranslation } from '../i18n/typed';
 import { Image } from 'expo-image';
+import { BlurView } from 'expo-blur';
 import { Doc } from '@repo/api/convex/_generated/dataModel';
 import { calculateDistance } from '../utils/location';
 import { getVenueCategoryDisplay } from '@repo/utils/constants';
@@ -239,73 +240,79 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
               animatedSheetStyle
             ]}
           >
-            {/* Close button */}
-            <TouchableOpacity style={styles.closeButton} onPress={handleCloseSheet}>
-              <X size={18} color="#666" />
-            </TouchableOpacity>
-
-            {/* Header */}
-            <View style={styles.header}>
-              <Text style={styles.venueName}>{selectedVenue.name}</Text>
-            </View>
-
-            <Text style={styles.businessType}>{selectedVenue.type}</Text>
-
-            {selectedVenue.rating && (
-              <View style={styles.ratingContainer}>
-                <StarIcon size={14} color="#ffd700" fill="#ffd700" />
-                <Text style={styles.rating}>
-                  {selectedVenue.rating.toFixed(1)}
-                </Text>
-                <Text style={styles.reviewCount}>
-                  ({selectedVenue.reviewCount || 0} reviews)
-                </Text>
-              </View>
-            )}
-
-            {/* Image Gallery */}
-            {selectedVenue.imageUrls && selectedVenue.imageUrls.length > 0 && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.imageScrollView}
-                contentContainerStyle={styles.imageScrollContent}
-              >
-                {selectedVenue.imageUrls.slice(0, 4).map((imageUrl, index) => (
-                  <Image
-                    key={index}
-                    source={{ uri: imageUrl }}
-                    style={[
-                      styles.galleryImage,
-                      index === selectedVenue.imageUrls.length - 1 ? {} : styles.galleryImageSpacing
-                    ]}
-                    contentFit="cover"
-                    transition={300}
-                    cachePolicy="memory-disk"
-                  />
-                ))}
-              </ScrollView>
-            )}
-
-            <View style={styles.divider} />
-
-            {/* Location details */}
-            {/* <View style={styles.locationContainer}>
-              <MapPinIcon size={14} color="#666" />
-              <Text style={styles.address}>{selectedVenue.address}</Text>
-              <Text style={styles.distance}>
-                • {t('explore.distance', { distance: formatDistance(selectedVenue.distance) })}
-              </Text>
-            </View> */}
-
-            {/* See Studio Button */}
-            <TouchableOpacity
-              style={styles.seeStudioButton}
-              onPress={() => navigation.navigate('VenueDetailsScreen', { venueId: selectedVenue._id })}
-              activeOpacity={0.8}
+            <BlurView
+              intensity={30}
+              tint='light'
+              style={styles.blurContainer}
             >
-              <Text style={styles.seeStudioButtonText}>See Studio</Text>
-            </TouchableOpacity>
+              {/* Close button */}
+              <TouchableOpacity style={styles.closeButton} onPress={handleCloseSheet}>
+                <X size={18} color="#666" />
+              </TouchableOpacity>
+
+              {/* Header */}
+              <View style={styles.header}>
+                <Text style={styles.venueName}>{selectedVenue.name}</Text>
+              </View>
+
+              <Text style={styles.businessType}>{selectedVenue.type}</Text>
+
+              {selectedVenue.rating && (
+                <View style={styles.ratingContainer}>
+                  <StarIcon size={14} color="#ffd700" fill="#ffd700" />
+                  <Text style={styles.rating}>
+                    {selectedVenue.rating.toFixed(1)}
+                  </Text>
+                  <Text style={styles.reviewCount}>
+                    ({selectedVenue.reviewCount || 0} reviews)
+                  </Text>
+                </View>
+              )}
+
+              {/* Image Gallery */}
+              {selectedVenue.imageUrls && selectedVenue.imageUrls.length > 0 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.imageScrollView}
+                  contentContainerStyle={styles.imageScrollContent}
+                >
+                  {selectedVenue.imageUrls.slice(0, 4).map((imageUrl, index) => (
+                    <Image
+                      key={index}
+                      source={{ uri: imageUrl }}
+                      style={[
+                        styles.galleryImage,
+                        index === selectedVenue.imageUrls.length - 1 ? {} : styles.galleryImageSpacing
+                      ]}
+                      contentFit="cover"
+                      transition={300}
+                      cachePolicy="memory-disk"
+                    />
+                  ))}
+                </ScrollView>
+              )}
+
+              <View style={styles.divider} />
+
+              {/* Location details */}
+              {/* <View style={styles.locationContainer}>
+                <MapPinIcon size={14} color="#666" />
+                <Text style={styles.address}>{selectedVenue.address}</Text>
+                <Text style={styles.distance}>
+                  • {t('explore.distance', { distance: formatDistance(selectedVenue.distance) })}
+                </Text>
+              </View> */}
+
+              {/* See Studio Button */}
+              <TouchableOpacity
+                style={styles.seeStudioButton}
+                onPress={() => navigation.navigate('VenueDetailsScreen', { venueId: selectedVenue._id })}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.seeStudioButtonText}>See Studio</Text>
+              </TouchableOpacity>
+            </BlurView>
           </Animated.View>
         </GestureDetector>
       )}
@@ -322,24 +329,30 @@ const styles = StyleSheet.create({
   },
   floatingSheet: {
     position: 'absolute',
-    bottom: 76,
+    bottom: 60,
     left: 16,
     right: 16,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    paddingBottom: 20,
+    borderRadius: 30,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 4,
     },
+    backgroundColor: 'rgba(255, 255, 255, 0.80)',
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 15,
     zIndex: 1000,
     maxHeight: 500,
+    overflow: 'hidden',
+  },
+  blurContainer: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    paddingBottom: 20,
+    opacity: 0.99,
+    // backgroundColor: 'white',
   },
 
   closeButton: {

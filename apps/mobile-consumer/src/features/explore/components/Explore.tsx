@@ -37,7 +37,24 @@ export function Explore() {
     const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
     const filters = useExploreFiltersStore((state) => state.filters);
 
-    const { venues, venuesLoading, storageIdToUrl } = useAllVenues();
+    const locationFilter = useMemo(() => {
+        if (!userLocation || !filters.distanceKm || filters.distanceKm <= 0) {
+            return undefined;
+        }
+
+        return {
+            latitude: userLocation.coords.latitude,
+            longitude: userLocation.coords.longitude,
+            maxDistanceKm: filters.distanceKm,
+        } as const;
+    }, [userLocation, filters.distanceKm]);
+
+    const shouldSkipVenuesQuery = filters.distanceKm > 0 && !userLocation;
+
+    const { venues, venuesLoading, storageIdToUrl } = useAllVenues({
+        locationFilter: locationFilter,
+        skip: shouldSkipVenuesQuery,
+    });
 
     // Get user credit balance
     const creditBalance = useQuery(api.queries.credits.getUserBalance, { userId: user._id });

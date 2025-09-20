@@ -7,6 +7,7 @@ import { userMustBeAssociatedWithBusiness } from "../rules/core";
 import { createDefaultVenue, prepareCreateVenue, prepareUpdateVenue } from "../operations/venue";
 import { ERROR_CODES } from "../utils/errorCodes";
 import { venueRules } from "../rules/venue";
+import { calculateDistance } from "@repo/utils/distances";
 
 
 // Service object with all venue operations
@@ -169,12 +170,41 @@ export const venueService = {
     /**
      * Get all venues for all businesses
      */
-    getAllVenues: async ({ ctx }: { ctx: QueryCtx }): Promise<Doc<"venues">[]> => {
+    getAllVenues: async ({ ctx, args }: {
+        ctx: QueryCtx,
+        args?: {
+            locationFilter?: {
+                latitude: number;
+                longitude: number;
+                maxDistanceKm: number;
+            };
+        };
+    }): Promise<Doc<"venues">[]> => {
         const venues = await ctx.db
             .query("venues")
             .withIndex("by_deleted", q => q.eq("deleted", false))
             .collect();
-        return venues;
+
+        const locationFilter = args?.locationFilter;
+
+        if (!locationFilter || locationFilter.maxDistanceKm <= 0) {
+            return venues;
+        }
+
+        const { latitude: userLat, longitude: userLon, maxDistanceKm } = locationFilter;
+        const maxDistanceMeters = maxDistanceKm * 1000;
+
+        return venues.filter((venue) => {
+            const latitude = typeof venue.address?.latitude === "number" ? venue.address.latitude : null;
+            const longitude = typeof venue.address?.longitude === "number" ? venue.address.longitude : null;
+
+            if (latitude === null || longitude === null) {
+                return true;
+            }
+
+            const distanceMeters = calculateDistance(userLat, userLon, latitude, longitude);
+            return distanceMeters <= maxDistanceMeters;
+        });
     },
 
     /**

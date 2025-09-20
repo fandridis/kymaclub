@@ -28,6 +28,18 @@ export function ClassesList({ selectedDate, searchFilters, userLocation }: Class
   const [filteredClasses, setFilteredClasses] = useState<ClassInstance[]>([]);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const locationFilter = useMemo(() => {
+    if (!userLocation || !searchFilters.distanceKm || searchFilters.distanceKm <= 0) {
+      return undefined;
+    }
+
+    return {
+      latitude: userLocation.coords.latitude,
+      longitude: userLocation.coords.longitude,
+      maxDistanceKm: searchFilters.distanceKm,
+    } as const;
+  }, [userLocation, searchFilters.distanceKm]);
+
   // Get class instances for the selected date
   const selectedDateStart = useMemo(() => {
     const date = new Date(selectedDate);
@@ -53,6 +65,7 @@ export function ClassesList({ selectedDate, searchFilters, userLocation }: Class
     startDate: selectedDateStart,
     endDate: selectedDateEnd,
     includeBookingStatus: true, // Enable booking status for consumer app
+    locationFilter,
   });
 
   // Apply filters with debounce
