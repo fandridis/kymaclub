@@ -59,7 +59,7 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
     const removeTemplateImage = useMutation(api.mutations.uploads.removeTemplateImage);
 
     const { status, uploadImage } = useCompressedImageUpload({
-        preCompressionMaxBytes: 5 * 1024 * 1024,
+        preCompressionMaxBytes: 10 * 1024 * 1024,
     });
 
     const imageUrlResults = useQuery(

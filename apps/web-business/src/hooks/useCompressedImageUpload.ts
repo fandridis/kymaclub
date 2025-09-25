@@ -33,7 +33,7 @@ export function useCompressedImageUpload(options?: UseCompressedImageUploadOptio
                 return undefined as unknown as T;
             }
 
-            const preMax = options?.preCompressionMaxBytes ?? 5 * 1024 * 1024; // 5MB default
+            const preMax = options?.preCompressionMaxBytes ?? 10 * 1024 * 1024; // 10MB default
             if (file.size > preMax) {
                 const mb = Math.round(preMax / (1024 * 1024));
                 toast.error(`Original image size should not exceed ${mb}MB.`);

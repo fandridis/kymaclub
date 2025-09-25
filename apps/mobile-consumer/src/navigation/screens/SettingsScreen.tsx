@@ -33,7 +33,7 @@ export function SettingsScreen() {
 
   // Image upload hooks and mutations
   const { status, pickAndUploadImage, takeAndUploadPhoto } = useCompressedImageUpload({
-    preCompressionMaxBytes: 5 * 1024 * 1024, // 5MB
+    preCompressionMaxBytes: 10 * 1024 * 1024, // 10MB
     compression: {
       maxWidth: 400,
       maxHeight: 400,

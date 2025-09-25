@@ -97,8 +97,8 @@ export function useCompressedImageUpload(options?: UseCompressedImageUploadOptio
 
                 // Get image info to check size
                 const imageInfo = await manipulateAsync(imageUri, [], { format: SaveFormat.JPEG });
-                
-                const preMax = options?.preCompressionMaxBytes ?? 5 * 1024 * 1024; // 5MB default
+
+                const preMax = options?.preCompressionMaxBytes ?? 10 * 1024 * 1024; // 10MB default
                 if (imageInfo.uri.length > preMax) {
                     const mb = Math.round(preMax / (1024 * 1024));
                     Alert.alert('File too large', `Original image size should not exceed ${mb}MB.`);
@@ -170,10 +170,10 @@ export function useCompressedImageUpload(options?: UseCompressedImageUploadOptio
         [generateUploadUrl, options]
     );
 
-    return { 
-        status, 
-        uploadImage, 
-        pickAndUploadImage, 
-        takeAndUploadPhoto 
+    return {
+        status,
+        uploadImage,
+        pickAndUploadImage,
+        takeAndUploadPhoto
     };
 }
