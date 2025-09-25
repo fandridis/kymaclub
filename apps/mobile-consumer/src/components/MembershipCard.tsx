@@ -1,128 +1,189 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { DiamondIcon } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { WalletIcon, InfoIcon, AlertTriangleIcon } from 'lucide-react-native';
+
 import { theme } from '../theme';
-import { getMembershipTier, getMembershipBadgeInfo } from '../utils/membershipUtils';
 
 interface MembershipCardProps {
   creditBalance: number;
-  allTimeBookings: number;
-  expiringCredits?: number;
-  daysUntilExpiry?: number;
+  recurringCreditAmount?: number | null;
+  isRecurringActive?: boolean;
+  isRecurringCanceling?: boolean;
+  expiringCredits?: number | null;
+  expiringDaysUntil?: number | null;
+  onManageSubscriptionPress?: () => void;
+  onBuyCreditsPress?: () => void;
 }
 
 export function MembershipCard({
   creditBalance,
-  allTimeBookings,
+  recurringCreditAmount,
+  isRecurringActive,
+  isRecurringCanceling,
   expiringCredits,
-  daysUntilExpiry
+  expiringDaysUntil,
+  onManageSubscriptionPress,
+  onBuyCreditsPress,
 }: MembershipCardProps) {
-  const tier = getMembershipTier(allTimeBookings);
-  const badgeInfo = getMembershipBadgeInfo(tier);
+  const hasRecurring = Boolean(isRecurringActive && !isRecurringCanceling);
+
+  const RecurringIcon = hasRecurring ? InfoIcon : AlertTriangleIcon;
+  const recurringIconColor = hasRecurring
+    ? theme.colors.emerald[500]
+    : theme.colors.amber[500];
+
+  const recurringAmountLabel = (() => {
+    if (!hasRecurring) return 'Not active';
+    const amount = `${recurringCreditAmount ?? 0} credits`;
+    return amount;
+  })();
+
+  const expiringAmount = expiringCredits ?? 0;
+  const expiringLabel = expiringAmount > 0
+    ? expiringDaysUntil != null && expiringDaysUntil >= 0
+      ? `${expiringAmount} credits (${expiringDaysUntil} days)`
+      : `${expiringAmount} credits`
+    : 'No credits expiring';
+
+  const handleSubscriptionPress = () => {
+    onManageSubscriptionPress?.();
+  };
+
+  const handleBuyCreditsPress = () => {
+    onBuyCreditsPress?.();
+  };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.cardWrapper}>
-        <LinearGradient
-          colors={['#10b981', '#6ee7b7']} // emerald-500 to emerald-300
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.card}
-        >
-          {/* Header Row */}
-          <View style={styles.header}>
-            <Text style={styles.membershipText}>KymaClub membership</Text>
-            <View style={[styles.badge, { backgroundColor: badgeInfo.backgroundColor }]}>
-              <Text style={[styles.badgeText, { color: badgeInfo.color }]}>
-                {badgeInfo.tier}
-              </Text>
-            </View>
+    <View style={styles.wrapper}>
+      <View style={styles.card}>
+        <View style={styles.rowBetween}>
+          <View style={styles.rowStart}>
+            <WalletIcon size={20} color={theme.colors.zinc[900]} />
+            <Text style={styles.cardTitle}>Wallet Balance</Text>
           </View>
+          <Text style={styles.cardValue}>{creditBalance}</Text>
+        </View>
 
-          {/* Credits Display */}
-          <View style={styles.creditsSection}>
-            <View style={styles.creditsRow}>
-              <DiamondIcon size={20} color="white" />
-              <Text style={styles.creditsAmount}>{creditBalance}</Text>
-            </View>
-            <Text style={styles.expiryText}>
-              {expiringCredits && daysUntilExpiry
-                ? `${expiringCredits} credits expire in ${daysUntilExpiry} days`
-                : ' '
-              }
-            </Text>
+        <Text style={styles.subtitle}>These are the available credits to spend</Text>
+
+        <View style={styles.divider} />
+
+        <View style={styles.rowBetween}>
+          <View style={styles.rowStart}>
+            <Text style={styles.sectionTitle}>Recurring buy</Text>
+            <RecurringIcon size={16} color={recurringIconColor} style={styles.iconSpacing} />
           </View>
-        </LinearGradient>
+          <TouchableOpacity
+            onPress={handleSubscriptionPress}
+            activeOpacity={0.75}
+            disabled={!onManageSubscriptionPress}
+          >
+            <Text style={[styles.sectionValue, styles.recurringLink]}>{recurringAmountLabel}</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.rowBetween}>
+          <View style={styles.rowStart}>
+            <Text style={styles.sectionTitle}>Expiring soon</Text>
+            <InfoIcon size={16} color={theme.colors.sky[500]} style={styles.iconSpacing} />
+          </View>
+          <Text style={styles.sectionValue}>{expiringLabel}</Text>
+        </View>
+
+        <View style={styles.divider} />
+
+        <TouchableOpacity activeOpacity={0.8} onPress={handleBuyCreditsPress}>
+          <Text style={styles.link}>Buy credits</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
     marginHorizontal: 20,
     marginBottom: 16,
-    // Add padding to prevent shadow clipping
-    padding: 4
-  },
-  cardWrapper: {
-    borderRadius: 16,
-    // iOS shadow
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    // Android elevation
-    elevation: 8,
   },
   card: {
-    borderRadius: 16,
-    padding: 20,
-    minHeight: 220,
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: theme.colors.zinc[200],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 6,
   },
-  header: {
+  rowBetween: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 12,
   },
-  badge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  badgeText: {
-    fontSize: theme.fontSize.sm,
-    fontWeight: theme.fontWeight.bold,
-  },
-  membershipText: {
-    fontSize: theme.fontSize.lg,
-    fontWeight: theme.fontWeight.extrabold,
-    color: 'white',
-  },
-  creditsSection: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  creditsRow: {
+  rowStart: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
   },
-  creditsAmount: {
-    fontSize: theme.fontSize['2xl'],
-    fontWeight: theme.fontWeight.extrabold,
-    color: 'white',
+  cardTitle: {
     marginLeft: 8,
+    fontSize: theme.fontSize.lg,
+    fontWeight: theme.fontWeight.semibold,
+    color: theme.colors.zinc[900],
   },
-  expiryText: {
-    fontSize: theme.fontSize.sm,
-    color: 'white',
-    opacity: 0.9,
+  cardValue: {
+    fontSize: theme.fontSize['2xl'],
+    fontWeight: theme.fontWeight.semibold,
+    color: theme.colors.zinc[900],
+  },
+  balanceDisplay: {
+    alignItems: 'flex-start',
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  balanceValue: {
+    fontSize: theme.fontSize['3xl'],
     fontWeight: theme.fontWeight.bold,
+    color: theme.colors.zinc[900],
+  },
+  balanceLabel: {
+    fontSize: theme.fontSize.xs,
+    color: theme.colors.zinc[500],
+    marginTop: 2,
+  },
+  subtitle: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.zinc[500],
+  },
+  divider: {
+    height: 1,
+    backgroundColor: theme.colors.zinc[200],
+    marginVertical: 12,
+  },
+  sectionTitle: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.medium,
+    color: theme.colors.zinc[600],
+  },
+  sectionValue: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.semibold,
+    color: theme.colors.zinc[900],
+  },
+  recurringLink: {
+    color: theme.colors.emerald[600],
+    textDecorationLine: 'underline',
+  },
+  iconSpacing: {
+    marginLeft: 6,
+  },
+  link: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.semibold,
+    color: theme.colors.emerald[600],
+    textDecorationLine: 'underline',
   },
 });
