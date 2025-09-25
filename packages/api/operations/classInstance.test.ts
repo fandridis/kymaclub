@@ -148,7 +148,8 @@ describe('Class Instance Operations - Safety Tests', () => {
           hoursBeforeClass: 48,
           discountPercentage: 10
         }
-      ]
+      ],
+      primaryCategory: 'wellness_center' as any,
     } as Doc<"classTemplates">;
 
     const mockVenue: Doc<"venues"> = {
@@ -158,7 +159,7 @@ describe('Class Instance Operations - Safety Tests', () => {
       createdAt: Date.now(),
       createdBy: "user_123" as any,
       isActive: true,
-      primaryCategory: "fitness_studio" as any,
+      primaryCategory: "fitness_center" as any,
       name: "Downtown Studio",
       address: {
         street: "123 Main St",
@@ -218,6 +219,8 @@ describe('Class Instance Operations - Safety Tests', () => {
       expect(instance.price).toBe(mockTemplate.price);
       expect(instance.bookingWindow).toBe(mockTemplate.bookingWindow);
       expect(instance.cancellationWindowHours).toBe(mockTemplate.cancellationWindowHours);
+      expect(instance.primaryCategory).toBe(mockTemplate.primaryCategory);
+      expect(instance.templateSnapshot.primaryCategory).toBe(mockTemplate.primaryCategory);
       expect(instance.tags).toEqual(mockTemplate.tags);
       expect(instance.color).toBe(mockTemplate.color);
     });
@@ -238,7 +241,8 @@ describe('Class Instance Operations - Safety Tests', () => {
         description: mockTemplate.description,
         instructor: mockTemplate.instructor,
         imageStorageIds: mockTemplate.imageStorageIds,
-        discountRules: mockTemplate.discountRules
+        discountRules: mockTemplate.discountRules,
+        primaryCategory: mockTemplate.primaryCategory,
       });
     });
 
@@ -450,11 +454,13 @@ describe('Class Instance Operations - Safety Tests', () => {
       const instances = [{
         _id: "instance_1" as any,
         name: "Old Name",
+        primaryCategory: 'wellness_center' as any,
         templateSnapshot: {
           name: "Old Name",
           description: "Old description",
           instructor: "Old instructor",
-          imageStorageIds: ["old_img"]
+          imageStorageIds: ["old_img"],
+          primaryCategory: 'wellness_center' as any,
         }
       }] as Doc<"classInstances">[];
 
@@ -462,7 +468,8 @@ describe('Class Instance Operations - Safety Tests', () => {
         name: "New Yoga Class",
         description: "Updated description",
         instructor: "New Instructor",
-        imageStorageIds: ["new_img_1", "new_img_2"] as any
+        imageStorageIds: ["new_img_1", "new_img_2"] as any,
+        primaryCategory: 'workshop' as any,
       };
 
       const updates = prepareInstanceUpdatesFromTemplateChanges(instances, templateChanges);
@@ -472,12 +479,14 @@ describe('Class Instance Operations - Safety Tests', () => {
       expect(updates[0].changes.name).toBe("New Yoga Class");
       expect(updates[0].changes.description).toBe("Updated description");
       expect(updates[0].changes.instructor).toBe("New Instructor");
+      expect(updates[0].changes.primaryCategory).toBe('workshop');
 
       expect(updates[0].changes.templateSnapshot).toEqual({
         name: "New Yoga Class",
         description: "Updated description",
         instructor: "New Instructor",
-        imageStorageIds: ["new_img_1", "new_img_2"]
+        imageStorageIds: ["new_img_1", "new_img_2"],
+        primaryCategory: 'workshop',
       });
     });
 
@@ -485,10 +494,12 @@ describe('Class Instance Operations - Safety Tests', () => {
       const instances = [{
         _id: "instance_1" as any,
         name: "Current Name",
+        primaryCategory: 'wellness_center' as any,
         templateSnapshot: {
           name: "Current Name",
           description: "Current description",
-          instructor: "Current instructor"
+          instructor: "Current instructor",
+          primaryCategory: 'wellness_center' as any,
         }
       }] as Doc<"classInstances">[];
 
@@ -503,6 +514,7 @@ describe('Class Instance Operations - Safety Tests', () => {
       expect(updates[0].changes.templateSnapshot?.name).toBe("Updated Name");
       // Other fields should be preserved from original template snapshot
       expect(updates[0].changes.templateSnapshot?.description).toBe("Current description");
+      expect(updates[0].changes.templateSnapshot?.primaryCategory).toBe('wellness_center');
     });
   });
 

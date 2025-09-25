@@ -6,6 +6,7 @@ import type { RootStackParamList } from '../../../navigation';
 import * as Location from 'expo-location';
 import { VenueCard } from '../../../components/VenueCard';
 import { FilterOptions } from '../../../stores/explore-filters-store';
+import type { ExploreCategoryId } from '@repo/utils/exploreFilters';
 import { ExploreMapView } from '../../../components/ExploreMapView';
 import { useTypedTranslation } from '../../../i18n/typed';
 import { Doc } from '@repo/api/convex/_generated/dataModel';
@@ -25,11 +26,23 @@ export const VenuesSection = ({ venues, storageIdToUrl, userLocation, filters, i
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
     const filteredVenues = useMemo(() => {
-        if (!filters.distanceKm || filters.distanceKm <= 0 || !userLocation) {
-            return venues;
+        let result = venues;
+
+        if (filters.categories.length > 0) {
+            result = result.filter((venue) => {
+                const primaryCategory = venue.primaryCategory;
+                return (
+                    typeof primaryCategory === 'string' &&
+                    filters.categories.includes(primaryCategory as ExploreCategoryId)
+                );
+            });
         }
 
-        return venues.filter((venue) => {
+        if (!filters.distanceKm || filters.distanceKm <= 0 || !userLocation) {
+            return result;
+        }
+
+        return result.filter((venue) => {
             const latitude = typeof venue.address?.latitude === 'number' ? venue.address.latitude : null;
             const longitude = typeof venue.address?.longitude === 'number' ? venue.address.longitude : null;
 
@@ -46,7 +59,7 @@ export const VenuesSection = ({ venues, storageIdToUrl, userLocation, filters, i
 
             return distanceMeters <= filters.distanceKm * 1000;
         });
-    }, [filters.distanceKm, userLocation, venues]);
+    }, [filters.categories, filters.distanceKm, userLocation, venues]);
 
     const renderVenueItem = useCallback(({ item }: { item: Doc<'venues'> }) => {
         return (

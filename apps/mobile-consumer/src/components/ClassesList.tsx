@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useClassInstances } from '../hooks/use-class-instances';
@@ -25,8 +25,6 @@ interface ClassesListProps {
 export function ClassesList({ selectedDate, searchFilters, userLocation }: ClassesListProps) {
   const { t } = useTypedTranslation();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const [filteredClasses, setFilteredClasses] = useState<ClassInstance[]>([]);
-  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const locationFilter = useMemo(() => {
     if (!userLocation || !searchFilters.distanceKm || searchFilters.distanceKm <= 0) {
@@ -68,12 +66,11 @@ export function ClassesList({ selectedDate, searchFilters, userLocation }: Class
     locationFilter,
   });
 
-  // Apply filters with debounce
-  const applyFilters = useCallback(() => {
+  // Apply filters immediately using useMemo (like VenuesSection)
+  const filteredClasses = useMemo(() => {
     const { searchQuery, categories, distanceKm } = searchFilters;
-    const selectedCategoryTags = categories.map((categoryId) => getExploreCategoryTag(categoryId).toLowerCase());
 
-    const filtered = classInstances.filter((instance) => {
+    return classInstances.filter((instance) => {
       const name = instance.name?.toLowerCase() ?? '';
       const business = instance.venueSnapshot?.name?.toLowerCase() ?? '';
       const tags = (instance.tags ?? []).map((t) => t.toLowerCase());
@@ -81,7 +78,19 @@ export function ClassesList({ selectedDate, searchFilters, userLocation }: Class
       const q = (searchQuery ?? '').toLowerCase();
 
       const matchesSearch = !q || name.includes(q) || business.includes(q) || tags.some((t) => t.includes(q));
-      const matchesCategory = selectedCategoryTags.length === 0 || selectedCategoryTags.some((tag) => tags.includes(tag));
+
+      // Filter by primaryCategory similar to VenuesSection
+      const matchesCategory = (() => {
+        if (categories.length === 0) {
+          return true;
+        }
+
+        const primaryCategory = instance.primaryCategory || instance.templateSnapshot?.primaryCategory;
+        return (
+          typeof primaryCategory === 'string' &&
+          categories.includes(primaryCategory as ExploreCategoryId)
+        );
+      })();
 
       const matchesDistance = (() => {
         if (!distanceKm || distanceKm <= 0 || !userLocation) {
@@ -108,33 +117,7 @@ export function ClassesList({ selectedDate, searchFilters, userLocation }: Class
 
       return matchesSearch && matchesCategory && matchesDistance;
     });
-
-    setFilteredClasses(filtered);
   }, [classInstances, searchFilters, userLocation]);
-
-  // Debounced filtering
-  useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    searchTimeoutRef.current = setTimeout(() => {
-      applyFilters();
-    }, 300);
-
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [applyFilters]);
-
-  // Initialize filtered classes when data first loads
-  useEffect(() => {
-    if (classInstances.length > 0 || (!classInstancesLoading && classInstances.length === 0)) {
-      setFilteredClasses(classInstances);
-    }
-  }, [classInstances.length, classInstancesLoading, classInstances]);
 
   if (classInstancesLoading) {
     return (

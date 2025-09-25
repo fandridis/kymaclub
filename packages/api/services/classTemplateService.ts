@@ -20,8 +20,9 @@ export const classTemplateService = {
         const defaults = classTemplateOperations.createDefaultTemplate(user.businessId!, user._id);
 
         // Validate venue exists and belongs to user's business
+        let venue: Doc<'venues'> | null = null;
         if (cleanTemplate.venueId) {
-            const venue = await ctx.db.get(cleanTemplate.venueId);
+            venue = await ctx.db.get(cleanTemplate.venueId);
             if (!venue) {
                 throw new ConvexError({
                     message: "Venue not found",
@@ -38,9 +39,19 @@ export const classTemplateService = {
             }
         }
 
+        const primaryCategory = cleanTemplate.primaryCategory ?? venue?.primaryCategory;
+        if (!primaryCategory) {
+            throw new ConvexError({
+                message: "Primary category is required",
+                field: "primaryCategory",
+                code: ERROR_CODES.VALIDATION_ERROR,
+            });
+        }
+
         const templateId = await ctx.db.insert("classTemplates", {
             ...defaults,
             ...cleanTemplate,
+            primaryCategory,
         });
 
         return { createdTemplateId: templateId };

@@ -1,5 +1,6 @@
 import type { ValidationResult } from "../types/core";
 import { validateStringLength, validateNumericRange, validateStringArray, validateDaysOfWeek } from "../utils/validationHelpers";
+import { VENUE_CATEGORIES, type VenueCategory } from '@repo/utils/constants';
 
 const validateStartTime = (startTime: number): ValidationResult<number> => {
     if (!Number.isInteger(startTime) || startTime <= 0) {
@@ -220,6 +221,13 @@ const validateDiscountRules = (rules: any[]): ValidationResult<any[]> => {
     return { success: true, value: rules };
 };
 
+const validatePrimaryCategory = (category: string): ValidationResult<VenueCategory> => {
+    if (!VENUE_CATEGORIES.includes(category as VenueCategory)) {
+        return { success: false, error: "Invalid category" };
+    }
+    return { success: true, value: category as VenueCategory };
+};
+
 export const classValidations = {
     validateStartTime,
     validateEndTime,
@@ -237,4 +245,5 @@ export const classValidations = {
     validateDuration,
     validateWaitlistCapacity,
     validateDiscountRules,
+    validatePrimaryCategory,
 }

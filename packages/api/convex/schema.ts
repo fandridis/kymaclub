@@ -2,6 +2,22 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
 
+const venueCategoryField = v.union(
+  v.literal("yoga_studio"),
+  v.literal("fitness_center"),
+  v.literal("dance_studio"),
+  v.literal("pilates_studio"),
+  v.literal("swimming_facility"),
+  v.literal("martial_arts_studio"),
+  v.literal("climbing_gym"),
+  v.literal("crossfit_box"),
+  v.literal("wellness_center"),
+  v.literal("outdoor_fitness"),
+  v.literal("personal_training"),
+  v.literal("rehabilitation_center"),
+  v.literal("workshop")
+);
+
 /***************************************************************
  * Reusable object fields for all tables
  ***************************************************************/
@@ -182,20 +198,7 @@ export const venuesFields = {
   reviewCount: v.optional(v.number()),
 
   // Primary business category - required field
-  primaryCategory: v.union(
-    v.literal("yoga_studio"),
-    v.literal("fitness_center"),
-    v.literal("dance_studio"),
-    v.literal("pilates_studio"),
-    v.literal("swimming_facility"),
-    v.literal("martial_arts_studio"),
-    v.literal("climbing_gym"),
-    v.literal("crossfit_box"),
-    v.literal("wellness_center"),
-    v.literal("outdoor_fitness"),
-    v.literal("personal_training"),
-    v.literal("rehabilitation_center")
-  ),
+  primaryCategory: v.optional(venueCategoryField),
 
   // Social media
   socialMedia: v.optional(v.object({
@@ -254,6 +257,8 @@ export const classTemplatesFields = {
   description: v.optional(v.string()),
   instructor: v.string(),
 
+  primaryCategory: v.optional(venueCategoryField),
+
   // Class details
   duration: v.number(), // minutes
   capacity: v.number(),
@@ -287,6 +292,8 @@ export const classInstancesFields = {
   businessId: v.id("businesses"),
   templateId: v.id("classTemplates"),
   venueId: v.id("venues"),
+
+  primaryCategory: v.optional(venueCategoryField),
 
   // Scheduling (REQUIRED for every instance)
   startTime: v.number(), // Unix timestamp
@@ -329,8 +336,9 @@ export const classInstancesFields = {
     description: v.optional(v.string()),
     instructor: v.string(),
     imageStorageIds: v.optional(v.array(v.id("_storage"))),
-    deleted: v.optional(v.boolean()),
     discountRules: v.optional(v.array(v.object(classDiscountRuleFields))),
+    deleted: v.optional(v.boolean()),
+    primaryCategory: venueCategoryField,
   }),
 
   // Venue Snapshot

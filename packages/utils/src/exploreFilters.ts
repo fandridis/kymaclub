@@ -1,13 +1,22 @@
-export const EXPLORE_CATEGORY_FILTERS = [
-  { id: 'fitness', label: 'Fitness', tag: 'fitness' },
-  { id: 'yoga', label: 'Yoga', tag: 'yoga' },
-  { id: 'dance', label: 'Dance', tag: 'dance' },
-  { id: 'martial_arts', label: 'Martial Arts', tag: 'martial arts' },
-  { id: 'swimming', label: 'Swimming', tag: 'swimming' },
-] as const;
+import {
+  VENUE_CATEGORIES,
+  VENUE_CATEGORY_DISPLAY_NAMES,
+  VenueCategory,
+} from './constants';
 
-export type ExploreCategoryFilter = (typeof EXPLORE_CATEGORY_FILTERS)[number];
-export type ExploreCategoryId = ExploreCategoryFilter['id'];
+export type ExploreCategoryId = VenueCategory;
+
+export interface ExploreCategoryFilter {
+  id: ExploreCategoryId;
+  label: string;
+  tag: string;
+}
+
+export const EXPLORE_CATEGORY_FILTERS: ExploreCategoryFilter[] = VENUE_CATEGORIES.map((category) => ({
+  id: category,
+  label: VENUE_CATEGORY_DISPLAY_NAMES[category],
+  tag: VENUE_CATEGORY_DISPLAY_NAMES[category].toLowerCase(),
+}));
 
 const CATEGORY_MAP: Record<ExploreCategoryId, ExploreCategoryFilter> = EXPLORE_CATEGORY_FILTERS.reduce(
   (acc, category) => {
@@ -17,7 +26,7 @@ const CATEGORY_MAP: Record<ExploreCategoryId, ExploreCategoryFilter> = EXPLORE_C
   {} as Record<ExploreCategoryId, ExploreCategoryFilter>
 );
 
-export const EXPLORE_CATEGORY_IDS: ExploreCategoryId[] = Object.keys(CATEGORY_MAP) as ExploreCategoryId[];
+export const EXPLORE_CATEGORY_IDS: ExploreCategoryId[] = [...VENUE_CATEGORIES];
 
 export function getExploreCategoryLabel(id: ExploreCategoryId): string {
   return CATEGORY_MAP[id]?.label ?? id;
@@ -28,5 +37,5 @@ export function getExploreCategoryTag(id: ExploreCategoryId): string {
 }
 
 export function isExploreCategoryId(value: string): value is ExploreCategoryId {
-  return Boolean(value && value in CATEGORY_MAP);
+  return VENUE_CATEGORIES.includes(value as VenueCategory);
 }

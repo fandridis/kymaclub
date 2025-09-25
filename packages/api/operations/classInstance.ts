@@ -159,6 +159,7 @@ export const prepareUpdateInstance = (args: UpdateSingleInstanceArgs['instance']
         ...(i.bookingWindow !== undefined && { bookingWindow: throwIfError(classValidations.validateBookingWindow(i.bookingWindow), 'bookingWindow') }),
         ...(i.cancellationWindowHours !== undefined && { cancellationWindowHours: throwIfError(classValidations.validateCancellationWindowHours(i.cancellationWindowHours), 'cancellationWindowHours') }),
         ...(i.color !== undefined && { color: i.color }),
+        ...(i.primaryCategory !== undefined && { primaryCategory: throwIfError(classValidations.validatePrimaryCategory(i.primaryCategory), 'primaryCategory') }),
     };
 };
 
@@ -218,6 +219,7 @@ export const prepareInstanceUpdatesFromTemplateChanges = (
                 name: templateChanges.name,
                 description: templateChanges.description,
                 instructor: templateChanges.instructor,
+                primaryCategory: templateChanges.primaryCategory,
             }),
             // Historical snapshot preservation with selective updates
             templateSnapshot: {
@@ -229,6 +231,7 @@ export const prepareInstanceUpdatesFromTemplateChanges = (
                     imageStorageIds: templateChanges.imageStorageIds,
                     discountRules: templateChanges.discountRules,
                     deleted: templateChanges.deleted,
+                    primaryCategory: templateChanges.primaryCategory,
                 }),
             },
         }
@@ -377,6 +380,14 @@ export const createInstanceFromTemplate = (
 
     // Calculate endTime deterministically from template duration (in minutes)
     const endTime = validatedStartTime + (template.duration * 60 * 1000);
+    const primaryCategory = template.primaryCategory ?? venue.primaryCategory;
+    if (!primaryCategory) {
+        throw new ConvexError({
+            message: "Class template is missing a primary category",
+            field: "primaryCategory",
+            code: ERROR_CODES.VALIDATION_ERROR,
+        });
+    }
 
     const now = Date.now();
 
@@ -384,6 +395,7 @@ export const createInstanceFromTemplate = (
         businessId: business._id,
         templateId: template._id,
         venueId: template.venueId!,
+        primaryCategory,
         timezone: business.timezone,
         startTime: validatedStartTime,
         endTime,
@@ -420,6 +432,7 @@ export const createInstanceFromTemplate = (
             instructor: template.instructor,
             imageStorageIds: template.imageStorageIds,
             discountRules: template.discountRules,
+            primaryCategory,
         },
 
         // Venue snapshot - captures venue state at instance creation

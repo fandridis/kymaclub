@@ -137,7 +137,21 @@ export const createTestVenue = internalMutation({
             })),
             capacity: v.optional(v.number()),
             isActive: v.optional(v.boolean()),
-            primaryCategory: v.optional(v.union(v.literal("yoga_studio"), v.literal("fitness_center"), v.literal("dance_studio"), v.literal("pilates_studio"), v.literal("swimming_facility"), v.literal("martial_arts_studio"), v.literal("climbing_gym"), v.literal("crossfit_box"), v.literal("wellness_center"), v.literal("outdoor_fitness"), v.literal("personal_training"), v.literal("rehabilitation_center"))),
+            primaryCategory: v.optional(v.union(
+                v.literal("yoga_studio"),
+                v.literal("fitness_center"),
+                v.literal("dance_studio"),
+                v.literal("pilates_studio"),
+                v.literal("swimming_facility"),
+                v.literal("martial_arts_studio"),
+                v.literal("climbing_gym"),
+                v.literal("crossfit_box"),
+                v.literal("wellness_center"),
+                v.literal("outdoor_fitness"),
+                v.literal("personal_training"),
+                v.literal("rehabilitation_center"),
+                v.literal("workshop")
+            )),
         }),
     },
     returns: v.id("venues"),
@@ -180,6 +194,7 @@ export const createTestClassTemplate = internalMutation({
             price: v.number(),
             tags: v.array(v.string()),
             color: v.string(),
+            primaryCategory: v.optional(v.string()),
         })
     },
     returns: v.id("classTemplates"),
@@ -195,6 +210,7 @@ export const createTestClassTemplate = internalMutation({
             price: args.template.price,
             tags: args.template.tags,
             color: args.template.color,
+            primaryCategory: (args.template.primaryCategory as any) || 'wellness_center',
             allowWaitlist: true,
             isActive: true,
             bookingWindow: {
@@ -361,10 +377,13 @@ export const createTestClassInstance = internalMutation({
             throw new Error("Venue not found");
         }
 
+        const primaryCategory = template.primaryCategory ?? venue.primaryCategory ?? 'wellness_center';
+
         const instanceId = await ctx.db.insert("classInstances", {
             businessId: business._id,
             templateId: args.templateId,
             venueId: template.venueId,
+            primaryCategory,
             startTime: args.startTime,
             endTime: args.endTime,
             timezone: args.timezone || "UTC",
@@ -378,6 +397,7 @@ export const createTestClassInstance = internalMutation({
                 instructor: template.instructor,
                 imageStorageIds: template.imageStorageIds,
                 deleted: template.deleted,
+                primaryCategory,
             },
             venueSnapshot: {
                 name: venue.name, // Use the actual venue name

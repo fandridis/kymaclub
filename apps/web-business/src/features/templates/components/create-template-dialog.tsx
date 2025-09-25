@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Clock, Users, BookOpen, Tag, X, User, Palette } from 'lucide-react';
+import { Plus, Clock, Users, BookOpen, Tag, X, User, Palette, Shapes } from 'lucide-react';
 import { useMutation } from "convex/react";
 import { api } from "@repo/api/convex/_generated/api";
 import type { Doc, Id } from "@repo/api/convex/_generated/dataModel";
@@ -38,6 +38,7 @@ import { TEMPLATE_COLORS, TEMPLATE_COLORS_ARRAY } from '@repo/utils/colors';
 import { cn } from '@/lib/utils';
 import { TEMPLATE_COLORS_MAP } from '@/utils/colors';
 import { ClassDiscountRulesForm } from '@/components/class-discount-rules-form';
+import { VENUE_CATEGORIES, VENUE_CATEGORY_DISPLAY_NAMES, type VenueCategory } from '@repo/utils/constants';
 
 
 
@@ -65,6 +66,7 @@ const createTemplateSchema = z.object({
     tags: z.array(z.string()),
     color: z.string().optional(),
     venueId: z.string().min(1, "Venue is required"),
+    primaryCategory: z.string().min(1, "Category is required"),
 
     // Class Settings
     duration: z.string().min(1, "Duration is required"),
@@ -132,13 +134,16 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
             bookingWindowMaxHours: "168",
             cancellationWindowHours: "2",
             discountRules: [],
+            primaryCategory: '' as VenueCategory,
         },
     });
 
     // Auto-select venue if only one exists and no venue is currently selected
     useEffect(() => {
         if (venues.length === 1 && !form.getValues("venueId") && !isEditMode) {
-            form.setValue("venueId", venues[0]!._id);
+            const defaultVenue = venues[0]!;
+            form.setValue("venueId", defaultVenue._id);
+            form.setValue("primaryCategory", defaultVenue.primaryCategory as VenueCategory);
         }
     }, [venues, form, isEditMode]);
 
@@ -160,6 +165,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                 bookingWindowMaxHours: (classTemplate!.bookingWindow?.maxHours || 168).toString(),
                 cancellationWindowHours: classTemplate!.cancellationWindowHours?.toString() || "2",
                 discountRules: classTemplate!.discountRules || [],
+                primaryCategory: (classTemplate!.primaryCategory as VenueCategory) || '' as VenueCategory,
             });
             // Also update the discount rules state
             setDiscountRules(classTemplate!.discountRules || []);
@@ -174,6 +180,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
         // Re-auto-select venue after reset if only one exists
         if (venues.length === 1 && !isEditMode) {
             form.setValue("venueId", venues[0]!._id);
+            form.setValue("primaryCategory", venues[0]!.primaryCategory as VenueCategory);
         }
     };
 
@@ -207,6 +214,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
             const templateData = {
                 name: data.name.trim(),
                 venueId: data.venueId as Id<"venues">,
+                primaryCategory: data.primaryCategory as VenueCategory,
                 description: data.description?.trim(),
                 instructor: data.instructor.trim(),
                 duration: parseInt(data.duration),
@@ -262,6 +270,13 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
 
     const formData = form.watch();
 
+    useEffect(() => {
+        const selectedVenue = venues.find((venue) => venue._id === formData.venueId);
+        if (selectedVenue && !formData.primaryCategory) {
+            form.setValue('primaryCategory', selectedVenue.primaryCategory as VenueCategory);
+        }
+    }, [formData.venueId, formData.primaryCategory, venues, form]);
+
 
     return (
         <div className="p-8">
@@ -299,6 +314,32 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                                     </FormLabel>
                                                     <FormControl>
                                                         <Input autoFocus placeholder="e.g., Beginner Yoga" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+
+                                            <FormField control={form.control} name="primaryCategory" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="flex items-center gap-2">
+                                                        <Shapes className="h-4 w-4" />
+                                                        Class Category <span className="text-red-500">*</span>
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                                                            <FormControl>
+                                                                <SelectTrigger className="w-full">
+                                                                    <SelectValue placeholder="Select category" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                {VENUE_CATEGORIES.map((category) => (
+                                                                    <SelectItem key={category} value={category}>
+                                                                        {VENUE_CATEGORY_DISPLAY_NAMES[category]}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>

@@ -65,6 +65,7 @@ export async function createTestClassTemplate(
         price?: number;
         tags?: string[];
         color?: string;
+        primaryCategory?: string;
     } = {}
 ) {
     return await t.mutation(internal.testFunctions.createTestClassTemplate, {
@@ -81,6 +82,7 @@ export async function createTestClassTemplate(
             price: template.price || 750, // 15.00 in business currency (default)
             tags: template.tags || ["test", "fitness"],
             color: template.color || "#3B82F6",
+            primaryCategory: template.primaryCategory || 'wellness_center',
         }
     });
 }

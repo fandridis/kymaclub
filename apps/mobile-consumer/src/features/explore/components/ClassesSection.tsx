@@ -6,11 +6,11 @@ import { FilterOptions } from '../../../stores/explore-filters-store';
 import * as Location from 'expo-location';
 
 interface ClassesSectionProps {
-    searchFilters: Pick<FilterOptions, 'searchQuery' | 'categories' | 'distanceKm'>;
+    filters: FilterOptions;
     userLocation: Location.LocationObject | null;
 }
 
-export const ClassesSection = memo<ClassesSectionProps>(({ searchFilters, userLocation }) => {
+export const ClassesSection = memo<ClassesSectionProps>(({ filters, userLocation }) => {
     const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
 
     const handleDateChange = useCallback((date: string) => {
@@ -18,10 +18,10 @@ export const ClassesSection = memo<ClassesSectionProps>(({ searchFilters, userLo
     }, []);
 
     const stableFilters = useMemo(() => ({
-        searchQuery: searchFilters.searchQuery,
-        categories: searchFilters.categories,
-        distanceKm: searchFilters.distanceKm,
-    }), [searchFilters.searchQuery, searchFilters.categories, searchFilters.distanceKm]);
+        searchQuery: filters.searchQuery,
+        categories: filters.categories,
+        distanceKm: filters.distanceKm,
+    }), [filters.searchQuery, filters.categories, filters.distanceKm]);
 
     return (
         <View style={{ flex: 1 }}>

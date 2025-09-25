@@ -33,7 +33,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { Doc, Id } from "@repo/api/convex/_generated/dataModel";
 import { toast } from "sonner";
 import { useMutation, useQuery } from "convex/react";
@@ -302,9 +302,6 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
                         <Euro className="h-4 w-4 text-green-600" />
                         <span className="text-green-600">
                             €{template.price ? (template.price / 100).toFixed(2) : '10.00'}
-                            <span className="text-muted-foreground font-normal ml-1">
-                                (≈ {template.price ? Math.round(template.price / 50) : 20} credits)
-                            </span>
                         </span>
                     </div>
                 </div>

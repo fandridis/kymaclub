@@ -24,7 +24,8 @@ describe('Class Template Operations', () => {
                 waitlistCapacity: 5,
                 venueId: 'venue123' as any,
                 level: 'beginner',
-                equipment: ['mat', 'blocks']
+                equipment: ['mat', 'blocks'],
+                primaryCategory: 'wellness_center',
             }
         };
 
@@ -251,6 +252,7 @@ describe('Class Template Operations', () => {
             businessId: mockBusinessId,
             name: 'Valid Class',
             instructor: 'Valid Instructor',
+            primaryCategory: 'yoga_studio' as any,
             description: 'Description',
             duration: 60,
             capacity: 20,
@@ -322,6 +324,22 @@ describe('Class Template Operations', () => {
             
             expect(result.isValid).toBe(false);
             expect(result.missingFields).toContain('price');
+        });
+
+        it('should detect missing primary category', () => {
+            const template = { ...validTemplate, primaryCategory: undefined };
+            const result = classTemplateOperations.validateTemplateForInstanceCreation(template);
+
+            expect(result.isValid).toBe(false);
+            expect(result.missingFields).toContain('primaryCategory');
+        });
+
+        it('should detect blank primary category', () => {
+            const template = { ...validTemplate, primaryCategory: '   ' as any };
+            const result = classTemplateOperations.validateTemplateForInstanceCreation(template);
+
+            expect(result.isValid).toBe(false);
+            expect(result.missingFields).toContain('primaryCategory');
         });
 
         it('should detect multiple missing fields', () => {

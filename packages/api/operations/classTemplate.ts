@@ -32,6 +32,7 @@ const prepareCreateTemplate = (args: CreateClassTemplateArgs): CreateClassTempla
         ...(t.cancellationWindowHours !== undefined && { cancellationWindowHours: throwIfError(classValidations.validateCancellationWindowHours(t.cancellationWindowHours), 'cancellationWindowHours') }),
         ...(t.waitlistCapacity !== undefined && { waitlistCapacity: throwIfError(classValidations.validateWaitlistCapacity(t.waitlistCapacity!), 'waitlistCapacity') }),
         ...(t.discountRules !== undefined && { discountRules: throwIfError(classValidations.validateDiscountRules(t.discountRules), 'discountRules') }),
+        ...(t.primaryCategory !== undefined && { primaryCategory: throwIfError(classValidations.validatePrimaryCategory(t.primaryCategory), 'primaryCategory') }),
     };
 
     return cleanTemplate;
@@ -64,6 +65,7 @@ const prepareUpdateTemplate = (
         ...(t.cancellationWindowHours !== undefined && { cancellationWindowHours: throwIfError(classValidations.validateCancellationWindowHours(t.cancellationWindowHours), 'cancellationWindowHours') }),
         ...(t.waitlistCapacity !== undefined && { waitlistCapacity: throwIfError(classValidations.validateWaitlistCapacity(t.waitlistCapacity), 'waitlistCapacity') }),
         ...(t.discountRules !== undefined && { discountRules: throwIfError(classValidations.validateDiscountRules(t.discountRules), 'discountRules') }),
+        ...(t.primaryCategory !== undefined && { primaryCategory: throwIfError(classValidations.validatePrimaryCategory(t.primaryCategory), 'primaryCategory') }),
     };
 
     return cleanTemplate;
@@ -110,6 +112,11 @@ const validateTemplateForInstanceCreation = (
     if (!template.duration || template.duration <= 0) missingFields.push("duration");
     if (!template.capacity || template.capacity <= 0) missingFields.push("capacity");
     if (template.price === undefined || template.price < 0) missingFields.push("price");
+
+    const primaryCategory = template.primaryCategory;
+    if (!primaryCategory || !String(primaryCategory).trim()) {
+        missingFields.push("primaryCategory");
+    }
 
     return {
         isValid: missingFields.length === 0,

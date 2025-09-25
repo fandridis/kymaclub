@@ -43,15 +43,21 @@ export function ExploreFiltersModalScreen() {
 
   const availableCategories = useMemo(() => {
     if (exploreFilterData?.categories?.length) {
-      return exploreFilterData.categories
+      const filtered = exploreFilterData.categories
         .filter((category) => isExploreCategoryId(category.id))
         .map((category) => ({ id: category.id as ExploreCategoryId, label: category.label }));
+
+      if (filtered.length > 0) {
+        return filtered;
+      }
     }
 
     return EXPLORE_CATEGORY_FILTERS.map(({ id, label }) => ({ id, label }));
   }, [exploreFilterData]);
 
-  const [selectedCategories, setSelectedCategories] = useState<ExploreCategoryId[]>(filters.categories);
+  const [selectedCategories, setSelectedCategories] = useState<ExploreCategoryId[]>(
+    filters.categories.filter(isExploreCategoryId)
+  );
   const [selectedDistanceKm, setSelectedDistanceKm] = useState<number>(filters.distanceKm ?? 0);
 
   const closeModal = useCallback(() => {

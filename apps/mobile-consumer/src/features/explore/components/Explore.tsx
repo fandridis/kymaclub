@@ -158,11 +158,7 @@ export function Explore() {
                     />
                 ) : (
                     <ClassesSection
-                        searchFilters={{
-                            searchQuery: filters.searchQuery,
-                            categories: filters.categories,
-                            distanceKm: filters.distanceKm,
-                        }}
+                        filters={filters}
                         userLocation={userLocation}
                     />
                 )}
