@@ -14,9 +14,6 @@ export function useEarnings({ month, skip = false }: UseEarningsProps) {
 
     const shouldSkip = skip || !businessId || !month;
 
-    console.log("user", { user, skip, businessId, month, shouldSkip });
-
-
     const earningsData = useQuery(
         api.queries.earnings.getMonthlyEarnings,
         shouldSkip ? "skip" : { businessId, month }

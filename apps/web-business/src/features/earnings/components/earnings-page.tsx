@@ -23,8 +23,6 @@ export default function EarningsPage() {
         month: selectedMonth
     })
 
-    console.log("earningsData", earningsData)
-
     // System cut rate constant (20% as per business rules)
     const systemCutRate = 0.20
 

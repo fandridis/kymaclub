@@ -438,7 +438,7 @@ export const getVenueClassInstancesOptimized = query({
             .query("classInstances")
             .withIndex("by_venue_deleted_start_time", (q) =>
                 q.eq("venueId", args.venueId)
-                    .eq("deleted", false)
+                    .eq("deleted", undefined)
                     .gte("startTime", args.startDate)
             )
             .filter(q => q.lte(q.field("startTime"), args.endDate))
@@ -464,6 +464,7 @@ export const getVenueClassInstancesOptimized = query({
 
             return instances.map(instance => ({
                 _id: instance._id,
+                venueId: instance.venueId, // Include venueId for navigation
                 startTime: instance.startTime,
                 endTime: instance.endTime,
                 name: instance.name,
@@ -500,6 +501,7 @@ export const getVenueClassInstancesOptimized = query({
         // Return minimal fields without booking status
         return instances.map(instance => ({
             _id: instance._id,
+            venueId: instance.venueId, // Include venueId for navigation
             startTime: instance.startTime,
             endTime: instance.endTime,
             name: instance.name,

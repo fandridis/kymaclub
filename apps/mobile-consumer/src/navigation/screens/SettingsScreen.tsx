@@ -2,8 +2,10 @@ import React, { useCallback, useMemo, useRef } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Image, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useNavigation } from '@react-navigation/native';
-import { BellIcon, CreditCardIcon, ShieldIcon, CameraIcon, LogOutIcon, CrownIcon, ZapIcon } from 'lucide-react-native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { format } from 'date-fns';
+import { tz } from '@date-fns/tz';
+import { BellIcon, ShieldIcon, CameraIcon, LogOutIcon } from 'lucide-react-native';
 import { theme } from '../../theme';
 import { SettingsHeader, SettingsRow } from '../../components/Settings';
 import { SettingsGroup } from '../../components/Settings';
@@ -14,11 +16,11 @@ import { useCompressedImageUpload } from '../../hooks/useCompressedImageUpload';
 import { StackScreenHeader } from '../../components/StackScreenHeader';
 import { MembershipCard } from '../../components/MembershipCard';
 import { QuickBuyCreditsSheet } from '../../components/QuickBuyCreditsSheet';
-import { SubscriptionSheet } from '../../components/SubscriptionSheet';
 import { BottomSheetModal, BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import type { RootStackParamList } from '../index';
 
 export function SettingsScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { logout } = useAuth();
   const user = useAuthenticatedUser();
 
@@ -116,48 +118,112 @@ export function SettingsScreen() {
       .substring(0, 2);
   };
 
-  const getSubscriptionSubtitle = () => {
-    if (!subscription || subscription.status !== 'active') {
-      return 'Inactive subscription';
+  const subscriptionCopy = useMemo(() => {
+    const defaultCopy = {
+      isActive: false,
+      buyCardSubtitle: 'Start recurring buy',
+      membershipCardStatus: {
+        isActive: false,
+        label: 'No subscription yet',
+        detail: 'Save up to 20% with monthly credits',
+      } as const,
+    };
+
+    if (!subscription) {
+      return defaultCopy;
     }
 
-    // Format next billing date
-    // const nextBilling = new Date(subscription.currentPeriodEnd);
-    // const formatter = new Intl.DateTimeFormat('en-US', {
-    //   month: 'short',
-    //   day: 'numeric'
-    // });
+    const ATHENS_TZ = 'Europe/Athens';
+    const safeDateLabel = (timestamp?: number | null) => {
+      if (!timestamp) return null;
+      const date = new Date(timestamp);
+      if (Number.isNaN(date.getTime())) return null;
+      try {
+        return format(date, "d MMM", { in: tz(ATHENS_TZ) });
+      } catch {
+        return null;
+      }
+    };
 
-    // If subscription is set to cancel at period end, show cancellation message
-    if (subscription.cancelAtPeriodEnd) {
-      return `${subscription.creditAmount} credits/month`;
+    const cycleEndLabel = safeDateLabel(subscription.currentPeriodEnd);
+    const planLabel = subscription.planName ?? `${subscription.creditAmount} credits monthly`;
+    const commonCopy = {
+      buyCardSubtitle: `${subscription.creditAmount} credits/month`,
+    } as const;
+
+    switch (subscription.status) {
+      case 'active': {
+        const isCanceling = Boolean(subscription.cancelAtPeriodEnd);
+        const detail = isCanceling
+          ? (cycleEndLabel ? `Ends ${cycleEndLabel}` : planLabel)
+          : cycleEndLabel
+            ? `Renews ${cycleEndLabel}`
+            : planLabel;
+
+        return {
+          isActive: true,
+          ...commonCopy,
+          membershipCardStatus: {
+            isActive: true,
+            label: isCanceling ? 'Cancelling soon' : 'Subscription active',
+            detail,
+          },
+        };
+      }
+      case 'trialing': {
+        return {
+          isActive: true,
+          ...commonCopy,
+          membershipCardStatus: {
+            isActive: true,
+            label: 'Trial active',
+            detail: cycleEndLabel ? `Renews ${cycleEndLabel}` : planLabel,
+          },
+        };
+      }
+      case 'past_due': {
+        return {
+          isActive: false,
+          buyCardSubtitle: 'Fix payment to continue',
+          membershipCardStatus: {
+            isActive: false,
+            label: 'Payment past due',
+            detail: 'Update your payment method to keep credits flowing',
+          },
+        };
+      }
+      case 'incomplete': {
+        return {
+          isActive: false,
+          buyCardSubtitle: 'Finish checkout to activate',
+          membershipCardStatus: {
+            isActive: false,
+            label: 'Action needed',
+            detail: 'Complete checkout to activate your plan',
+          },
+        };
+      }
+      case 'unpaid': {
+        return {
+          isActive: false,
+          buyCardSubtitle: 'Reactivate subscription',
+          membershipCardStatus: {
+            isActive: false,
+            label: 'Subscription paused',
+            detail: 'Reactivate to resume monthly credits',
+          },
+        };
+      }
+      default:
+        return defaultCopy;
     }
+  }, [subscription]);
 
-    return `${subscription.creditAmount} credits/month`;
-  };
+  const creditsSheetRef = useRef<BottomSheetModal>(null);
+  const creditsSnapPoints = useMemo(() => ['70%'], []);
 
-  const isSubscriptionActiveAndNotExpiring = () => {
-    return subscription && subscription.status === 'active' && !subscription.cancelAtPeriodEnd;
-  };
-
-  const isSubscriptionActiveAndExpiring = () => {
-    return subscription && subscription.status === 'active' && subscription.cancelAtPeriodEnd;
-  };
-
-  const recurringActive = isSubscriptionActiveAndNotExpiring() || isSubscriptionActiveAndExpiring();
-  const recurringCanceling = isSubscriptionActiveAndExpiring();
-
-  const subscriptionSheetRef = useRef<BottomSheetModal>(null);
-  const quickBuySheetRef = useRef<BottomSheetModal>(null);
-  const subscriptionSnapPoints = useMemo(() => ['80%'], []);
-  const quickBuySnapPoints = useMemo(() => ['60%'], []);
-
-  const handleManageSubscription = useCallback(() => {
-    subscriptionSheetRef.current?.present();
-  }, []);
-
-  const handleBuyCredits = useCallback(() => {
-    quickBuySheetRef.current?.present();
+  const handleOpenCreditsSheet = useCallback(() => {
+    creditsSheetRef.current?.present();
   }, []);
 
   const handleSheetChange = useCallback((index: number) => {
@@ -203,14 +269,84 @@ export function SettingsScreen() {
           {/* Membership Card */}
           <MembershipCard
             creditBalance={creditBalance?.balance ?? 0}
-            recurringCreditAmount={subscription?.creditAmount}
-            isRecurringActive={recurringActive ?? false}
-            isRecurringCanceling={recurringCanceling ?? false}
             expiringCredits={expiringCredits?.expiringCredits}
-            expiringDaysUntil={expiringCredits?.daysUntilExpiry}
-            onManageSubscriptionPress={handleManageSubscription}
-            onBuyCreditsPress={handleBuyCredits}
+            daysUntilExpiry={expiringCredits?.daysUntilExpiry}
+            subscriptionStatus={subscriptionCopy.membershipCardStatus}
+            subscription={subscription}
           />
+
+          {/* Manage Credits Section */}
+          <SettingsHeader title="Manage Credits" />
+          <SettingsGroup>
+            <SettingsRow
+              title="Quick buy"
+              subtitle="Instantly get an amount of credits"
+              renderRightSide={() => (
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={handleOpenCreditsSheet}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.actionButtonText}>Buy credits</Text>
+                </TouchableOpacity>
+              )}
+            />
+            <SettingsRow
+              title="Subscription"
+              renderSubtitle={() => {
+                const isActive = subscription?.status === 'active';
+                const isCanceling = Boolean(subscription?.cancelAtPeriodEnd);
+                const isPaused = subscription?.status === 'unpaid' || subscription?.status === 'past_due';
+
+                if (isActive && !isCanceling) {
+                  return (
+                    <View style={styles.subtitleRow}>
+                      <View style={[styles.statusDot, styles.statusDotActive]} />
+                      <Text style={styles.subtitleText}>
+                        {subscription.creditAmount} credits/month
+                      </Text>
+                    </View>
+                  );
+                } else if (isPaused || isCanceling) {
+                  return (
+                    <View style={styles.subtitleRow}>
+                      <View style={[styles.statusDot, styles.statusDotInactive]} />
+                      <Text style={styles.subtitleText}>Paused</Text>
+                    </View>
+                  );
+                } else {
+                  return (
+                    <View style={styles.subtitleRow}>
+                      <View style={[styles.statusDot, styles.statusDotInactive]} />
+                      <Text style={styles.subtitleText}>Inactive</Text>
+                    </View>
+                  );
+                }
+              }}
+              renderRightSide={() => {
+                const isActive = subscription?.status === 'active';
+                const isCanceling = Boolean(subscription?.cancelAtPeriodEnd);
+                const isPaused = subscription?.status === 'unpaid' || subscription?.status === 'past_due';
+
+                let buttonText = 'Start here';
+                if (isActive && !isCanceling) {
+                  buttonText = 'Update';
+                } else if (isPaused || isCanceling) {
+                  buttonText = 'Resume';
+                }
+
+                return (
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => navigation.navigate('Subscription' as never)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.actionButtonText}>{buttonText}</Text>
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </SettingsGroup>
 
           {/* Statistics
           <View style={styles.statsCard}>
@@ -264,15 +400,9 @@ export function SettingsScreen() {
           </SettingsGroup>
         </ScrollView>
 
-        <SubscriptionSheet
-          ref={subscriptionSheetRef}
-          subscription={subscription}
-          snapPoints={subscriptionSnapPoints}
-          onChange={handleSheetChange}
-        />
         <QuickBuyCreditsSheet
-          ref={quickBuySheetRef}
-          snapPoints={quickBuySnapPoints}
+          ref={creditsSheetRef}
+          snapPoints={creditsSnapPoints}
           onChange={handleSheetChange}
         />
       </BottomSheetModalProvider>
@@ -380,6 +510,61 @@ const styles = StyleSheet.create({
     fontWeight: theme.fontWeight.medium,
   },
 
+  buyCreditsSection: {
+    marginHorizontal: 20,
+    marginBottom: 24,
+  },
+  sectionHeading: {
+    fontSize: theme.fontSize.lg,
+    fontWeight: theme.fontWeight.semibold,
+    color: theme.colors.zinc[900],
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  buyCreditsCard: {
+    backgroundColor: '#fff',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.zinc[200],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.colors.zinc[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  cardIcon: {
+    fontSize: 20,
+  },
+  cardContent: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.semibold,
+    color: theme.colors.zinc[900],
+    marginBottom: 2,
+  },
+  cardSubtitle: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.zinc[500],
+    lineHeight: 18,
+  },
+
   logoutRow: {
     backgroundColor: '#fff',
     borderBottomWidth: 1,
@@ -425,5 +610,39 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.bold,
     color: theme.colors.sky[950],
+  },
+
+  // New styles for Manage Credits section
+  actionButton: {
+    backgroundColor: theme.colors.emerald[600],
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  actionButtonText: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.medium,
+    color: 'white',
+  },
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  statusDotActive: {
+    backgroundColor: theme.colors.emerald[500],
+  },
+  statusDotInactive: {
+    backgroundColor: theme.colors.rose[500],
+  },
+  subtitleText: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.zinc[600],
+    fontWeight: theme.fontWeight.medium,
   },
 });

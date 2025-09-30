@@ -305,20 +305,20 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                             <Form {...form}>
                                 <div className="space-y-6 pb-6">
                                     <div className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <FormField control={form.control} name="name" render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="flex items-center gap-2">
-                                                        <BookOpen className="h-4 w-4" />
-                                                        Class Name <span className="text-red-500">*</span>
-                                                    </FormLabel>
-                                                    <FormControl>
-                                                        <Input autoFocus placeholder="e.g., Beginner Yoga" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )} />
+                                        <FormField control={form.control} name="name" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2">
+                                                    <BookOpen className="h-4 w-4" />
+                                                    Class Name <span className="text-red-500">*</span>
+                                                </FormLabel>
+                                                <FormControl>
+                                                    <Input autoFocus placeholder="e.g., Beginner Yoga" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
 
+                                        <div className="grid grid-cols-2 gap-4">
                                             <FormField control={form.control} name="primaryCategory" render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel className="flex items-center gap-2">

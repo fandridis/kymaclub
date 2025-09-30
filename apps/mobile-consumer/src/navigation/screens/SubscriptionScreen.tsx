@@ -3,18 +3,17 @@ import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, Linking } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useNavigation } from '@react-navigation/native';
-import { CrownIcon } from 'lucide-react-native';
-import Slider from '@react-native-community/slider';
+import { CrownIcon, DiamondIcon } from 'lucide-react-native';
 import { theme } from '../../theme';
 import { SettingsHeader, SettingsGroup } from '../../components/Settings';
 import { StackScreenHeader } from '../../components/StackScreenHeader';
 import { useAuthenticatedUser } from '../../stores/auth-store';
 import { useQuery, useAction } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
-import { calculateSubscriptionPricing } from '@repo/api/operations/payments';
+import { calculateSubscriptionPricing } from '@repo/utils/credits';
 
 // Simple currency formatter - can be made configurable later
-const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
+const formatCurrency = (amount: number) => `€${amount.toFixed(2)}`;
 
 type SubscriptionTier = {
     credits: number;
@@ -23,12 +22,12 @@ type SubscriptionTier = {
     discount: number;
 };
 
-// Generate subscription options using backend pricing logic (5-150 credits)
+// Generate subscription options using backend pricing logic
 const generateSubscriptionOptions = (): SubscriptionTier[] => {
     const options: SubscriptionTier[] = [];
 
-    // Generate options every 5 credits from 20 to 500
-    for (let credits = 20; credits <= 500; credits += 5) {
+    // Generate options every 5 credits from 5 to 500
+    for (let credits = 5; credits <= 500; credits += 5) {
         const pricing = calculateSubscriptionPricing(credits);
         options.push({
             credits: credits,
@@ -46,7 +45,7 @@ const subscriptionOptions: SubscriptionTier[] = generateSubscriptionOptions();
 export function SubscriptionScreen() {
     const navigation = useNavigation();
     const user = useAuthenticatedUser();
-    const [selectedCredits, setSelectedCredits] = useState<number>(20);
+    const [selectedCredits, setSelectedCredits] = useState<number>(25);
 
     // Get current subscription status
     const subscription = useQuery(api.queries.subscriptions.getCurrentUserSubscription);
@@ -56,28 +55,17 @@ export function SubscriptionScreen() {
     const cancelSubscription = useAction(api.actions.payments.cancelSubscription);
     const reactivateSubscription = useAction(api.actions.payments.reactivateSubscription);
 
-    // Initialize slider to current subscription credit amount when subscription loads
+    // Initialize to current subscription credit amount when subscription loads
     useEffect(() => {
         if (subscription?.creditAmount) {
-            // Check if the current subscription credit amount is in our options
-            const validOption = subscriptionOptions.find(option => option.credits === subscription.creditAmount);
-            if (validOption) {
+            // Check if the current subscription credit amount is in our card options
+            const cardOptions = [10, 25, 50, 100, 200, 500];
+            if (cardOptions.includes(subscription.creditAmount)) {
                 setSelectedCredits(subscription.creditAmount);
             }
         }
     }, [subscription?.creditAmount]);
 
-    const handleSliderChange = (value: number) => {
-        // Convert slider value (0-1) to index in subscriptionOptions array
-        const index = Math.round(value * (subscriptionOptions.length - 1));
-        setSelectedCredits(subscriptionOptions[index].credits);
-    };
-
-    const getSliderValue = (credits: number) => {
-        // Convert credits to slider value (0-1) based on position in subscriptionOptions array
-        const index = subscriptionOptions.findIndex(option => option.credits === credits);
-        return index >= 0 ? index / (subscriptionOptions.length - 1) : 0;
-    };
 
     const getCurrentOption = () => {
         return subscriptionOptions.find(option => option.credits === selectedCredits) || subscriptionOptions[3]; // Default to 20 credits
@@ -164,6 +152,7 @@ export function SubscriptionScreen() {
         );
     };
 
+
     const handleReactivateSubscription = async () => {
         // Check subscription status and what will happen
         const currentOption = getCurrentOption();
@@ -218,17 +207,17 @@ export function SubscriptionScreen() {
                 showsVerticalScrollIndicator={false}
             >
                 {/* Header Section */}
-                <View style={styles.headerSection}>
+                {/* <View style={styles.headerSection}>
                     <Text style={styles.screenSubtitle}>
                         {isSubscriptionActive()
                             ? 'Manage your current subscription'
                             : 'Get access to unlimited classes with credits every month'
                         }
                     </Text>
-                </View>
+                </View> */}
 
-                {/* Current Subscription Status Card */}
-                <View style={styles.statusCard}>
+
+                {/* <View style={styles.statusCard}>
                     <View style={styles.statusHeader}>
                         <CrownIcon size={20} color={theme.colors.emerald[600]} />
                         <Text style={styles.statusTitle}>
@@ -255,52 +244,87 @@ export function SubscriptionScreen() {
                             </TouchableOpacity>
                         </View>
                     )}
-                </View>
+                </View> */}
 
                 {/* Plan Selection Card */}
                 <View style={styles.planCard}>
                     <View style={styles.planHeader}>
-                        <Text style={styles.planTitle}>Choose Your Plan</Text>
-                        <Text style={styles.planSubtitle}>Adjust the slider to find the perfect fit</Text>
-                    </View>
-
-                    {/* Selection Display */}
-                    <View style={styles.selectionDisplay}>
-                        {/* Discount Badge */}
-                        {getCurrentOption().discount > 0 && (
-                            <View style={styles.discountBadge}>
-                                <Text style={styles.discountText}>
-                                    {getCurrentOption().discount}% off
+                        {!subscription?.cancelAtPeriodEnd && subscription?.status === 'active'
+                            ? <>
+                                <View style={styles.planContentRow}>
+                                    <View style={styles.planTextColumn}>
+                                        <Text style={styles.planTitle}>
+                                            {`${subscription?.creditAmount} credits/month`}
+                                        </Text>
+                                        <Text style={styles.planSubtitle}>
+                                            {`Next billing: ${getNextBillingDate()}`}
+                                        </Text>
+                                    </View>
+                                    <TouchableOpacity
+                                        style={styles.cancelButton}
+                                        onPress={handleCancelSubscription}
+                                    >
+                                        <Text style={styles.cancelButtonText}>
+                                            Cancel
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </>
+                            : <>
+                                <Text style={styles.planTitle}>
+                                    {`No active plan`}
                                 </Text>
-                            </View>
-                        )}
+                                <Text style={styles.planSubtitle}>
+                                    {`Choose one of the following plans to start your subscription.`}
+                                </Text>
+                            </>
 
-                        <Text style={styles.selectionCredits}>{selectedCredits}</Text>
-                        <Text style={styles.selectionLabel}>credits per month</Text>
-                        <View style={styles.priceRow}>
-                            <Text style={styles.selectionPrice}>{formatCurrency(getCurrentOption().price)}</Text>
-                            <Text style={styles.priceUnit}>/month</Text>
-                        </View>
-                        <Text style={styles.pricePerCredit}>{formatCurrency(getCurrentOption().pricePerCredit)} per credit</Text>
+                        }
                     </View>
 
-                    {/* Slider Section */}
-                    <View style={styles.sliderSection}>
-                        <View style={styles.sliderLabels}>
-                            <Text style={styles.sliderLabelText}>20</Text>
-                            <Text style={styles.sliderLabelText}>500</Text>
+                    {/* Credit Selection Cards */}
+                    <View style={styles.cardsSection}>
+                        <View style={styles.cardsGrid}>
+                            {[10, 25, 50, 100, 200, 500].map(credits => {
+                                const option = subscriptionOptions.find(opt => opt.credits === credits);
+                                if (!option) return null;
+
+                                const isSelected = selectedCredits === credits;
+
+                                return (
+                                    <TouchableOpacity
+                                        key={credits}
+                                        style={[styles.subscriptionCard, isSelected && styles.subscriptionCardSelected]}
+                                        onPress={() => setSelectedCredits(credits)}
+                                        activeOpacity={0.85}
+                                    >
+                                        <View style={styles.cardHeader}>
+                                            <DiamondIcon size={24} color={theme.colors.emerald[500]} />
+                                        </View>
+
+                                        <Text style={styles.cardCredits}>{credits}</Text>
+                                        <Text style={styles.cardCreditsSubtext}>credits/month</Text>
+                                        <Text style={styles.cardPrice}>{formatCurrency(option.price)}</Text>
+
+                                        <View
+                                            style={[
+                                                styles.badge,
+                                                option.discount > 0 ? styles.badgeDiscount : styles.badgeNeutral,
+                                            ]}
+                                        >
+                                            <Text
+                                                style={[
+                                                    styles.badgeText,
+                                                    option.discount > 0 ? styles.badgeTextDiscount : styles.badgeTextNeutral,
+                                                ]}
+                                            >
+                                                {option.discount > 0 ? `${option.discount}% off` : 'Full price'}
+                                            </Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            })}
                         </View>
-                        <Slider
-                            style={styles.slider}
-                            value={getSliderValue(selectedCredits)}
-                            onValueChange={handleSliderChange}
-                            minimumValue={0}
-                            maximumValue={1}
-                            step={1 / (subscriptionOptions.length - 1)}
-                            minimumTrackTintColor={theme.colors.emerald[500]}
-                            maximumTrackTintColor={theme.colors.zinc[200]}
-                            thumbTintColor={theme.colors.emerald[600]}
-                        />
                     </View>
 
                     {/* Action Buttons */}
@@ -447,8 +471,14 @@ const styles = StyleSheet.create({
     planHeader: {
         padding: theme.spacing.lg,
         paddingBottom: theme.spacing.md,
-        borderBottomWidth: 1,
-        borderBottomColor: theme.colors.zinc[100],
+    },
+    planContentRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    planTextColumn: {
+        flex: 1,
     },
     planTitle: {
         fontSize: theme.fontSize.lg,
@@ -459,6 +489,19 @@ const styles = StyleSheet.create({
     planSubtitle: {
         fontSize: theme.fontSize.sm,
         color: theme.colors.zinc[600],
+    },
+    cancelButton: {
+        backgroundColor: 'transparent',
+        borderWidth: 1,
+        borderColor: theme.colors.rose[300],
+        paddingHorizontal: theme.spacing.md,
+        paddingVertical: theme.spacing.sm,
+        borderRadius: 8,
+    },
+    cancelButtonText: {
+        fontSize: theme.fontSize.sm,
+        fontWeight: theme.fontWeight.medium,
+        color: theme.colors.rose[600],
     },
 
     // Selection Display
@@ -518,24 +561,87 @@ const styles = StyleSheet.create({
         fontWeight: theme.fontWeight.medium,
     },
 
-    // Slider Section
-    sliderSection: {
+    // Cards Section
+    cardsSection: {
         paddingHorizontal: theme.spacing.lg,
         paddingBottom: theme.spacing.lg,
     },
-    sliderLabels: {
+    cardsGrid: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         justifyContent: 'space-between',
-        marginBottom: theme.spacing.sm,
     },
-    sliderLabelText: {
+    subscriptionCard: {
+        width: '48%',
+        backgroundColor: '#fff',
+        paddingVertical: 20,
+        paddingHorizontal: 18,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: theme.colors.zinc[200],
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 3,
+        minHeight: 160,
+        marginBottom: theme.spacing.md,
+    },
+    subscriptionCardSelected: {
+        borderColor: theme.colors.emerald[500],
+        shadowOpacity: 0.12,
+    },
+    cardHeader: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 8,
+    },
+    cardCredits: {
+        fontSize: theme.fontSize['2xl'],
+        fontWeight: theme.fontWeight.bold,
+        color: theme.colors.zinc[900],
+        textAlign: 'center',
+        marginBottom: 2,
+    },
+    cardCreditsSubtext: {
         fontSize: theme.fontSize.xs,
-        color: theme.colors.zinc[500],
         fontWeight: theme.fontWeight.medium,
+        color: theme.colors.zinc[500],
+        textAlign: 'center',
+        marginBottom: 8,
     },
-    slider: {
-        width: '100%',
-        height: 40,
+    cardPrice: {
+        fontSize: theme.fontSize.sm,
+        fontWeight: theme.fontWeight.medium,
+        color: theme.colors.zinc[500],
+        textAlign: 'center',
+        marginBottom: 12,
+    },
+    badge: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 999,
+        borderWidth: 1,
+    },
+    badgeDiscount: {
+        backgroundColor: theme.colors.emerald[50],
+        borderColor: theme.colors.emerald[200],
+    },
+    badgeNeutral: {
+        backgroundColor: theme.colors.zinc[100],
+        borderColor: theme.colors.zinc[200],
+    },
+    badgeText: {
+        fontSize: theme.fontSize.xs,
+        fontWeight: theme.fontWeight.semibold,
+    },
+    badgeTextDiscount: {
+        color: theme.colors.emerald[700],
+    },
+    badgeTextNeutral: {
+        color: theme.colors.zinc[600],
     },
 
     // Action Section

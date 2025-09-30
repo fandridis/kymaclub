@@ -96,14 +96,14 @@ export const CREDIT_PACKS: CreditPack[] = [
  * @example
  * // No discount tier
  * const tier1 = calculateSubscriptionPricing(50);
- * // Returns: { credits: 50, priceInCents: 2500, pricePerCredit: 0.50, discount: 0 }
+ * // Returns: { credits: 50, priceInCents: 3250, pricePerCredit: 0.65, discount: 0 }
  * 
  * @example
  * // 3% discount tier
  * const tier2 = calculateSubscriptionPricing(150);
- * // Returns: { credits: 150, priceInCents: 7275, pricePerCredit: 0.485, discount: 3 }
+ * // Returns: { credits: 150, priceInCents: 9458, pricePerCredit: 0.631, discount: 3 }
  * 
- * @business_rule Base cost: 50 cents per credit (CREDITS_TO_CENTS_RATIO)
+ * @business_rule Base price: 0.65 euros per credit (same as one-time packs)
  * @business_rule Discounts start at 100 credits and increase every 50 credits
  */
 // ADR-010: Subscription Pricing Tier Structure
@@ -112,7 +112,7 @@ export const CREDIT_PACKS: CreditPack[] = [
 // Alternative considered: Linear discount (rejected - less incentive for volume)
 // Business impact: 500 credit limit supports enterprise users
 export function calculateSubscriptionPricing(credits: number): PricingTier {
-  const basePricePerCredit = 0.50; // Base price per credit
+  const basePricePerCredit = 0.65; // Base price per credit (same as one-time packs)
   let discount = 0;
 
   // Determine discount tier based on credit amount

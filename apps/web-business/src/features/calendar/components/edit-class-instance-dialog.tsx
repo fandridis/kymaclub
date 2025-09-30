@@ -335,8 +335,6 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
 
     const formData = form.watch();
 
-    console.log('class instance', instance);
-
     return (
         <>
             <Drawer direction={isMobile ? "bottom" : "right"} open={open} onOpenChange={(isOpen) => {

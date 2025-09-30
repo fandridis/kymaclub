@@ -32,7 +32,7 @@ const formatCurrency = (amount: number) => `${amount.toFixed(2)} €`;
 
 export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyCreditsSheetProps>(
   ({ snapPoints, onChange }, ref) => {
-    const resolvedSnapPoints = useMemo(() => snapPoints ?? ['60%'], [snapPoints]);
+    const resolvedSnapPoints = useMemo(() => snapPoints ?? ['70%'], [snapPoints]);
 
     const [selectedCredits, setSelectedCredits] = useState<number>(CREDIT_PACKS[0]?.credits ?? 10);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -40,15 +40,17 @@ export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyC
     const createOneTimeCheckout = useAction(api.actions.payments.createOneTimeCreditCheckout);
 
     const packsForDisplay: DisplayPack[] = useMemo(() => {
-      return CREDIT_PACKS.map(pack => {
-        const basePrice = Number(pack.price.toFixed(2));
-        const baseDiscount = pack.discount ?? 0;
+      return CREDIT_PACKS.map((pack, index) => {
+        // Keep original one-time pricing
+        const price = Number(pack.price.toFixed(2));
+        const discount = pack.discount ?? 0;
+        const badgeLabel = discount ? `${discount}% off` : 'Full price';
 
         return {
           credits: pack.credits,
-          price: basePrice,
-          badgeLabel: baseDiscount ? `${baseDiscount}% off` : 'Full price',
-          isDiscounted: Boolean(baseDiscount),
+          price,
+          badgeLabel,
+          isDiscounted: Boolean(discount),
         };
       });
     }, []);
@@ -74,7 +76,7 @@ export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyC
           Alert.alert('Error', 'Unable to start checkout. Please try again later.');
         }
       } catch (error) {
-        console.error('quick buy error', error);
+        console.error('purchase error', error);
         Alert.alert('Error', 'Something went wrong. Please try again.');
       } finally {
         setIsProcessing(false);
@@ -96,8 +98,10 @@ export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyC
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.sheetTitle}>Buy credits</Text>
-            <Text style={styles.sheetSubtitle}>Top-up your credits balance</Text>
+            <Text style={styles.sheetTitle}>Buy Credits</Text>
+            <Text style={styles.sheetSubtitle}>
+              Top-up your credits balance instantly
+            </Text>
 
             <ScrollView
               horizontal
@@ -115,7 +119,7 @@ export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyC
                     activeOpacity={0.85}
                   >
                     <View style={styles.cardHeader}>
-                      <DiamondIcon size={16} color={theme.colors.emerald[500]} />
+                      <DiamondIcon size={24} color={theme.colors.emerald[500]} />
                     </View>
 
                     <Text style={styles.cardCredits}>{pack.credits}</Text>
@@ -141,7 +145,9 @@ export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyC
               })}
             </ScrollView>
 
-            <Text style={styles.finePrint}>Credits are valid for 3 months after issuing.</Text>
+            <Text style={styles.finePrint}>
+              Credits are valid for 3 months after issuing.
+            </Text>
           </ScrollView>
 
           <TouchableOpacity

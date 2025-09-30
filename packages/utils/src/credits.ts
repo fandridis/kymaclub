@@ -402,3 +402,46 @@ export const formatEuros = (
 ): string => {
     return creditsToFormattedEuros(credits, locale);
 };
+
+/**
+ * Subscription pricing constants and utilities
+ */
+export const SUBSCRIPTION_BASE_PRICE_PER_CREDIT = 0.65; // Base price per credit for subscriptions
+
+/**
+ * Calculates subscription pricing with tiered discounts
+ * @param credits - Number of credits per month
+ * @returns Object with pricing details
+ */
+export const calculateSubscriptionPricing = (credits: number) => {
+    validateAmount(credits, 'Credits');
+
+    const basePricePerCredit = SUBSCRIPTION_BASE_PRICE_PER_CREDIT;
+    let discount = 0;
+
+    // Determine discount tier based on credit amount
+    if (credits >= 450) {
+        discount = 10; // 450-500 credits: 10% discount
+    } else if (credits >= 300) {
+        discount = 7;  // 300-445 credits: 7% discount
+    } else if (credits >= 200) {
+        discount = 5;  // 200-295 credits: 5% discount
+    } else if (credits >= 100) {
+        discount = 3;  // 100-195 credits: 3% discount
+    } else {
+        discount = 0;  // Up to 95 credits: no discount
+    }
+
+    // Calculate discounted price per credit
+    const pricePerCredit = basePricePerCredit * (1 - discount / 100);
+    const totalPrice = credits * pricePerCredit;
+    const priceInCents = Math.round(totalPrice * 100);
+
+    return {
+        credits,
+        priceInCents,
+        pricePerCredit: Number(pricePerCredit.toFixed(3)),
+        discount,
+        basePricePerCredit
+    };
+};

@@ -4,46 +4,46 @@ import { ERROR_CODES } from "../utils/errorCodes";
 import { BOOKING_LIMITS } from "../utils/constants";
 
 export const canBookClass = (
-    instance: Doc<"classInstances">,
-    template: Doc<"classTemplates">,
-    currentTime: number = Date.now()
+  instance: Doc<"classInstances">,
+  template: Doc<"classTemplates">,
+  currentTime: number = Date.now()
 ): boolean => {
-    const hoursUntilClass = (instance.startTime - currentTime) / (1000 * 60 * 60);
+  const hoursUntilClass = (instance.startTime - currentTime) / (1000 * 60 * 60);
 
-    // Mock booking window rules (e.g., can't book within 1 hour of class)
-    const minAdvanceHours = 1;
-    const maxAdvanceHours = 168; // 7 days
+  // Mock booking window rules (e.g., can't book within 1 hour of class)
+  const minAdvanceHours = 1;
+  const maxAdvanceHours = 168; // 7 days
 
-    if (hoursUntilClass < minAdvanceHours) {
-        return false;
-    }
+  if (hoursUntilClass < minAdvanceHours) {
+    return false;
+  }
 
-    if (hoursUntilClass > maxAdvanceHours) {
-        return false;
-    }
+  if (hoursUntilClass > maxAdvanceHours) {
+    return false;
+  }
 
-    return true;
+  return true;
 };
 
 export const canCancelBooking = (
-    instance: Doc<"classInstances">,
-    template: Doc<"classTemplates">,
-    currentTime: number = Date.now()
+  instance: Doc<"classInstances">,
+  template: Doc<"classTemplates">,
+  currentTime: number = Date.now()
 ): { canCancel: boolean; refundPercentage: number } => {
 
-    const hoursUntilClass = (instance.startTime - currentTime) / (1000 * 60 * 60);
-    const cancellationWindowHours = template.cancellationWindowHours;
+  const hoursUntilClass = (instance.startTime - currentTime) / (1000 * 60 * 60);
+  const cancellationWindowHours = template.cancellationWindowHours;
 
 
-    if (hoursUntilClass <= 0) {
-        return { canCancel: false, refundPercentage: 0 };
-    }
+  if (hoursUntilClass <= 0) {
+    return { canCancel: false, refundPercentage: 0 };
+  }
 
-    if (hoursUntilClass >= cancellationWindowHours) {
-        return { canCancel: true, refundPercentage: 1.0 };
-    } else {
-        return { canCancel: true, refundPercentage: 0.5 };
-    }
+  if (hoursUntilClass >= cancellationWindowHours) {
+    return { canCancel: true, refundPercentage: 1.0 };
+  } else {
+    return { canCancel: true, refundPercentage: 0.5 };
+  }
 };
 
 /**
@@ -76,10 +76,10 @@ export function countActiveBookings(
   return bookings.filter(booking => {
     // Must be pending status
     if (booking.status !== "pending") return false;
-    
+
     // Must not be deleted
     if (booking.deleted === true) return false;
-    
+
     // Must have future start time
     const startTime = booking.classInstanceSnapshot?.startTime;
     return startTime && startTime > currentTime;
@@ -108,12 +108,12 @@ export function validateActiveBookingsLimit(
   excludeBookingId?: string
 ): void {
   // Filter out the excluded booking if specified
-  const filteredBookings = excludeBookingId 
+  const filteredBookings = excludeBookingId
     ? bookings.filter(b => b._id !== excludeBookingId)
     : bookings;
-    
+
   const activeCount = countActiveBookings(filteredBookings, currentTime);
-  
+
   if (activeCount >= BOOKING_LIMITS.MAX_ACTIVE_BOOKINGS_PER_USER) {
     throw new ConvexError({
       message: `You can only have ${BOOKING_LIMITS.MAX_ACTIVE_BOOKINGS_PER_USER} active bookings at the same time. Please cancel an existing booking before booking a new class.`,
@@ -135,7 +135,6 @@ export function validateActiveBookingsLimit(
  * @example
  * ```typescript
  * const activeBookings = getActiveBookingsDetails(userBookings);
- * console.log(`You have ${activeBookings.length} active bookings`);
  * ```
  */
 export interface ActiveBookingSummary {
@@ -154,7 +153,7 @@ export function getActiveBookingsDetails(
       // Same filter logic as countActiveBookings
       if (booking.status !== "pending") return false;
       if (booking.deleted === true) return false;
-      
+
       const startTime = booking.classInstanceSnapshot?.startTime;
       return startTime && startTime > currentTime;
     })
@@ -168,9 +167,9 @@ export function getActiveBookingsDetails(
 }
 
 export const bookingRules = {
-    canBookClass,
-    canCancelBooking,
-    countActiveBookings,
-    validateActiveBookingsLimit,
-    getActiveBookingsDetails,
+  canBookClass,
+  canCancelBooking,
+  countActiveBookings,
+  validateActiveBookingsLimit,
+  getActiveBookingsDetails,
 };
