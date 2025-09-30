@@ -32,3 +32,6 @@ This is a **multi-tenant SaaS booking platform** with a monorepo structure manag
 - **Real-time** booking management with Convex subscriptions
 - **Timezone-aware** scheduling (Greece/Europe timezone priority)
 - **Credit system** with 1 credit = 50 cents spending value
+
+## NOTES
+When you are instructed to check the browser, you should use the google chrome devtools mcp for that.

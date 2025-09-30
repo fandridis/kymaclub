@@ -344,15 +344,15 @@ export const getUserExpiringCredits = query({
   handler: async (ctx, args) => {
     // Mock implementation for now - will be properly implemented later
     // when the credit expiration system is built
-    
+
     // For demo purposes, show that 15 credits expire in 12 days for users with credits
     const userBalance = await ctx.db
       .query("creditTransactions")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .collect();
-    
+
     const totalCredits = userBalance.reduce((sum, tx) => sum + tx.amount, 0);
-    
+
     if (totalCredits > 0) {
       return {
         expiringCredits: Math.min(15, totalCredits),
@@ -360,7 +360,7 @@ export const getUserExpiringCredits = query({
         earliestExpiry: Date.now() + (12 * 24 * 60 * 60 * 1000)
       };
     }
-    
+
     return null;
   },
 });

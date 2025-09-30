@@ -1024,7 +1024,6 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_class_instance", ["classInstanceId"])
     .index("by_user_class", ["userId", "classInstanceId"])
-    .index("by_business_status", ["businessId", "status"])
     .index("by_credit_transaction", ["creditTransactionId"])
     .index("by_discount_source", ["appliedDiscount.source"])
     .index("by_user_start_time", ["userId", "classInstanceSnapshot.startTime"])
@@ -1033,7 +1032,8 @@ export default defineSchema({
     .index("by_business_created", ["businessId", "createdAt"])
     .index("by_user_status_created", ["userId", "status", "createdAt"])
     .index("by_class_instance_status", ["classInstanceId", "status"])
-    .index("by_user_status_start_time", ["userId", "status", "classInstanceSnapshot.startTime"]),
+    .index("by_user_status_start_time", ["userId", "status", "classInstanceSnapshot.startTime"])
+    .index("by_status_deleted_start_time", ["status", "deleted", "classInstanceSnapshot.startTime"]),
 
   /**
    * Enhanced Credit Transactions - One record per credit operation (includes purchases)
@@ -1127,7 +1127,6 @@ export default defineSchema({
     .index("by_business_last_message", ["businessId", "lastMessageAt"])
     .index("by_user_last_message", ["userId", "lastMessageAt"])
     .index("by_venue_status", ["venueId", "status"])
-    .index("by_business_status", ["businessId", "status"])
     .index("by_venue_deleted_last_message", ["venueId", "deleted", "lastMessageAt"])
     .index("by_business_deleted_status", ["businessId", "deleted", "status"]),
 

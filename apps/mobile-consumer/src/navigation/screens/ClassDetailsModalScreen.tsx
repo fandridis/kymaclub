@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import { Image } from 'expo-image';
-import { Calendar1Icon, ClockIcon, CalendarOffIcon, DiamondIcon, ArrowLeftIcon, CheckIcon, CheckCircleIcon } from 'lucide-react-native';
-import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
+import { Calendar1Icon, ClockIcon, CalendarOffIcon, DiamondIcon, ArrowLeftIcon, CheckCircleIcon } from 'lucide-react-native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import Carousel from 'react-native-reanimated-carousel';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
@@ -300,22 +300,13 @@ export function ClassDetailsModalScreen() {
         });
     };
 
-    const handleGoToBookings = () => {
-        navigation.dispatch(
-            CommonActions.reset({
-                index: 0,
-                routes: [
-                    {
-                        name: 'Home',
-                        params: { screen: 'Bookings' }
-                    }
-                ],
-            })
-        );
+    const handleViewTicket = () => {
+        if (!existingBooking) return;
+        navigation.navigate('BookingTicketModal', { booking: existingBooking });
     };
 
     const handleCancelBooking = () => {
-        if (!existingBooking || existingBooking.status !== 'pending') {
+        if (!existingBooking || (existingBooking.status !== 'pending' && existingBooking.status !== 'completed')) {
             return;
         }
 
@@ -712,21 +703,23 @@ export function ClassDetailsModalScreen() {
                     {/* Sticky Button - Book or Already Attending */}
                     <View style={styles.stickyButtonContainer}>
                         {existingBooking ? (
-                            existingBooking.status === "pending" ? (
+                            existingBooking.status === "pending" || existingBooking.status === "completed" ? (
                                 /* Already Attending Container */
                                 <View style={styles.alreadyAttendingContainer}>
                                     <BlurView intensity={20} style={[StyleSheet.absoluteFill, styles.blurContainer]} />
                                     <View style={styles.attendingTitleContainer}>
                                         <CheckCircleIcon size={22} color={theme.colors.emerald[600]} />
-                                        <Text style={styles.alreadyAttendingTitle}>You're Attending</Text>
+                                        <Text style={styles.alreadyAttendingTitle}>
+                                            {existingBooking.status === "completed" ? "Checked In" : "You're Attending"}
+                                        </Text>
                                     </View>
                                     <View style={styles.attendingActionsRow}>
                                         <TouchableOpacity
                                             style={styles.attendingPrimaryButton}
-                                            onPress={handleGoToBookings}
+                                            onPress={handleViewTicket}
                                             activeOpacity={0.85}
                                         >
-                                            <Text style={styles.attendingPrimaryText}>View bookings</Text>
+                                            <Text style={styles.attendingPrimaryText}>Ticket</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity
                                             style={[styles.attendingSecondaryButton, isCancelling && styles.attendingSecondaryButtonDisabled]}
@@ -763,16 +756,15 @@ export function ClassDetailsModalScreen() {
                                     <View style={styles.statusContainer}>
                                         <BlurView intensity={20} style={[StyleSheet.absoluteFill, styles.blurContainer]} />
                                         <View style={styles.statusTitleContainer}>
-                                            {existingBooking.status === "completed" &&
-                                                <>
-                                                    <CheckIcon size={20} color={styles.statusTitle.color} />
-                                                    <Text style={styles.statusTitle}>Completed</Text>
-                                                </>
-                                            }
                                             {existingBooking.status === "cancelled_by_business" && <Text style={styles.statusTitle}>✗ Cancelled by studio</Text>}
                                             {existingBooking.status === "no_show" && <Text style={styles.statusTitle}>⚠ No show</Text>}
                                         </View>
-                                        <Text style={styles.statusSubtext}>You cannot book this class again</Text>
+                                        <Text style={styles.statusSubtext}>
+                                            {existingBooking.status === "no_show"
+                                                ? "You didn't show up for this class"
+                                                : "You cannot book this class again"
+                                            }
+                                        </Text>
                                     </View>
                                 )
                             )

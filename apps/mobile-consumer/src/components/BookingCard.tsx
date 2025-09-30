@@ -18,11 +18,13 @@ const ATHENS_TZ = 'Europe/Athens';
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Confirmed',
+  completed: 'Checked In',
   attended: 'Attended',
   waitlist: 'Waitlisted',
   cancelled_by_consumer: 'Cancelled by you',
   cancelled_by_business: 'Cancelled by studio',
   cancelled_by_business_rebookable: 'Cancelled by studio',
+  no_show: 'No Show',
 };
 
 const getStatusLabel = (status?: string): string | null => {
@@ -36,6 +38,7 @@ const getStatusLabel = (status?: string): string | null => {
 const getStatusVariant = (status?: string): 'success' | 'warning' | 'danger' | 'info' => {
   switch (status) {
     case 'pending':
+    case 'completed':
     case 'attended':
       return 'success';
     case 'waitlist':
@@ -43,6 +46,7 @@ const getStatusVariant = (status?: string): 'success' | 'warning' | 'danger' | '
     case 'cancelled_by_consumer':
     case 'cancelled_by_business':
     case 'cancelled_by_business_rebookable':
+    case 'no_show':
       return 'danger';
     default:
       return 'info';
@@ -87,8 +91,10 @@ export const BookingCard: React.FC<BookingCardProps> = ({
         return styles.status_info;
     }
   }, [statusVariant]);
-  const isUpcoming = booking.status === 'pending';
-  const shouldShowStatus = statusLabel && !isUpcoming;
+  // Show footer icons for pending and completed bookings in upcoming tab
+  const isUpcoming = booking.status === 'pending' || booking.status === 'completed';
+  // Show status badge for completed bookings
+  const shouldShowStatus = statusLabel && booking.status !== 'pending';
 
   return (
     <View style={styles.shadowContainer}>
@@ -111,8 +117,16 @@ export const BookingCard: React.FC<BookingCardProps> = ({
           )}
 
           {shouldShowStatus && (
-            <View style={[styles.statusPill, statusStyle]}>
-              <Text style={styles.statusText}>{statusLabel}</Text>
+            <View style={styles.statusContainer}>
+              <View style={[styles.statusPill, statusStyle]}>
+                <Text style={styles.statusText}>{statusLabel}</Text>
+              </View>
+              {booking.cancelReason && (
+                booking.status === 'cancelled_by_business' ||
+                booking.status === 'cancelled_by_business_rebookable'
+              ) && (
+                  <Text style={styles.cancelReasonText}>Business note: {booking.cancelReason}</Text>
+                )}
             </View>
           )}
 
@@ -227,6 +241,9 @@ const styles = StyleSheet.create({
   footerIconButtonDisabled: {
     opacity: 0.5,
   },
+  statusContainer: {
+    gap: 6,
+  },
   statusPill: {
     alignSelf: 'flex-start',
     paddingHorizontal: 10,
@@ -239,6 +256,12 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  cancelReasonText: {
+    fontSize: 13,
+    color: theme.colors.zinc[600],
+    fontStyle: 'italic',
+    lineHeight: 18,
   },
   status_success: {
     backgroundColor: theme.colors.emerald[500],

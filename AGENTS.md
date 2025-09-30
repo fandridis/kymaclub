@@ -7,13 +7,11 @@ Read these sections before starting any task:
 - Backend API — see section below
 
 Quick checklist for agents:
-- Understand business rules: skim Backend START_HERE first for core policies (credits, bookings, timezone).
+- Understand business rules
 - Use real-time patterns: Convex subscriptions for live data; avoid stale reads.
 - Payment safety: never allocate credits before webhook-confirmed payments.
 - Timezone: display times in business/Greece timezone as documented.
 - Follow repo commands: install/build/lint/test using pnpm and Turbo.
-
-The detailed repository guidelines remain below after the START_HERE sections.
 
 # 📱 Mobile Consumer App
 
@@ -537,7 +535,6 @@ This is the **Convex backend API** providing real-time database and serverless f
 
 ```
 packages/api/
-├── START_HERE.md              # This comprehensive backend guide
 ├── convex/                    # Convex backend functions
 │   ├── schema.ts             # Complete database schema
 │   ├── auth.config.ts        # Authentication configuration

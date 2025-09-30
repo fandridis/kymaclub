@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useEffect } from 'react';
+import React, { useCallback, useMemo, useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +14,8 @@ import ReAnimated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
+import { useMutation } from 'convex/react';
+import { api } from '@repo/api/convex/_generated/api';
 
 import { theme } from '../../theme';
 import { SwipeToConfirmButton } from '../../components/SwipeToConfirmButton';
@@ -43,24 +45,57 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
   const insets = useSafeAreaInsets();
   const booking = route.params?.booking;
   const rotation = useSharedValue(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const completeBookingMutation = useMutation(api.mutations.bookings.completeBooking);
 
   const handleClose = useCallback(() => {
     navigation.goBack();
   }, [navigation]);
 
-  const handleConfirm = useCallback(() => {
-    Alert.alert(
-      'Check-in sent',
-      "We let the studio know that you're here. The studio will confirm shortly.",
-      [
-        {
-          text: 'OK',
-          style: 'default',
-          onPress: () => navigation.goBack(),
-        },
-      ]
-    );
-  }, [navigation]);
+  const handleConfirm = useCallback(async () => {
+    if (!booking?._id || isSubmitting) return;
+
+    try {
+      setIsSubmitting(true);
+      await completeBookingMutation({ bookingId: booking._id });
+
+      Alert.alert(
+        'Check-in confirmed!',
+        "You've successfully checked in. Enjoy your class!",
+        [
+          {
+            text: 'OK',
+            style: 'default',
+            onPress: () => navigation.goBack(),
+          },
+        ]
+      );
+    } catch (error: any) {
+      console.error('Failed to complete booking:', error);
+
+      // Handle specific error messages from the backend
+      const errorMessage = error?.data?.message || error?.message || 'Unknown error';
+
+      let title = 'Check-in failed';
+      let message = 'There was an error confirming your check-in. Please try again or contact the studio.';
+
+      if (errorMessage.includes('Too early to check in')) {
+        title = 'Too early';
+        message = 'Check-in opens 30 minutes before class starts. Please try again later.';
+      } else if (errorMessage.includes('Check-in window has closed')) {
+        title = 'Check-in closed';
+        message = 'The check-in window has closed. Check-in must be done within 30 minutes after class starts.';
+      } else if (errorMessage.includes('Cannot complete booking')) {
+        title = 'Already processed';
+        message = 'This booking has already been processed or cancelled.';
+      }
+
+      Alert.alert(title, message, [{ text: 'OK', style: 'default' }]);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [booking?._id, isSubmitting, completeBookingMutation, navigation]);
 
   const safeBottomPadding = Math.max(insets.bottom, 16);
 
@@ -155,7 +190,70 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
     return booking.status.replace(/_/g, ' ').toUpperCase();
   }, [booking.status]);
 
-  const isSwipeDisabled = booking.status ? booking.status !== 'pending' : false;
+  const formatTimeUntil = useCallback((milliseconds: number): string => {
+    const totalMinutes = Math.ceil(milliseconds / (60 * 1000));
+
+    if (totalMinutes < 1) {
+      return 'less than a minute';
+    }
+
+    if (totalMinutes < 60) {
+      return `${totalMinutes} ${totalMinutes === 1 ? 'minute' : 'minutes'}`;
+    }
+
+    const days = Math.floor(totalMinutes / (24 * 60));
+    const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+    const minutes = totalMinutes % 60;
+
+    const parts: string[] = [];
+
+    if (days > 0) {
+      parts.push(`${days} ${days === 1 ? 'day' : 'days'}`);
+    }
+
+    if (hours > 0) {
+      parts.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
+    }
+
+    if (minutes > 0 || parts.length === 0) {
+      parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
+    }
+
+    return parts.join(', ');
+  }, []);
+
+  const checkInWindowInfo = useMemo(() => {
+    const now = Date.now();
+    const classStartTime = booking.classInstanceSnapshot?.startTime;
+
+    if (!classStartTime) {
+      return { isInWindow: false, message: 'Class time unavailable' };
+    }
+
+    const thirtyMinutesInMs = 30 * 60 * 1000;
+    const earliestCheckIn = classStartTime - thirtyMinutesInMs;
+    const latestCheckIn = classStartTime + thirtyMinutesInMs;
+
+    if (now < earliestCheckIn) {
+      const timeUntilOpen = earliestCheckIn - now;
+      const formattedTime = formatTimeUntil(timeUntilOpen);
+      return {
+        isInWindow: false,
+        message: `Check-in opens in ${formattedTime}`
+      };
+    }
+
+    if (now > latestCheckIn) {
+      return {
+        isInWindow: false,
+        message: 'Check-in window has closed'
+      };
+    }
+
+    return { isInWindow: true, message: 'Drag to check in' };
+  }, [booking.classInstanceSnapshot?.startTime, formatTimeUntil]);
+
+  const isSwipeDisabled = booking.status !== 'pending' || !checkInWindowInfo.isInWindow;
 
   return (
     <View style={[styles.screen, { paddingBottom: safeBottomPadding }]}>
@@ -243,12 +341,14 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
 
       <View style={styles.footer}>
         <SwipeToConfirmButton
-          label="Swipe to confirm arrival"
+          label={isSubmitting ? "Checking in..." : "Swipe to confirm arrival"}
           onConfirm={handleConfirm}
-          disabled={isSwipeDisabled}
+          disabled={isSwipeDisabled || isSubmitting}
         />
         <Text style={styles.footerHelpText}>
-          Drag the button to let the studio verify your check-in
+          {isSwipeDisabled && booking.status === 'pending'
+            ? checkInWindowInfo.message
+            : 'Drag the button to let the studio verify your check-in'}
         </Text>
       </View>
     </View>
@@ -364,8 +464,7 @@ const styles = StyleSheet.create({
   attendeeSection: {
     backgroundColor: '#f5f5f5',
     borderWidth: 2,
-    borderColor: theme.colors.zinc[400],
-    borderStyle: 'dashed',
+    borderColor: theme.colors.zinc[300],
     borderRadius: 12,
     paddingVertical: 18,
     paddingHorizontal: 20,
@@ -397,8 +496,7 @@ const styles = StyleSheet.create({
     top: '50%',
     left: 0,
     right: 0,
-    borderStyle: 'dashed',
-    borderTopWidth: 2,
+    borderTopWidth: 1,
     borderTopColor: '#d4d4d8',
   },
   circularCutout: {

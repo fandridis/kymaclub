@@ -422,13 +422,16 @@ export const bookingService = {
 
         // Load instance and template
         const instance = await ctx.db.get(args.classInstanceId);
-        if (!instance) {
+        console.log('gg instance', instance?.deleted, instance?.deletedAt);
+
+        if (!instance || instance.deleted) {
             throw new ConvexError({
                 message: "Class instance not found",
                 field: "classInstanceId",
                 code: ERROR_CODES.RESOURCE_NOT_FOUND,
             });
         }
+
         // Only block cancelled or completed classes; scheduled is allowed
         if (instance.status === 'cancelled') {
             throw new ConvexError({
@@ -660,6 +663,36 @@ export const bookingService = {
             });
         }
 
+        // Check if class is within the 30-minute check-in window
+        const classStartTime = booking.classInstanceSnapshot?.startTime;
+        if (!classStartTime) {
+            throw new ConvexError({
+                message: "Class start time not found",
+                field: "classInstanceSnapshot",
+                code: ERROR_CODES.VALIDATION_ERROR,
+            });
+        }
+
+        const thirtyMinutesInMs = 30 * 60 * 1000;
+        const earliestCheckIn = classStartTime - thirtyMinutesInMs;
+        const latestCheckIn = classStartTime + thirtyMinutesInMs;
+
+        if (now < earliestCheckIn) {
+            throw new ConvexError({
+                message: "Too early to check in. Check-in opens 30 minutes before class starts.",
+                field: "startTime",
+                code: ERROR_CODES.ACTION_NOT_ALLOWED,
+            });
+        }
+
+        if (now > latestCheckIn) {
+            throw new ConvexError({
+                message: "Check-in window has closed. Check-in closes 30 minutes after class starts.",
+                field: "startTime",
+                code: ERROR_CODES.ACTION_NOT_ALLOWED,
+            });
+        }
+
         // Update booking status
         await ctx.db.patch(args.bookingId, {
             status: "completed",
@@ -708,21 +741,26 @@ export const bookingService = {
             });
         }
 
-        if (booking.status !== "pending") {
-            throw new ConvexError({
-                message: `Cannot cancel booking with status: ${booking.status}`,
-                field: "status",
-                code: ERROR_CODES.ACTION_NOT_ALLOWED,
-            });
-        }
-
-        // Get class instance to check cancellation window
+        // Get class instance first (needed for time-based checks)
         const instance = await ctx.db.get(booking.classInstanceId);
         if (!instance) {
             throw new ConvexError({
                 message: "Class instance not found",
                 field: "classInstanceId",
                 code: ERROR_CODES.RESOURCE_NOT_FOUND,
+            });
+        }
+
+        // Allow cancellation of pending bookings, or completed bookings within 30 minutes after class start
+        const THIRTY_MINUTES_MS = 30 * 60 * 1000;
+        const thirtyMinutesAfterStart = instance.startTime + THIRTY_MINUTES_MS;
+        const isWithinGracePeriod = booking.status === "completed" && now <= thirtyMinutesAfterStart;
+
+        if (booking.status !== "pending" && !isWithinGracePeriod) {
+            throw new ConvexError({
+                message: `Cannot cancel booking with status: ${booking.status}`,
+                field: "status",
+                code: ERROR_CODES.ACTION_NOT_ALLOWED,
             });
         }
 

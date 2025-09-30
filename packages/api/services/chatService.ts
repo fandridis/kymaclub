@@ -347,7 +347,7 @@ export const chatService = {
                                 channelId: 'chat_messages',
                             },
                         });
-                        
+
 
                         logger.debug("Push notification sent for chat message", {
                             recipientId: businessOwner._id,
@@ -951,7 +951,7 @@ export const chatService = {
                         channelId: 'chat_messages',
                     },
                 });
-                
+
 
                 logger.debug("Push notification sent for venue reply", {
                     recipientId: thread.userId,

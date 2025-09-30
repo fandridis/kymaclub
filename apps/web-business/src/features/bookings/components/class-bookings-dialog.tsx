@@ -1,4 +1,4 @@
-import type * as React from "react"
+import * as React from "react"
 import {
     DialogOrDrawer,
     DialogOrDrawerContent,
@@ -36,6 +36,25 @@ export function ClassBookingsDialog({
 
     const deleteBooking = useMutation(api.mutations.bookings.deleteBooking)
 
+    // Deduplicate bookings by userId, keeping only the newest booking for each user
+    const deduplicatedBookings = React.useMemo(() => {
+        if (!bookings) return []
+
+        const latestByUser = new Map<string, Doc<'bookings'>>()
+
+        bookings.forEach((booking) => {
+            const userId = booking.userId
+            if (!userId) return
+
+            const existing = latestByUser.get(userId)
+            if (!existing || booking.createdAt > existing.createdAt) {
+                latestByUser.set(userId, booking)
+            }
+        })
+
+        return Array.from(latestByUser.values())
+    }, [bookings])
+
     const formatDateTime = (startTime: number, endTime: number) => {
         const start = new Date(startTime)
         const end = new Date(endTime)
@@ -49,8 +68,8 @@ export function ClassBookingsDialog({
     const capacity = classInstance.capacity ?? 0
     const className = classInstance.name ?? classInstance.templateSnapshot?.name ?? "Class"
 
-    // Filter only pending bookings for the count
-    const pendingBookings = bookings?.filter(booking => booking.status === 'pending') || []
+    // Filter only pending bookings for the count (using deduplicated bookings)
+    const pendingBookings = deduplicatedBookings?.filter(booking => booking.status === 'pending') || []
 
     const handleRemoveBooking = async (bookingId: any) => {
         try {
@@ -117,15 +136,15 @@ export function ClassBookingsDialog({
                                             </div>
                                         ))}
                                     </div>
-                                ) : bookings && bookings.length > 0 ? (
+                                ) : deduplicatedBookings && deduplicatedBookings.length > 0 ? (
                                     <div className="space-y-0">
-                                        {bookings.map((booking, index) => (
+                                        {deduplicatedBookings.map((booking, index) => (
                                             <div key={booking._id}>
                                                 <ClassBookingsItem
                                                     booking={booking}
                                                     onDeleteBooking={handleRemoveBooking}
                                                 />
-                                                {index < bookings.length - 1 && (
+                                                {index < deduplicatedBookings.length - 1 && (
                                                     <Separator className="ml-13" />
                                                 )}
                                             </div>

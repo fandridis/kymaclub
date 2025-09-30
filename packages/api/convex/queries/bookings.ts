@@ -280,10 +280,10 @@ export const getUserBookingStats = query({
   args: {},
   handler: async (ctx) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
-    
+
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-    
+
     // Get all completed bookings for all time
     const allTimeBookings = await ctx.db
       .query("bookings")
@@ -293,12 +293,12 @@ export const getUserBookingStats = query({
           .eq("deleted", false)
       )
       .collect();
-    
+
     // Filter for this month
-    const thisMonthBookings = allTimeBookings.filter(booking => 
+    const thisMonthBookings = allTimeBookings.filter(booking =>
       booking.createdAt >= startOfMonth
     );
-    
+
     return {
       thisMonth: thisMonthBookings.length,
       allTime: allTimeBookings.length

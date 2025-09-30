@@ -17,14 +17,12 @@ import type { Doc } from '@repo/api/convex/_generated/dataModel';
 const INITIAL_BOOKINGS_COUNT = 100;
 const LOAD_MORE_COUNT = 50;
 
-type BookingTabType = 'upcoming' | 'cancelled' | 'history';
+type BookingTabType = 'upcoming' | 'history';
 
 type BookingSection = {
     title: string;
     data: Doc<'bookings'>[];
 };
-
-const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
 
 const deduplicateBookings = (bookings: Doc<'bookings'>[]): Doc<'bookings'>[] => {
     const latestByInstance = new Map<string, Doc<'bookings'>>();
@@ -45,7 +43,8 @@ const deduplicateBookings = (bookings: Doc<'bookings'>[]): Doc<'bookings'>[] => 
 };
 
 const filterBookingsByTab = (bookings: Doc<'bookings'>[], tabType: BookingTabType): Doc<'bookings'>[] => {
-    const todayStart = startOfDay(new Date());
+    const now = Date.now();
+    const THIRTY_MINUTES_MS = 30 * 60 * 1000;
 
     return bookings.filter((booking) => {
         const startTime = booking.classInstanceSnapshot?.startTime;
@@ -53,20 +52,16 @@ const filterBookingsByTab = (bookings: Doc<'bookings'>[], tabType: BookingTabTyp
             return false;
         }
 
-        const isUpcoming = startTime >= todayStart;
-        const isPast = startTime < todayStart;
+        const thirtyMinutesAfterStart = startTime + THIRTY_MINUTES_MS;
+        const isWithinThirtyMinutesAfterStart = now <= thirtyMinutesAfterStart;
 
         switch (tabType) {
             case 'upcoming':
-                return isUpcoming && booking.status === 'pending';
-            case 'cancelled':
-                return isUpcoming && (
-                    booking.status === 'cancelled_by_consumer' ||
-                    booking.status === 'cancelled_by_business' ||
-                    booking.status === 'cancelled_by_business_rebookable'
-                );
+                // Show bookings that start in the future or have started within the last 30 minutes
+                return isWithinThirtyMinutesAfterStart;
             case 'history':
-                return isPast;
+                // Show bookings that started more than 30 minutes ago
+                return !isWithinThirtyMinutesAfterStart;
             default:
                 return false;
         }
@@ -99,15 +94,6 @@ const buildSections = (bookings: Doc<'bookings'>[], tabType: BookingTabType): Bo
         ];
     }
 
-    if (tabType === 'cancelled') {
-        return [
-            {
-                title: 'Cancelled bookings',
-                data: sortByStartTimeAsc(deduped),
-            },
-        ];
-    }
-
     return [
         {
             title: 'Past bookings',
@@ -125,7 +111,6 @@ export function BookingsScreen() {
     const tabItems = useMemo<AppTabItem<BookingTabType>[]>(
         () => [
             { key: 'upcoming', label: 'Upcoming' },
-            { key: 'cancelled', label: 'Cancelled' },
             { key: 'history', label: 'History' },
         ],
         []
@@ -218,12 +203,10 @@ export function BookingsScreen() {
                 <View style={styles.emptyContainer}>
                     <Text style={styles.emptyTitle}>
                         {activeTab === 'upcoming' && 'No upcoming bookings'}
-                        {activeTab === 'cancelled' && 'No cancelled bookings'}
                         {activeTab === 'history' && 'No booking history'}
                     </Text>
                     <Text style={styles.emptyText}>
                         {activeTab === 'upcoming' && "When you book classes, they'll appear here. Explore classes to get started!"}
-                        {activeTab === 'cancelled' && 'Your cancelled bookings will appear here.'}
                         {activeTab === 'history' && 'Your past bookings will appear here once you attend classes.'}
                     </Text>
                 </View>

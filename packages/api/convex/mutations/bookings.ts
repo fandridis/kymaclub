@@ -61,3 +61,14 @@ export const allowRebooking = mutationWithTriggers({
     return result;
   },
 });
+
+export const completeBooking = mutationWithTriggers({
+  args: v.object({
+    bookingId: v.id("bookings"),
+  }),
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUserOrThrow(ctx);
+    const result = await bookingService.completeBooking({ ctx, args, user });
+    return result;
+  },
+});

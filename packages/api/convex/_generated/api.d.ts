@@ -13,6 +13,7 @@ import type * as actions_email from "../actions/email.js";
 import type * as actions_payments from "../actions/payments.js";
 import type * as actions_venue from "../actions/venue.js";
 import type * as auth from "../auth.js";
+import type * as crons from "../crons.js";
 import type * as http from "../http.js";
 import type * as mutations_bookings from "../mutations/bookings.js";
 import type * as mutations_chat from "../mutations/chat.js";
@@ -71,6 +72,7 @@ declare const fullApi: ApiFromModules<{
   "actions/payments": typeof actions_payments;
   "actions/venue": typeof actions_venue;
   auth: typeof auth;
+  crons: typeof crons;
   http: typeof http;
   "mutations/bookings": typeof mutations_bookings;
   "mutations/chat": typeof mutations_chat;
