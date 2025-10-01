@@ -37,6 +37,7 @@ import { theme } from '../theme';
 import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { BlurView } from 'expo-blur';
+import OnboardingWizard from '../components/OnboardingWizard';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 const RootStack = createNativeStackNavigator<RootStackParamList>();
@@ -159,142 +160,149 @@ export function RootNavigator() {
     >
       {isAuthenticated ? (
         <>
-          <RootStack.Screen name="Home" component={HomeTabs} />
-          <RootStack.Screen
-            name="Settings"
-            component={SettingsScreen}
-            options={{
-              animation: 'slide_from_right',
-            }}
-          />
-          <RootStack.Screen
-            name="VenueDetailsScreen"
-            component={VenueDetailsScreen}
-            options={{
-              animation: 'slide_from_right',
-            }}
-          />
-          <RootStack.Screen
-            name="ClassDetailsModal"
-            component={ClassDetailsModalScreen}
-            options={{
-              animation: 'slide_from_right',
-            }}
-          />
-          <RootStack.Screen
-            name="SettingsProfile"
-            component={SettingsProfileScreen}
-            options={{
-              title: 'Profile Settings',
-              animation: 'slide_from_right',
-              headerShown: false,
-            }}
-          />
-          <RootStack.Screen
-            name="SettingsNotifications"
-            component={SettingsNotificationsScreen}
-            options={{
-              animation: 'slide_from_right',
-              headerShown: false,
-            }}
-          />
-          <RootStack.Screen
-            name="SettingsSubscription"
-            component={SettingsSubscriptionScreen}
-            options={{
-              title: 'Subscription Settings',
-              animation: 'slide_from_right',
-              headerShown: false,
-            }}
-          />
-          <RootStack.Screen
-            name="SettingsAccount"
-            component={SettingsAccountScreen}
-            options={{
-              animation: 'slide_from_right',
-              headerShown: false,
-            }}
-          />
-          <RootStack.Screen
-            name="LanguageSelection"
-            component={LanguageSelectionScreen}
-            options={{
-              animation: 'slide_from_right',
-              headerShown: false,
-            }}
-          />
-          <RootStack.Screen
-            name="SettingsCredits"
-            component={SettingsCreditsScreen}
-            options={{
-              title: 'Credits & Subscription',
-              animation: 'slide_from_right',
-              headerShown: false,
-            }}
-          />
-          <RootStack.Screen
-            name="Subscription"
-            component={SubscriptionScreen}
-            options={{
-              animation: 'slide_from_right',
-              headerShown: false,
-            }}
-          />
-          <RootStack.Screen
-            name="Superpowers"
-            component={SuperpowersScreen}
-            options={{
-              title: 'Superpowers',
-              animation: 'slide_from_right',
-              headerShown: false,
-            }}
-          />
-          <RootStack.Screen
-            name="BuyCredits"
-            component={BuyCreditsScreen}
-            options={{
-              animation: 'slide_from_right',
-              headerShown: false,
-            }}
-          />
-          <RootStack.Screen
-            name="SettingsNotificationsPreference"
-            component={SettingsNotificationsPreferenceScreen}
-            options={{
-              title: 'Notification Settings',
-              animation: 'slide_from_right',
-              headerShown: false,
-            }}
-          />
-          <RootStack.Screen name="NotFound" component={NotFoundScreen} />
+          {/* Show onboarding if user is authenticated but hasn't completed onboarding */}
+          {!user?.hasConsumerOnboarded ? (
+            <RootStack.Screen name="Onboarding" component={OnboardingWizard} />
+          ) : (
+            <>
+              <RootStack.Screen name="Home" component={HomeTabs} />
+              <RootStack.Screen
+                name="Settings"
+                component={SettingsScreen}
+                options={{
+                  animation: 'slide_from_right',
+                }}
+              />
+              <RootStack.Screen
+                name="VenueDetailsScreen"
+                component={VenueDetailsScreen}
+                options={{
+                  animation: 'slide_from_right',
+                }}
+              />
+              <RootStack.Screen
+                name="ClassDetailsModal"
+                component={ClassDetailsModalScreen}
+                options={{
+                  animation: 'slide_from_right',
+                }}
+              />
+              <RootStack.Screen
+                name="SettingsProfile"
+                component={SettingsProfileScreen}
+                options={{
+                  title: 'Profile Settings',
+                  animation: 'slide_from_right',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen
+                name="SettingsNotifications"
+                component={SettingsNotificationsScreen}
+                options={{
+                  animation: 'slide_from_right',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen
+                name="SettingsSubscription"
+                component={SettingsSubscriptionScreen}
+                options={{
+                  title: 'Subscription Settings',
+                  animation: 'slide_from_right',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen
+                name="SettingsAccount"
+                component={SettingsAccountScreen}
+                options={{
+                  animation: 'slide_from_right',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen
+                name="LanguageSelection"
+                component={LanguageSelectionScreen}
+                options={{
+                  animation: 'slide_from_right',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen
+                name="SettingsCredits"
+                component={SettingsCreditsScreen}
+                options={{
+                  title: 'Credits & Subscription',
+                  animation: 'slide_from_right',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen
+                name="Subscription"
+                component={SubscriptionScreen}
+                options={{
+                  animation: 'slide_from_right',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen
+                name="Superpowers"
+                component={SuperpowersScreen}
+                options={{
+                  title: 'Superpowers',
+                  animation: 'slide_from_right',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen
+                name="BuyCredits"
+                component={BuyCreditsScreen}
+                options={{
+                  animation: 'slide_from_right',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen
+                name="SettingsNotificationsPreference"
+                component={SettingsNotificationsPreferenceScreen}
+                options={{
+                  title: 'Notification Settings',
+                  animation: 'slide_from_right',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen name="NotFound" component={NotFoundScreen} />
 
-          {/* Payment result screens */}
-          <RootStack.Screen
-            name="PaymentSuccess"
-            component={PaymentSuccessScreen}
-            options={{
-              title: 'Payment Successful',
-              animation: 'slide_from_right',
-              headerShown: false,
-            }}
-          />
-          <RootStack.Screen
-            name="PaymentCancel"
-            component={PaymentCancelScreen}
-            options={{
-              title: 'Payment Cancelled',
-              animation: 'slide_from_right',
-              headerShown: false,
-            }}
-          />
-          <RootStack.Screen
-            name="Conversation"
-            component={ConversationScreen}
-            options={{
-              animation: 'slide_from_right',
-              headerShown: false,
-            }}
-          />
+              {/* Payment result screens */}
+              <RootStack.Screen
+                name="PaymentSuccess"
+                component={PaymentSuccessScreen}
+                options={{
+                  title: 'Payment Successful',
+                  animation: 'slide_from_right',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen
+                name="PaymentCancel"
+                component={PaymentCancelScreen}
+                options={{
+                  title: 'Payment Cancelled',
+                  animation: 'slide_from_right',
+                  headerShown: false,
+                }}
+              />
+              <RootStack.Screen
+                name="Conversation"
+                component={ConversationScreen}
+                options={{
+                  animation: 'slide_from_right',
+                  headerShown: false,
+                }}
+              />
+            </>
+          )}
         </>
       ) : (
         <>
@@ -404,6 +412,7 @@ export type RootStackParamList = {
   };
   // Auth screens
   Landing: undefined;
+  Onboarding: undefined;
   // Modal screens
   BookingTicketModal: {
     booking: import('@repo/api/convex/_generated/dataModel').Doc<"bookings">;
@@ -459,6 +468,7 @@ export type RootStackParamListWithNestedTabs = {
   };
   // Auth screens
   Landing: undefined;
+  Onboarding: undefined;
   // Modal screens
   BookingTicketModal: {
     booking: import('@repo/api/convex/_generated/dataModel').Doc<"bookings">;

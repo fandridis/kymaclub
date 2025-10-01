@@ -26,4 +26,18 @@ export const getUserById = internalQuery({
     handler: async (ctx, { userId }) => {
         return await ctx.db.get(userId);
     },
+});
+
+/**
+ * Check if a user exists by email (for sign-in validation)
+ */
+export const checkUserExistsByEmail = query({
+    args: { email: v.string() },
+    handler: async (ctx, { email }) => {
+        const user = await ctx.db
+            .query("users")
+            .withIndex("email", (q) => q.eq("email", email))
+            .first();
+        return !!user && !user.deleted;
+    },
 }); 

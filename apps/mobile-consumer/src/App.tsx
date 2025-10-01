@@ -11,7 +11,7 @@ import { Asset } from 'expo-asset';
 import * as SplashScreen from 'expo-splash-screen';
 import * as React from 'react';
 import { ActivityIndicator, StyleSheet, Text, useColorScheme, View } from 'react-native';
-import { ConvexProvider, ConvexReactClient, useMutation } from "convex/react";
+import { ConvexProvider, ConvexReactClient, useMutation, useQuery } from "convex/react";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexQueryCacheProvider } from "convex-helpers/react/cache";
 import i18n from './i18n';
@@ -116,9 +116,15 @@ interface InnerAppProps {
 
 export function InnerApp({ theme, onReady }: InnerAppProps) {
   const { user } = useAuth();
+  const data = useQuery(api.queries.core.getCurrentUserQuery);
   const recordPushNotificationToken = useMutation(api.mutations.pushNotifications.recordPushNotificationToken);
   const [appReady, setAppReady] = useState(false);
   const isLoading = user === undefined;
+
+
+  console.log('user exists: ', !!user);
+  console.log('user onboarded: ', user?.hasConsumerOnboarded);
+  console.log('InnerApp data: ', data);
 
   useEffect(() => {
     if (!user?._id) return;
@@ -240,15 +246,6 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
         <ActivityIndicator size="large" color="#667eea" />
         <Text style={styles.loadingText}>Loading KymaClub...</Text>
       </View>
-    );
-  }
-
-  // Show onboarding if user is authenticated but hasn't completed onboarding
-  if (user && !user?.hasConsumerOnboarded) {
-    return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <OnboardingWizard />
-      </GestureHandlerRootView>
     );
   }
 

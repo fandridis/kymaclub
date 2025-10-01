@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useNavigation } from '@react-navigation/native';
+import { useMutation } from 'convex/react';
+import { api } from '@repo/api/convex/_generated/api';
 
 export function SignInForm() {
     const navigation = useNavigation();
@@ -21,6 +23,9 @@ export function SignInForm() {
     const [submitting, setSubmitting] = useState(false);
     const [email, setEmail] = useState('');
     const [code, setCode] = useState('');
+    const [checkingUser, setCheckingUser] = useState(false);
+
+    const checkUserExistsMutation = useMutation(api.mutations.core.checkUserExistsByEmail);
 
     const handleSendCode = async () => {
         if (!email.trim()) {
@@ -28,9 +33,33 @@ export function SignInForm() {
             return;
         }
 
-        setSubmitting(true);
+        setCheckingUser(true);
 
         try {
+            // First check if user exists
+            const userExists = await checkUserExistsMutation({ email: email.trim() });
+
+            if (!userExists) {
+                Alert.alert(
+                    'Account Not Found',
+                    'No account found with this email address. Please create an account first. If this is a mistake, contact support.',
+                    [
+                        {
+                            text: 'Create Account',
+                            onPress: () => {
+                                // Navigate to registration screen
+                                navigation.navigate('CreateAccountModal' as never);
+                            }
+                        },
+                        { text: 'OK' }
+                    ]
+                );
+                return;
+            }
+
+            // User exists, proceed with OTP
+            setSubmitting(true);
+
             // Create FormData equivalent for React Native
             const formData = new FormData();
             formData.append('email', email);
@@ -41,6 +70,7 @@ export function SignInForm() {
             console.error(error);
             Alert.alert('Error', 'Could not send verification code. Please try again.');
         } finally {
+            setCheckingUser(false);
             setSubmitting(false);
         }
     };
@@ -105,19 +135,19 @@ export function SignInForm() {
                                     keyboardType="email-address"
                                     autoCapitalize="none"
                                     autoComplete="email"
-                                    editable={!submitting}
+                                    editable={!submitting && !checkingUser}
                                 />
                             </View>
 
                             <TouchableOpacity
-                                style={[styles.button, submitting && styles.buttonDisabled]}
+                                style={[styles.button, (submitting || checkingUser) && styles.buttonDisabled]}
                                 onPress={handleSendCode}
-                                disabled={submitting}
+                                disabled={submitting || checkingUser}
                             >
-                                {submitting ? (
+                                {(submitting || checkingUser) ? (
                                     <ActivityIndicator color="white" />
                                 ) : (
-                                    <Text style={styles.buttonText}>Send Code</Text>
+                                    <Text style={styles.buttonText}>Sign In</Text>
                                 )}
                             </TouchableOpacity>
                         </>

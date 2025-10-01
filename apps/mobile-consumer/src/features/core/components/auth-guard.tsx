@@ -10,6 +10,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
     const { user, pendingDeepLink, setPendingDeepLink } = useAuth()
     const url = Linking.useURL()
 
+
     // Handle incoming deep links
     useEffect(() => {
         if (url && !user) {
@@ -33,6 +34,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
     // Handle pending deep link after authentication
     useEffect(() => {
         if (user && pendingDeepLink) {
+            console.log('There is user and pending deep link', pendingDeepLink)
             // Use Linking to handle the deep link (the navigation system will handle it)
             setTimeout(() => {
                 Linking.openURL(pendingDeepLink);

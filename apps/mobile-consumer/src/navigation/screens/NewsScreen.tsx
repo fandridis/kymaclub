@@ -128,10 +128,12 @@ export function NewsScreen() {
 
     // Fetch full class instances
     const upcomingClassInstances = useQuery(
-        api.queries.classInstances.getClassInstances,
+        api.queries.classInstances.getConsumerClassInstancesWithBookingStatus,
         upcomingClassInstanceIds.length > 0 ? {
             startDate: now.getTime() - (24 * 60 * 60 * 1000),
-            endDate: now.getTime() + (30 * 24 * 60 * 60 * 1000)
+            endDate: now.getTime() + (30 * 24 * 60 * 60 * 1000),
+            // Pull a generous slice so booked classes are always included
+            limit: Math.max(upcomingClassInstanceIds.length * 2, 50),
         } : "skip"
     );
 

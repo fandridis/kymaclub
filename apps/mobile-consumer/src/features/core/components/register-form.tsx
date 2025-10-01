@@ -1,195 +1,215 @@
-// components/register-screen.tsx
 import React, { useState } from 'react';
 import {
     View,
     Text,
-    StyleSheet,
     TextInput,
     TouchableOpacity,
+    StyleSheet,
+    Alert,
+    ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    ActivityIndicator,
-    Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuthActions } from "@convex-dev/auth/react";
+import { useNavigation } from '@react-navigation/native';
+import { useMutation } from 'convex/react';
+import { api } from '@repo/api/convex/_generated/api';
 
-import { useAuth } from '../../../stores/auth-store';
-
-interface RegisterFormProps {
+interface SimpleRegisterFormProps {
     onSuccess: () => void;
     onBack: () => void;
 }
 
-export function RegisterForm({ onSuccess, onBack }: RegisterFormProps) {
+export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
+    const navigation = useNavigation();
+    const { signIn } = useAuthActions();
+    const [step, setStep] = useState<"email" | { email: string }>("email");
+    const [submitting, setSubmitting] = useState(false);
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [fullName, setFullName] = useState('');
-    const [phoneNumber, setPhoneNumber] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [code, setCode] = useState('');
+    const [checkingUser, setCheckingUser] = useState(false);
 
-    //const { signIn } = useAuth(); // Assuming this exists in your auth store
+    const checkUserExistsMutation = useMutation(api.mutations.core.checkUserExistsByEmail);
 
-    const validateForm = () => {
-        const newErrors: Record<string, string> = {};
-
-        if (!fullName.trim()) {
-            newErrors.fullName = 'Full name is required';
-        }
-
+    const handleSendCode = async () => {
         if (!email.trim()) {
-            newErrors.email = 'Email is required';
-        } else if (!/\S+@\S+\.\S+/.test(email)) {
-            newErrors.email = 'Invalid email address';
-        }
-
-        if (!phoneNumber.trim()) {
-            newErrors.phoneNumber = 'Phone number is required';
-        } else if (!/^\+?[\d\s-()]+$/.test(phoneNumber)) {
-            newErrors.phoneNumber = 'Invalid phone number';
-        }
-
-        if (!password) {
-            newErrors.password = 'Password is required';
-        } else if (password.length < 8) {
-            newErrors.password = 'Password must be at least 8 characters';
-        }
-
-        if (!confirmPassword) {
-            newErrors.confirmPassword = 'Please confirm your password';
-        } else if (password !== confirmPassword) {
-            newErrors.confirmPassword = 'Passwords do not match';
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const handleRegister = async () => {
-        if (!validateForm()) {
+            Alert.alert('Error', 'Please enter your email address');
             return;
         }
 
-        setIsLoading(true);
-        try {
-            // Mock registration - replace with actual API call
-            await new Promise(resolve => setTimeout(resolve, 2000));
+        setCheckingUser(true);
 
-            // Mock successful registration
-            Alert.alert(
-                'Welcome to KymaClub! 🎉',
-                'Your account has been created successfully.',
-                [
-                    {
-                        text: 'OK',
-                        onPress: () => {
-                            // In a real app, you'd sign in the user here
-                            onSuccess();
+        try {
+            // First check if user already exists
+            const userExists = await checkUserExistsMutation({ email: email.trim() });
+
+            if (userExists) {
+                Alert.alert(
+                    'Account Already Exists',
+                    'An account with this email already exists. Please sign in instead.',
+                    [
+                        {
+                            text: 'Sign In',
+                            onPress: () => {
+                                // Navigate to sign-in screen
+                                navigation.navigate('SignInModal' as never);
+                            }
                         },
-                    },
-                ]
-            );
+                        { text: 'OK' }
+                    ]
+                );
+                return;
+            }
+
+            // User doesn't exist, proceed with OTP registration
+            setSubmitting(true);
+
+            // Create FormData equivalent for React Native
+            const formData = new FormData();
+            formData.append('email', email);
+
+            await signIn("resend-otp", formData);
+            setStep({ email });
         } catch (error) {
-            Alert.alert('Registration Failed', 'Please try again later.');
+            console.error(error);
+            Alert.alert('Error', 'Could not send verification code. Please try again.');
         } finally {
-            setIsLoading(false);
+            setCheckingUser(false);
+            setSubmitting(false);
         }
     };
 
-    const renderInput = (
-        placeholder: string,
-        value: string,
-        onChangeText: (text: string) => void,
-        errorKey: string,
-        secureTextEntry = false,
-        keyboardType: any = 'default'
-    ) => (
-        <View style={styles.inputContainer}>
-            <TextInput
-                style={[styles.input, errors[errorKey] && styles.inputError]}
-                placeholder={placeholder}
-                placeholderTextColor="#999"
-                value={value}
-                onChangeText={onChangeText}
-                secureTextEntry={secureTextEntry}
-                keyboardType={keyboardType}
-                autoCapitalize="none"
-                editable={!isLoading}
-            />
-            {errors[errorKey] && (
-                <Text style={styles.errorText}>{errors[errorKey]}</Text>
-            )}
-        </View>
-    );
+    const handleVerifyCode = async () => {
+        if (!code.trim()) {
+            Alert.alert('Error', 'Please enter the verification code');
+            return;
+        }
+
+        setSubmitting(true);
+
+        try {
+            // Create FormData with email and code
+            const formData = new FormData();
+            formData.append('email', step === "email" ? email : step.email);
+            formData.append('code', code);
+
+            await signIn("resend-otp", formData);
+
+            // Registration successful!
+            // The auth state will update automatically, which will trigger
+            // the navigation structure to switch from auth stack to authenticated stack.
+            // No manual navigation needed!
+
+            // Close the modal (since CreateAccountModal is presented as a modal)
+            navigation.goBack();
+
+        } catch (error) {
+            console.error(error);
+            Alert.alert('Error', 'Invalid verification code. Please try again.');
+            setSubmitting(false);
+        }
+    };
+
+    const handleBackToEmail = () => {
+        setStep("email");
+        setCode('');
+    };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.keyboardView}
-            >
-                <ScrollView
-                    contentContainerStyle={styles.scrollContent}
-                    keyboardShouldPersistTaps="handled"
-                    showsVerticalScrollIndicator={false}
-                >
-                    <View style={styles.header}>
-                        <Text style={styles.icon}>🌊</Text>
-                        <Text style={styles.title}>Create Your Account</Text>
-                        <Text style={styles.subtitle}>
-                            Join KymaClub for premium beach experiences
-                        </Text>
-                    </View>
+        <KeyboardAvoidingView
+            style={styles.container}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+            <ScrollView contentContainerStyle={styles.scrollContainer}>
+                <View style={styles.formContainer}>
+                    {step === "email" ? (
+                        <>
+                            <View style={styles.headerContainer}>
+                                <Text style={styles.title}>Create Account</Text>
+                                <Text style={styles.subtitle}>Enter your email to get started</Text>
+                            </View>
 
-                    <View style={styles.formContainer}>
-                        <View style={styles.verifiedBadge}>
-                            <Text style={styles.verifiedIcon}>✅</Text>
-                            <Text style={styles.verifiedText}>Location Verified - Athens Area</Text>
-                        </View>
+                            <View style={styles.inputContainer}>
+                                <Text style={styles.label}>Email</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={email}
+                                    onChangeText={setEmail}
+                                    placeholder="Enter your email"
+                                    keyboardType="email-address"
+                                    autoCapitalize="none"
+                                    autoComplete="email"
+                                    editable={!submitting && !checkingUser}
+                                />
+                            </View>
 
-                        {renderInput('Full Name', fullName, setFullName, 'fullName')}
-                        {renderInput('Email', email, setEmail, 'email', false, 'email-address')}
-                        {renderInput('Phone Number', phoneNumber, setPhoneNumber, 'phoneNumber', false, 'phone-pad')}
-                        {renderInput('Password', password, setPassword, 'password', true)}
-                        {renderInput('Confirm Password', confirmPassword, setConfirmPassword, 'confirmPassword', true)}
+                            <TouchableOpacity
+                                style={[styles.button, (submitting || checkingUser) && styles.buttonDisabled]}
+                                onPress={handleSendCode}
+                                disabled={submitting || checkingUser}
+                            >
+                                {(submitting || checkingUser) ? (
+                                    <ActivityIndicator color="white" />
+                                ) : (
+                                    <Text style={styles.buttonText}>Create Account</Text>
+                                )}
+                            </TouchableOpacity>
 
-                        <View style={styles.termsContainer}>
-                            <Text style={styles.termsText}>
-                                By creating an account, you agree to our{' '}
-                                <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
-                                <Text style={styles.termsLink}>Privacy Policy</Text>
-                            </Text>
-                        </View>
-                    </View>
+                            <TouchableOpacity
+                                style={styles.backButton}
+                                onPress={onBack}
+                                disabled={submitting || checkingUser}
+                            >
+                                <Text style={styles.backButtonText}>Back</Text>
+                            </TouchableOpacity>
+                        </>
+                    ) : (
+                        <>
+                            <View style={styles.headerContainer}>
+                                <Text style={styles.title}>Check your email</Text>
+                                <Text style={styles.subtitle}>
+                                    We sent a verification code to {step.email}
+                                </Text>
+                            </View>
 
-                    <View style={styles.buttonContainer}>
-                        <TouchableOpacity
-                            style={[styles.button, styles.primaryButton, isLoading && styles.disabledButton]}
-                            onPress={handleRegister}
-                            disabled={isLoading}
-                            activeOpacity={0.8}
-                        >
-                            {isLoading ? (
-                                <ActivityIndicator color="white" />
-                            ) : (
-                                <Text style={styles.primaryButtonText}>Create Account</Text>
-                            )}
-                        </TouchableOpacity>
+                            <View style={styles.inputContainer}>
+                                <Text style={styles.label}>Verification Code</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={code}
+                                    onChangeText={setCode}
+                                    placeholder="Enter 6-digit code"
+                                    keyboardType="number-pad"
+                                    maxLength={6}
+                                    editable={!submitting}
+                                />
+                            </View>
 
-                        <TouchableOpacity
-                            style={[styles.button, styles.secondaryButton]}
-                            onPress={onBack}
-                            disabled={isLoading}
-                            activeOpacity={0.8}
-                        >
-                            <Text style={styles.secondaryButtonText}>Back</Text>
-                        </TouchableOpacity>
-                    </View>
-                </ScrollView>
-            </KeyboardAvoidingView>
-        </SafeAreaView>
+                            <TouchableOpacity
+                                style={[styles.button, submitting && styles.buttonDisabled]}
+                                onPress={handleVerifyCode}
+                                disabled={submitting}
+                            >
+                                {submitting ? (
+                                    <ActivityIndicator color="white" />
+                                ) : (
+                                    <Text style={styles.buttonText}>Verify & Create Account</Text>
+                                )}
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.backButton}
+                                onPress={handleBackToEmail}
+                                disabled={submitting}
+                            >
+                                <Text style={styles.backButtonText}>Back to Email</Text>
+                            </TouchableOpacity>
+                        </>
+                    )}
+                </View>
+            </ScrollView>
+        </KeyboardAvoidingView>
     );
 }
 
@@ -198,135 +218,82 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#fff',
     },
-    keyboardView: {
-        flex: 1,
-    },
-    scrollContent: {
+    scrollContainer: {
         flexGrow: 1,
-        paddingHorizontal: 20,
-        paddingTop: 20,
-        paddingBottom: 40,
+        justifyContent: 'center',
+        paddingHorizontal: 24,
+        paddingVertical: 20,
     },
-    header: {
-        alignItems: 'center',
-        marginBottom: 32,
-        maxWidth: 350,
+    formContainer: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 24,
+        maxWidth: 400,
         alignSelf: 'center',
         width: '100%',
     },
-    icon: {
-        fontSize: 48,
-        marginBottom: 16,
+    headerContainer: {
+        alignItems: 'center',
+        marginBottom: 32,
     },
     title: {
         fontSize: 28,
         fontWeight: 'bold',
         color: '#000',
         marginBottom: 8,
+        textAlign: 'center',
     },
     subtitle: {
         fontSize: 16,
         color: '#666',
         textAlign: 'center',
-    },
-    formContainer: {
-        backgroundColor: '#fff',
-        borderRadius: 8,
-        padding: 24,
-        marginBottom: 24,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        maxWidth: 350,
-        alignSelf: 'center',
-        width: '100%',
-    },
-    verifiedBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#f5f5f5',
-        borderRadius: 8,
-        padding: 12,
-        marginBottom: 24,
-        borderWidth: 1,
-        borderColor: '#ddd',
-    },
-    verifiedIcon: {
-        fontSize: 16,
-        marginRight: 8,
-    },
-    verifiedText: {
-        fontSize: 14,
-        color: '#000',
-        fontWeight: '500',
+        lineHeight: 22,
     },
     inputContainer: {
-        marginBottom: 20,
+        marginBottom: 24,
+    },
+    label: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#000',
+        marginBottom: 8,
     },
     input: {
-        backgroundColor: '#fff',
+        backgroundColor: '#f8f9fa',
         borderRadius: 8,
         paddingVertical: 16,
         paddingHorizontal: 16,
         fontSize: 16,
         color: '#000',
         borderWidth: 1,
-        borderColor: '#ddd',
-    },
-    inputError: {
-        borderColor: '#ff6b6b',
-    },
-    errorText: {
-        color: '#ff6b6b',
-        fontSize: 12,
-        marginTop: 4,
-        marginLeft: 12,
-    },
-    termsContainer: {
-        marginTop: 8,
-    },
-    termsText: {
-        fontSize: 12,
-        color: '#666',
-        textAlign: 'center',
-        lineHeight: 18,
-    },
-    termsLink: {
-        textDecorationLine: 'underline',
-        fontWeight: '500',
-        color: '#000',
-    },
-    buttonContainer: {
-        gap: 12,
-        maxWidth: 350,
-        alignSelf: 'center',
-        width: '100%',
+        borderColor: '#e9ecef',
     },
     button: {
+        backgroundColor: '#000',
         borderRadius: 8,
-        padding: 16,
+        paddingVertical: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
+    },
+    buttonDisabled: {
+        opacity: 0.7,
+    },
+    buttonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    backButton: {
+        backgroundColor: 'transparent',
+        borderRadius: 8,
+        paddingVertical: 16,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    primaryButton: {
-        backgroundColor: '#000',
-    },
-    primaryButtonText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: 'white',
-    },
-    secondaryButton: {
-        backgroundColor: 'transparent',
-        borderWidth: 1,
-        borderColor: '#ddd',
-    },
-    secondaryButtonText: {
+    backButtonText: {
+        color: '#666',
         fontSize: 16,
         fontWeight: '500',
-        color: '#000',
-    },
-    disabledButton: {
-        opacity: 0.7,
     },
 });

@@ -60,14 +60,16 @@ export const coreService = {
         });
 
         // Seed default business notification settings (email+web enabled)
-        await ctx.db.insert("businessNotificationSettings", {
+        await ctx.db.insert('businessSettings', {
             businessId,
-            notificationPreferences: {
-                booking_created: { email: true, web: true },
-                booking_cancelled_by_consumer: { email: true, web: true },
-                booking_cancelled_by_business: { email: true, web: true },
-                payment_received: { email: true, web: true },
-                review_received: { email: true, web: true },
+            notifications: {
+                preferences: {
+                    booking_created: { email: true, web: true },
+                    booking_cancelled_by_consumer: { email: true, web: true },
+                    booking_cancelled_by_business: { email: true, web: true },
+                    payment_received: { email: true, web: true },
+                    review_received: { email: true, web: true },
+                },
             },
             createdAt: Date.now(),
             createdBy: user._id,
@@ -117,7 +119,17 @@ export const coreService = {
         await ctx.db.patch(user._id, {
             ...(args.name !== undefined ? {
                 name: args.name,
-                hasConsumerOnboarded: true, // keep behavior as in handlers (temporary flag)
+            } : {}),
+        });
+        return { updatedUserId: user._id };
+    },
+
+    // Specific onboarding method completeConsumerOnboarding - it looks exactly like updateCurrentUserProfile
+    completeConsumerOnboarding: async ({ ctx, args, user }: { ctx: MutationCtx, args: UpdateCurrentUserProfileArgs, user: Doc<"users"> }): Promise<{ updatedUserId: Id<'users'> }> => {
+        await ctx.db.patch(user._id, {
+            ...(args.name !== undefined ? {
+                name: args.name,
+                hasConsumerOnboarded: true,
             } : {}),
         });
         return { updatedUserId: user._id };
