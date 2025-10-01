@@ -25,7 +25,7 @@ export function SettingsProfileScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            await signOut();
+                            signOut();
                             logout();
                         } catch (error) {
                             console.error('Sign out error:', error);

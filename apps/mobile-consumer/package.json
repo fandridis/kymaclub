@@ -10,7 +10,7 @@
     "prebuild": "expo prebuild"
   },
   "dependencies": {
-    "@convex-dev/auth": "^0.0.81",
+    "@convex-dev/auth": "^0.0.90",
     "@date-fns/tz": "^1.2.0",
     "@expo/metro-runtime": "~6.1.2",
     "@expo/react-native-action-sheet": "^4.1.1",
@@ -25,7 +25,7 @@
     "@repo/api": "workspace:*",
     "@repo/utils": "workspace:*",
     "@shopify/flash-list": "^2.0.2",
-    "convex": "^1.23.0",
+    "convex": "^1.27.3",
     "convex-helpers": "^0.1.99",
     "date-fns": "^4.1.0",
     "expo": "^54.0.8",
