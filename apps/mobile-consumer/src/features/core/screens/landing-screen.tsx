@@ -1,5 +1,5 @@
 // components/landing-screen.tsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,11 +10,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { RootStackParamList } from '../../../navigation';
+import { useAuth } from '../../../stores/auth-store';
+import { secureStorage } from '../../../utils/storage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -22,6 +24,23 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Landing'>;
 
 export function LandingScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const isAuthenticated = secureStorage.getIsAuthenticated();
+  const { user } = useAuth();
+  const isReallyAuthenticated = isAuthenticated && user;
+
+  useEffect(() => {
+    console.log('LandingScreen: user authenticated ', !!user);
+    if (isReallyAuthenticated) {
+      // Reset the entire navigation stack and navigate to Home without history
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'Home' }],
+        })
+      );
+    }
+  }, [user, navigation, isReallyAuthenticated])
+
 
   const handleSignIn = () => {
     navigation.navigate('SignInModal');

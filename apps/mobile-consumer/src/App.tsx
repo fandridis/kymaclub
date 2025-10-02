@@ -124,7 +124,7 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
 
   console.log('user exists: ', !!user);
   console.log('user onboarded: ', user?.hasConsumerOnboarded);
-  console.log('InnerApp data: ', data);
+  console.log('InnerApp data.email: ', data?.user?.email);
 
   useEffect(() => {
     if (!user?._id) return;

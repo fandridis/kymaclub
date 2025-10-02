@@ -9,7 +9,7 @@ import { BellIcon, ShieldIcon, CameraIcon, LogOutIcon } from 'lucide-react-nativ
 import { theme } from '../../theme';
 import { SettingsHeader, SettingsRow } from '../../components/Settings';
 import { SettingsGroup } from '../../components/Settings';
-import { useAuth, useAuthenticatedUser } from '../../stores/auth-store';
+import { useAuthenticatedUser } from '../../stores/auth-store';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { useCompressedImageUpload } from '../../hooks/useCompressedImageUpload';
@@ -18,10 +18,12 @@ import { MembershipCard } from '../../components/MembershipCard';
 import { QuickBuyCreditsSheet } from '../../components/QuickBuyCreditsSheet';
 import { BottomSheetModal, BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import type { RootStackParamList } from '../index';
+import { CommonActions } from "@react-navigation/native";
+import { useLogout } from '../../hooks/useLogout';
 
 export function SettingsScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const { logout } = useAuth();
+  const logout = useLogout();
   const user = useAuthenticatedUser();
 
   const creditBalance = useQuery(api.queries.credits.getUserBalance, { userId: user._id });
@@ -105,7 +107,21 @@ export function SettingsScreen() {
       'Are you sure you want to sign out?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign Out', style: 'destructive', onPress: logout }
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: () => {
+            logout(() => {
+              // Navigate to Landing screen after logout
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: "Landing" }],
+                })
+              );
+            });
+          }
+        }
       ]
     );
   };

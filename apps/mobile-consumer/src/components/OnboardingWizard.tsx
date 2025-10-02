@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity, StatusBar, TextInput, Alert } from 'react
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
-import { useNavigation } from '@react-navigation/native';
+import { CommonActions, useNavigation } from '@react-navigation/native';
+import { useLogout } from '../hooks/useLogout';
 
 interface OnboardingData {
   userName?: string;
@@ -35,6 +36,7 @@ export default function OnboardingWizard() {
   const navigation = useNavigation();
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const logout = useLogout();
 
   const completeOnboardingMutation = useMutation(api.mutations.core.completeConsumerOnboarding);
 
@@ -48,9 +50,12 @@ export default function OnboardingWizard() {
         name: onboardingData.userName?.trim() || undefined,
       });
 
-      // The navigation will automatically switch to the authenticated screens
-      // when the user object is updated with hasConsumerOnboarded: true
-      // No manual navigation needed - the RootNavigator handles this transition
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: "Home" }],
+        })
+      );
 
     } catch (error) {
       console.error('Failed to complete onboarding:', error);
@@ -193,7 +198,16 @@ export default function OnboardingWizard() {
 
           {/* Back to Sign In Link */}
           <TouchableOpacity
-            onPress={() => navigation.navigate('SignInModal' as never)}
+            onPress={() => {
+              logout(() => {
+                navigation.dispatch(
+                  CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: "Landing" }],
+                  })
+                );
+              });
+            }}
             disabled={isSubmitting}
             style={{
               paddingVertical: 12,

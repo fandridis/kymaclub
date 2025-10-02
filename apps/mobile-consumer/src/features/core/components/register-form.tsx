@@ -15,6 +15,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useNavigation } from '@react-navigation/native';
 import { useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
+import { secureStorage } from '../../../utils/storage';
 
 interface SimpleRegisterFormProps {
     onSuccess: () => void;
@@ -100,6 +101,7 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
             // The auth state will update automatically, which will trigger
             // the navigation structure to switch from auth stack to authenticated stack.
             // No manual navigation needed!
+            secureStorage.setIsAuthenticated(true);
 
             // Close the modal (since CreateAccountModal is presented as a modal)
             navigation.goBack();

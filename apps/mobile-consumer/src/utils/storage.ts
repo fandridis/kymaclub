@@ -56,6 +56,8 @@ export const appStorage = {
 };
 
 export const secureStorage = {
+    isAuthenticated: () => useMMKVBoolean('isAuthenticated', secureStorageMMKV),
+    useIsAuthenticated: () => useMMKVBoolean('isAuthenticated', secureStorageMMKV),
     useUserPin: () => useMMKVString('userPin', secureStorageMMKV),
     useBiometricEnabled: () => useMMKVBoolean('biometricEnabled', secureStorageMMKV),
     getSecureValue: <K extends keyof SecureStorageSchema>(key: K): SecureStorageSchema[K] | undefined => {
@@ -75,6 +77,9 @@ export const secureStorage = {
             secureStorageMMKV.set(key, String(value));
         }
     },
+    getIsAuthenticated: () => secureStorageMMKV.getBoolean('isAuthenticated'),
+    setIsAuthenticated: (value: boolean) => secureStorageMMKV.set('isAuthenticated', value),
+    removeIsAuthenticated: () => secureStorageMMKV.delete('isAuthenticated'),
 };
 
 /**

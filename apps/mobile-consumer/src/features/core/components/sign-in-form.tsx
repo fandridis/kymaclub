@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -13,8 +13,11 @@ import {
 } from 'react-native';
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useNavigation } from '@react-navigation/native';
+import { CommonActions } from '@react-navigation/native';
 import { useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
+import { secureStorage } from '../../../utils/storage';
+import { useAuth } from '../../../stores/auth-store';
 
 export function SignInForm() {
     const navigation = useNavigation();
@@ -24,8 +27,21 @@ export function SignInForm() {
     const [email, setEmail] = useState('');
     const [code, setCode] = useState('');
     const [checkingUser, setCheckingUser] = useState(false);
-
     const checkUserExistsMutation = useMutation(api.mutations.core.checkUserExistsByEmail);
+    const { user } = useAuth();
+
+    useEffect(() => {
+        console.log('SignInForm: user authenticated ', !!user);
+        if (user) {
+            const redirectTo = user.hasConsumerOnboarded ? 'Home' : 'Onboarding';
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: redirectTo }],
+                })
+            );
+        }
+    }, [user, navigation])
 
     const handleSendCode = async () => {
         if (!email.trim()) {
@@ -95,9 +111,10 @@ export function SignInForm() {
             // The auth state will update automatically, which will trigger
             // the navigation structure to switch from auth stack to authenticated stack.
             // No manual navigation needed!
+            secureStorage.setIsAuthenticated(true);
 
             // Close the modal (since SignInModal is presented as a modal)
-            navigation.goBack();
+            // navigation.goBack();
 
         } catch (error) {
             console.error(error);
