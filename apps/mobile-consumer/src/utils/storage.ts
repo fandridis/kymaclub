@@ -1,4 +1,3 @@
-// storage.ts
 import { MMKV, useMMKVBoolean, useMMKVNumber, useMMKVString, useMMKVObject } from 'react-native-mmkv';
 
 // Define storage schemas
@@ -17,9 +16,52 @@ interface AppStorageSchema {
 interface SecureStorageSchema {
     userPin: string;
     biometricEnabled: boolean;
+    lastAuthenticatedUserId: string;  // Persistent user ID for detecting user changes
 }
 
-// Create MMKV instances
+/**
+ * Create MMKV instances. Remember to add new ones to the clearAllStorage function.
+ * 
+ * SMART STORAGE ARCHITECTURE:
+ * 
+ * Storage Separation:
+ * - appStorageMMKV: User preferences (language, theme, onboarding)
+ * - secureStorageMMKV: Sensitive data + lastAuthenticatedUserId
+ * - convexAuthMMKV: Authentication tokens
+ * 
+ * User Change Detection:
+ * - lastAuthenticatedUserId NEVER auto-clears, only replaced on user change
+ * - On app load, AuthSync compares current user ID with lastAuthenticatedUserId
+ * - If same user → preserve preferences ✅
+ * - If different user → clear previous user's preferences
+ * 
+ * Clearing Strategy:
+ * 
+ * LOGOUT (useLogout hook):
+ * - Clear: Auth tokens ONLY
+ * - Preserve: User preferences, lastUserId
+ * - Result: Same user keeps settings on re-login ✅
+ * 
+ * USER CHANGE (AuthSync component):
+ * - Clear: User preferences (language, theme, onboarding)
+ * - Preserve: Auth tokens (new user needs them!)
+ * - Update: lastAuthenticatedUserId to new user
+ * - Result: Different user gets clean slate ✅
+ * 
+ * Protected Scenarios:
+ * ✅ User logout → re-login same user    → Keeps language/theme/onboarding ✅
+ * ✅ Session expires → re-login          → Keeps preferences ✅
+ * ✅ Different user logs in              → Clean preferences ✅
+ * ✅ App restarts with same user         → No cleanup, ID matches ✅
+ * ✅ App force-quit and reopened         → ID persists, works correctly ✅
+ * 
+ * Benefits:
+ * ✅ Better UX - users don't lose settings on logout
+ * ✅ Onboarding never shows again for same user
+ * ✅ Language/theme preserved across sessions
+ * ✅ Clean separation between auth state and user preferences
+ * ✅ Security maintained - different users get clean slate
+ */
 export const appStorageMMKV = new MMKV({
     id: 'app-storage'
 });
@@ -27,6 +69,11 @@ export const appStorageMMKV = new MMKV({
 export const secureStorageMMKV = new MMKV({
     id: 'secure-storage',
     encryptionKey: 'djgefaojdisoiajdthejoiabesthfu'
+});
+
+export const convexAuthMMKV = new MMKV({
+    id: 'convex-auth-storage',
+    encryptionKey: 'eoijgefaeoifjisfthejodiaebestfr'
 });
 
 export const appStorage = {
@@ -56,10 +103,14 @@ export const appStorage = {
 };
 
 export const secureStorage = {
-    isAuthenticated: () => useMMKVBoolean('isAuthenticated', secureStorageMMKV),
-    useIsAuthenticated: () => useMMKVBoolean('isAuthenticated', secureStorageMMKV),
     useUserPin: () => useMMKVString('userPin', secureStorageMMKV),
     useBiometricEnabled: () => useMMKVBoolean('biometricEnabled', secureStorageMMKV),
+
+    // Last authenticated user ID - persists across app restarts for user change detection
+    getLastUserId: () => secureStorageMMKV.getString('lastAuthenticatedUserId') || null,
+    setLastUserId: (userId: string) => secureStorageMMKV.set('lastAuthenticatedUserId', userId),
+    clearLastUserId: () => secureStorageMMKV.delete('lastAuthenticatedUserId'),
+
     getSecureValue: <K extends keyof SecureStorageSchema>(key: K): SecureStorageSchema[K] | undefined => {
         const value = secureStorageMMKV.getString(key);
         if (!value) return undefined;
@@ -77,21 +128,41 @@ export const secureStorage = {
             secureStorageMMKV.set(key, String(value));
         }
     },
-    getIsAuthenticated: () => secureStorageMMKV.getBoolean('isAuthenticated'),
-    setIsAuthenticated: (value: boolean) => secureStorageMMKV.set('isAuthenticated', value),
-    removeIsAuthenticated: () => secureStorageMMKV.delete('isAuthenticated'),
 };
-
-/**
- * Only for convex auth
- */
-const convexAuthMMKV = new MMKV({
-    id: 'convex-auth-storage',
-    encryptionKey: 'eoijgefaeoifjisfthejodiaebestfr'
-});
 
 export const convexAuthStorage = {
     getItem: (key: string) => convexAuthMMKV.getString(key),
     setItem: (key: string, value: string) => convexAuthMMKV.set(key, value),
     removeItem: (key: string) => convexAuthMMKV.delete(key),
+};
+
+
+/**
+ * Clear all storage - USE WITH CAUTION!
+ * This is a nuclear option that clears EVERYTHING.
+ * 
+ * In most cases, you should use more targeted clearing:
+ * - clearAuthTokens() for logout
+ * - clearUserPreferences() for user changes
+ */
+export const clearAllStorage = () => {
+    appStorageMMKV.clearAll();
+    secureStorageMMKV.clearAll();
+    convexAuthMMKV.clearAll();
+};
+
+/**
+ * Clear only authentication tokens (for logout)
+ * Preserves: user preferences, lastUserId
+ */
+export const clearAuthTokens = () => {
+    convexAuthMMKV.clearAll();
+};
+
+/**
+ * Clear user-specific preferences (for user changes)
+ * Preserves: lastUserId (in secureStorage)
+ */
+export const clearUserPreferences = () => {
+    appStorageMMKV.clearAll();
 };

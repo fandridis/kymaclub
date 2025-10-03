@@ -51,7 +51,7 @@ const WelcomeBanner = ({
         <View style={styles.bannerContent}>
             <Text style={styles.bannerTitle}>Welcome aboard! 🎉</Text>
             <Text style={styles.bannerSubtitle}>
-                We are excited to have you! Look around, browse the different businesses and book any class you like!
+                We are excited to have you! We've added 10 credits to your account to get you started. Look around, browse the different businesses and book any class you like!
             </Text>
         </View>
 
@@ -403,6 +403,16 @@ export function NewsScreen() {
                 <View style={styles.subtitleContainer}>
                     <Text style={styles.subtitleText}>Discover amazing fitness classes</Text>
                 </View>
+
+
+                <TouchableOpacity
+                    onPress={() => navigation.navigate('SignInModal')}
+                    style={styles.bannerAction}
+                    activeOpacity={0.8}
+                >
+                    <Text style={styles.bannerActionText}>Sign in</Text>
+                </TouchableOpacity>
+
 
                 {/* Welcome Banner - only show for new users */}
                 {shouldShowWelcomeBanner && (

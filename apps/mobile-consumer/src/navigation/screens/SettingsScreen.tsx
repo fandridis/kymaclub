@@ -295,19 +295,6 @@ export function SettingsScreen() {
           <SettingsHeader title="Manage Credits" />
           <SettingsGroup>
             <SettingsRow
-              title="Quick buy"
-              subtitle="Instantly get an amount of credits"
-              renderRightSide={() => (
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={handleOpenCreditsSheet}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.actionButtonText}>Buy credits</Text>
-                </TouchableOpacity>
-              )}
-            />
-            <SettingsRow
               title="Subscription"
               renderSubtitle={() => {
                 const isActive = subscription?.status === 'active';
@@ -344,7 +331,7 @@ export function SettingsScreen() {
                 const isCanceling = Boolean(subscription?.cancelAtPeriodEnd);
                 const isPaused = subscription?.status === 'unpaid' || subscription?.status === 'past_due';
 
-                let buttonText = 'Start here';
+                let buttonText = 'Start a subscription';
                 if (isActive && !isCanceling) {
                   buttonText = 'Update';
                 } else if (isPaused || isCanceling) {
@@ -361,6 +348,19 @@ export function SettingsScreen() {
                   </TouchableOpacity>
                 );
               }}
+            />
+            <SettingsRow
+              title="Quick buy"
+              subtitle="Instantly get an amount of credits"
+              renderRightSide={() => (
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={handleOpenCreditsSheet}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.actionButtonText}>Buy credits</Text>
+                </TouchableOpacity>
+              )}
             />
           </SettingsGroup>
 

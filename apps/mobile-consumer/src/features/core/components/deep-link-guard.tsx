@@ -2,11 +2,11 @@ import { useEffect, type ReactNode } from 'react'
 import { useAuth } from '../../../stores/auth-store'
 import * as Linking from 'expo-linking'
 
-interface AuthGuardProps {
+interface DeepLinkGuardProps {
     children: ReactNode
 }
 
-export function AuthGuard({ children }: AuthGuardProps) {
+export function DeepLinkGuard({ children }: DeepLinkGuardProps) {
     const { user, pendingDeepLink, setPendingDeepLink } = useAuth()
     const url = Linking.useURL()
 

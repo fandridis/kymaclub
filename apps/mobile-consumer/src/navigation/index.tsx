@@ -152,17 +152,9 @@ function HomeTabs() {
 // Root navigator with modal presentation - all screens always available
 export function RootNavigator() {
   const { user } = useAuth();
-  const [isAuthenticated] = secureStorage.useIsAuthenticated();
+  // const [isAuthenticated] = secureStorage.useIsAuthenticated();
 
-  const isReallyAuthenticated = isAuthenticated && user;
-
-  useEffect(() => {
-    console.log('RootNavigator: user ', !!user);
-    console.log('RootNavigator: isAuthenticated ', isAuthenticated);
-    console.log('--------------------------------');
-  }, [user, isAuthenticated]);
-
-  console.log('RootNavigator: isReallyAuthenticated ', isReallyAuthenticated);
+  const isReallyAuthenticated = user;  // && isAuthenticated;
 
   const getIntialRouteName = () => {
     if (!isReallyAuthenticated) {

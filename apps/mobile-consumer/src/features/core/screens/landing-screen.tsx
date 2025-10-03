@@ -24,12 +24,11 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Landing'>;
 
 export function LandingScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const isAuthenticated = secureStorage.getIsAuthenticated();
+  // const isAuthenticated = secureStorage.getIsAuthenticated();
   const { user } = useAuth();
-  const isReallyAuthenticated = isAuthenticated && user;
+  const isReallyAuthenticated = user; //  && isAuthenticated;
 
   useEffect(() => {
-    console.log('LandingScreen: user authenticated ', !!user);
     if (isReallyAuthenticated) {
       // Reset the entire navigation stack and navigate to Home without history
       navigation.dispatch(

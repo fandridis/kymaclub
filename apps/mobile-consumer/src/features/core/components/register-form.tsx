@@ -97,11 +97,11 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
 
             await signIn("resend-otp", formData);
 
-            // Registration successful!
-            // The auth state will update automatically, which will trigger
-            // the navigation structure to switch from auth stack to authenticated stack.
-            // No manual navigation needed!
-            secureStorage.setIsAuthenticated(true);
+            // // Registration successful!
+            // // The auth state will update automatically, which will trigger
+            // // the navigation structure to switch from auth stack to authenticated stack.
+            // // No manual navigation needed!
+            // secureStorage.setIsAuthenticated(true);
 
             // Close the modal (since CreateAccountModal is presented as a modal)
             navigation.goBack();

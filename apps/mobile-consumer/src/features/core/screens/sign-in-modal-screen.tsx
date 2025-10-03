@@ -1,5 +1,5 @@
 // components/sign-in-modal.tsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
     View,
     Text,
@@ -10,12 +10,27 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useNavigation } from '@react-navigation/native';
+import { CommonActions, useNavigation } from '@react-navigation/native';
 import { X } from 'lucide-react-native';
 import { SignInForm } from '../components/sign-in-form';
+import { useAuth } from '../../../stores/auth-store';
 
 export function SignInModalScreen() {
     const navigation = useNavigation();
+    const { user } = useAuth();
+
+
+    useEffect(() => {
+        if (user) {
+            const redirectTo = user.hasConsumerOnboarded ? 'Home' : 'Onboarding';
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: redirectTo }],
+                })
+            );
+        }
+    }, [user, navigation])
 
     return (
         <SafeAreaView style={styles.container}>

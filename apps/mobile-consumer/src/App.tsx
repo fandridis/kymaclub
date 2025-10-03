@@ -18,13 +18,12 @@ import i18n from './i18n';
 import { useEffect, useState } from 'react';
 import { useAuth, useAuthStore } from './stores/auth-store';
 import { AuthSync } from './features/core/components/auth-sync';
-import { AuthGuard } from './features/core/components/auth-guard';
+import { DeepLinkGuard } from './features/core/components/deep-link-guard';
 import { ErrorBoundary } from './components/error-boundary';
 import { convexAuthStorage } from './utils/storage';
 import { RootNavigator } from './navigation';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import OnboardingWizard from './components/OnboardingWizard';
 
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
@@ -91,7 +90,7 @@ export function App() {
         <ConvexAuthProvider client={convex} storage={convexAuthStorage}>
           <ConvexQueryCacheProvider expiration={60 * 1000}>
             <AuthSync>
-              <AuthGuard>
+              <DeepLinkGuard>
                 <ActionSheetProvider>
                   <SafeAreaProvider>
                     <InnerApp
@@ -100,7 +99,7 @@ export function App() {
                     />
                   </SafeAreaProvider>
                 </ActionSheetProvider>
-              </AuthGuard>
+              </DeepLinkGuard>
             </AuthSync>
           </ConvexQueryCacheProvider>
         </ConvexAuthProvider>
@@ -119,12 +118,7 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
   const data = useQuery(api.queries.core.getCurrentUserQuery);
   const recordPushNotificationToken = useMutation(api.mutations.pushNotifications.recordPushNotificationToken);
   const [appReady, setAppReady] = useState(false);
-  const isLoading = user === undefined;
-
-
-  console.log('user exists: ', !!user);
-  console.log('user onboarded: ', user?.hasConsumerOnboarded);
-  console.log('InnerApp data.email: ', data?.user?.email);
+  const isLoading = data === undefined;
 
   useEffect(() => {
     if (!user?._id) return;
