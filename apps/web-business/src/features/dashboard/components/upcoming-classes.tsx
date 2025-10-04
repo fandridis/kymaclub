@@ -1,11 +1,8 @@
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ArrowRight, CalendarDays } from "lucide-react"
+import { CalendarDays } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import React, { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Link } from "@tanstack/react-router"
 import useUpcomingClassesWithBookings from "../hooks/use-upcoming-classes-with-bookings"
 import type { Doc } from "@repo/api/convex/_generated/dataModel"
 import { TEMPLATE_COLORS_MAP } from "@/utils/colors"
@@ -134,6 +131,8 @@ export function ClassBookingRow({
 }
 
 const now = Date.now()
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
+const sevenDaysFromNow = now + SEVEN_DAYS_MS
 
 export function UpcomingClasses({ className }: UpcomingClassesProps) {
     const { data, loading } = useUpcomingClassesWithBookings({
@@ -142,7 +141,7 @@ export function UpcomingClasses({ className }: UpcomingClassesProps) {
     })
     const [bookingsDialog, setBookingsDialog] = useState<{ open: boolean; classInstance: Doc<"classInstances"> | null; bookings: Doc<"bookings">[] } | null>(null)
 
-    // Group classes by date
+    // Filter to next 7 days and group classes by date
     const classesByDate = React.useMemo(() => {
         if (!data || data.length === 0) return {}
 
@@ -150,14 +149,19 @@ export function UpcomingClasses({ className }: UpcomingClassesProps) {
 
         data.forEach((item) => {
             const classInstance = item.classInstance
-            const date = new Date(classInstance.startTime)
-            const dateKey = getDateKey(date)
+            const startTime = classInstance.startTime
 
-            if (!grouped[dateKey]) {
-                grouped[dateKey] = []
+            // Only include classes in the next 7 days
+            if (startTime <= sevenDaysFromNow) {
+                const date = new Date(startTime)
+                const dateKey = getDateKey(date)
+
+                if (!grouped[dateKey]) {
+                    grouped[dateKey] = []
+                }
+                // At this point, grouped[dateKey] is guaranteed to be an array
+                grouped[dateKey]!.push(item)
             }
-            // At this point, grouped[dateKey] is guaranteed to be an array
-            grouped[dateKey]!.push(item)
         })
 
         // Sort dates and sort classes within each date by start time
@@ -177,106 +181,81 @@ export function UpcomingClasses({ className }: UpcomingClassesProps) {
 
     if (loading) {
         return (
-            <Card className={cn("h-[80vh] md:h-[60vh] flex flex-col shadow-sm gap-2", className)}>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <CalendarDays className="w-5 h-5" />
-                        <h2 className="text-xl font-semibold">Upcoming Classes</h2>
-                    </CardTitle>
-                    <CardDescription>
-                        Classes scheduled for today and future dates.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="p-0 flex-1 overflow-y-auto">
-                    <div className="flex items-center justify-center h-full">
-                        <p className="text-muted-foreground">Loading upcoming classes...</p>
-                    </div>
-                </CardContent>
-            </Card>
+            <div className={cn("space-y-6", className)}>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                    <CalendarDays className="w-5 h-5" />
+                    <p>Loading upcoming classes...</p>
+                </div>
+            </div>
+        )
+    }
+
+    if (sections.length === 0) {
+        return (
+            <div className={cn("space-y-6", className)}>
+                <div className="flex flex-col items-center justify-center py-12 px-4 border-2 border-dashed border-muted rounded-lg">
+                    <CalendarDays className="w-12 h-12 text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground text-lg font-medium">No upcoming classes scheduled</p>
+                    <p className="text-muted-foreground text-sm mt-2">Classes scheduled for the next 7 days will appear here</p>
+                </div>
+            </div>
         )
     }
 
     return (
         <>
-            <Card className={cn("h-[80vh] md:h-[60vh] flex flex-col shadow-sm gap-2", className)}>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <CalendarDays className="w-5 h-5" />
-                        <h2 className="text-xl font-semibold">Upcoming Classes</h2>
-                    </CardTitle>
-                    <CardDescription>
-                        Classes scheduled for today and future dates.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="p-0 flex-1 overflow-y-auto">
-                    <ScrollArea className="h-full px-3">
-                        {sections.length > 0 ? (
-                            sections.map(([date, classes]) => (
-                                <div key={date} data-date-section className="flex flex-col gap-1">
-                                    <h3 className="px-1 mt-3 sticky top-0 z-10 bg-background text-[11px] font-medium uppercase tracking-wide text-primary/70">
-                                        {date}
-                                    </h3>
-                                    <div className="grid gap-2">
-                                        {classes.map((item) => {
-                                            const { classInstance, bookings } = item
-                                            const classTitle = classInstance.templateSnapshot?.name || classInstance.name || 'Unnamed Class'
-                                            const instructor = classInstance.instructor || 'TBD'
-                                            const dateStr = formatDate(new Date(classInstance.startTime))
-                                            const timeStr = formatTime(classInstance.startTime)
-                                            const location = classInstance.venueSnapshot?.address ?
-                                                `${classInstance.venueSnapshot.address.street}, ${classInstance.venueSnapshot.address.city}` :
-                                                'Location TBD'
-                                            const maxCapacity = classInstance.capacity || 0
+            <div className={cn("space-y-8", className)}>
+                {sections.map(([date, classes]) => (
+                    <div key={date} className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <h2 className="text-xl font-semibold tracking-tight">{date}</h2>
+                            <div className="h-px flex-1 bg-border" />
+                            <span className="text-sm text-muted-foreground">{classes.length} {classes.length === 1 ? 'class' : 'classes'}</span>
+                        </div>
 
-                                            // Transform bookings to match the new interface
-                                            const transformedBookings: Booking[] = (bookings || []).map(booking => ({
-                                                id: booking._id || Math.random().toString(),
-                                                user: {
-                                                    name: booking.userSnapshot?.name || 'Unknown User',
-                                                    avatar: undefined // userSnapshot doesn't have avatar field
-                                                },
-                                                status: booking.status || 'pending'
-                                            }))
+                        <div className="grid gap-4">
+                            {classes.map((item) => {
+                                const { classInstance, bookings } = item
+                                const instructor = classInstance.instructor || 'TBD'
+                                const dateStr = formatDate(new Date(classInstance.startTime))
+                                const timeStr = formatTime(classInstance.startTime)
+                                const location = classInstance.venueSnapshot?.address ?
+                                    `${classInstance.venueSnapshot.address.street}, ${classInstance.venueSnapshot.address.city}` :
+                                    'Location TBD'
+                                const maxCapacity = classInstance.capacity || 0
 
-                                            return (
-                                                <div key={classInstance._id}>
-                                                    <div
-                                                        className="cursor-pointer"
-                                                        onClick={() => setBookingsDialog({ open: true, classInstance, bookings: bookings || [] })}
-                                                    >
-                                                        <ClassBookingRow
-                                                            classInstance={classInstance}
-                                                            instructor={instructor}
-                                                            date={dateStr}
-                                                            time={timeStr}
-                                                            location={location}
-                                                            bookings={transformedBookings}
-                                                            maxCapacity={maxCapacity}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            )
-                                        })}
+                                // Transform bookings to match the new interface
+                                const transformedBookings: Booking[] = (bookings || []).map(booking => ({
+                                    id: booking._id || Math.random().toString(),
+                                    user: {
+                                        name: booking.userSnapshot?.name || 'Unknown User',
+                                        avatar: undefined // userSnapshot doesn't have avatar field
+                                    },
+                                    status: booking.status || 'pending'
+                                }))
+
+                                return (
+                                    <div
+                                        key={classInstance._id}
+                                        className="cursor-pointer transition-opacity hover:opacity-80"
+                                        onClick={() => setBookingsDialog({ open: true, classInstance, bookings: bookings || [] })}
+                                    >
+                                        <ClassBookingRow
+                                            classInstance={classInstance}
+                                            instructor={instructor}
+                                            date={dateStr}
+                                            time={timeStr}
+                                            location={location}
+                                            bookings={transformedBookings}
+                                            maxCapacity={maxCapacity}
+                                        />
                                     </div>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="flex items-center justify-center h-full">
-                                <p className="text-muted-foreground italic text-sm">
-                                    No upcoming classes scheduled.
-                                </p>
-                            </div>
-                        )}
-                    </ScrollArea>
-                </CardContent>
-                <CardFooter>
-                    {/* <Button variant="outline" className="w-full bg-transparent">
-                        <Link to="/calendar" className="flex items-center justify-center gap-2">
-                            View calendar <ArrowRight className="w-4 h-4" />
-                        </Link>
-                    </Button> */}
-                </CardFooter>
-            </Card>
+                                )
+                            })}
+                        </div>
+                    </div>
+                ))}
+            </div>
 
             {/* Bookings Dialog */}
             {bookingsDialog && (

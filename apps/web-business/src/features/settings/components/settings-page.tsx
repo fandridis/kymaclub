@@ -9,7 +9,7 @@ export function SettingsPage() {
 
     return (
         <Tabs value={tab} onValueChange={setTab} className="w-full">
-            <TabsList className="mb-2 grid w-full grid-cols-3">
+            <TabsList className="mb-6 grid w-fit grid-cols-3">
                 <TabsTrigger value="venues">Venues</TabsTrigger>
                 <TabsTrigger value="notifications">Notifications</TabsTrigger>
                 <TabsTrigger value="account">Account</TabsTrigger>

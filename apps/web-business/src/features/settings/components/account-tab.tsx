@@ -75,7 +75,7 @@ export function AccountTab() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="max-w-2xl space-y-6">
             <div>
                 <h3 className="text-lg font-semibold">Account</h3>
                 <p className="text-sm text-muted-foreground">Manage your business and personal profile.</p>

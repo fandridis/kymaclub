@@ -453,6 +453,9 @@ export const getVenueClassInstancesOptimized = query({
                 .filter(q =>
                     q.and(
                         q.neq(q.field("deleted"), true),
+                        // Only include active bookings (not cancelled)
+                        q.neq(q.field("status"), "cancelled_by_consumer"),
+                        q.neq(q.field("status"), "cancelled_by_business"),
                         q.or(...instanceIds.map(id => q.eq(q.field("classInstanceId"), id)))
                     )
                 )

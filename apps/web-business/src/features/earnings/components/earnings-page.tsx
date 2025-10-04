@@ -207,7 +207,7 @@ export default function EarningsPage() {
                             <CardTitle className="text-xl font-semibold text-card-foreground">
                                 Booking Details - {selectedMonthLabel}
                             </CardTitle>
-                            <p className="text-sm text-muted-foreground">Detailed breakdown of all class bookings and earnings</p>
+                            <p className="text-sm text-muted-foreground">Detailed breakdown of all class bookings and earnings. Records appear after the class has been completed.</p>
                         </div>
                         <div className="flex items-center gap-3">
                             <Button onClick={handleExport} variant="outline">

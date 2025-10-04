@@ -786,7 +786,13 @@ export const bookingService = {
         const timeUntilClass = instance.startTime - now;
         const hoursUntilClass = timeUntilClass / (1000 * 60 * 60);
 
-        const isLateCancellation = now > cancellationCutoff;
+        // Check for free cancellation privilege (e.g., from class rescheduling)
+        const hasFreeCancel = booking.hasFreeCancel
+            && booking.freeCancelExpiresAt
+            && now <= booking.freeCancelExpiresAt;
+
+        // Late cancellation check - bypassed if free cancellation is active
+        const isLateCancellation = hasFreeCancel ? false : now > cancellationCutoff;
 
         // Update booking status
         await ctx.db.patch(args.bookingId, {

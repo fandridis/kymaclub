@@ -320,7 +320,10 @@ export function ClassDetailsModalScreen() {
         ) {
             const cancellationInfo = getCancellationInfo(
                 existingBooking.classInstanceSnapshot.startTime,
-                existingBooking.classInstanceSnapshot.cancellationWindowHours
+                existingBooking.classInstanceSnapshot.cancellationWindowHours,
+                existingBooking.hasFreeCancel,
+                existingBooking.freeCancelExpiresAt,
+                existingBooking.freeCancelReason
             );
             message = getCancellationMessage(classLabel, cancellationInfo);
         }

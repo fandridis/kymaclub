@@ -10,6 +10,49 @@ import { timeUtils } from "../utils/timeGeneration";
 import type { CreateClassInstanceArgs, CreateMultipleClassInstancesArgs, DeleteSimilarFutureInstancesArgs, DeleteSingleInstanceArgs, UpdateMultipleInstancesArgs, UpdateSingleInstanceArgs } from "../convex/mutations/classInstances";
 import { bookingService } from "./bookingService";
 
+/**
+ * Update bookings when class time changes:
+ * - Grant free cancellation privilege (48 hours)
+ * - Update classInstanceSnapshot with new times
+ */
+const updateBookingsForTimeChange = async (
+    ctx: MutationCtx,
+    classInstanceId: Id<"classInstances">,
+    newStartTime: number,
+    newEndTime: number,
+    userId: Id<"users">
+): Promise<number> => {
+    const now = Date.now();
+    const FORTY_EIGHT_HOURS = 48 * 60 * 60 * 1000;
+
+    // Get all pending bookings for this instance
+    const bookings = await ctx.db
+        .query("bookings")
+        .withIndex("by_class_instance_status", (q) =>
+            q.eq("classInstanceId", classInstanceId).eq("status", "pending")
+        )
+        .collect();
+
+    // Update each booking with free cancellation AND new snapshot times
+    for (const booking of bookings) {
+        await ctx.db.patch(booking._id, {
+            hasFreeCancel: true,
+            freeCancelExpiresAt: now + FORTY_EIGHT_HOURS,
+            freeCancelReason: "class time changed",
+            // Update the snapshot with new times so consumers see correct schedule
+            classInstanceSnapshot: {
+                ...booking.classInstanceSnapshot,
+                startTime: newStartTime,
+                endTime: newEndTime,
+            },
+            updatedAt: now,
+            updatedBy: userId,
+        });
+    }
+
+    return bookings.length;
+};
+
 // Service object with all class instance operations
 export const classInstanceService = {
     /**
@@ -129,7 +172,7 @@ export const classInstanceService = {
     /**
      * Update a single class instance
      */
-    updateSingle: async ({ ctx, args, user }: { ctx: MutationCtx, args: UpdateSingleInstanceArgs, user: Doc<"users"> }): Promise<{ updatedInstanceId: Id<"classInstances"> }> => {
+    updateSingle: async ({ ctx, args, user }: { ctx: MutationCtx, args: UpdateSingleInstanceArgs, user: Doc<"users"> }): Promise<{ updatedInstanceId: Id<"classInstances">; bookingsAffected: number }> => {
         const existingInstance = await ctx.db.get(args.instanceId);
         if (!existingInstance) {
             throw new ConvexError({
@@ -151,13 +194,19 @@ export const classInstanceService = {
 
         const cleanArgs = classInstanceOperations.prepareUpdateInstance(args.instance);
 
+        // Calculate final times (use new if provided, otherwise keep existing)
+        const finalStartTime = cleanArgs.startTime ?? existingInstance.startTime;
+        const finalEndTime = cleanArgs.endTime ?? existingInstance.endTime;
+
+        // Check if time fields ACTUALLY changed (not just provided)
+        const isTimeChanged =
+            (cleanArgs.startTime !== undefined && cleanArgs.startTime !== existingInstance.startTime) ||
+            (cleanArgs.endTime !== undefined && cleanArgs.endTime !== existingInstance.endTime);
+
         // When time fields are updated, regenerate timePattern and dayOfWeek for calendar display
         // This ensures consistency between startTime/endTime and their derived display fields
-        const timeFieldsUpdate = (cleanArgs.startTime || cleanArgs.endTime)
-            ? timeUtils.generateTimePatternData(
-                cleanArgs.startTime ?? existingInstance.startTime,
-                cleanArgs.endTime ?? existingInstance.endTime
-            )
+        const timeFieldsUpdate = isTimeChanged
+            ? timeUtils.generateTimePatternData(finalStartTime, finalEndTime)
             : {};
 
         await ctx.db.patch(args.instanceId, {
@@ -167,13 +216,27 @@ export const classInstanceService = {
             updatedBy: user._id,
         });
 
-        return { updatedInstanceId: args.instanceId };
+        // Update bookings if time changed (grants free cancel + updates snapshot times)
+        let bookingsAffected = 0;
+        if (isTimeChanged) {
+            bookingsAffected = await updateBookingsForTimeChange(
+                ctx,
+                args.instanceId,
+                finalStartTime,
+                finalEndTime,
+                user._id
+            );
+        }
+
+        console.log('bookingsAffected: ', bookingsAffected);
+
+        return { updatedInstanceId: args.instanceId, bookingsAffected };
     },
 
     /**
      * Update a set of similar future class instances
      */
-    updateMultiple: async ({ ctx, args, user }: { ctx: MutationCtx, args: UpdateMultipleInstancesArgs, user: Doc<"users"> }): Promise<{ updatedInstanceIds: Array<Id<"classInstances">>; totalUpdated: number }> => {
+    updateMultiple: async ({ ctx, args, user }: { ctx: MutationCtx, args: UpdateMultipleInstancesArgs, user: Doc<"users"> }): Promise<{ updatedInstanceIds: Array<Id<"classInstances">>; totalUpdated: number; bookingsAffected: number }> => {
         const originalInstance = await ctx.db.get(args.instanceId);
         if (!originalInstance) {
             throw new ConvexError({
@@ -202,6 +265,7 @@ export const classInstanceService = {
 
         const updatedInstanceIds: Array<Id<"classInstances">> = [];
         const timestamp = Date.now();
+        let totalBookingsAffected = 0;
 
         for (const instance of matchingInstances) {
             const { newStartTime, newEndTime } = timeUtils.calculateNewInstanceTimes(
@@ -210,7 +274,12 @@ export const classInstanceService = {
                 cleanArgs.endTime
             );
 
-            const timeFieldsUpdate = (cleanArgs.startTime || cleanArgs.endTime)
+            // Check if this instance's time ACTUALLY changed
+            const instanceTimeChanged =
+                newStartTime !== instance.startTime ||
+                newEndTime !== instance.endTime;
+
+            const timeFieldsUpdate = instanceTimeChanged
                 ? timeUtils.generateTimePatternData(newStartTime, newEndTime)
                 : {};
 
@@ -224,9 +293,25 @@ export const classInstanceService = {
             });
 
             updatedInstanceIds.push(instance._id);
+
+            // Update bookings only if this instance's time actually changed
+            if (instanceTimeChanged) {
+                const bookingsAffected = await updateBookingsForTimeChange(
+                    ctx,
+                    instance._id,
+                    newStartTime,
+                    newEndTime,
+                    user._id
+                );
+                totalBookingsAffected += bookingsAffected;
+            }
         }
 
-        return { updatedInstanceIds, totalUpdated: updatedInstanceIds.length };
+        return {
+            updatedInstanceIds,
+            totalUpdated: updatedInstanceIds.length,
+            bookingsAffected: totalBookingsAffected
+        };
     },
 
     /**

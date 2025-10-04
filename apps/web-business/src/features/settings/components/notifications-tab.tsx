@@ -131,7 +131,7 @@ export function NotificationsTab() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="max-w-3xl space-y-6">
             <div>
                 <h3 className="text-lg font-semibold">Notification Settings</h3>
                 <p className="text-sm text-muted-foreground">

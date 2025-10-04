@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { CheckCircle, CreditCard, Zap } from 'lucide-react-native';
 import { Button } from 'react-native';
 import { RootStackParamList } from '../index';
@@ -29,12 +29,13 @@ export function PaymentSuccessScreen() {
           {
             text: 'Great!',
             onPress: () => {
-              // Navigate to appropriate screen based on payment type
-              if (type === 'subscription') {
-                navigation.navigate('Settings');
-              } else {
-                navigation.navigate('Settings');
-              }
+              // Clear navigation stack and go to Settings
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: 'Settings' }],
+                })
+              );
             },
           },
         ]

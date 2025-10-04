@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, useNavigate, useSearch } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useState, useEffect } from "react";
 import { Button } from "../components/ui/button";

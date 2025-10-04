@@ -455,6 +455,11 @@ export const bookingsFields = {
   cancelledBy: v.optional(v.union(v.literal("consumer"), v.literal("business"))),
   completedAt: v.optional(v.number()),
 
+  // Free cancellation privileges (for rescheduled classes, etc.)
+  hasFreeCancel: v.optional(v.boolean()),
+  freeCancelExpiresAt: v.optional(v.number()),
+  freeCancelReason: v.optional(v.string()),
+
   ...auditFields,
   ...softDeleteFields,
 };

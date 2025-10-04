@@ -72,8 +72,9 @@ export default function ConfirmTimeUpdateDialog({
                 <AlertDialogHeader>
                     <AlertDialogTitle>Update Class Time</AlertDialogTitle>
                     <AlertDialogDescription>
-                        You've moved <strong>"{originalInstance.name}"</strong> to <strong>{formatDateTime(newStartTime)}</strong>.
-                        How would you like to update this class?
+                        You are moving <strong>"{originalInstance.name}"</strong> to <strong>{formatDateTime(newStartTime)}</strong>.
+                        <br />
+                        If this class has bookings, users will be notified and be allowed to cancel their booking for free.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
 
