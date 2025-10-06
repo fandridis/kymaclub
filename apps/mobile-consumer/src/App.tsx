@@ -245,7 +245,7 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
 
   // Render navigation - it handles auth state internally
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView>
       <NavigationContainer
         ref={navigationRef}
         theme={theme}

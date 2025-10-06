@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import Carousel from 'react-native-reanimated-carousel';
+import { View, Text, StyleSheet, Dimensions, ScrollView } from 'react-native';
 import { ReviewCard } from './ReviewCard';
 import type { Doc } from '@repo/api/convex/_generated/dataModel';
 import { theme } from '../theme';
@@ -22,8 +21,7 @@ export const ReviewsCarousel: React.FC<ReviewsCarouselProps> = ({
 
   const ITEM_GAP = 12;
   const SECTION_PADDING = 20;
-  const CAROUSEL_PADDING = SECTION_PADDING - (ITEM_GAP / 2);
-  const CAROUSEL_ITEM_WIDTH = screenWidth - (SECTION_PADDING * 2) + ITEM_GAP;
+  const CAROUSEL_ITEM_WIDTH = screenWidth - (SECTION_PADDING * 2);
 
   return (
     <View style={styles.container}>
@@ -35,26 +33,20 @@ export const ReviewsCarousel: React.FC<ReviewsCarouselProps> = ({
         </View>
       )}
 
-      <View style={[styles.carouselContainer, { paddingHorizontal: CAROUSEL_PADDING }]}>
-        <Carousel
-          loop={false}
-          width={CAROUSEL_ITEM_WIDTH}
-          height={200}
-          data={reviews}
-          scrollAnimationDuration={500}
-          snapEnabled
-          renderItem={({ item: review }) => (
-            <View style={[styles.carouselItem, { width: CAROUSEL_ITEM_WIDTH - ITEM_GAP }]}>
-              <ReviewCard review={review} />
-            </View>
-          )}
-          onConfigurePanGesture={(gestureChain) => {
-            gestureChain
-              .activeOffsetX([-10, 10])
-              .failOffsetY([-15, 15]);
-          }}
-        />
-      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {reviews.map((review) => (
+          <View
+            key={review._id}
+            style={[styles.carouselItem, { width: CAROUSEL_ITEM_WIDTH, marginRight: ITEM_GAP }]}
+          >
+            <ReviewCard review={review} />
+          </View>
+        ))}
+      </ScrollView>
     </View>
   );
 };
@@ -72,10 +64,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: theme.colors.zinc[900],
   },
-  carouselContainer: {
-    // Padding handled by parent to align with other sections
+  scrollContent: {
+    paddingHorizontal: 20,
   },
   carouselItem: {
-    // Width handled dynamically
+    // Width and marginRight handled dynamically
   },
 });

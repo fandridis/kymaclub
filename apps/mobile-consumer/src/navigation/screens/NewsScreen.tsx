@@ -3,7 +3,6 @@ import { StyleSheet, View, Text, Dimensions, ScrollView, ActivityIndicator, Touc
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MapPinIcon, StarIcon, UserIcon, DiamondIcon, ClockIcon } from 'lucide-react-native';
-import Carousel from 'react-native-reanimated-carousel';
 import { useQuery, useMutation } from 'convex/react';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { api } from '@repo/api/convex/_generated/api';
@@ -26,9 +25,7 @@ const DEFAULT_CAROUSEL_HEIGHT = 260; // Unified height for all carousels
 const SCHEDULE_CAROUSEL_HEIGHT = 160;
 const NEW_STUDIOS_CAROUSEL_HEIGHT = 200;
 
-const ITEM_GAP = 0; // Gap between items
 const SECTION_PADDING = 12; // Horizontal padding for sections
-const CAROUSEL_PADDING = SECTION_PADDING - (ITEM_GAP / 2); // Adjust for item gaps
 
 const CAROUSEL_ITEM_WIDTH = (screenWidth - (SECTION_PADDING * 2)) / 1.40;
 
@@ -427,59 +424,50 @@ export function NewsScreen() {
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Your Schedule</Text>
                         <Text style={styles.sectionSubtitle}>Here's what you've got coming up.</Text>
-                        <View style={styles.carouselContainer}>
-                            <Carousel
-                                loop={false}
-                                width={CAROUSEL_ITEM_WIDTH + ITEM_GAP}
-                                height={SCHEDULE_CAROUSEL_HEIGHT}
-                                data={upcomingClasses}
-                                scrollAnimationDuration={500}
-                                style={styles.carousel}
-                                snapEnabled
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity
-                                        style={styles.scheduleCarouselCard}
-                                        onPress={() => {
-                                            if (item.classInstanceId) {
-                                                navigation.navigate('ClassDetailsModal', {
-                                                    classInstanceId: item.classInstanceId
-                                                });
-                                            }
-                                        }}
-                                        activeOpacity={0.7}
-                                    >
-                                        <View style={styles.scheduleShadowContainer}>
-                                            <View style={styles.scheduleCard}>
-                                                <View style={styles.scheduleTopHalf}>
-                                                    <Text style={styles.scheduleDate}>{item.date}</Text>
-                                                    <Text style={styles.scheduleTime}>{item.time}</Text>
-                                                </View>
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.carouselScrollContent}
+                        >
+                            {upcomingClasses.map((item) => (
+                                <TouchableOpacity
+                                    key={item.id}
+                                    style={styles.scheduleCarouselCard}
+                                    onPress={() => {
+                                        if (item.classInstanceId) {
+                                            navigation.navigate('ClassDetailsModal', {
+                                                classInstanceId: item.classInstanceId
+                                            });
+                                        }
+                                    }}
+                                    activeOpacity={0.7}
+                                >
+                                    <View style={styles.scheduleShadowContainer}>
+                                        <View style={styles.scheduleCard}>
+                                            <View style={styles.scheduleTopHalf}>
+                                                <Text style={styles.scheduleDate}>{item.date}</Text>
+                                                <Text style={styles.scheduleTime}>{item.time}</Text>
+                                            </View>
 
-                                                <View style={styles.scheduleBottomHalf}>
-                                                    <Text style={styles.scheduleTitle} numberOfLines={1}>
-                                                        {item.title}
+                                            <View style={styles.scheduleBottomHalf}>
+                                                <Text style={styles.scheduleTitle} numberOfLines={1}>
+                                                    {item.title}
+                                                </Text>
+                                                <Text style={styles.scheduleInstructor} numberOfLines={1}>
+                                                    with {item.instructor}
+                                                </Text>
+                                                <View style={styles.locationContainer}>
+                                                    <MapPinIcon size={12} color="#9ca3af" />
+                                                    <Text style={styles.scheduleLocation} numberOfLines={1}>
+                                                        {item.venueAddress || item.venue}
                                                     </Text>
-                                                    <Text style={styles.scheduleInstructor} numberOfLines={1}>
-                                                        with {item.instructor}
-                                                    </Text>
-                                                    <View style={styles.locationContainer}>
-                                                        <MapPinIcon size={12} color="#9ca3af" />
-                                                        <Text style={styles.scheduleLocation} numberOfLines={1}>
-                                                            {item.venueAddress || item.venue}
-                                                        </Text>
-                                                    </View>
                                                 </View>
                                             </View>
                                         </View>
-                                    </TouchableOpacity>
-                                )}
-                                onConfigurePanGesture={(gestureChain) => {
-                                    gestureChain
-                                        .activeOffsetX([-10, 10])
-                                        .failOffsetY([-15, 15]);
-                                }}
-                            />
-                        </View>
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
                     </View>
                 ) : (
                     <View style={styles.section}>
@@ -494,134 +482,125 @@ export function NewsScreen() {
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Last minute offers</Text>
                         <Text style={styles.sectionSubtitle}>Who doesn't like a good deal? These classes are starting soon.</Text>
-                        <View style={styles.carouselContainer}>
-                            <Carousel
-                                loop={false}
-                                width={CAROUSEL_ITEM_WIDTH + ITEM_GAP}
-                                height={DEFAULT_CAROUSEL_HEIGHT}
-                                data={lastMinuteOffers}
-                                scrollAnimationDuration={300}
-                                style={styles.carousel}
-                                snapEnabled
-                                renderItem={({ item }) => {
-                                    const discountBadge = item.discountPercentage ? `-${item.discountPercentage}` : null;
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.carouselScrollContent}
+                        >
+                            {lastMinuteOffers.map((item) => {
+                                const discountBadge = item.discountPercentage ? `-${item.discountPercentage}` : null;
 
-                                    const subtitleText = item.instructor
-                                        ? `with ${item.instructor}`
-                                        : item.venueName || undefined;
+                                const subtitleText = item.instructor
+                                    ? `with ${item.instructor}`
+                                    : item.venueName || undefined;
 
-                                    const startTime = new Date(item.startTime).toLocaleTimeString('en-US', {
-                                        hour: 'numeric',
-                                        minute: '2-digit',
-                                        hour12: true,
-                                    });
+                                const startTime = new Date(item.startTime).toLocaleTimeString('en-US', {
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true,
+                                });
 
-                                    let startsInText: string | null = null;
-                                    if (item.subtitle) {
-                                        const trimmed = item.subtitle.trim();
-                                        if (/^in\s/i.test(trimmed)) {
-                                            const suffix = trimmed.slice(3).trim().toLowerCase();
-                                            startsInText = suffix ? `starts in ${suffix}` : 'starts soon';
-                                        } else {
-                                            startsInText = trimmed.toLowerCase();
-                                        }
+                                let startsInText: string | null = null;
+                                if (item.subtitle) {
+                                    const trimmed = item.subtitle.trim();
+                                    if (/^in\s/i.test(trimmed)) {
+                                        const suffix = trimmed.slice(3).trim().toLowerCase();
+                                        startsInText = suffix ? `starts in ${suffix}` : 'starts soon';
+                                    } else {
+                                        startsInText = trimmed.toLowerCase();
                                     }
+                                }
 
-                                    return (
-                                        <NewsClassCard
-                                            title={item.title}
-                                            subtitle={subtitleText}
-                                            imageUrl={item.imageUrl}
-                                            renderTopLeft={() => {
-                                                if (!startsInText) return null;
-                                                return (
-                                                    <View style={styles.startsInPill}>
-                                                        <Text style={styles.startsInPillText} numberOfLines={1}>
-                                                            {startsInText}
-                                                        </Text>
-                                                    </View>
-                                                );
-                                            }}
-                                            renderTopRight={() => {
-                                                if (!discountBadge) {
-                                                    return null;
-                                                }
-
-                                                return (
-                                                    <View style={[styles.lastMinuteBadge, styles.offerBadge]}>
-                                                        <Text style={styles.badgeText}>{discountBadge}</Text>
-                                                    </View>
-                                                );
-                                            }}
-                                            renderFooter={() => (
-                                                <View style={styles.newsClassCardFooterRow}>
-                                                    <View style={styles.newsClassCardFooterMetric}>
-                                                        <View style={styles.newsClassCardFooterIcon}>
-                                                            <DiamondIcon
-                                                                size={14}
-                                                                color={theme.colors.zinc[700]}
-                                                                strokeWidth={2}
-                                                            />
-                                                        </View>
-                                                        <Text
-                                                            style={styles.newsClassCardFooterText}
-                                                            numberOfLines={1}
-                                                        >
-                                                            {item.discountedPrice}
-                                                        </Text>
-                                                    </View>
-                                                    <View style={styles.newsClassCardFooterMetric}>
-                                                        <View style={styles.newsClassCardFooterIcon}>
-                                                            <ClockIcon
-                                                                size={14}
-                                                                color={theme.colors.zinc[700]}
-                                                                strokeWidth={2}
-                                                            />
-                                                        </View>
-                                                        <Text
-                                                            style={styles.newsClassCardFooterText}
-                                                            numberOfLines={1}
-                                                        >
-                                                            {startTime}
-                                                        </Text>
-                                                    </View>
-                                                    {item.venueCity ? (
-                                                        <View style={styles.newsClassCardFooterMetric}>
-                                                            <View style={styles.newsClassCardFooterIcon}>
-                                                                <MapPinIcon
-                                                                    size={14}
-                                                                    color={theme.colors.zinc[600]}
-                                                                    strokeWidth={2}
-                                                                />
-                                                            </View>
-                                                            <Text
-                                                                style={styles.newsClassCardFooterText}
-                                                                numberOfLines={1}
-                                                            >
-                                                                {item.venueCity}
-                                                            </Text>
-                                                        </View>
-                                                    ) : null}
+                                return (
+                                    <NewsClassCard
+                                        key={item.id}
+                                        title={item.title}
+                                        subtitle={subtitleText}
+                                        imageUrl={item.imageUrl}
+                                        renderTopLeft={() => {
+                                            if (!startsInText) return null;
+                                            return (
+                                                <View style={styles.startsInPill}>
+                                                    <Text style={styles.startsInPillText} numberOfLines={1}>
+                                                        {startsInText}
+                                                    </Text>
                                                 </View>
-                                            )}
-                                            onPress={() => {
-                                                if (item.classInstanceId) {
-                                                    navigation.navigate('ClassDetailsModal', {
-                                                        classInstanceId: item.classInstanceId,
-                                                    });
-                                                }
-                                            }}
-                                            style={styles.lastMinuteCarouselCard}
-                                        />
-                                    );
-                                }}
-                                onConfigurePanGesture={(gestureChain) => {
-                                    gestureChain
-                                        .activeOffsetX([-10, 10])
-                                        .failOffsetY([-15, 15]);
-                                }}
-                            />
-                        </View>
+                                            );
+                                        }}
+                                        renderTopRight={() => {
+                                            if (!discountBadge) {
+                                                return null;
+                                            }
+
+                                            return (
+                                                <View style={[styles.lastMinuteBadge, styles.offerBadge]}>
+                                                    <Text style={styles.badgeText}>{discountBadge}</Text>
+                                                </View>
+                                            );
+                                        }}
+                                        renderFooter={() => (
+                                            <View style={styles.newsClassCardFooterRow}>
+                                                <View style={styles.newsClassCardFooterMetric}>
+                                                    <View style={styles.newsClassCardFooterIcon}>
+                                                        <DiamondIcon
+                                                            size={14}
+                                                            color={theme.colors.zinc[700]}
+                                                            strokeWidth={2}
+                                                        />
+                                                    </View>
+                                                    <Text
+                                                        style={styles.newsClassCardFooterText}
+                                                        numberOfLines={1}
+                                                    >
+                                                        {item.discountedPrice}
+                                                    </Text>
+                                                </View>
+                                                <View style={styles.newsClassCardFooterMetric}>
+                                                    <View style={styles.newsClassCardFooterIcon}>
+                                                        <ClockIcon
+                                                            size={14}
+                                                            color={theme.colors.zinc[700]}
+                                                            strokeWidth={2}
+                                                        />
+                                                    </View>
+                                                    <Text
+                                                        style={styles.newsClassCardFooterText}
+                                                        numberOfLines={1}
+                                                    >
+                                                        {startTime}
+                                                    </Text>
+                                                </View>
+                                                {item.venueCity ? (
+                                                    <View style={styles.newsClassCardFooterMetric}>
+                                                        <View style={styles.newsClassCardFooterIcon}>
+                                                            <MapPinIcon
+                                                                size={14}
+                                                                color={theme.colors.zinc[600]}
+                                                                strokeWidth={2}
+                                                            />
+                                                        </View>
+                                                        <Text
+                                                            style={styles.newsClassCardFooterText}
+                                                            numberOfLines={1}
+                                                        >
+                                                            {item.venueCity}
+                                                        </Text>
+                                                    </View>
+                                                ) : null}
+                                            </View>
+                                        )}
+                                        onPress={() => {
+                                            if (item.classInstanceId) {
+                                                navigation.navigate('ClassDetailsModal', {
+                                                    classInstanceId: item.classInstanceId,
+                                                });
+                                            }
+                                        }}
+                                        style={styles.lastMinuteCarouselCard}
+                                    />
+                                );
+                            })}
+                        </ScrollView>
                     </View>
                 )}
 
@@ -630,44 +609,40 @@ export function NewsScreen() {
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>New studios</Text>
                         <Text style={styles.sectionSubtitle}>The latest additions to the Kyma network.</Text>
-                        <View style={styles.carouselContainer}>
-                            <Carousel
-                                width={CAROUSEL_ITEM_WIDTH + ITEM_GAP}
-                                height={NEW_STUDIOS_CAROUSEL_HEIGHT}
-                                data={newVenuesForCards}
-                                scrollAnimationDuration={500}
-                                style={styles.carousel}
-                                loop={false}
-                                snapEnabled
-                                renderItem={({ item: venue }) => {
-                                    const imageUrl = venue.imageStorageIds?.[0]
-                                        ? storageIdToUrl.get(venue.imageStorageIds[0])
-                                        : null;
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.carouselScrollContent}
+                        >
+                            {newVenuesForCards.map((venue) => {
+                                const imageUrl = venue.imageStorageIds?.[0]
+                                    ? storageIdToUrl.get(venue.imageStorageIds[0])
+                                    : null;
 
-                                    return (
-                                        <NewsClassCard
-                                            title={venue.name}
-                                            subtitle={venue.primaryCategory}
-                                            imageUrl={imageUrl}
-                                            onPress={() => {
-                                                navigation.navigate('VenueDetailsScreen', {
-                                                    venueId: venue._id,
-                                                });
-                                            }}
-                                            style={styles.newStudiosCarouselCard}
-                                            renderTopLeft={() => (
-                                                <View style={styles.venueRatingBadgeContent}>
-                                                    <StarIcon size={12} color="#fff" fill="#ffd700" />
-                                                    <Text style={styles.venueRatingText}>
-                                                        {venue.rating?.toFixed(1)} ({venue.reviewCount || 0})
-                                                    </Text>
-                                                </View>
-                                            )}
-                                        />
-                                    );
-                                }}
-                            />
-                        </View>
+                                return (
+                                    <NewsClassCard
+                                        key={venue._id}
+                                        title={venue.name}
+                                        subtitle={venue.primaryCategory}
+                                        imageUrl={imageUrl}
+                                        onPress={() => {
+                                            navigation.navigate('VenueDetailsScreen', {
+                                                venueId: venue._id,
+                                            });
+                                        }}
+                                        style={styles.newStudiosCarouselCard}
+                                        renderTopLeft={() => (
+                                            <View style={styles.venueRatingBadgeContent}>
+                                                <StarIcon size={12} color="#fff" fill="#ffd700" />
+                                                <Text style={styles.venueRatingText}>
+                                                    {venue.rating?.toFixed(1)} ({venue.reviewCount || 0})
+                                                </Text>
+                                            </View>
+                                        )}
+                                    />
+                                );
+                            })}
+                        </ScrollView>
                     </View>
                 )}
             </ScrollView>
@@ -714,11 +689,8 @@ const styles = StyleSheet.create({
     },
 
     // Unified carousel styles
-    carouselContainer: {
-        paddingHorizontal: CAROUSEL_PADDING,
-    },
-    carousel: {
-        width: screenWidth,
+    carouselScrollContent: {
+        paddingHorizontal: SECTION_PADDING,
     },
     scheduleCarouselCard: {
         width: CAROUSEL_ITEM_WIDTH,
