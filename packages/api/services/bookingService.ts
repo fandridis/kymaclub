@@ -663,7 +663,7 @@ export const bookingService = {
             });
         }
 
-        // Check if class is within the 30-minute check-in window
+        // Check if class is within the check-in window (30 min before to 3 hours after)
         const classStartTime = booking.classInstanceSnapshot?.startTime;
         if (!classStartTime) {
             throw new ConvexError({
@@ -674,8 +674,9 @@ export const bookingService = {
         }
 
         const thirtyMinutesInMs = 30 * 60 * 1000;
+        const threeHoursInMs = 3 * 60 * 60 * 1000;
         const earliestCheckIn = classStartTime - thirtyMinutesInMs;
-        const latestCheckIn = classStartTime + thirtyMinutesInMs;
+        const latestCheckIn = classStartTime + threeHoursInMs;
 
         if (now < earliestCheckIn) {
             throw new ConvexError({
@@ -687,7 +688,7 @@ export const bookingService = {
 
         if (now > latestCheckIn) {
             throw new ConvexError({
-                message: "Check-in window has closed. Check-in closes 30 minutes after class starts.",
+                message: "Check-in window has closed. Check-in closes 3 hours after class starts.",
                 field: "startTime",
                 code: ERROR_CODES.ACTION_NOT_ALLOWED,
             });

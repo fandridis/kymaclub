@@ -6,17 +6,18 @@ import { internal } from "./_generated/api";
 const crons = cronJobs();
 
 /**
- * Mark No-Shows - Runs every 30 minutes
+ * Mark No-Shows - Runs every hour
  * 
- * Finds all pending bookings where the class started more than 30 minutes ago
+ * Finds all pending bookings where the class started more than 3 hours ago
  * and marks them as no-show since the user didn't check in.
  * 
- * This runs frequently to ensure timely no-show marking without managing
+ * The 3-hour grace period allows late arrivals to check in after class ends.
+ * This runs hourly to ensure timely no-show marking without managing
  * individual scheduled jobs per booking.
  */
 crons.interval(
     "mark-no-shows",
-    { minutes: 30 },
+    { hours: 1 },
     internal.crons.markNoShows,
     {}
 );
@@ -27,19 +28,19 @@ export default crons;
  * Mark No-Shows Internal Mutation
  * 
  * Efficiently finds and marks no-show bookings by:
- * 1. Only checking bookings from the last 48 hours (optimization)
+ * 1. Only checking bookings from the last 24 hours (optimization)
  * 2. Only processing pending bookings
- * 3. Checking if 30 minutes have passed since class start
+ * 3. Checking if 3 hours have passed since class start
  */
 export const markNoShows = internalMutation({
     args: {},
     returns: v.null(),
     handler: async (ctx, args) => {
         const now = Date.now();
-        const GRACE_PERIOD_MS = 30 * 60 * 1000; // 30 minutes after class start
-        const ONE_DAY_AGO = now - (48 * 60 * 60 * 1000); // Only check last 48 hours for efficiency
+        const GRACE_PERIOD_MS = 3 * 60 * 60 * 1000; // 3 hours after class start
+        const ONE_DAY_AGO = now - (24 * 60 * 60 * 1000); // Only check last 24 hours for efficiency
 
-        console.log(`[No-Show Cron] Marking no-shows for the last 48 hours`);
+        console.log(`[No-Show Cron] Marking no-shows for the last 24 hours`);
         // Get all pending bookings from the last 48 hours using efficient compound index
         // This avoids scanning the entire bookings table by leveraging the index
         const recentBookings = await ctx.db
@@ -47,7 +48,7 @@ export const markNoShows = internalMutation({
             .withIndex("by_status_deleted_start_time", q =>
                 q
                     .eq("status", "pending")
-                    .eq("deleted", false)
+                    .eq("deleted", undefined)
                     .gt("classInstanceSnapshot.startTime", ONE_DAY_AGO)
             )
             .collect();
@@ -111,7 +112,7 @@ export const manualMarkNoShows = internalMutation({
     }),
     handler: async (ctx, args) => {
         const now = Date.now();
-        const GRACE_PERIOD_MS = 30 * 60 * 1000; // 30 minutes after class start
+        const GRACE_PERIOD_MS = 3 * 60 * 60 * 1000; // 3 hours after class start
         const ONE_DAY_AGO = now - (24 * 60 * 60 * 1000); // Only check last 24 hours for efficiency
 
         // Get all pending bookings from the last 48 hours using efficient compound index

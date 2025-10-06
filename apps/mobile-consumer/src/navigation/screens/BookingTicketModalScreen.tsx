@@ -85,7 +85,7 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
         message = 'Check-in opens 30 minutes before class starts. Please try again later.';
       } else if (errorMessage.includes('Check-in window has closed')) {
         title = 'Check-in closed';
-        message = 'The check-in window has closed. Check-in must be done within 30 minutes after class starts.';
+        message = 'The check-in window has closed. Check-in must be done within 3 hours after class starts.';
       } else if (errorMessage.includes('Cannot complete booking')) {
         title = 'Already processed';
         message = 'This booking has already been processed or cancelled.';
@@ -231,8 +231,9 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
     }
 
     const thirtyMinutesInMs = 30 * 60 * 1000;
+    const threeHoursInMs = 3 * 60 * 60 * 1000;
     const earliestCheckIn = classStartTime - thirtyMinutesInMs;
-    const latestCheckIn = classStartTime + thirtyMinutesInMs;
+    const latestCheckIn = classStartTime + threeHoursInMs;
 
     if (now < earliestCheckIn) {
       const timeUntilOpen = earliestCheckIn - now;

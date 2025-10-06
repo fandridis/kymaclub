@@ -362,12 +362,13 @@ export function NewsScreen() {
             <SafeAreaView style={styles.container}>
                 <TabScreenHeader
                     title={t('welcome.title')}
+                    subtitle="Discover amazing fitness classes"
                     renderRightSide={() => (
                         <TouchableOpacity
                             onPress={() => navigation.navigate('Settings')}
                             style={styles.profileButton}
                         >
-                            <UserIcon size={20} color={theme.colors.zinc[700]} />
+                            <UserIcon size={24} color={theme.colors.zinc[700]} />
                         </TouchableOpacity>
                     )}
                 />
@@ -383,12 +384,13 @@ export function NewsScreen() {
         <SafeAreaView style={styles.container}>
             <TabScreenHeader
                 title={t('welcome.title')}
+                subtitle="Discover amazing fitness classes"
                 renderRightSide={() => (
                     <TouchableOpacity
                         onPress={() => navigation.navigate('Settings')}
                         style={styles.profileButton}
                     >
-                        <UserIcon size={20} color={theme.colors.zinc[700]} />
+                        <UserIcon size={24} color={theme.colors.zinc[700]} />
                     </TouchableOpacity>
                 )}
             />
@@ -397,20 +399,6 @@ export function NewsScreen() {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
-                <View style={styles.subtitleContainer}>
-                    <Text style={styles.subtitleText}>Discover amazing fitness classes</Text>
-                </View>
-
-
-                <TouchableOpacity
-                    onPress={() => navigation.navigate('SignInModal')}
-                    style={styles.bannerAction}
-                    activeOpacity={0.8}
-                >
-                    <Text style={styles.bannerActionText}>Sign in</Text>
-                </TouchableOpacity>
-
-
                 {/* Welcome Banner - only show for new users */}
                 {shouldShowWelcomeBanner && (
                     <WelcomeBanner
@@ -660,14 +648,6 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingBottom: 60,
-    },
-    subtitleContainer: {
-        paddingHorizontal: SECTION_PADDING,
-        paddingBottom: 16,
-    },
-    subtitleText: {
-        fontSize: 16,
-        color: '#6c757d',
     },
 
     // Section styles
@@ -1023,8 +1003,8 @@ const styles = StyleSheet.create({
 
     // Profile button styles
     profileButton: {
-        paddingVertical: 4,
-        paddingHorizontal: 8,
+        paddingVertical: 10,
+        paddingHorizontal: 10,
         borderRadius: 8,
         backgroundColor: theme.colors.zinc[100],
         alignItems: 'center',
