@@ -32,10 +32,18 @@ import { Platform } from 'react-native';
 import { api } from '@repo/api/convex/_generated/api';
 import { parseDeepLink } from '@repo/api/utils/deep-linking';
 
-const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
+
+// Grab env values safely from app.config.js → extra
+const convexUrl: string | undefined =
+  Constants.expoConfig?.extra?.EXPO_PUBLIC_CONVEX_URL;
+
+if (!convexUrl) {
+  console.error("❌ Missing EXPO_PUBLIC_CONVEX_URL in app.config.js -> extra");
+}
+
+const convex = new ConvexReactClient(convexUrl ?? "", {
   unsavedChangesWarning: false,
 });
-
 // Create navigation reference for deep linking
 const navigationRef = createNavigationContainerRef();
 

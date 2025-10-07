@@ -1,6 +1,6 @@
 /**
  * Centralized logging utility for the API backend
- * 
+ *
  * Provides structured logging with different levels and contexts.
  * Features:
  * - Functional approach with composable functions
@@ -11,7 +11,7 @@
  * - Log sampling for high-volume scenarios
  */
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type LogLevel = "debug" | "info" | "warn" | "error";
 export type LogContext = Record<string, any>;
 
 interface LogEntry {
@@ -38,13 +38,12 @@ const LOG_LEVELS: Record<LogLevel, number> = {
     error: 3,
 };
 
-// Pure functions for formatting and filtering
 const getLevelEmoji = (level: LogLevel): string => {
     const emojis: Record<LogLevel, string> = {
-        debug: '🔍',
-        info: 'ℹ️',
-        warn: '⚠️',
-        error: '❌',
+        debug: "🔍",
+        info: "ℹ️",
+        warn: "⚠️",
+        error: "❌",
     };
     return emojis[level];
 };
@@ -52,7 +51,7 @@ const getLevelEmoji = (level: LogLevel): string => {
 const createTimestamp = (): string => new Date().toISOString();
 
 const shouldLog = (level: LogLevel, config: LoggerConfig): boolean => {
-    const minLevel = config.minLevel || (config.isDevelopment ? 'debug' : 'info');
+    const minLevel = config.minLevel || (config.isDevelopment ? "debug" : "info");
 
     // Check level threshold
     if (LOG_LEVELS[level] < LOG_LEVELS[minLevel]) {
@@ -60,7 +59,7 @@ const shouldLog = (level: LogLevel, config: LoggerConfig): boolean => {
     }
 
     // Apply sampling for non-error logs in production
-    if (!config.isDevelopment && level !== 'error' && config.sampleRate) {
+    if (!config.isDevelopment && level !== "error" && config.sampleRate) {
         return Math.random() < config.sampleRate;
     }
 
@@ -83,13 +82,12 @@ const serializeError = (error: unknown): LogContext => {
 // Format for development (pretty console output)
 const formatDevelopment = (entry: LogEntry): string => {
     const emoji = getLevelEmoji(entry.level);
-    const modulePrefix = entry.module ? `[${entry.module}] ` : '';
+    const modulePrefix = entry.module ? `[${entry.module}] ` : "";
     const contextString = entry.context
-        ? '\n' + JSON.stringify(entry.context, null, 2)
-        : '';
-    const durationString = entry.duration !== undefined
-        ? ` (${entry.duration}ms)`
-        : '';
+        ? "\n" + JSON.stringify(entry.context, null, 2)
+        : "";
+    const durationString =
+        entry.duration !== undefined ? ` (${entry.duration}ms)` : "";
 
     return `${emoji} ${entry.timestamp} ${modulePrefix}${entry.message}${durationString}${contextString}`;
 };
@@ -98,22 +96,27 @@ const formatDevelopment = (entry: LogEntry): string => {
 const formatProduction = (entry: LogEntry): string => {
     return JSON.stringify({
         ...entry,
-        pid: process.pid,
-        hostname: process.env.HOSTNAME,
+        pid: 0, // RN-safe placeholder
+        hostname: "mobile", // RN-safe placeholder
     });
 };
 
 // Main logger factory
 const createLogger = (config: LoggerConfig = {}): Logger => {
     const defaultConfig: LoggerConfig = {
-        isDevelopment: process.env.NODE_ENV !== 'production',
-        minLevel: config.isDevelopment ? 'debug' : 'info',
+        isDevelopment: __DEV__, // ✅ RN safe
+        minLevel: __DEV__ ? "debug" : "info",
         sampleRate: 1.0,
-        prettify: config.isDevelopment !== false,
+        prettify: __DEV__,
         ...config,
     };
 
-    const log = (level: LogLevel, message: string, context?: LogContext, module?: string): void => {
+    const log = (
+        level: LogLevel,
+        message: string,
+        context?: LogContext,
+        module?: string
+    ): void => {
         if (!shouldLog(level, defaultConfig)) {
             return;
         }
@@ -130,7 +133,6 @@ const createLogger = (config: LoggerConfig = {}): Logger => {
             ? formatDevelopment(entry)
             : formatProduction(entry);
 
-        // Use appropriate console method
         const consoleMethods: Record<LogLevel, typeof console.log> = {
             debug: console.log,
             info: console.log,
@@ -147,41 +149,55 @@ const createLogger = (config: LoggerConfig = {}): Logger => {
         return {
             end: (context?: LogContext) => {
                 const duration = Date.now() - start;
-                log('info', `${label} completed`, { ...context, duration }, module);
+                log("info", `${label} completed`, { ...context, duration }, module);
                 return duration;
             },
         };
     };
 
     // Batch logging for multiple related entries
-    const batch = (entries: Array<{ level: LogLevel; message: string; context?: LogContext }>, module?: string): void => {
+    const batch = (
+        entries: Array<{ level: LogLevel; message: string; context?: LogContext }>,
+        module?: string
+    ): void => {
         entries.forEach(({ level, message, context }) => {
             log(level, message, context, module);
         });
     };
 
     return {
-        debug: (message: string, context?: LogContext) => log('debug', message, context),
-        info: (message: string, context?: LogContext) => log('info', message, context),
-        warn: (message: string, context?: LogContext) => log('warn', message, context),
+        debug: (message: string, context?: LogContext) =>
+            log("debug", message, context),
+        info: (message: string, context?: LogContext) =>
+            log("info", message, context),
+        warn: (message: string, context?: LogContext) =>
+            log("warn", message, context),
         error: (message: string, error?: unknown, context?: LogContext) => {
-            const errorContext = error ? { ...serializeError(error), ...context } : context;
-            log('error', message, errorContext);
+            const errorContext = error
+                ? { ...serializeError(error), ...context }
+                : context;
+            log("error", message, errorContext);
         },
         timer,
         batch,
         // Create a child logger with a specific module context
         child: (module: string): Logger => ({
-            debug: (message: string, context?: LogContext) => log('debug', message, context, module),
-            info: (message: string, context?: LogContext) => log('info', message, context, module),
-            warn: (message: string, context?: LogContext) => log('warn', message, context, module),
+            debug: (message: string, context?: LogContext) =>
+                log("debug", message, context, module),
+            info: (message: string, context?: LogContext) =>
+                log("info", message, context, module),
+            warn: (message: string, context?: LogContext) =>
+                log("warn", message, context, module),
             error: (message: string, error?: unknown, context?: LogContext) => {
-                const errorContext = error ? { ...serializeError(error), ...context } : context;
-                log('error', message, errorContext, module);
+                const errorContext = error
+                    ? { ...serializeError(error), ...context }
+                    : context;
+                log("error", message, errorContext, module);
             },
             timer: (label: string) => timer(label, module),
             batch: (entries) => batch(entries, module),
-            child: (subModule: string) => createLogger(config).child(`${module}:${subModule}`),
+            child: (subModule: string) =>
+                createLogger(config).child(`${module}:${subModule}`),
         }),
     };
 };
@@ -191,9 +207,15 @@ export interface Logger {
     debug: (message: string, context?: LogContext) => void;
     info: (message: string, context?: LogContext) => void;
     warn: (message: string, context?: LogContext) => void;
-    error: (message: string, error?: unknown, context?: LogContext) => void;
+    error: (
+        message: string,
+        error?: unknown,
+        context?: LogContext
+    ) => void;
     timer: (label: string) => { end: (context?: LogContext) => number };
-    batch: (entries: Array<{ level: LogLevel; message: string; context?: LogContext }>) => void;
+    batch: (
+        entries: Array<{ level: LogLevel; message: string; context?: LogContext }>
+    ) => void;
     child: (module: string) => Logger;
 }
 
