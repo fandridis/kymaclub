@@ -95,7 +95,7 @@ export function App() {
                   <SafeAreaProvider>
                     <InnerApp
                       theme={theme}
-                      onReady={() => SplashScreen.hideAsync()}
+                      onReady={() => { SplashScreen.hideAsync() }}
                     />
                   </SafeAreaProvider>
                 </ActionSheetProvider>
