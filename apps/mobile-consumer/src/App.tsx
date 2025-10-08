@@ -10,7 +10,7 @@ import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import { Asset } from 'expo-asset';
 import * as SplashScreen from 'expo-splash-screen';
 import * as React from 'react';
-import { ActivityIndicator, StyleSheet, Text, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { ConvexProvider, ConvexReactClient, useMutation, useQuery } from "convex/react";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexQueryCacheProvider } from "convex-helpers/react/cache";
@@ -38,10 +38,13 @@ const convexUrl: string | undefined =
   Constants.expoConfig?.extra?.EXPO_PUBLIC_CONVEX_URL;
 
 if (!convexUrl) {
-  console.error("❌ Missing EXPO_PUBLIC_CONVEX_URL in app.config.js -> extra");
+  console.error("❌ CRITICAL: Missing EXPO_PUBLIC_CONVEX_URL in app.config.js -> extra");
+  console.error("❌ This will cause the app to fail to connect to the backend!");
+  console.error("❌ Check your eas.json file and ensure environment variables are configured.");
 }
 
-const convex = new ConvexReactClient(convexUrl ?? "", {
+// Use a fallback URL to prevent silent failures (will still fail but more obviously)
+const convex = new ConvexReactClient(convexUrl || "https://MISSING_CONVEX_URL.convex.cloud", {
   unsavedChangesWarning: false,
 });
 // Create navigation reference for deep linking
@@ -126,7 +129,23 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
   const data = useQuery(api.queries.core.getCurrentUserQuery);
   const recordPushNotificationToken = useMutation(api.mutations.pushNotifications.recordPushNotificationToken);
   const [appReady, setAppReady] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
   const isLoading = data === undefined;
+
+  // Add timeout to prevent infinite loading (15 seconds)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (isLoading) {
+        console.error('⚠️ Loading timeout - Convex connection may have failed');
+        console.error('⚠️ Check if EXPO_PUBLIC_CONVEX_URL is configured correctly');
+        setLoadingTimeout(true);
+        onReady(); // Hide splash screen even on timeout
+        setAppReady(true);
+      }
+    }, 15000); // 15 second timeout
+
+    return () => clearTimeout(timer);
+  }, [isLoading, onReady]);
 
   useEffect(() => {
     if (!user?._id) return;
@@ -241,6 +260,28 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
     }
   }, [isLoading, onReady, appReady]);
 
+  // Show error screen if loading timed out
+  if (loadingTimeout) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.errorTitle}>⚠️ Connection Failed</Text>
+        <Text style={styles.errorText}>
+          Unable to connect to KymaClub servers.{'\n\n'}
+          Please check your internet connection and try again.
+        </Text>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={() => {
+            setLoadingTimeout(false);
+            setAppReady(false);
+          }}
+        >
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   // Show loading screen while determining auth state
   if (isLoading) {
     return (
@@ -331,12 +372,38 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
+    padding: 24,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
     color: '#666',
     fontWeight: '500',
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#ef4444',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  retryButton: {
+    backgroundColor: '#667eea',
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

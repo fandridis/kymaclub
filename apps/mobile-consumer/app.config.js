@@ -3,7 +3,7 @@ export default ({ config }) => ({
   ...config,
   name: "Kyma Club",
   slug: "kyma-club",
-  version: "1.0.0",
+  version: "1.0.1",
   orientation: "portrait",
   icon: "./assets/icon.png",
   userInterfaceStyle: "automatic",
@@ -16,6 +16,7 @@ export default ({ config }) => ({
   },
   ios: {
     ...config.ios,
+    buildNumber: "2",
     icon: "./assets/icon.png",
     supportsTablet: true,
     bundleIdentifier: "com.kymaclub.app",
@@ -30,6 +31,7 @@ export default ({ config }) => ({
   },
   android: {
     ...config.android,
+    versionCode: 2,
     icon: "./assets/icon.png",
     package: "com.kymaclub.app",
     adaptiveIcon: {
