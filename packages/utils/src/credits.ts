@@ -138,12 +138,16 @@ export const formatCredits = (
 ): string => {
     validateAmount(credits, 'Credits');
 
+    const roundedCredits = Math.round(credits);
     const formatter = new Intl.NumberFormat(locale, {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
     });
 
-    return `${formatter.format(Math.round(credits))} credits`;
+    const formattedValue = formatter.format(roundedCredits);
+    const unit = roundedCredits === 1 ? 'credit' : 'credits';
+
+    return `${formattedValue} ${unit}`;
 };
 
 /**
