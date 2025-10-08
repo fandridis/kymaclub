@@ -25,9 +25,27 @@ pnpm start
 
 ## 🔧 Configuration
 
-### Environment Variables
+### Environment Variables Setup
 
-**CRITICAL**: The app requires Convex backend URLs to function. Without these, the app will hang on the splash screen.
+**CRITICAL**: The app requires Convex backend URLs to function. Without these, the app will hang on the splash screen in TestFlight.
+
+**👉 See [SETUP.md](./SETUP.md) for complete step-by-step instructions.**
+
+#### Quick Setup (Recommended - EAS Environment Variables)
+
+```bash
+cd apps/mobile-consumer
+
+# Set your Convex URLs as EAS environment variables
+eas env:create --name EXPO_PUBLIC_CONVEX_URL --value "https://your-project.convex.cloud"
+eas env:create --name EXPO_PUBLIC_CONVEX_SITE_URL --value "https://your-project.convex.site"
+
+# Verify
+eas env:list
+
+# Build
+eas build --profile preview --platform ios
+```
 
 #### For Local Development
 
@@ -36,63 +54,6 @@ Create a `.env` file in `apps/mobile-consumer/`:
 ```bash
 EXPO_PUBLIC_CONVEX_URL=https://your-project.convex.cloud
 EXPO_PUBLIC_CONVEX_SITE_URL=https://your-project.convex.site
-```
-
-#### For EAS Builds (TestFlight, Production)
-
-Environment variables are configured in `eas.json`. You need to fill in the actual URLs:
-
-```json
-{
-  "build": {
-    "preview": {
-      "distribution": "internal",
-      "env": {
-        "EXPO_PUBLIC_CONVEX_URL": "https://your-project.convex.cloud",
-        "EXPO_PUBLIC_CONVEX_SITE_URL": "https://your-project.convex.site"
-      }
-    },
-    "production": {
-      "autoIncrement": true,
-      "env": {
-        "EXPO_PUBLIC_CONVEX_URL": "https://your-project.convex.cloud",
-        "EXPO_PUBLIC_CONVEX_SITE_URL": "https://your-project.convex.site"
-      }
-    }
-  }
-}
-```
-
-**Steps to configure:**
-
-1. Get your Convex project URL from the Convex dashboard
-2. Update `eas.json` with your actual URLs (replace the empty strings)
-3. Commit the changes
-4. Build with EAS: `eas build --profile preview --platform ios`
-
-### Alternative: EAS Secrets (Recommended for Production)
-
-For better security, use EAS Secrets instead of hardcoding URLs in `eas.json`:
-
-```bash
-# Set secrets in EAS
-eas secret:create --name EXPO_PUBLIC_CONVEX_URL --value "https://your-project.convex.cloud" --type string
-eas secret:create --name EXPO_PUBLIC_CONVEX_SITE_URL --value "https://your-project.convex.site" --type string
-```
-
-Then reference them in `eas.json`:
-
-```json
-{
-  "build": {
-    "preview": {
-      "env": {
-        "EXPO_PUBLIC_CONVEX_URL": "$EAS_SECRET:EXPO_PUBLIC_CONVEX_URL",
-        "EXPO_PUBLIC_CONVEX_SITE_URL": "$EAS_SECRET:EXPO_PUBLIC_CONVEX_SITE_URL"
-      }
-    }
-  }
-}
 ```
 
 ## 🏗️ Building & Deployment
