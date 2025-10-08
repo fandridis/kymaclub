@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import * as Location from 'expo-location';
@@ -102,6 +102,10 @@ export function Explore() {
         navigation.navigate('ExploreFiltersModal');
     }, [navigation]);
 
+    const handleCreditsPress = useCallback(() => {
+        navigation.navigate('Settings');
+    }, [navigation]);
+
     const isLoading = loadingLocation || venuesLoading;
 
     if (isLoading) {
@@ -122,10 +126,16 @@ export function Explore() {
     }
 
     const renderCreditsBadge = () => (
-        <View style={styles.creditsBadge}>
+        <TouchableOpacity
+            accessibilityLabel="Open settings"
+            accessibilityRole="button"
+            onPress={handleCreditsPress}
+            activeOpacity={0.85}
+            style={styles.creditsBadge}
+        >
             <DiamondIcon size={16} color={theme.colors.zinc[50]} />
             <Text style={styles.creditsBadgeText}>{creditBalance?.balance || 0}</Text>
-        </View>
+        </TouchableOpacity>
     );
 
     return (
