@@ -36,14 +36,22 @@ pnpm start
 ```bash
 cd apps/mobile-consumer
 
-# Set your Convex URLs as EAS environment variables
-eas env:create --name EXPO_PUBLIC_CONVEX_URL --value "https://your-project.convex.cloud"
-eas env:create --name EXPO_PUBLIC_CONVEX_SITE_URL --value "https://your-project.convex.site"
+# Run eas env:create and follow instructions
+eas env:create
 
-# Verify
+# You'll be prompted to enter:
+# - Variable name: EXPO_PUBLIC_CONVEX_URL
+# - Variable value: https://your-project.convex.cloud
+# Then repeat for EXPO_PUBLIC_CONVEX_SITE_URL
+
+# Alternatively, set directly with command-line flags:
+# eas env:create --name EXPO_PUBLIC_CONVEX_URL --value "https://your-project.convex.cloud"
+# eas env:create --name EXPO_PUBLIC_CONVEX_SITE_URL --value "https://your-project.convex.site"
+
+# Verify your environment variables
 eas env:list
 
-# Build
+# Build for TestFlight
 eas build --profile preview --platform ios
 ```
 
