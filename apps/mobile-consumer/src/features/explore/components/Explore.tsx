@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, ActivityIndicator, Text, StyleSheet, Pressable } from 'react-native';
+import { View, ActivityIndicator, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import * as Location from 'expo-location';
@@ -126,15 +126,16 @@ export function Explore() {
     }
 
     const renderCreditsBadge = () => (
-        <Pressable
+        <TouchableOpacity
             accessibilityLabel="Open settings"
             accessibilityRole="button"
             onPress={handleCreditsPress}
-            style={({ pressed }) => [styles.creditsBadge, pressed && styles.creditsBadgePressed]}
+            activeOpacity={0.85}
+            style={styles.creditsBadge}
         >
             <DiamondIcon size={16} color={theme.colors.zinc[50]} />
             <Text style={styles.creditsBadgeText}>{creditBalance?.balance || 0}</Text>
-        </Pressable>
+        </TouchableOpacity>
     );
 
     return (
@@ -212,9 +213,6 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         paddingHorizontal: 8,
         paddingVertical: 4,
-    },
-    creditsBadgePressed: {
-        opacity: 0.85,
     },
     creditsBadgeText: {
         fontSize: theme.fontSize.base,
