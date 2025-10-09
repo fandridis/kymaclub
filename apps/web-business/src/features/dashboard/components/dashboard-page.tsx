@@ -1,20 +1,21 @@
+import { useMemo, useState } from "react";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     Activity,
     ArrowUpRight,
+    CalendarCheck,
     CalendarClock,
-    CheckCircle2,
-    ClipboardList,
     CreditCard,
+    LineChart,
     MessageSquare,
-    Sparkles,
-    Users,
+    Star,
 } from "lucide-react";
-import { UpcomingClasses } from "./upcoming-classes";
 
 const statCards = [
     {
@@ -23,22 +24,22 @@ const statCards = [
         change: "+12%",
         changeTone: "positive" as const,
         helper: "vs yesterday",
-        icon: CalendarClock,
+        icon: CalendarCheck,
     },
     {
-        title: "Active members",
-        value: "142",
-        change: "+9",
+        title: "Monthly visits",
+        value: "482",
+        change: "+8%",
         changeTone: "positive" as const,
-        helper: "joined in the last 30 days",
-        icon: Users,
+        helper: "compared to January",
+        icon: LineChart,
     },
     {
-        title: "This week's revenue",
-        value: "€2,480",
-        change: "+6%",
+        title: "Monthly revenue",
+        value: "€12,940",
+        change: "+4%",
         changeTone: "positive" as const,
-        helper: "projected payout on Sep 28",
+        helper: "projected payout on Feb 29",
         icon: CreditCard,
     },
     {
@@ -51,43 +52,155 @@ const statCards = [
     },
 ];
 
-const todaysClasses = [
-    {
-        id: 1,
-        name: "Morning Flow",
-        time: "08:30 – 09:15",
-        instructor: "Maria K.",
-        bookings: 11,
-        capacity: 14,
-        status: "Filling fast",
-    },
-    {
-        id: 2,
-        name: "Pilates Reformer",
-        time: "11:00 – 11:50",
-        instructor: "Apostolos T.",
-        bookings: 7,
-        capacity: 10,
-        status: "Waitlist at 2",
-    },
-    {
-        id: 3,
-        name: "Lunch Express HIIT",
-        time: "13:30 – 14:00",
-        instructor: "Konstantina P.",
-        bookings: 5,
-        capacity: 12,
-        status: "Room to grow",
-    },
-    {
-        id: 4,
-        name: "Sunset Yin Yoga",
-        time: "19:30 – 20:20",
-        instructor: "Nikos L.",
-        bookings: 12,
-        capacity: 14,
-        status: "Great retention",
-    },
+type DashboardClass = {
+    id: string;
+    name: string;
+    time: string;
+    instructor: string;
+    bookings: number;
+    capacity: number;
+    status: string;
+};
+
+const scheduleTemplates: Omit<DashboardClass, "id">[][] = [
+    [
+        {
+            name: "Morning Flow",
+            time: "08:30 – 09:15",
+            instructor: "Maria K.",
+            bookings: 11,
+            capacity: 14,
+            status: "Filling fast",
+        },
+        {
+            name: "Pilates Reformer",
+            time: "11:00 – 11:50",
+            instructor: "Apostolos T.",
+            bookings: 9,
+            capacity: 10,
+            status: "Waitlist at 2",
+        },
+        {
+            name: "Lunch Express HIIT",
+            time: "13:30 – 14:00",
+            instructor: "Konstantina P.",
+            bookings: 5,
+            capacity: 12,
+            status: "Room to grow",
+        },
+        {
+            name: "Sunset Yin Yoga",
+            time: "19:30 – 20:20",
+            instructor: "Nikos L.",
+            bookings: 12,
+            capacity: 14,
+            status: "Great retention",
+        },
+    ],
+    [
+        {
+            name: "Sunrise Strength",
+            time: "07:45 – 08:30",
+            instructor: "Jenny S.",
+            bookings: 10,
+            capacity: 16,
+            status: "Plenty of space",
+        },
+        {
+            name: "Mobility Lab",
+            time: "10:15 – 11:00",
+            instructor: "Lefteris D.",
+            bookings: 14,
+            capacity: 18,
+            status: "Steady",
+        },
+        {
+            name: "Boxing Fundamentals",
+            time: "18:00 – 18:50",
+            instructor: "Spyros V.",
+            bookings: 16,
+            capacity: 18,
+            status: "Last seats",
+        },
+    ],
+    [
+        {
+            name: "Reformer Foundations",
+            time: "09:00 – 09:45",
+            instructor: "Katerina L.",
+            bookings: 8,
+            capacity: 10,
+            status: "Waitlist open",
+        },
+        {
+            name: "Power Cycle",
+            time: "12:30 – 13:15",
+            instructor: "Andreas P.",
+            bookings: 13,
+            capacity: 16,
+            status: "Filling fast",
+        },
+        {
+            name: "Evening Barre",
+            time: "20:00 – 20:50",
+            instructor: "Anna M.",
+            bookings: 7,
+            capacity: 12,
+            status: "Growth opportunity",
+        },
+    ],
+    [
+        {
+            name: "Strength & Sculpt",
+            time: "08:15 – 09:00",
+            instructor: "Ilias P.",
+            bookings: 6,
+            capacity: 14,
+            status: "Needs promotion",
+        },
+        {
+            name: "Lunch Stretch",
+            time: "12:45 – 13:30",
+            instructor: "Dimitra A.",
+            bookings: 12,
+            capacity: 14,
+            status: "Great retention",
+        },
+        {
+            name: "Cardio Blast",
+            time: "18:30 – 19:15",
+            instructor: "Lina R.",
+            bookings: 15,
+            capacity: 18,
+            status: "Steady",
+        },
+    ],
+    [
+        {
+            name: "Core Reset",
+            time: "09:30 – 10:15",
+            instructor: "Eva G.",
+            bookings: 9,
+            capacity: 12,
+            status: "Nearly full",
+        },
+        {
+            name: "Prenatal Yoga",
+            time: "11:30 – 12:20",
+            instructor: "Angeliki C.",
+            bookings: 7,
+            capacity: 10,
+            status: "Great feedback",
+        },
+        {
+            name: "Open Gym",
+            time: "17:00 – 18:30",
+            instructor: "Team",
+            bookings: 18,
+            capacity: 24,
+            status: "Trending",
+        },
+    ],
 ];
 
 const systemMessages = [
@@ -114,32 +227,11 @@ const systemMessages = [
     },
 ];
 
-const quickActions = [
-    {
-        id: 1,
-        label: "Create last-minute drop-in",
-        description: "Fill empty spots in tonight's schedule",
-        icon: Sparkles,
-    },
-    {
-        id: 2,
-        label: "Send check-in reminder",
-        description: "Nudge members registered for Pilates Reformer",
-        icon: MessageSquare,
-    },
-    {
-        id: 3,
-        label: "Review waitlisted members",
-        description: "See who is next in line for Morning Flow",
-        icon: ClipboardList,
-    },
-];
-
 const revenueHighlights = [
     {
         label: "Projected payout",
         value: "€1,240",
-        helper: "Scheduled for Sep 28",
+        helper: "Scheduled for Feb 29",
     },
     {
         label: "Avg. booking value",
@@ -166,10 +258,37 @@ const occupancyInsights = [
     },
 ];
 
+const memberFeedback = [
+    {
+        id: 1,
+        member: "Eleni P.",
+        className: "Morning Flow",
+        rating: 5,
+        comment: "Loved the adjustments today!",
+        submitted: "1 hour ago",
+    },
+    {
+        id: 2,
+        member: "Giorgos M.",
+        className: "Power Cycle",
+        rating: 4,
+        comment: "Great energy, could use cooler air earlier.",
+        submitted: "Yesterday",
+    },
+    {
+        id: 3,
+        member: "Nadia T.",
+        className: "Reformer Foundations",
+        rating: 5,
+        comment: "Instructor explained every move clearly.",
+        submitted: "2 days ago",
+    },
+];
+
 const focusAreas = [
     {
         id: 1,
-        title: "Publish October schedule",
+        title: "Publish March schedule",
         description: "Finalize templates and notify recurring members",
     },
     {
@@ -180,15 +299,89 @@ const focusAreas = [
     {
         id: 3,
         title: "Review instructor hours",
-        description: "Confirm payroll for week 38",
+        description: "Confirm payroll for week 09",
     },
 ];
 
-export default function DashboardPage() {
-    const todaysWeekday = new Intl.DateTimeFormat("en-US", {
-        weekday: "long",
+function addDays(date: Date, amount: number) {
+    const copy = new Date(date);
+    copy.setDate(copy.getDate() + amount);
+    return copy;
+}
+
+function formatDateKey(date: Date) {
+    return new Intl.DateTimeFormat("en-CA", {
         timeZone: "Europe/Athens",
-    }).format(new Date());
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    }).format(date);
+}
+
+function formatTabLabel(date: Date, offset: number) {
+    if (offset === 0) {
+        return "Today";
+    }
+
+    if (offset === 1) {
+        return "Tomorrow";
+    }
+
+    return new Intl.DateTimeFormat("en-US", {
+        timeZone: "Europe/Athens",
+        month: "short",
+        day: "numeric",
+    }).format(date);
+}
+
+function createMockSchedule(baseDate: Date, days: number) {
+    const schedule: Record<string, DashboardClass[]> = {};
+
+    for (let index = 0; index < days; index += 1) {
+        const currentDate = addDays(baseDate, index);
+        const dateKey = formatDateKey(currentDate);
+        const templateIndex = index % scheduleTemplates.length;
+        const classes = scheduleTemplates[templateIndex] ?? [];
+
+        schedule[dateKey] = classes.map((classItem, classIndex) => ({
+            ...classItem,
+            id: `${dateKey}-${classIndex}`,
+        }));
+    }
+
+    return schedule;
+}
+
+function createDayTabs(baseDate: Date, days: number) {
+    const tabDefinitions: { key: string; label: string }[] = [];
+
+    for (let index = 0; index < days; index += 1) {
+        const currentDate = addDays(baseDate, index);
+        const key = formatDateKey(currentDate);
+        const label = formatTabLabel(currentDate, index);
+
+        tabDefinitions.push({ key, label });
+    }
+
+    return tabDefinitions;
+}
+
+export default function DashboardPage() {
+    const memoized = useMemo(() => {
+        const now = new Date();
+        const daysToShow = 14;
+
+        return {
+            dayTabs: createDayTabs(now, daysToShow),
+            schedule: createMockSchedule(now, daysToShow),
+        };
+    }, []);
+
+    const { dayTabs, schedule } = memoized;
+    const [activeDay, setActiveDay] = useState(() => dayTabs[0]?.key ?? "");
+
+    const activeTab = dayTabs.find((day) => day.key === activeDay);
+    const classesForActiveDay = schedule[activeDay] ?? [];
 
     return (
         <div className="space-y-6 pb-8">
@@ -206,8 +399,8 @@ export default function DashboardPage() {
                         View calendar
                     </Button>
                     <Button size="sm">
-                        <Sparkles className="h-4 w-4" />
-                        New class
+                        <MessageSquare className="h-4 w-4" />
+                        New announcement
                     </Button>
                 </div>
             </div>
@@ -237,37 +430,65 @@ export default function DashboardPage() {
             <div className="grid gap-4 lg:grid-cols-7">
                 <Card className="lg:col-span-4">
                     <CardHeader className="pb-4">
-                        <CardTitle>Today's classes</CardTitle>
-                        <CardDescription>Snapshot of member demand for {todaysWeekday}</CardDescription>
+                        <CardTitle>Classes overview</CardTitle>
+                        <CardDescription>
+                            Monitor demand and occupancy for {activeTab?.label?.toLowerCase() ?? "upcoming days"}
+                        </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        {todaysClasses.map((item) => {
-                            const percent = Math.round((item.bookings / item.capacity) * 100);
+                    <CardContent>
+                        <Tabs value={activeDay} onValueChange={setActiveDay} className="w-full">
+                            <TabsList className="mb-4 flex w-full justify-start gap-1 overflow-x-auto rounded-lg border bg-muted/50 p-1">
+                                {dayTabs.map((day) => (
+                                    <TabsTrigger key={day.key} value={day.key} className="px-3 py-1 text-sm">
+                                        {day.label}
+                                    </TabsTrigger>
+                                ))}
+                            </TabsList>
 
-                            return (
-                                <div key={item.id} className="flex flex-col gap-3 rounded-lg border border-dashed border-muted p-4 sm:flex-row sm:items-center sm:justify-between">
-                                    <div>
-                                        <p className="font-medium text-sm sm:text-base">{item.name}</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            {item.time} • {item.instructor}
-                                        </p>
-                                    </div>
+                            {dayTabs.map((day) => {
+                                const classesForDay = schedule[day.key] ?? [];
 
-                                    <div className="flex flex-col items-start gap-2 sm:items-end">
-                                        <p className="text-sm font-medium">
-                                            {item.bookings}/{item.capacity} booked
-                                        </p>
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-24">
-                                                <Progress value={percent} aria-label={`${item.name} occupancy`} />
+                                return (
+                                    <TabsContent key={day.key} value={day.key} className="space-y-4">
+                                        {classesForDay.length === 0 ? (
+                                            <div className="rounded-lg border border-dashed border-muted p-6 text-center text-sm text-muted-foreground">
+                                                No classes scheduled for this day yet.
                                             </div>
-                                            <span className="text-xs text-muted-foreground">{percent}%</span>
-                                        </div>
-                                        <Badge variant="secondary">{item.status}</Badge>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                                        ) : (
+                                            classesForDay.map((classItem) => {
+                                                const percent = Math.round((classItem.bookings / classItem.capacity) * 100);
+
+                                                return (
+                                                    <div
+                                                        key={classItem.id}
+                                                        className="flex flex-col gap-3 rounded-lg border border-dashed border-muted p-4 sm:flex-row sm:items-center sm:justify-between"
+                                                    >
+                                                        <div className="space-y-1">
+                                                            <p className="font-medium text-sm sm:text-base">{classItem.name}</p>
+                                                            <p className="text-sm text-muted-foreground">with {classItem.instructor}</p>
+                                                        </div>
+
+                                                        <div className="flex flex-col items-start gap-2 sm:items-end">
+                                                            <span className="text-sm font-medium text-muted-foreground">{classItem.time}</span>
+                                                            <p className="text-sm font-medium">
+                                                                {classItem.bookings}/{classItem.capacity} booked
+                                                            </p>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-24">
+                                                                    <Progress value={percent} aria-label={`${classItem.name} occupancy`} />
+                                                                </div>
+                                                                <span className="text-xs text-muted-foreground">{percent}%</span>
+                                                            </div>
+                                                            <Badge variant="secondary">{classItem.status}</Badge>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </TabsContent>
+                                );
+                            })}
+                        </Tabs>
                     </CardContent>
                 </Card>
 
@@ -330,24 +551,30 @@ export default function DashboardPage() {
 
                 <Card className="lg:col-span-3">
                     <CardHeader>
-                        <CardTitle>Quick actions</CardTitle>
-                        <CardDescription>Keep operations running smoothly</CardDescription>
+                        <CardTitle>Member feedback & focus</CardTitle>
+                        <CardDescription>Celebrate wins and follow up on next steps</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-5">
                         <div className="space-y-3">
-                            {quickActions.map((action) => {
-                                const Icon = action.icon;
-
-                                return (
-                                    <Button key={action.id} variant="outline" size="sm" className="w-full justify-start text-left">
-                                        <Icon className="h-4 w-4" aria-hidden="true" />
-                                        <div className="flex flex-col items-start">
-                                            <span className="font-medium text-sm">{action.label}</span>
-                                            <span className="text-xs text-muted-foreground">{action.description}</span>
-                                        </div>
-                                    </Button>
-                                );
-                            })}
+                            {memberFeedback.map((feedback) => (
+                                <div key={feedback.id} className="rounded-lg border border-muted p-4">
+                                    <div className="flex items-center justify-between text-sm font-medium">
+                                        <span>{feedback.member}</span>
+                                        <span className="text-muted-foreground">{feedback.submitted}</span>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">{feedback.className}</p>
+                                    <div className="mt-2 flex items-center gap-1">
+                                        {Array.from({ length: 5 }).map((_, index) => (
+                                            <Star
+                                                key={index}
+                                                className={`h-4 w-4 ${index < feedback.rating ? "fill-amber-500 text-amber-500" : "text-muted-foreground"}`}
+                                                aria-hidden="true"
+                                            />
+                                        ))}
+                                    </div>
+                                    <p className="mt-2 text-sm">{feedback.comment}</p>
+                                </div>
+                            ))}
                         </div>
 
                         <Separator />
@@ -363,7 +590,7 @@ export default function DashboardPage() {
                             <div className="space-y-2">
                                 {focusAreas.map((task) => (
                                     <div key={task.id} className="flex items-start gap-3 rounded-lg border border-dashed border-muted px-3 py-2 text-sm">
-                                        <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" aria-hidden="true" />
+                                        <CalendarCheck className="mt-0.5 h-4 w-4 text-primary" aria-hidden="true" />
                                         <div>
                                             <p className="font-medium leading-tight">{task.title}</p>
                                             <p className="text-xs text-muted-foreground">{task.description}</p>
@@ -375,16 +602,6 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
             </div>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Upcoming week</CardTitle>
-                    <CardDescription>Classes for the next 7 days (live data preview)</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <UpcomingClasses className="space-y-4" />
-                </CardContent>
-            </Card>
         </div>
     );
 }
