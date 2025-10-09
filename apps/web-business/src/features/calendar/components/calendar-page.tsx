@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { useMutation } from "convex/react";
+import { api } from "@repo/api/convex/_generated/api";
 import elLocale from '@fullcalendar/core/locales/el';
 import enGbLocale from '@fullcalendar/core/locales/en-gb';
 import ltLocale from '@fullcalendar/core/locales/lt';
@@ -45,6 +47,7 @@ export function CalendarPage({ startDate, classInstances, user }: CalendarPagePr
     const [deleteDialogInstance, setDeleteDialogInstance] = useState<ClassInstance | null>(null);
     const eventHandlers = useCalendarEventHandler(user.business.timezone);
     const calendarRef = useRef<FullCalendar>(null);
+    const updateClassInstance = useMutation(api.mutations.classInstances.updateSingleInstance);
 
     useCalendarResize({ calendarRef, dependencies: [sidebarState] });
 
@@ -84,6 +87,22 @@ export function CalendarPage({ startDate, classInstances, user }: CalendarPagePr
             open: true,
             classInstance: classInstance
         });
+    };
+
+    const handleToggleBookings = async (eventInfo: EventContentArg) => {
+        const classInstance = eventInfo.event.extendedProps.classInstance as ClassInstance
+        try {
+            await updateClassInstance({
+                instanceId: classInstance._id,
+                instance: {
+                    disableBookings: !classInstance.disableBookings
+                }
+            });
+            toast.success(`Bookings ${classInstance.disableBookings ? 'opened' : 'closed'} successfully`);
+        } catch (error) {
+            console.error('Failed to toggle bookings:', error);
+            toast.error('Failed to update booking status');
+        }
     };
 
     const preparedCalendarEvents = useMemo(() => {
@@ -139,6 +158,7 @@ export function CalendarPage({ startDate, classInstances, user }: CalendarPagePr
                         onEdit={handleEdit}
                         onDelete={handleDeleteEvent}
                         onViewBookings={handleViewBookings}
+                        onToggleBookings={handleToggleBookings}
                     />}
             />
 

@@ -115,6 +115,25 @@ function getDiscountTimingText(discountResult: DiscountCalculationResult, classI
     }
 }
 
+function getBookingWindowText(classInstance: any): string | null {
+    if (!classInstance) return null;
+
+    const bookingWindow = classInstance.bookingWindow ?? classInstance.templateSnapshot?.bookingWindow;
+    if (!bookingWindow?.minHours) return null;
+
+    const now = Date.now();
+    const hoursUntilClass = Math.max(0, (classInstance.startTime - now) / (1000 * 60 * 60));
+
+    if (hoursUntilClass <= bookingWindow.minHours) {
+        return null; // Booking window has already closed
+    }
+
+    const hoursUntilBookingCloses = hoursUntilClass - bookingWindow.minHours;
+    const formattedTime = formatTimeRemaining(hoursUntilBookingCloses);
+
+    return `Bookings close in ${formattedTime}`;
+}
+
 function calculateClassDiscount(classInstance: any, templateData: any): DiscountCalculationResult {
     const priceInCents = classInstance?.price ?? templateData?.price ?? 1000;
     const originalPrice = priceInCents / 50; // Convert cents to credits
@@ -191,6 +210,8 @@ export function ClassDetailsModalScreen() {
         api.queries.classInstances.getConsumerClassInstanceById,
         classInstance || !classInstanceId ? "skip" : { instanceId: classInstanceId }
     );
+
+    console.log('fetchedClassInstance', fetchedClassInstance?.disableBookings);
 
     // Use either the provided classInstance or the fetched one
     const finalClassInstance = classInstance || fetchedClassInstance;
@@ -608,6 +629,15 @@ export function ClassDetailsModalScreen() {
                                 </View>
                             )}
 
+                            {/* Booking Window Banner */}
+                            {getBookingWindowText(finalClassInstance) && (
+                                <View style={styles.bookingWindowBanner}>
+                                    <Text style={styles.bookingWindowBannerText}>
+                                        {getBookingWindowText(finalClassInstance)}
+                                    </Text>
+                                </View>
+                            )}
+
                             {/* Key details */}
                             <View style={styles.detailsList}>
                                 <View style={styles.detailItem}>
@@ -914,13 +944,29 @@ const styles = StyleSheet.create({
         backgroundColor: theme.colors.amber[500],
         paddingVertical: 12,
         paddingHorizontal: 20,
-        marginBottom: 8,
+        marginBottom: 0,
         marginTop: -14,
         width: screenWidth,
         alignItems: 'center',
         justifyContent: 'center',
     },
     discountBannerText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: 'white',
+        textAlign: 'center',
+    },
+    bookingWindowBanner: {
+        backgroundColor: theme.colors.sky[500],
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        marginBottom: 8,
+        marginTop: 0,
+        width: screenWidth,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    bookingWindowBannerText: {
         fontSize: 16,
         fontWeight: '600',
         color: 'white',

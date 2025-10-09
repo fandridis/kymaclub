@@ -2,7 +2,7 @@ import React, { memo, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { format } from 'date-fns';
 import { tz } from '@date-fns/tz';
-import { DiamondIcon, UserIcon, ClockIcon } from 'lucide-react-native';
+import { DiamondIcon, UserIcon, ClockIcon, LockIcon } from 'lucide-react-native';
 
 import { useTypedTranslation } from '../i18n/typed';
 import type { ClassInstance } from '../hooks/use-class-instances';
@@ -71,21 +71,86 @@ function findBestDiscountRule(
 }
 
 // Helper functions for booking window display
-function getBookingWindowText(classInstance: ClassInstance): string {
-  if (!classInstance.bookingWindow?.minHours) return '';
+interface BookingWindowStatus {
+  status: 'open' | 'closed' | 'not_yet_open';
+  message: string;
+  isDisabled: boolean;
+  showClockIcon: boolean;
+  showLockIcon: boolean;
+  iconColor: string;
+}
+
+function getBookingWindowStatus(classInstance: ClassInstance): BookingWindowStatus {
+  if (!classInstance.bookingWindow?.minHours) {
+    return {
+      status: 'open',
+      message: '',
+      isDisabled: false,
+      showClockIcon: false,
+      showLockIcon: false,
+      iconColor: theme.colors.zinc[600]
+    };
+  }
 
   const now = Date.now();
   const classStartTime = classInstance.startTime;
   const bookingEndTime = classStartTime - classInstance.bookingWindow.minHours * 60 * 60 * 1000;
   const timeUntilBookingEnds = bookingEndTime - now;
 
-  // If booking window has passed, show "Registrations closed"
-  if (timeUntilBookingEnds <= 0) return 'Registrations closed';
+  // If booking window has passed, show "Bookings closed"
+  if (timeUntilBookingEnds <= 0) {
+    return {
+      status: 'closed',
+      message: 'Bookings closed',
+      isDisabled: true,
+      showClockIcon: false,
+      showLockIcon: true,
+      iconColor: theme.colors.rose[600]
+    };
+  }
+
+  // Check if booking window has maxHours (booking opens later)
+  if (classInstance.bookingWindow.maxHours) {
+    const bookingStartTime = classStartTime - classInstance.bookingWindow.maxHours * 60 * 60 * 1000;
+    const timeUntilBookingOpens = bookingStartTime - now;
+
+    // If booking window hasn't opened yet
+    if (timeUntilBookingOpens > 0) {
+      const totalMinutes = Math.floor(timeUntilBookingOpens / (1000 * 60));
+      const days = Math.floor(totalMinutes / (60 * 24));
+      const remainingMinutesAfterDays = totalMinutes % (60 * 24);
+      const hours = Math.floor(remainingMinutesAfterDays / 60);
+      const minutes = remainingMinutesAfterDays % 60;
+
+      const parts: string[] = [];
+      if (days > 0) parts.push(`${days}d`);
+      if (hours > 0 || days > 0) parts.push(`${hours}h`);
+      if (minutes > 0 || parts.length === 0) parts.push(`${minutes}m`);
+
+      return {
+        status: 'not_yet_open',
+        message: `Opens in ${parts.join(' ')}`,
+        isDisabled: true,
+        showClockIcon: true,
+        showLockIcon: false,
+        iconColor: theme.colors.rose[600]
+      };
+    }
+  }
 
   const totalMinutes = Math.floor(timeUntilBookingEnds / (1000 * 60));
 
   // Only show booking window text if it closes in less than 24 hours (1440 minutes)
-  if (totalMinutes >= 1440) return '';
+  if (totalMinutes >= 1440) {
+    return {
+      status: 'open',
+      message: '',
+      isDisabled: false,
+      showClockIcon: false,
+      showLockIcon: false,
+      iconColor: theme.colors.zinc[600]
+    };
+  }
 
   const days = Math.floor(totalMinutes / (60 * 24));
   const remainingMinutesAfterDays = totalMinutes % (60 * 24);
@@ -93,20 +158,23 @@ function getBookingWindowText(classInstance: ClassInstance): string {
   const minutes = remainingMinutesAfterDays % 60;
 
   const parts: string[] = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0 || days > 0) parts.push(`${hours}h`);
+  if (minutes > 0 || parts.length === 0) parts.push(`${minutes}m`);
 
-  if (days > 0) {
-    parts.push(`${days}d`);
-  }
+  return {
+    status: 'open',
+    message: `Closes in ${parts.join(' ')}`,
+    isDisabled: false,
+    showClockIcon: true,
+    showLockIcon: false,
+    iconColor: theme.colors.rose[600]
+  };
+}
 
-  if (hours > 0 || days > 0) {
-    parts.push(`${hours}h`);
-  }
-
-  if (minutes > 0 || parts.length === 0) {
-    parts.push(`${minutes}m`);
-  }
-
-  return `Closes in ${parts.join(' ')}`;
+function getBookingWindowText(classInstance: ClassInstance): string {
+  const status = getBookingWindowStatus(classInstance);
+  return status.message;
 }
 
 function calculateClassDiscount(classInstance: ClassInstance): DiscountCalculationResult {
@@ -168,10 +236,15 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
   const price = classInstance.price;
   const spotsLeft = Math.max(0, (classInstance.capacity ?? 0) - (classInstance.bookedCount ?? 0));
   const isSoldOut = spotsLeft === 0;
+  const isBookingsDisabled = Boolean(classInstance.disableBookings);
   const isBookedByUser = 'isBookedByUser' in classInstance ? Boolean(classInstance.isBookedByUser) : false;
 
   const discountResult = useMemo(() => calculateClassDiscount(classInstance), [classInstance]);
-  const bookingWindowText = getBookingWindowText(classInstance);
+  const bookingWindowStatus = useMemo(() => getBookingWindowStatus(classInstance), [classInstance]);
+  const bookingWindowText = bookingWindowStatus.message;
+
+  // Determine if card should be disabled
+  const isCardDisabled = isSoldOut || isBookingsDisabled || bookingWindowStatus.isDisabled;
 
   const metaLine = useMemo(() => {
     const instructor = classInstance.instructor ?? '';
@@ -187,11 +260,11 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
     <TouchableOpacity
       style={[
         styles.card,
-        isSoldOut && styles.cardDisabled,
+        isCardDisabled && styles.cardDisabled,
       ]}
       onPress={() => onPress?.(classInstance)}
       activeOpacity={0.85}
-      disabled={isSoldOut}
+      disabled={isCardDisabled}
     >
       {isBookedByUser && (
         <View style={styles.attendingBadge}>
@@ -199,15 +272,15 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
         </View>
       )}
       <View style={styles.timeColumn}>
-        <Text style={[styles.timeText, isSoldOut && styles.soldOutText]}>{startTimeLabel}</Text>
-        <Text style={[styles.durationText, isSoldOut && styles.soldOutText]}>{durationLabel}</Text>
+        <Text style={styles.timeText}>{startTimeLabel}</Text>
+        <Text style={styles.durationText}>{durationLabel}</Text>
       </View>
 
       <View style={styles.divider} />
 
       <View style={styles.contentColumn}>
         <View style={styles.headerRow}>
-          <Text style={[styles.className, isSoldOut && styles.soldOutText]} numberOfLines={1}>
+          <Text style={styles.className} numberOfLines={1}>
             {classInstance.name}
           </Text>
 
@@ -242,20 +315,27 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
 
         <View style={styles.infoRow}>
           <View style={styles.infoItem}>
-            <UserIcon size={14} color={isSoldOut ? theme.colors.rose[700] : theme.colors.emerald[700]} />
-            <Text style={[styles.infoText, styles.spotsInfoText, isSoldOut && styles.soldOutText]}>
+            <UserIcon size={14} color={isCardDisabled ? theme.colors.rose[700] : theme.colors.emerald[700]} />
+            <Text style={[styles.infoText, styles.spotsInfoText]}>
               {isSoldOut ? t('explore.soldOut') : t('explore.spotsLeft', { count: spotsLeft })}
             </Text>
           </View>
 
-          {bookingWindowText ? (
+          {/* Show booking window info or bookings closed */}
+          {(bookingWindowText || bookingWindowStatus.showLockIcon || isBookingsDisabled) ? (
             <>
               <View style={styles.infoSeparator} />
 
               <View style={styles.infoItem}>
-                <ClockIcon size={14} color={theme.colors.rose[600]} />
+                {isBookingsDisabled ? (
+                  <LockIcon size={14} color={theme.colors.rose[600]} />
+                ) : bookingWindowStatus.showClockIcon ? (
+                  <ClockIcon size={14} color={bookingWindowStatus.iconColor} />
+                ) : bookingWindowStatus.showLockIcon ? (
+                  <LockIcon size={14} color={theme.colors.rose[600]} />
+                ) : null}
                 <Text style={[styles.infoText, styles.closesInfoText]}>
-                  {bookingWindowText}
+                  {isBookingsDisabled ? t('explore.bookingsClosed') : bookingWindowText || t('explore.bookingsClosed')}
                 </Text>
               </View>
             </>

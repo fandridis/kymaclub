@@ -1,5 +1,5 @@
 import type { EventContentArg } from "@fullcalendar/core/index.js";
-import { MoreVertical, Edit, Trash2, Users } from "lucide-react";
+import { MoreVertical, Edit, Trash2, Users, Lock, Unlock, CalendarPlus, CalendarOff, CalendarIcon, CalendarOffIcon } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -17,9 +17,10 @@ interface CalendarEventProps {
     onEdit: (eventInfo: EventContentArg) => void;
     onDelete: (eventInfo: EventContentArg) => void;
     onViewBookings: (eventInfo: EventContentArg) => void;
+    onToggleBookings: (eventInfo: EventContentArg) => void;
 }
 
-export const CalendarEventCard = ({ eventInfo, onEdit, onDelete, onViewBookings }: CalendarEventProps) => {
+export const CalendarEventCard = ({ eventInfo, onEdit, onDelete, onViewBookings, onToggleBookings }: CalendarEventProps) => {
     const classInstance = eventInfo.event.extendedProps.classInstance as ClassInstance;
 
     const handleViewBookingsClick = (e: React.MouseEvent) => {
@@ -37,9 +38,33 @@ export const CalendarEventCard = ({ eventInfo, onEdit, onDelete, onViewBookings 
         onDelete(eventInfo);
     };
 
+    const handleToggleBookingsClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onToggleBookings(eventInfo);
+    };
+
     // if istance.name different than snapshot.name, choose that, otherwise use snapshot.name
     const name = classInstance.name !== classInstance.templateSnapshot.name ? classInstance.name : classInstance.templateSnapshot.name;
     const textColor = TEMPLATE_COLORS_MAP[classInstance.color as TemplateColorType].text;
+
+    // Calculate booking window status
+    const getBookingWindowStatus = () => {
+        const bookingWindow = classInstance.bookingWindow;
+        if (!bookingWindow?.minHours || !bookingWindow?.maxHours) {
+            return null; // No booking window defined
+        }
+
+        const now = Date.now();
+        const classStartTime = classInstance.startTime;
+        const hoursUntilClass = (classStartTime - now) / (1000 * 60 * 60);
+
+        // Check if we're within the booking window
+        const isWithinBookingWindow = hoursUntilClass >= bookingWindow.minHours && hoursUntilClass <= bookingWindow.maxHours;
+
+        return isWithinBookingWindow ? 'open' : 'closed';
+    };
+
+    const bookingWindowStatus = getBookingWindowStatus();
 
     return (
         <div className={cn("relative w-full h-full px-1 py-1 group overflow-x-hidden overflow-y-auto", textColor)}>
@@ -67,12 +92,46 @@ export const CalendarEventCard = ({ eventInfo, onEdit, onDelete, onViewBookings 
                             <Edit className="h-4 w-4 mr-2" />
                             Edit
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleToggleBookingsClick} className="text-gray-700 focus:text-gray-700">
+                            {classInstance.disableBookings ? (
+                                <>
+                                    <Unlock className="h-4 w-4 mr-2" />
+                                    Open bookings
+                                </>
+                            ) : (
+                                <>
+                                    <Lock className="h-4 w-4 mr-2" />
+                                    Close bookings
+                                </>
+                            )}
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={handleDeleteClick} className="text-red-600 focus:text-red-600">
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
+            </div>
+
+            {/* Status icons in bottom right */}
+            <div className="absolute bottom-1 right-1 flex items-center gap-1">
+                {/* Lock icon for disabled bookings */}
+                {classInstance.disableBookings && (
+                    <Lock className="h-3 w-3 opacity-60" />
+                )}
+
+                {/* Booking window status icon */}
+                {bookingWindowStatus && (
+                    <>
+                        {bookingWindowStatus === 'open' ? (
+                            <CalendarIcon className="h-3 w-3 opacity-60" />
+                        ) : (
+                            <CalendarOffIcon className="h-3 w-3 opacity-60" />
+                        )}
+                    </>
+                )}
+
+
             </div>
         </div>
     );

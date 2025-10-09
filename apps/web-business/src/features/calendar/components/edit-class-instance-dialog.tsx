@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { Clock, Users, BookOpen, Tag, X, User, Palette, Calendar, CreditCard } from 'lucide-react';
+import { Clock, Users, BookOpen, Tag, X, User, Palette, Calendar } from 'lucide-react';
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@repo/api/convex/_generated/api";
 import { toast } from "sonner";
@@ -33,6 +33,8 @@ import {
 } from "@/components/ui/select";
 import { DateTimePicker } from "@/components/ui/datetime-picker";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Settings } from "lucide-react";
 import type { Doc } from '@repo/api/convex/_generated/dataModel';
 import { getDurationOptions } from '@/features/calendar/utils/duration';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -76,16 +78,28 @@ const editInstanceSchema = z.object({
         const priceInCents = parseInt(val);
         return priceInCents >= 100 && priceInCents <= 10000;
     }, "Price must be between €1.00 and €100.00"),
-    bookingWindowMinHours: z.string().min(1, "Minimum booking hours is required").refine((val) => parseInt(val) >= 0, "Minimum booking hours must be 0 or greater"),
-    bookingWindowMaxHours: z.string().min(1, "Maximum booking hours is required").refine((val) => parseInt(val) > 0, "Maximum booking hours must be greater than 0"),
+
+    // Booking Window Toggle
+    enableBookingWindow: z.boolean(),
+    bookingWindowMinHours: z.string().optional(),
+    bookingWindowMaxHours: z.string().optional(),
+
+    // Refund Policy Toggle
+    enableRefundPolicy: z.boolean(),
     cancellationWindowHours: z.string().optional(),
+
+    // Booking Control
+    disableBookings: z.boolean().optional(),
 
     // Discount Rules
     discountRules: z.array(discountRuleSchema).optional(),
 }).refine((data) => {
-    const minHours = parseInt(data.bookingWindowMinHours);
-    const maxHours = parseInt(data.bookingWindowMaxHours);
-    return maxHours > minHours;
+    if (data.enableBookingWindow) {
+        const minHours = parseInt(data.bookingWindowMinHours || "0");
+        const maxHours = parseInt(data.bookingWindowMaxHours || "0");
+        return maxHours > minHours;
+    }
+    return true;
 }, {
     message: "Maximum booking hours must be greater than minimum",
     path: ["bookingWindowMaxHours"],
@@ -148,9 +162,12 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
             duration: "60", // Default to 60 minutes
             capacity: "15",
             price: "1000", // 10 euros in cents
+            enableBookingWindow: false,
             bookingWindowMinHours: "2",
             bookingWindowMaxHours: "168",
+            enableRefundPolicy: false,
             cancellationWindowHours: "2",
+            disableBookings: false,
             discountRules: [],
         },
     });
@@ -174,9 +191,12 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                 duration: durationInMinutes.toString(),
                 capacity: instance.capacity?.toString() || "15",
                 price: instance.price?.toString() || "1000", // Default to 10 euros in cents
+                enableBookingWindow: !!(instance.bookingWindow?.minHours || instance.bookingWindow?.maxHours),
                 bookingWindowMinHours: (instance.bookingWindow?.minHours || 2).toString(),
                 bookingWindowMaxHours: (instance.bookingWindow?.maxHours || 168).toString(),
+                enableRefundPolicy: !!(instance.cancellationWindowHours && instance.cancellationWindowHours > 0),
                 cancellationWindowHours: instance.cancellationWindowHours?.toString() || "2",
+                disableBookings: instance.disableBookings || false,
                 discountRules: instance.discountRules || [],
             });
             // Also update the discount rules state
@@ -237,11 +257,14 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                     instructor: data.instructor.trim(),
                     capacity: parseInt(data.capacity),
                     price: parseInt(data.price),
-                    bookingWindow: {
-                        minHours: parseInt(data.bookingWindowMinHours),
-                        maxHours: parseInt(data.bookingWindowMaxHours)
-                    },
-                    cancellationWindowHours: data.cancellationWindowHours ? parseInt(data.cancellationWindowHours) : undefined,
+                    bookingWindow: data.enableBookingWindow ? {
+                        minHours: parseInt(data.bookingWindowMinHours || "0"),
+                        maxHours: parseInt(data.bookingWindowMaxHours || "0")
+                    } : undefined,
+                    cancellationWindowHours: data.enableRefundPolicy && data.cancellationWindowHours
+                        ? parseInt(data.cancellationWindowHours)
+                        : 0,
+                    disableBookings: data.disableBookings || false,
                     tags: data.tags.length > 0 ? data.tags : undefined,
                     color: data.color,
                     discountRules: discountRules.length > 0 ? discountRules.map(rule => ({
@@ -284,11 +307,14 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                     instructor: data.instructor.trim(),
                     capacity: parseInt(data.capacity),
                     price: parseInt(data.price),
-                    bookingWindow: {
-                        minHours: parseInt(data.bookingWindowMinHours),
-                        maxHours: parseInt(data.bookingWindowMaxHours)
-                    },
-                    cancellationWindowHours: data.cancellationWindowHours ? parseInt(data.cancellationWindowHours) : undefined,
+                    bookingWindow: data.enableBookingWindow ? {
+                        minHours: parseInt(data.bookingWindowMinHours || "0"),
+                        maxHours: parseInt(data.bookingWindowMaxHours || "0")
+                    } : undefined,
+                    cancellationWindowHours: data.enableRefundPolicy && data.cancellationWindowHours
+                        ? parseInt(data.cancellationWindowHours)
+                        : 0,
+                    disableBookings: data.disableBookings || false,
                     tags: data.tags.length > 0 ? data.tags : undefined,
                     color: data.color,
                     discountRules: discountRules.length > 0 ? discountRules.map(rule => ({
@@ -491,63 +517,87 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                                 </FormItem>
                                             )} />
                                         </div>
+                                        {/* Booking Window Section */}
                                         <div className="space-y-4">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <FormField control={form.control} name="bookingWindowMinHours" render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Min Hours <span className="text-red-500">*</span></FormLabel>
-                                                        <FormControl>
-                                                            <Input type="number" min="0" {...field} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )} />
-
-                                                <FormField control={form.control} name="bookingWindowMaxHours" render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Max Hours <span className="text-red-500">*</span></FormLabel>
-                                                        <FormControl>
-                                                            <Input type="number" min="1" {...field} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )} />
-                                            </div>
-
-                                            <FormField control={form.control} name="cancellationWindowHours" render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Cancellation Window (Hours)</FormLabel>
+                                            <FormField control={form.control} name="enableBookingWindow" render={({ field }) => (
+                                                <FormItem className="flex flex-row items-center space-x-2 space-y-0">
                                                     <FormControl>
-                                                        <Input type="number" min="0" {...field} />
+                                                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                                                     </FormControl>
-                                                    <FormMessage />
+                                                    <FormLabel className="flex items-center gap-2">
+                                                        <Settings className="h-4 w-4" />
+                                                        Booking Window
+                                                    </FormLabel>
                                                 </FormItem>
                                             )} />
+
+                                            {formData.enableBookingWindow && (
+                                                <div className="space-y-3 pl-6 border-l-2 border-muted">
+                                                    <FormField control={form.control} name="bookingWindowMaxHours" render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormControl>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-sm font-medium min-w-[120px]">Open bookings</span>
+                                                                    <Input type="number" min="1" className="w-20" {...field} />
+                                                                    <span className="text-sm text-muted-foreground">hours before class</span>
+                                                                </div>
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )} />
+
+                                                    <FormField control={form.control} name="bookingWindowMinHours" render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormControl>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-sm font-medium min-w-[120px]">Close bookings</span>
+                                                                    <Input type="number" min="0" className="w-20" {...field} />
+                                                                    <span className="text-sm text-muted-foreground">hours before class</span>
+                                                                </div>
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )} />
+                                                </div>
+                                            )}
                                         </div>
+
+                                        <FormField control={form.control} name="disableBookings" render={({ field }) => (
+                                            <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                                <FormControl>
+                                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                                </FormControl>
+                                                <FormLabel>Start with bookings disabled</FormLabel>
+                                            </FormItem>
+                                        )} />
                                     </div>
-                                    <FormField control={form.control} name="color" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="flex items-center gap-2">
-                                                <Palette className="h-4 w-4" />
-                                                Color Theme
-                                            </FormLabel>
-                                            <div className="pl-1 flex flex-wrap gap-2">
-                                                {TEMPLATE_COLORS_ARRAY.map((color) => (
-                                                    <button
-                                                        key={color}
-                                                        type="button"
-                                                        onClick={() => field.onChange(color)}
-                                                        className={cn(
-                                                            TEMPLATE_COLORS_MAP[color]?.default,
-                                                            "w-8 h-8 rounded-full transition-all",
-                                                            field.value === color && 'border-2 border-gray-900 scale-120'
-                                                        )}
-                                                        title={color}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </FormItem>
-                                    )} />
+
+                                    <div className="mt-8">
+                                        <FormField control={form.control} name="color" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2">
+                                                    <Palette className="h-4 w-4" />
+                                                    Color Theme
+                                                </FormLabel>
+                                                <div className="pl-1 flex flex-wrap gap-2">
+                                                    {TEMPLATE_COLORS_ARRAY.map((color) => (
+                                                        <button
+                                                            key={color}
+                                                            type="button"
+                                                            onClick={() => field.onChange(color)}
+                                                            className={cn(
+                                                                TEMPLATE_COLORS_MAP[color]?.default,
+                                                                "w-8 h-8 rounded-full transition-all",
+                                                                field.value === color && 'border-2 border-gray-900 scale-120'
+                                                            )}
+                                                            title={color}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </FormItem>
+                                        )} />
+                                    </div>
+
 
                                     {/* Discount Rules Section */}
                                     <div className="space-y-4 mt-8">

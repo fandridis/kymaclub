@@ -20,13 +20,18 @@ test.describe('Venue, Template & Calendar Management Flow', () => {
         await page.context().clearCookies();
     });
 
+    test.afterAll(async () => {
+        // Cleanup test data after all tests complete
+        await client.mutation(api.testFunctions.resetTestData, { testRunId: `cleanup_${Date.now()}` });
+    });
+
     test('complete flow: create venue → template → class instances', async ({ page }) => {
         // Step 1: Login as user with business
         await loginUser(page, 'userWithBusiness');
         await expect(page).toHaveURL('/dashboard');
 
         // Step 2: Navigate to venues section through Settings
-        await page.click('text=UserWithB'); // Click on user dropdown in sidenav
+        await page.click('text=user_with_business'); // Click on user dropdown in sidenav
         await page.click('text=Settings'); // Click on Settings in dropdown
         await page.click('text=Venues'); // Click on Venues tab in settings
         await page.click('button:has-text("Add another venue")');

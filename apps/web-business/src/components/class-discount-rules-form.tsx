@@ -205,23 +205,32 @@ export function ClassDiscountRulesForm({
                                 {rule.condition.type !== "always" && (
                                     <div className="mt-4 w-full">
                                         <Label htmlFor={`discount-hours-${index}`} className="text-xs">
-                                            {rule.condition.type === "hours_before_min" ? "Minimum Hours Before Class" : "Maximum Hours Before Class"}
+                                            {rule.condition.type === "hours_before_min"
+                                                ? "Early booking discount applies:"
+                                                : "Last minute discount applies:"}
                                         </Label>
-                                        <Input
-                                            id={`discount-hours-${index}`}
-                                            type="number"
-                                            min="1"
-                                            placeholder="24"
-                                            name="condition.hours"
-                                            value={rule.condition.hours || ""}
-                                            onChange={(e) => {
-                                                const hours = Number.parseInt(e.target.value) || undefined
-                                                updateRule(index, {
-                                                    condition: { ...rule.condition, hours },
-                                                })
-                                            }}
-                                            className="h-9"
-                                        />
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <Input
+                                                id={`discount-hours-${index}`}
+                                                type="number"
+                                                min="1"
+                                                placeholder="24"
+                                                name="condition.hours"
+                                                value={rule.condition.hours || ""}
+                                                onChange={(e) => {
+                                                    const hours = Number.parseInt(e.target.value) || undefined
+                                                    updateRule(index, {
+                                                        condition: { ...rule.condition, hours },
+                                                    })
+                                                }}
+                                                className="w-20"
+                                            />
+                                            <span className="text-xs text-muted-foreground">
+                                                {rule.condition.type === "hours_before_min"
+                                                    ? "hours or more before class starts"
+                                                    : "hours or less before class starts"}
+                                            </span>
+                                        </div>
                                     </div>
                                 )}
 

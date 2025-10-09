@@ -448,6 +448,15 @@ export const bookingService = {
             });
         }
 
+        // Check if bookings are disabled for this class instance
+        if (instance.disableBookings === true) {
+            throw new ConvexError({
+                message: "Bookings are disabled for this class",
+                field: "disableBookings",
+                code: ERROR_CODES.ACTION_NOT_ALLOWED,
+            });
+        }
+
         const template = await ctx.db.get(instance.templateId);
         if (!template) {
             throw new ConvexError({

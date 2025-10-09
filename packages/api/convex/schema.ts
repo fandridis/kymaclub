@@ -276,6 +276,9 @@ export const classTemplatesFields = {
   // Flexible discount rules - businesses can define custom early-bird and last-minute discounts
   discountRules: v.optional(v.array(v.object(classDiscountRuleFields))),
 
+  // Booking control
+  disableBookings: v.optional(v.boolean()), // Default: false (bookings enabled)
+
   // Template metadata
   isActive: v.boolean(),
   tags: v.optional(v.array(v.string())),
@@ -311,8 +314,8 @@ export const classInstancesFields = {
   capacity: v.optional(v.number()),
   price: v.optional(v.number()), // Price in business currency (100-10000 IN CENTS, no decimals) - currency from business.currency
   bookingWindow: v.optional(v.object({
-    minHours: v.number(),
-    maxHours: v.number(),
+    minHours: v.number(), // Minimum hours before class start for booking
+    maxHours: v.number(), // Maximum hours before class start for booking
   })),
   cancellationWindowHours: v.optional(v.number()),
   tags: v.optional(v.array(v.string())),
@@ -320,6 +323,9 @@ export const classInstancesFields = {
 
   // Instance-specific discount rules (overrides template rules)
   discountRules: v.optional(v.array(v.object(classDiscountRuleFields))),
+
+  // Booking control
+  disableBookings: v.optional(v.boolean()), // Default: false (bookings enabled)
 
   // Status and booking tracking
   status: v.union(

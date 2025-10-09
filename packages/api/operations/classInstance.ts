@@ -220,6 +220,7 @@ export const prepareInstanceUpdatesFromTemplateChanges = (
                 description: templateChanges.description,
                 instructor: templateChanges.instructor,
                 primaryCategory: templateChanges.primaryCategory,
+                disableBookings: templateChanges.disableBookings,
             }),
             // Historical snapshot preservation with selective updates
             templateSnapshot: {
@@ -230,6 +231,7 @@ export const prepareInstanceUpdatesFromTemplateChanges = (
                     instructor: templateChanges.instructor,
                     imageStorageIds: templateChanges.imageStorageIds,
                     discountRules: templateChanges.discountRules,
+                    disableBookings: templateChanges.disableBookings,
                     deleted: templateChanges.deleted,
                     primaryCategory: templateChanges.primaryCategory,
                 }),
@@ -414,6 +416,7 @@ export const createInstanceFromTemplate = (
         tags: template.tags,
         color: template.color,
         discountRules: template.discountRules,
+        disableBookings: template.disableBookings,
 
         // Booking tracking
         bookedCount: 0,

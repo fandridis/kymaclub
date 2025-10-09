@@ -26,7 +26,7 @@ export const EuroPriceInput: React.FC<EuroPriceInputProps> = ({
     error,
     required = false,
     className,
-    showCreditEquivalent = true,
+    showCreditEquivalent = false,
 }) => {
     // Convert cents value back to euros for display
     const displayValue = value ? (parseInt(value) / 100).toString() : '';

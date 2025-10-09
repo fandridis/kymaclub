@@ -219,7 +219,7 @@ export const getLastMinuteDiscountedClassInstancesArgs = v.object({
 export const getLastMinuteDiscountedClassInstances = query({
     args: getLastMinuteDiscountedClassInstancesArgs,
     handler: async (ctx, args) => {
-        const user = await getAuthenticatedUserOrThrow(ctx);
+        await getAuthenticatedUserOrThrow(ctx);
         const limit = args.limit || 10;
 
         // 🚀 OPTIMIZED: Use pagination to limit data transfer - scan only what we need
@@ -273,6 +273,7 @@ export const getLastMinuteDiscountedClassInstances = query({
                     price: instance.price,
                     status: instance.status,
                     color: instance.color,
+                    disableBookings: instance.disableBookings,
                     // Minimal snapshots with image data
                     templateSnapshot: {
                         name: instance.templateSnapshot.name,

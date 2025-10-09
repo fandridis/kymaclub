@@ -29,6 +29,42 @@ const SECTION_PADDING = 12; // Horizontal padding for sections
 
 const CAROUSEL_ITEM_WIDTH = (screenWidth - (SECTION_PADDING * 2)) / 1.40;
 
+/**
+ * Helper function to check if a class instance can be booked
+ * @param instance - The class instance to check
+ * @param currentTime - Current timestamp in milliseconds
+ * @returns true if the class can be booked, false otherwise
+ */
+const canBookClass = (instance: any, currentTime: number): boolean => {
+    // Check if bookings are disabled
+    if (instance.disableBookings === true) {
+        return false;
+    }
+
+    // Check if class has already started
+    if (instance.startTime <= currentTime) {
+        return false;
+    }
+
+    // Check booking window if it exists
+    if (instance.bookingWindow) {
+        const timeUntilStartMs = instance.startTime - currentTime;
+        const hoursUntilStart = timeUntilStartMs / (1000 * 60 * 60);
+
+        // Too late to book (within minimum advance time)
+        if (hoursUntilStart < instance.bookingWindow.minHours) {
+            return false;
+        }
+
+        // Too early to book (beyond maximum advance time)
+        if (hoursUntilStart > instance.bookingWindow.maxHours) {
+            return false;
+        }
+    }
+
+    return true;
+};
+
 const WelcomeBanner = ({
     onDismiss,
     onExplore
@@ -206,7 +242,6 @@ export function NewsScreen() {
                 const venueImageId = classInstance?.venueSnapshot?.imageStorageIds?.[0];
                 const imageUrl = templateImageId ? combinedStorageIdToUrl.get(templateImageId) :
                     venueImageId ? combinedStorageIdToUrl.get(venueImageId) : null;
-
                 const startTime = booking.classInstanceSnapshot?.startTime;
                 const startDate = startTime ? new Date(startTime) : null;
                 const today = new Date();
@@ -244,6 +279,7 @@ export function NewsScreen() {
                 return {
                     id: booking._id,
                     title: booking.classInstanceSnapshot?.name || 'Class',
+                    disableBookings: classInstance?.disableBookings,
                     time: timeDisplay,
                     date: dateDisplay,
                     instructor: booking.classInstanceSnapshot?.instructor || 'Instructor',
@@ -264,6 +300,7 @@ export function NewsScreen() {
         if (!discountedInstancesData.length) return [];
 
         return discountedInstancesData
+            .filter(instance => canBookClass(instance, now.getTime())) // Filter out non-bookable classes
             .slice(0, 6)
             .map(instance => {
                 const timeUntilStartMs = instance.startTime - now.getTime();
@@ -313,6 +350,7 @@ export function NewsScreen() {
         return venuesData
             .filter(venue => {
                 const venueAge = now.getTime() - venue.createdAt;
+                const venueAgeInDays = venueAge / (24 * 60 * 60 * 1000);
                 const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
                 return venueAge <= thirtyDaysInMs;
             })
@@ -873,7 +911,7 @@ const styles = StyleSheet.create({
     newsClassCardFooterMetric: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
+        gap: 2,
     },
     newsClassCardFooterIcon: {
         width: 20,
