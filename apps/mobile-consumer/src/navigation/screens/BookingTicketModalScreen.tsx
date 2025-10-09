@@ -227,7 +227,7 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
     const classStartTime = booking.classInstanceSnapshot?.startTime;
 
     if (!classStartTime) {
-      return { isInWindow: false, message: 'Class time unavailable' };
+      return { isInWindow: false, buttonText: 'Check-in unavailable' };
     }
 
     const thirtyMinutesInMs = 30 * 60 * 1000;
@@ -240,18 +240,21 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
       const formattedTime = formatTimeUntil(timeUntilOpen);
       return {
         isInWindow: false,
-        message: `Check-in opens in ${formattedTime}`
+        buttonText: `Opens in ${formattedTime}`
       };
     }
 
     if (now > latestCheckIn) {
       return {
         isInWindow: false,
-        message: 'Check-in window has closed'
+        buttonText: 'Check-in closed'
       };
     }
 
-    return { isInWindow: true, message: 'Drag to check in' };
+    return {
+      isInWindow: true,
+      buttonText: 'Drag to check-in'
+    };
   }, [booking.classInstanceSnapshot?.startTime, formatTimeUntil]);
 
   const isSwipeDisabled = booking.status !== 'pending' || !checkInWindowInfo.isInWindow;
@@ -342,14 +345,12 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
 
       <View style={styles.footer}>
         <SwipeToConfirmButton
-          label={isSubmitting ? "Checking in..." : "Swipe to confirm arrival"}
+          label={isSubmitting ? "Checking in..." : checkInWindowInfo.buttonText}
           onConfirm={handleConfirm}
           disabled={isSwipeDisabled || isSubmitting}
         />
         <Text style={styles.footerHelpText}>
-          {isSwipeDisabled && booking.status === 'pending'
-            ? checkInWindowInfo.message
-            : 'Drag the button to let the studio verify your check-in'}
+          Drag the button to let the studio verify your check-in.
         </Text>
       </View>
     </View>

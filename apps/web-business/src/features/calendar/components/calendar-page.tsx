@@ -83,6 +83,7 @@ export function CalendarPage({ startDate, classInstances, user }: CalendarPagePr
 
     const handleViewBookings = (eventInfo: EventContentArg) => {
         const classInstance = eventInfo.event.extendedProps.classInstance as ClassInstance
+        console.log('classInstance', classInstance);
         setViewBookingsDialog({
             open: true,
             classInstance: classInstance
@@ -146,7 +147,7 @@ export function CalendarPage({ startDate, classInstances, user }: CalendarPagePr
                 slotMaxTime="24:00:00"
                 businessHours={{
                     daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
-                    startTime: '05:00',
+                    startTime: '06:00',
                     endTime: '24:00',
                 }}
                 snapDuration="00:30:00"

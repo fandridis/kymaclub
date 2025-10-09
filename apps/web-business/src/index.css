@@ -164,9 +164,10 @@
   }
 }
 
-/* .fc .fc-timegrid-slot {
-  height: 28px;
-} */
+.fc .fc-timegrid-slot {
+  height: 60px;
+  /* Increased from 28px to 40px for more vertical space */
+}
 
 /* ===================================================
    FULLCALENDAR STYLING

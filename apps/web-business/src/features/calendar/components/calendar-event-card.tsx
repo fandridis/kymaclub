@@ -1,5 +1,5 @@
 import type { EventContentArg } from "@fullcalendar/core/index.js";
-import { MoreVertical, Edit, Trash2, Users, Lock, Unlock, CalendarPlus, CalendarOff, CalendarIcon, CalendarOffIcon } from "lucide-react";
+import { MoreVertical, Edit, Trash2, Users, Lock, Unlock, CalendarPlus, CalendarOff, CalendarIcon, CalendarOffIcon, User } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -68,7 +68,7 @@ export const CalendarEventCard = ({ eventInfo, onEdit, onDelete, onViewBookings,
 
     return (
         <div className={cn("relative w-full h-full px-1 py-1 group overflow-x-hidden overflow-y-auto", textColor)}>
-            <div className="absolute top-1 left-1 pr-8">
+            <div className="absolute top-1 left-1 right-3">
                 <div className="text-xs font-medium truncate leading-3.5">{name}</div>
                 <div className="text-xs opacity-75 truncate leading-3.5">{eventInfo.timeText}</div>
                 {/* <div className="text-xs opacity-75 truncate leading-3.5 ">Cpt: {classInstance.bookedCount}/{classInstance.capacity}</div> */}
@@ -113,6 +113,12 @@ export const CalendarEventCard = ({ eventInfo, onEdit, onDelete, onViewBookings,
                 </DropdownMenu>
             </div>
 
+            {/* Capacity info in bottom left */}
+            <div className="absolute bottom-1 left-1 flex items-center gap-1">
+                <User className="h-3 w-3 opacity-60" />
+                <span className="text-xs opacity-75">{classInstance.bookedCount}/{classInstance.capacity}</span>
+            </div>
+
             {/* Status icons in bottom right */}
             <div className="absolute bottom-1 right-1 flex items-center gap-1">
                 {/* Lock icon for disabled bookings */}
@@ -130,8 +136,6 @@ export const CalendarEventCard = ({ eventInfo, onEdit, onDelete, onViewBookings,
                         )}
                     </>
                 )}
-
-
             </div>
         </div>
     );
