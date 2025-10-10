@@ -15,7 +15,12 @@ import {
     LineChart,
     MessageSquare,
     Star,
+    Sparkles,
 } from "lucide-react";
+import { ClassBookingRow } from "@/components/class-booking-row";
+import { ClassBookingsDialog } from "@/features/bookings/components/class-bookings-dialog";
+import type { Doc } from "@repo/api/convex/_generated/dataModel";
+import useDailyClassesWithBookings from "../hooks/use-daily-classes-with-bookings";
 
 const statCards = [
     {
@@ -52,156 +57,14 @@ const statCards = [
     },
 ];
 
-type DashboardClass = {
+interface Booking {
     id: string;
-    name: string;
-    time: string;
-    instructor: string;
-    bookings: number;
-    capacity: number;
+    user: {
+        name: string;
+        avatar?: string;
+    };
     status: string;
-};
-
-const scheduleTemplates: Omit<DashboardClass, "id">[][] = [
-    [
-        {
-            name: "Morning Flow",
-            time: "08:30 – 09:15",
-            instructor: "Maria K.",
-            bookings: 11,
-            capacity: 14,
-            status: "Filling fast",
-        },
-        {
-            name: "Pilates Reformer",
-            time: "11:00 – 11:50",
-            instructor: "Apostolos T.",
-            bookings: 9,
-            capacity: 10,
-            status: "Waitlist at 2",
-        },
-        {
-            name: "Lunch Express HIIT",
-            time: "13:30 – 14:00",
-            instructor: "Konstantina P.",
-            bookings: 5,
-            capacity: 12,
-            status: "Room to grow",
-        },
-        {
-            name: "Sunset Yin Yoga",
-            time: "19:30 – 20:20",
-            instructor: "Nikos L.",
-            bookings: 12,
-            capacity: 14,
-            status: "Great retention",
-        },
-    ],
-    [
-        {
-            name: "Sunrise Strength",
-            time: "07:45 – 08:30",
-            instructor: "Jenny S.",
-            bookings: 10,
-            capacity: 16,
-            status: "Plenty of space",
-        },
-        {
-            name: "Mobility Lab",
-            time: "10:15 – 11:00",
-            instructor: "Lefteris D.",
-            bookings: 14,
-            capacity: 18,
-            status: "Steady",
-        },
-        {
-            name: "Boxing Fundamentals",
-            time: "18:00 – 18:50",
-            instructor: "Spyros V.",
-            bookings: 16,
-            capacity: 18,
-            status: "Last seats",
-        },
-    ],
-    [
-        {
-            name: "Reformer Foundations",
-            time: "09:00 – 09:45",
-            instructor: "Katerina L.",
-            bookings: 8,
-            capacity: 10,
-            status: "Waitlist open",
-        },
-        {
-            name: "Power Cycle",
-            time: "12:30 – 13:15",
-            instructor: "Andreas P.",
-            bookings: 13,
-            capacity: 16,
-            status: "Filling fast",
-        },
-        {
-            name: "Evening Barre",
-            time: "20:00 – 20:50",
-            instructor: "Anna M.",
-            bookings: 7,
-            capacity: 12,
-            status: "Growth opportunity",
-        },
-    ],
-    [
-        {
-            name: "Strength & Sculpt",
-            time: "08:15 – 09:00",
-            instructor: "Ilias P.",
-            bookings: 6,
-            capacity: 14,
-            status: "Needs promotion",
-        },
-        {
-            name: "Lunch Stretch",
-            time: "12:45 – 13:30",
-            instructor: "Dimitra A.",
-            bookings: 12,
-            capacity: 14,
-            status: "Great retention",
-        },
-        {
-            name: "Cardio Blast",
-            time: "18:30 – 19:15",
-            instructor: "Lina R.",
-            bookings: 15,
-            capacity: 18,
-            status: "Steady",
-        },
-    ],
-    [
-        {
-            name: "Core Reset",
-            time: "09:30 – 10:15",
-            instructor: "Eva G.",
-            bookings: 9,
-            capacity: 12,
-            status: "Nearly full",
-        },
-        {
-            name: "Prenatal Yoga",
-            time: "11:30 – 12:20",
-            instructor: "Angeliki C.",
-            bookings: 7,
-            capacity: 10,
-            status: "Great feedback",
-        },
-        {
-            name: "Open Gym",
-            time: "17:00 – 18:30",
-            instructor: "Team",
-            bookings: 18,
-            capacity: 24,
-            status: "Trending",
-        },
-    ],
-];
+}
 
 const systemMessages = [
     {
@@ -285,21 +148,18 @@ const memberFeedback = [
     },
 ];
 
-const focusAreas = [
+const aiSuggestions = [
     {
         id: 1,
-        title: "Publish March schedule",
-        description: "Finalize templates and notify recurring members",
+        suggestion: "Consider adding more cooling options during Power Cycle classes",
+        impact: "High impact",
+        reasoning: "Based on recent feedback mentioning temperature concerns",
     },
     {
         id: 2,
-        title: "Reply to partnership inquiry",
-        description: "CrossFit Kallithea awaiting response",
-    },
-    {
-        id: 3,
-        title: "Review instructor hours",
-        description: "Confirm payroll for week 09",
+        suggestion: "Expand instructor explanation techniques to other classes",
+        impact: "Medium impact",
+        reasoning: "Positive feedback on clear explanations in Reformer Foundations",
     },
 ];
 
@@ -334,33 +194,29 @@ function formatTabLabel(date: Date, offset: number) {
     }).format(date);
 }
 
-function createMockSchedule(baseDate: Date, days: number) {
-    const schedule: Record<string, DashboardClass[]> = {};
+function getDayStartEnd(date: Date) {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
 
-    for (let index = 0; index < days; index += 1) {
-        const currentDate = addDays(baseDate, index);
-        const dateKey = formatDateKey(currentDate);
-        const templateIndex = index % scheduleTemplates.length;
-        const classes = scheduleTemplates[templateIndex] ?? [];
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
 
-        schedule[dateKey] = classes.map((classItem, classIndex) => ({
-            ...classItem,
-            id: `${dateKey}-${classIndex}`,
-        }));
-    }
-
-    return schedule;
+    return {
+        start: startOfDay.getTime(),
+        end: endOfDay.getTime()
+    };
 }
 
 function createDayTabs(baseDate: Date, days: number) {
-    const tabDefinitions: { key: string; label: string }[] = [];
+    const tabDefinitions: { key: string; label: string; dayStart: number; dayEnd: number }[] = [];
 
     for (let index = 0; index < days; index += 1) {
         const currentDate = addDays(baseDate, index);
         const key = formatDateKey(currentDate);
         const label = formatTabLabel(currentDate, index);
+        const { start, end } = getDayStartEnd(currentDate);
 
-        tabDefinitions.push({ key, label });
+        tabDefinitions.push({ key, label, dayStart: start, dayEnd: end });
     }
 
     return tabDefinitions;
@@ -369,19 +225,34 @@ function createDayTabs(baseDate: Date, days: number) {
 export default function DashboardPage() {
     const memoized = useMemo(() => {
         const now = new Date();
-        const daysToShow = 14;
+        const daysToShow = 9;
 
         return {
             dayTabs: createDayTabs(now, daysToShow),
-            schedule: createMockSchedule(now, daysToShow),
         };
     }, []);
 
-    const { dayTabs, schedule } = memoized;
+    const { dayTabs } = memoized;
     const [activeDay, setActiveDay] = useState(() => dayTabs[0]?.key ?? "");
+    const [bookingsDialog, setBookingsDialog] = useState<{
+        open: boolean;
+        classInstance: Doc<"classInstances"> | null;
+        bookings: Doc<"bookings">[]
+    } | null>(null);
 
     const activeTab = dayTabs.find((day) => day.key === activeDay);
-    const classesForActiveDay = schedule[activeDay] ?? [];
+
+    // Transform bookings to match the ClassBookingRow interface
+    const transformBookings = (bookings: Doc<"bookings">[]): Booking[] => {
+        return bookings.map(booking => ({
+            id: booking._id,
+            user: {
+                name: booking.userSnapshot?.name || 'Unknown User',
+                avatar: undefined // userSnapshot doesn't have avatar field
+            },
+            status: booking.status || 'pending'
+        }));
+    };
 
     return (
         <div className="space-y-6 pb-8">
@@ -437,50 +308,72 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <Tabs value={activeDay} onValueChange={setActiveDay} className="w-full">
-                            <TabsList className="mb-4 flex w-full justify-start gap-1 overflow-x-auto rounded-lg border bg-muted/50 p-1">
+                            <TabsList className="overflow-x-auto flex w-full">
                                 {dayTabs.map((day) => (
-                                    <TabsTrigger key={day.key} value={day.key} className="px-3 py-1 text-sm">
+                                    <TabsTrigger
+                                        key={day.key}
+                                        value={day.key}
+                                        className="flex-1"
+                                    >
                                         {day.label}
                                     </TabsTrigger>
                                 ))}
                             </TabsList>
 
+                            {/* Classes content for each day */}
                             {dayTabs.map((day) => {
-                                const classesForDay = schedule[day.key] ?? [];
+                                // Get data for this specific day
+                                const { data: dayData, loading: dayLoading } = useDailyClassesWithBookings({
+                                    dayStart: day.dayStart,
+                                    dayEnd: day.dayEnd,
+                                });
 
                                 return (
                                     <TabsContent key={day.key} value={day.key} className="space-y-4">
-                                        {classesForDay.length === 0 ? (
+                                        {dayLoading ? (
                                             <div className="rounded-lg border border-dashed border-muted p-6 text-center text-sm text-muted-foreground">
-                                                No classes scheduled for this day yet.
+                                                Loading classes...
+                                            </div>
+                                        ) : dayData.length === 0 ? (
+                                            <div className="rounded-lg border border-dashed border-muted p-6 text-center text-sm text-muted-foreground">
+                                                No classes scheduled for {day.label.toLowerCase()} yet.
                                             </div>
                                         ) : (
-                                            classesForDay.map((classItem) => {
-                                                const percent = Math.round((classItem.bookings / classItem.capacity) * 100);
+                                            dayData.map((item) => {
+                                                const { classInstance, bookings } = item;
+                                                const instructor = classInstance.instructor || 'TBD';
+                                                const location = classInstance.venueSnapshot?.address ?
+                                                    `${classInstance.venueSnapshot.address.street}, ${classInstance.venueSnapshot.address.city}` :
+                                                    'Location TBD';
+                                                const maxCapacity = classInstance.capacity || 0;
+                                                const transformedBookings = transformBookings(bookings);
+
+                                                // Format start time
+                                                const startTime = new Date(classInstance.startTime);
+                                                const startTimeFormatted = startTime.toLocaleTimeString('en-US', {
+                                                    hour: 'numeric',
+                                                    minute: '2-digit',
+                                                    hour12: true
+                                                });
 
                                                 return (
                                                     <div
-                                                        key={classItem.id}
-                                                        className="flex flex-col gap-3 rounded-lg border border-dashed border-muted p-4 sm:flex-row sm:items-center sm:justify-between"
+                                                        key={classInstance._id}
+                                                        className="cursor-pointer transition-opacity hover:opacity-80"
+                                                        onClick={() => setBookingsDialog({
+                                                            open: true,
+                                                            classInstance,
+                                                            bookings: bookings || []
+                                                        })}
                                                     >
-                                                        <div className="space-y-1">
-                                                            <p className="font-medium text-sm sm:text-base">{classItem.name}</p>
-                                                            <p className="text-sm text-muted-foreground">with {classItem.instructor}</p>
-                                                        </div>
-
-                                                        <div className="flex flex-col items-start gap-2 sm:items-end">
-                                                            <span className="text-sm font-medium text-muted-foreground">{classItem.time}</span>
-                                                            <p className="text-sm font-medium">
-                                                                {classItem.bookings}/{classItem.capacity} booked
-                                                            </p>
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-24">
-                                                                    <Progress value={percent} aria-label={`${classItem.name} occupancy`} />
-                                                                </div>
-                                                                <span className="text-xs text-muted-foreground">{percent}%</span>
-                                                            </div>
-                                                            <Badge variant="secondary">{classItem.status}</Badge>
-                                                        </div>
+                                                        <ClassBookingRow
+                                                            classInstance={classInstance}
+                                                            instructor={instructor}
+                                                            time={startTimeFormatted}
+                                                            location={location}
+                                                            bookings={transformedBookings}
+                                                            maxCapacity={maxCapacity}
+                                                        />
                                                     </div>
                                                 );
                                             })
@@ -551,8 +444,8 @@ export default function DashboardPage() {
 
                 <Card className="lg:col-span-3">
                     <CardHeader>
-                        <CardTitle>Member feedback & focus</CardTitle>
-                        <CardDescription>Celebrate wins and follow up on next steps</CardDescription>
+                        <CardTitle>Member feedback & AI suggestions</CardTitle>
+                        <CardDescription>Celebrate wins and discover improvement opportunities</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-5">
                         <div className="space-y-3">
@@ -582,18 +475,28 @@ export default function DashboardPage() {
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="font-medium text-sm">Focus areas</p>
-                                    <p className="text-xs text-muted-foreground">Suggested priorities for this week</p>
+                                    <p className="font-medium text-sm">AI suggestions</p>
+                                    <p className="text-xs text-muted-foreground">Improvements based on recent feedback</p>
                                 </div>
-                                <Badge variant="outline">{focusAreas.length}</Badge>
+                                <Badge variant="outline">{aiSuggestions.length}</Badge>
                             </div>
                             <div className="space-y-2">
-                                {focusAreas.map((task) => (
-                                    <div key={task.id} className="flex items-start gap-3 rounded-lg border border-dashed border-muted px-3 py-2 text-sm">
-                                        <CalendarCheck className="mt-0.5 h-4 w-4 text-primary" aria-hidden="true" />
-                                        <div>
-                                            <p className="font-medium leading-tight">{task.title}</p>
-                                            <p className="text-xs text-muted-foreground">{task.description}</p>
+                                {aiSuggestions.map((suggestion) => (
+                                    <div key={suggestion.id} className="rounded-lg border border-dashed border-muted p-3 text-sm">
+                                        <div className="flex items-start gap-3">
+                                            <Sparkles className="mt-0.5 h-4 w-4 text-primary" aria-hidden="true" />
+                                            <div className="flex-1 space-y-1">
+                                                <p className="font-medium leading-tight">{suggestion.suggestion}</p>
+                                                <div className="flex items-center gap-2">
+                                                    <Badge
+                                                        variant={suggestion.impact === "High impact" ? "default" : "secondary"}
+                                                        className="text-xs"
+                                                    >
+                                                        {suggestion.impact}
+                                                    </Badge>
+                                                    <p className="text-xs text-muted-foreground">{suggestion.reasoning}</p>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -602,6 +505,17 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Bookings Dialog */}
+            {bookingsDialog && (
+                <ClassBookingsDialog
+                    open={bookingsDialog.open}
+                    onOpenChange={(open: boolean) => setBookingsDialog(open ? bookingsDialog : null)}
+                    classInstance={bookingsDialog.classInstance!}
+                >
+                    <div />
+                </ClassBookingsDialog>
+            )}
         </div>
     );
 }

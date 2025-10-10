@@ -104,6 +104,23 @@ export const getClassInstancesWithBookings = query({
 });
 
 /***************************************************************
+ * Get Class Instances with Bookings for Specific Day
+ ***************************************************************/
+
+export const getClassInstancesWithBookingsForDayArgs = v.object({
+    dayStart: v.number(), // Start of day timestamp
+    dayEnd: v.number(),   // End of day timestamp
+});
+
+export const getClassInstancesWithBookingsForDay = query({
+    args: getClassInstancesWithBookingsForDayArgs,
+    handler: async (ctx, args) => {
+        const user = await getAuthenticatedUserOrThrow(ctx);
+        return await classInstanceService.getClassInstancesWithBookingsForDay({ ctx, args, user });
+    }
+});
+
+/***************************************************************
  * 🆕 OPTIMIZED CLASS INSTANCE QUERIES WITH COMPOUND INDEXES
  * Eliminate expensive filter operations for better performance
  ***************************************************************/

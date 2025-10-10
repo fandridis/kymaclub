@@ -619,4 +619,76 @@ export const classInstanceService = {
 
         return result;
     },
+
+    /**
+     * Get class instances with their bookings for a specific day
+     * Returns class instances within a day range with their associated bookings
+     */
+    getClassInstancesWithBookingsForDay: async ({
+        ctx,
+        args,
+        user
+    }: {
+        ctx: QueryCtx,
+        args: { dayStart: number, dayEnd: number },
+        user: Doc<"users">
+    }): Promise<Array<{ classInstance: Doc<"classInstances">; bookings: Doc<"bookings">[] }>> => {
+        coreRules.userMustBeAssociatedWithBusiness(user);
+
+        const businessId = user.businessId!; // TypeScript guard - we know it's not undefined after the rule check
+
+        // Get class instances for the specific day
+        const classInstances = await ctx.db
+            .query("classInstances")
+            .withIndex("by_business_start_time", q =>
+                q.eq("businessId", businessId)
+                    .gte("startTime", args.dayStart)
+            )
+            .filter(q => q.and(
+                q.lte(q.field("startTime"), args.dayEnd),
+                q.neq(q.field("deleted"), true)
+            ))
+            .order("asc") // Sort by startTime ascending
+            .collect();
+
+        if (classInstances.length === 0) {
+            return [];
+        }
+
+        // Get all instance IDs for batch booking query
+        const classInstanceIds = classInstances.map(instance => instance._id);
+
+        // Get all active bookings for these class instances
+        const allBookings: Doc<"bookings">[] = [];
+
+        for (const classInstanceId of classInstanceIds) {
+            const bookings = await ctx.db
+                .query("bookings")
+                .withIndex("by_class_instance", q => q.eq("classInstanceId", classInstanceId))
+                .filter(q => q.and(
+                    q.neq(q.field("deleted"), true),
+                    q.eq(q.field("businessId"), businessId),
+                ))
+                .collect();
+
+            allBookings.push(...bookings);
+        }
+
+        // Build the result array with enriched bookings
+        const result: Array<{ classInstance: Doc<"classInstances">; bookings: Doc<"bookings">[] }> = [];
+
+        for (const classInstance of classInstances) {
+            // Find bookings for this class instance
+            const instanceBookings = allBookings.filter(
+                booking => booking.classInstanceId === classInstance._id
+            );
+
+            result.push({
+                classInstance,
+                bookings: instanceBookings
+            });
+        }
+
+        return result;
+    },
 };
