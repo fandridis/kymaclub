@@ -261,6 +261,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
             };
 
             if (isEditMode) {
+                console.log("Updating class template", templateData);
                 await updateClassTemplate({
                     templateId: classTemplate._id,
                     template: {

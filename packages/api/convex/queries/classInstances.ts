@@ -104,6 +104,23 @@ export const getClassInstancesWithBookings = query({
 });
 
 /***************************************************************
+ * Get Class Instances with Bookings for Specific Day
+ ***************************************************************/
+
+export const getClassInstancesWithBookingsForDayArgs = v.object({
+    dayStart: v.number(), // Start of day timestamp
+    dayEnd: v.number(),   // End of day timestamp
+});
+
+export const getClassInstancesWithBookingsForDay = query({
+    args: getClassInstancesWithBookingsForDayArgs,
+    handler: async (ctx, args) => {
+        const user = await getAuthenticatedUserOrThrow(ctx);
+        return await classInstanceService.getClassInstancesWithBookingsForDay({ ctx, args, user });
+    }
+});
+
+/***************************************************************
  * 🆕 OPTIMIZED CLASS INSTANCE QUERIES WITH COMPOUND INDEXES
  * Eliminate expensive filter operations for better performance
  ***************************************************************/
@@ -222,19 +239,18 @@ export const getLastMinuteDiscountedClassInstances = query({
         await getAuthenticatedUserOrThrow(ctx);
         const limit = args.limit || 10;
 
-        // 🚀 OPTIMIZED: Use pagination to limit data transfer - scan only what we need
+        // 🚀 OPTIMIZED: Use compound index to eliminate expensive filter operations
+        // This dramatically reduces bandwidth by filtering at the index level
         const instances = await ctx.db
             .query("classInstances")
-            .withIndex("by_start_time", (q) => q.gte("startTime", args.startDate))
-            .filter(q =>
-                q.and(
-                    q.lte(q.field("startTime"), args.endDate),
-                    q.eq(q.field("status"), "scheduled"),
-                    q.neq(q.field("deleted"), true)
-                )
+            .withIndex("by_status_deleted_start_time", (q) =>
+                q.eq("status", "scheduled")
+                    .eq("deleted", undefined) // undefined means not deleted
+                    .gte("startTime", args.startDate)
             )
+            .filter(q => q.lte(q.field("startTime"), args.endDate))
             .order("asc") // Order by start time
-            .take(limit * 3); // Take 3x limit to account for filtering
+            .take(limit * 3); // Take 3x limit to account for pricing filtering
 
         // Get only essential template fields for pricing calculations
         const templateIds = [...new Set(instances.map(i => i.templateId))];

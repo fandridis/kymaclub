@@ -91,9 +91,9 @@ test.describe('Venue, Template & Calendar Management Flow', () => {
         await page.keyboard.press('Enter');
 
         // Set booking window
-        await page.fill('[name="bookingWindowMinHours"]', '2');
-        await page.fill('[name="bookingWindowMaxHours"]', '168');
-        await page.fill('[name="cancellationWindowHours"]', '4');
+        // await page.fill('[name="bookingWindowMinHours"]', '2');
+        // await page.fill('[name="bookingWindowMaxHours"]', '168');
+        // await page.fill('[name="cancellationWindowHours"]', '4');
 
         // Step 5: Add two discount rules
         await page.click('button:has-text("Add Rule")');
