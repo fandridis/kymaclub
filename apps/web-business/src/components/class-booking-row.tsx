@@ -73,7 +73,7 @@ export function ClassBookingRow({
     return (
         <Card
             className={cn(
-                "p-4 shadow-xs text-green-950 bg-green-50",
+                "p-4 shadow",
                 cardBackground,
                 cardBorder,
                 cardText,
@@ -82,10 +82,10 @@ export function ClassBookingRow({
             onClick={onClick}
         >
             <div className="flex gap-6">
-                {/* Left Column - Prominent Date & Time */}
-                <div className={cn("flex flex-col items-center justify-center min-w-[100px] text-center border-r-2 pr-6", cardBorder)}>
-                    <div className="text-sm font-medium">{date}</div>
-                    <div className="text-xl font-bold">{time}</div>
+                {/* Left Column - Compact Date & Time */}
+                <div className={cn("flex flex-col items-center justify-center min-w-[60px] text-center border-r-2 pr-4", cardBorder)}>
+                    <div className="text-xs font-medium">{date}</div>
+                    <div className="text-lg font-bold">{time}</div>
                 </div>
 
                 {/* Middle Column - Class Details */}

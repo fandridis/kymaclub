@@ -97,7 +97,7 @@ export function UpcomingClasses({ className }: UpcomingClassesProps) {
                 {sections.map(([date, classes]) => (
                     <div key={date} className="space-y-4">
                         <div className="flex items-center gap-3">
-                            <h2 className="text-xl font-semibold tracking-tight">{date}</h2>
+                            <h2 className="text-sm font-semibold tracking-tight">{date}</h2>
                             <div className="h-px flex-1 bg-border" />
                             <span className="text-sm text-muted-foreground">{classes.length} {classes.length === 1 ? 'class' : 'classes'}</span>
                         </div>
