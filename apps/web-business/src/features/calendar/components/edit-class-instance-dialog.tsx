@@ -88,8 +88,6 @@ const editInstanceSchema = z.object({
     enableRefundPolicy: z.boolean(),
     cancellationWindowHours: z.string().optional(),
 
-    // Booking Control
-    disableBookings: z.boolean().optional(),
 
     // Discount Rules
     discountRules: z.array(discountRuleSchema).optional(),
@@ -167,7 +165,6 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
             bookingWindowMaxHours: "168",
             enableRefundPolicy: false,
             cancellationWindowHours: "2",
-            disableBookings: false,
             discountRules: [],
         },
     });
@@ -196,7 +193,6 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                 bookingWindowMaxHours: (instance.bookingWindow?.maxHours || 168).toString(),
                 enableRefundPolicy: !!(instance.cancellationWindowHours && instance.cancellationWindowHours > 0),
                 cancellationWindowHours: instance.cancellationWindowHours?.toString() || "2",
-                disableBookings: instance.disableBookings || false,
                 discountRules: instance.discountRules || [],
             });
             // Also update the discount rules state
@@ -264,7 +260,6 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                     cancellationWindowHours: data.enableRefundPolicy && data.cancellationWindowHours
                         ? parseInt(data.cancellationWindowHours)
                         : 0,
-                    disableBookings: data.disableBookings || false,
                     tags: data.tags.length > 0 ? data.tags : undefined,
                     color: data.color,
                     discountRules: discountRules.length > 0 ? discountRules.map(rule => ({
@@ -314,7 +309,6 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                     cancellationWindowHours: data.enableRefundPolicy && data.cancellationWindowHours
                         ? parseInt(data.cancellationWindowHours)
                         : 0,
-                    disableBookings: data.disableBookings || false,
                     tags: data.tags.length > 0 ? data.tags : undefined,
                     color: data.color,
                     discountRules: discountRules.length > 0 ? discountRules.map(rule => ({
@@ -562,14 +556,6 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                             )}
                                         </div>
 
-                                        <FormField control={form.control} name="disableBookings" render={({ field }) => (
-                                            <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                                                <FormControl>
-                                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                                </FormControl>
-                                                <FormLabel>Start with bookings disabled</FormLabel>
-                                            </FormItem>
-                                        )} />
                                     </div>
 
                                     <div className="mt-8">

@@ -231,7 +231,6 @@ export const prepareInstanceUpdatesFromTemplateChanges = (
                     instructor: templateChanges.instructor,
                     imageStorageIds: templateChanges.imageStorageIds,
                     discountRules: templateChanges.discountRules,
-                    disableBookings: templateChanges.disableBookings,
                     deleted: templateChanges.deleted,
                     primaryCategory: templateChanges.primaryCategory,
                 }),
