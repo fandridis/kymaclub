@@ -17,6 +17,7 @@ import type { Doc } from "@repo/api/convex/_generated/dataModel";
 import { UpcomingClasses } from "./upcoming-classes";
 import { MinimalStatCard } from "./minimal-stat-card";
 import { MinimalSection } from "./minimal-section";
+import { AISuggestionsModal } from "@/components/ai-suggestions-modal";
 
 const statCards = [
     {
@@ -200,6 +201,7 @@ export default function DashboardPage() {
             <MinimalSection
                 title="Member feedback"
                 description="Celebrate wins and discover improvement opportunities"
+                headerAction={<AISuggestionsModal size="sm" text="AI Insights" />}
             >
                 <div className="space-y-4">
                     {memberFeedback.map((feedback) => (
