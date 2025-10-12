@@ -2,6 +2,7 @@ import { cronJobs } from "convex/server";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
+import { pricingOperations } from "../operations/pricing";
 
 const crons = cronJobs();
 
@@ -22,7 +23,25 @@ crons.interval(
     {}
 );
 
-export default crons;
+/**
+ * Update Last Minute Discounted Class Instances Summary - Runs every 5 minutes
+ * 
+ * Pre-calculates discounted class instances to reduce bandwidth for expensive
+ * pricing calculations in getLastMinuteDiscountedClassInstances query.
+ * 
+ * This cron job:
+ * 1. Clears expired summaries
+ * 2. Fetches all scheduled instances within 8 hours
+ * 3. Calculates pricing for each instance
+ * 4. Stores summaries for instances with discounts
+ * 5. Expires summaries after 5 minutes
+ */
+crons.interval(
+    "update-last-minute-discounted-summary",
+    { minutes: 5 },
+    internal.crons.updateLastMinuteDiscountedSummary,
+    {}
+);
 
 /**
  * Mark No-Shows Internal Mutation
@@ -242,3 +261,113 @@ export const getNoShowStats = internalQuery({
         };
     },
 });
+
+/**
+ * Update Last Minute Discounted Class Instances Summary
+ * 
+ * Pre-calculates discounted class instances to reduce bandwidth for expensive
+ * pricing calculations. This runs every 5 minutes and replaces the entire
+ * summary table with fresh data.
+ * 
+ * Performance optimizations:
+ * - Uses compound indexes to avoid expensive filter operations
+ * - Only processes instances within 8 hours (last minute discount window)
+ * - Batch inserts all summaries for efficiency
+ * - Automatic cleanup of expired summaries
+ */
+export const updateLastMinuteDiscountedSummary = internalMutation({
+    args: {},
+    handler: async (ctx) => {
+        const now = Date.now();
+        const EIGHT_HOURS_FROM_NOW = now + (8 * 60 * 60 * 1000);
+
+        console.log(`[Last Minute Summary] Starting calculation at ${new Date(now).toISOString()}`);
+
+        // 1. Clear ALL existing summaries (simple replacement approach)
+        const existingSummaries = await ctx.db
+            .query("lastMinuteDiscountedClassInstancesSummary")
+            .collect();
+
+        console.log(`[Last Minute Summary] Clearing ${existingSummaries.length} existing summaries`);
+        for (const summary of existingSummaries) {
+            await ctx.db.delete(summary._id);
+        }
+
+        // 2. Get all scheduled instances within 8 hours using optimized index
+        const instances = await ctx.db
+            .query("classInstances")
+            .withIndex("by_status_deleted_start_time", (q) =>
+                q.eq("status", "scheduled")
+                    .eq("deleted", undefined)
+                    .gte("startTime", now)
+            )
+            .filter(q => q.lte(q.field("startTime"), EIGHT_HOURS_FROM_NOW))
+            .collect();
+
+        console.log(`[Last Minute Summary] Found ${instances.length} instances to evaluate`);
+
+        // 3. Calculate pricing and create summaries for discounted instances
+        let discountedCount = 0;
+        const summaries = [];
+
+        for (const instance of instances) {
+            try {
+                // Calculate pricing using the existing operation
+                const pricingResult = await pricingOperations.calculateFinalPriceFromInstance(instance);
+
+                if (pricingResult.discountPercentage > 0) {
+                    summaries.push({
+                        instanceId: instance._id,
+                        businessId: instance.businessId,
+                        startTime: instance.startTime,
+                        endTime: instance.endTime,
+                        name: instance.name || "Unnamed Class",
+                        instructor: instance.instructor || "TBA",
+                        capacity: instance.capacity || 10,
+                        bookedCount: instance.bookedCount || 0,
+                        price: instance.price || 0,
+                        status: instance.status,
+                        color: instance.color,
+                        disableBookings: instance.disableBookings,
+                        finalPrice: pricingResult.finalPrice,
+                        discountPercentage: pricingResult.discountPercentage,
+                        discountAmount: pricingResult.discountAmount,
+                        discountRuleName: "Low Capacity Discount", // Could be more sophisticated
+                        templateSnapshot: {
+                            name: instance.templateSnapshot?.name || "Unnamed Class",
+                            instructor: instance.templateSnapshot?.instructor || "TBA",
+                            imageStorageIds: instance.templateSnapshot?.imageStorageIds,
+                        },
+                        venueSnapshot: {
+                            name: instance.venueSnapshot?.name || "Unnamed Venue",
+                            address: {
+                                city: instance.venueSnapshot?.address?.city || "Unknown City",
+                            },
+                            imageStorageIds: instance.venueSnapshot?.imageStorageIds,
+                        },
+                        calculatedAt: now,
+                        createdAt: now,
+                        // createdBy is optional for system operations
+                    });
+                    discountedCount++;
+                }
+            } catch (error) {
+                console.error(`[Last Minute Summary] Error calculating pricing for instance ${instance._id}:`, error);
+                // Continue processing other instances
+            }
+        }
+
+        // 4. Insert all new summaries
+        if (summaries.length > 0) {
+            for (const summary of summaries) {
+                await ctx.db.insert("lastMinuteDiscountedClassInstancesSummary", summary);
+            }
+        }
+
+        console.log(`[Last Minute Summary] Created ${discountedCount} discounted summaries`);
+
+        return null;
+    },
+});
+
+export default crons;

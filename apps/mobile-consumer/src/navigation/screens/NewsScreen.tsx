@@ -135,12 +135,10 @@ export function NewsScreen() {
         user ? { daysAhead: 7 } : "skip"
     );
 
-    // Query for last minute offers
+    // Query for last minute offers - OPTIMIZED VERSION
     const lastMinuteDiscountedInstances = useQuery(
-        api.queries.classInstances.getLastMinuteDiscountedClassInstances,
+        api.queries.classInstances.getLastMinuteDiscountedClassInstancesOptimized,
         {
-            startDate: now.getTime(),
-            endDate: next12Hours.getTime(),
             limit: 6
         }
     );
