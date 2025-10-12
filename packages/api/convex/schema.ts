@@ -323,6 +323,7 @@ export const classInstancesFields = {
 
   // Instance-specific discount rules (overrides template rules)
   discountRules: v.optional(v.array(v.object(classDiscountRuleFields))),
+  hasDiscountRules: v.optional(v.boolean()), // Performance optimization: true if discountRules.length > 0
 
   // Booking control
   disableBookings: v.optional(v.boolean()), // Default: false (bookings enabled)
@@ -937,57 +938,6 @@ export const userPresenceFields = {
   ...auditFields,
 };
 
-/**
- * Last Minute Discounted Class Instances Summary
- * 
- * Pre-calculated summaries of class instances with discounts applied.
- * Updated every 5 minutes via cron job to reduce bandwidth for expensive
- * pricing calculations in getLastMinuteDiscountedClassInstances query.
- */
-export const lastMinuteDiscountedClassInstancesSummaryFields = {
-  // Essential instance data (minimal bandwidth)
-  instanceId: v.id("classInstances"),
-  businessId: v.id("businesses"),
-  startTime: v.number(),
-  endTime: v.number(),
-  name: v.string(),
-  instructor: v.string(),
-  capacity: v.number(),
-  bookedCount: v.number(),
-  price: v.number(), // Original price in cents
-  status: v.string(),
-  color: v.optional(v.string()),
-  disableBookings: v.optional(v.boolean()),
-
-  // Pre-calculated pricing data
-  finalPrice: v.number(), // Final price after discounts
-  discountPercentage: v.number(), // 0-1 range
-  discountAmount: v.number(), // Discount amount in cents
-  discountRuleName: v.optional(v.string()), // Which rule applied
-
-  // Minimal snapshots (only essential fields)
-  templateSnapshot: v.object({
-    name: v.string(),
-    instructor: v.string(),
-    imageStorageIds: v.optional(v.array(v.id("_storage"))),
-  }),
-  venueSnapshot: v.object({
-    name: v.string(),
-    address: v.object({
-      city: v.string(),
-    }),
-    imageStorageIds: v.optional(v.array(v.id("_storage"))),
-  }),
-
-  // Metadata
-  calculatedAt: v.number(), // When this summary was calculated
-
-  // Custom audit fields for system operations
-  createdAt: v.number(),
-  createdBy: v.optional(v.id("users")), // Optional for system operations
-  updatedAt: v.optional(v.number()),
-  updatedBy: v.optional(v.id("users")),
-};
 
 export const subscriptionEventsFields = {
   subscriptionId: v.optional(v.id("subscriptions")), // Database subscription ID (null if not created yet)
@@ -1079,7 +1029,9 @@ export default defineSchema({
     .index("by_template_deleted", ["templateId", "deleted"])
     .index("by_venue_deleted_start_time", ["venueId", "deleted", "startTime"])
     // 🚀 GLOBAL CONSUMER QUERY OPTIMIZATION - eliminates expensive filters
-    .index("by_status_deleted_start_time", ["status", "deleted", "startTime"]),
+    .index("by_status_deleted_start_time", ["status", "deleted", "startTime"])
+    // 🎯 DISCOUNT OPTIMIZATION - only fetch instances with discount rules
+    .index("by_status_deleted_hasDiscountRules_start_time", ["status", "deleted", "hasDiscountRules", "startTime"]),
 
   /** 
    * Bookings - customer reservations for class instances (simplified)
@@ -1228,16 +1180,4 @@ export default defineSchema({
     .index("by_device", ["deviceId"])
     .index("by_user_device", ["userId", "deviceId"]),
 
-  /**
-   * Last Minute Discounted Class Instances Summary
-   * 
-   * Pre-calculated summaries of class instances with discounts applied.
-   * Updated every 5 minutes via cron job to reduce bandwidth for expensive
-   * pricing calculations in getLastMinuteDiscountedClassInstances query.
-   */
-  lastMinuteDiscountedClassInstancesSummary: defineTable(lastMinuteDiscountedClassInstancesSummaryFields)
-    .index("by_start_time", ["startTime"])
-    .index("by_business_start_time", ["businessId", "startTime"])
-    .index("by_calculated_at", ["calculatedAt"])
-    .index("by_instance_id", ["instanceId"]),
 });

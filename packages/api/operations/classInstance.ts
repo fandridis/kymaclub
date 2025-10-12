@@ -7,6 +7,13 @@ import { classValidations } from "../validations/class";
 import type { CreateMultipleClassInstancesArgs, UpdateSingleInstanceArgs } from "../convex/mutations/classInstances";
 
 /**
+ * Helper function to determine if discount rules exist
+ */
+const hasDiscountRules = (discountRules?: Array<any>): boolean => {
+    return discountRules !== undefined && discountRules.length > 0;
+};
+
+/**
  * Class Instance Operations - Business Logic Layer
  * 
  * This module handles the core business operations for class instance management,
@@ -222,6 +229,11 @@ export const prepareInstanceUpdatesFromTemplateChanges = (
                 primaryCategory: templateChanges.primaryCategory,
                 disableBookings: templateChanges.disableBookings,
             }),
+            // Update hasDiscountRules when discountRules change
+            ...(templateChanges.discountRules !== undefined && {
+                discountRules: templateChanges.discountRules,
+                hasDiscountRules: hasDiscountRules(templateChanges.discountRules)
+            }),
             // Historical snapshot preservation with selective updates
             templateSnapshot: {
                 ...instance.templateSnapshot, // Preserve existing snapshot data
@@ -415,6 +427,7 @@ export const createInstanceFromTemplate = (
         tags: template.tags,
         color: template.color,
         discountRules: template.discountRules,
+        hasDiscountRules: hasDiscountRules(template.discountRules),
         disableBookings: template.disableBookings,
 
         // Booking tracking

@@ -267,7 +267,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                         name: rule.name,
                         condition: rule.condition,
                         discount: rule.discount,
-                    })) : undefined,
+                    })) : [],
                 }
             });
 
@@ -316,7 +316,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                         name: rule.name,
                         condition: rule.condition,
                         discount: rule.discount,
-                    })) : undefined,
+                    })) : [],
                 }
             });
             toast.success(`Updated ${result.totalUpdated} similar classes successfully!`);

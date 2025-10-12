@@ -239,13 +239,14 @@ export const getLastMinuteDiscountedClassInstances = query({
         await getAuthenticatedUserOrThrow(ctx);
         const limit = args.limit || 10;
 
-        // 🚀 OPTIMIZED: Use compound index to eliminate expensive filter operations
+        // 🚀 OPTIMIZED: Use compound index to only fetch instances with discount rules
         // This dramatically reduces bandwidth by filtering at the index level
         const instances = await ctx.db
             .query("classInstances")
-            .withIndex("by_status_deleted_start_time", (q) =>
+            .withIndex("by_status_deleted_hasDiscountRules_start_time", (q) =>
                 q.eq("status", "scheduled")
                     .eq("deleted", undefined) // undefined means not deleted
+                    .eq("hasDiscountRules", true) // Only instances with discount rules
                     .gte("startTime", args.startDate)
             )
             .filter(q => q.lte(q.field("startTime"), args.endDate))
@@ -255,7 +256,7 @@ export const getLastMinuteDiscountedClassInstances = query({
         const discountedInstances = [];
 
         for (const instance of instances) {
-            // Calculate pricing using only instance data (discount rules are now copied to instances)
+            // Calculate pricing - all instances here already have discount rules
             const pricingResult = await pricingOperations.calculateFinalPriceFromInstance(instance);
 
             if (pricingResult.discountPercentage > 0) {
@@ -298,58 +299,6 @@ export const getLastMinuteDiscountedClassInstances = query({
     }
 });
 
-/**
- * Get Last Minute Discounted Class Instances - OPTIMIZED VERSION
- * 
- * This is the new optimized version that reads from pre-calculated summaries
- * instead of doing expensive pricing calculations on every request.
- * 
- * Performance improvements:
- * - 90%+ bandwidth reduction (only essential fields)
- * - Sub-millisecond response times (simple table read)
- * - No expensive pricing calculations
- * - Data freshness: up to 5 minutes old (acceptable trade-off)
- */
-export const getLastMinuteDiscountedClassInstancesOptimized = query({
-    args: v.object({
-        limit: v.optional(v.number()),
-    }),
-    handler: async (ctx, args) => {
-        await getAuthenticatedUserOrThrow(ctx);
-        const limit = args.limit || 10;
-
-        // Simple query from pre-calculated summary table
-        const summaries = await ctx.db
-            .query("lastMinuteDiscountedClassInstancesSummary")
-            .withIndex("by_start_time")
-            .order("asc")
-            .take(limit);
-
-        // Transform to match existing API format
-        return summaries.map(summary => ({
-            _id: summary.instanceId,
-            startTime: summary.startTime,
-            endTime: summary.endTime,
-            name: summary.name,
-            instructor: summary.instructor,
-            capacity: summary.capacity,
-            bookedCount: summary.bookedCount,
-            price: summary.price,
-            status: summary.status,
-            color: summary.color,
-            disableBookings: summary.disableBookings,
-            templateSnapshot: summary.templateSnapshot,
-            venueSnapshot: summary.venueSnapshot,
-            pricing: {
-                originalPrice: summary.price,
-                finalPrice: summary.finalPrice,
-                discountPercentage: summary.discountPercentage,
-                discountAmount: summary.discountAmount,
-            },
-            discountPercentage: Math.round(summary.discountPercentage * 100),
-        }));
-    }
-});
 
 /***************************************************************
  * Get Consumer Class Instances with Booking Status
