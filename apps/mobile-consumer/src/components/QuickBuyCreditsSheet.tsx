@@ -44,7 +44,7 @@ export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyC
         // Keep original one-time pricing
         const price = Number(pack.price.toFixed(2));
         const discount = pack.discount ?? 0;
-        const badgeLabel = discount ? `${discount}% off` : 'Full price';
+        const badgeLabel = discount ? `Save ${discount}%` : 'Standard rate';
 
         return {
           credits: pack.credits,
@@ -146,7 +146,7 @@ export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyC
             </ScrollView>
 
             <Text style={styles.finePrint}>
-              Credits are valid for 3 months after issuing.
+              Credits are valid for 3 months after issuing. Best for occasional bookings.
             </Text>
           </ScrollView>
 

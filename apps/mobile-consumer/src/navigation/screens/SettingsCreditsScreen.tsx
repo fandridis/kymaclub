@@ -10,17 +10,20 @@ import { StackScreenHeader } from '../../components/StackScreenHeader';
 import { useAuthenticatedUser } from '../../stores/auth-store';
 import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
+import { calculateSubscriptionPricing, CREDIT_PACKS } from '@repo/api/operations/payments';
 import Slider from '@react-native-community/slider';
 
-// Generate subscription options from 5 to 100 in steps of 5
+// Generate subscription options using backend pricing logic
 const generateSubscriptionOptions = () => {
   const options = [];
   for (let i = 5; i <= 100; i += 5) {
-    // Progressive pricing: starts at $2.00 per credit, goes down to $1.90 at 100 credits
-    // Linear interpolation: pricePerCredit = 2.0 - ((credits - 5) / 95) * 0.1
-    const pricePerCredit = 2.0 - ((i - 5) / 95) * 0.1;
-    const price = i * pricePerCredit;
-    options.push({ credits: i, price: Math.round(price * 100) / 100, pricePerCredit: Math.round(pricePerCredit * 100) / 100 });
+    const pricing = calculateSubscriptionPricing(i);
+    options.push({
+      credits: i,
+      price: pricing.priceInCents / 100,
+      pricePerCredit: pricing.pricePerCredit,
+      discount: pricing.discount
+    });
   }
   return options;
 };
@@ -36,17 +39,15 @@ type SubscriptionTier = {
 type CreditPack = {
   credits: number;
   price: number;
-  bonus?: number;
+  discount?: number;
 };
 
-const creditPacks: CreditPack[] = [
-  { credits: 5, price: 12.5 },
-  { credits: 10, price: 25.0 },
-  { credits: 20, price: 50.0 },
-  { credits: 30, price: 75.0, bonus: 2 },
-  { credits: 40, price: 100.0, bonus: 3 },
-  { credits: 50, price: 125.0, bonus: 5 },
-];
+// Use backend credit packs instead of hardcoded values
+const creditPacks: CreditPack[] = CREDIT_PACKS.map(pack => ({
+  credits: pack.credits,
+  price: pack.price,
+  discount: pack.discount
+}));
 
 export function SettingsCreditsScreen() {
   const navigation = useNavigation();
@@ -297,12 +298,11 @@ export function SettingsCreditsScreen() {
         />
         <View style={styles.creditPacksGrid}>
           {creditPacks.map((pack) => {
-            const totalCredits = pack.credits + (pack.bonus || 0);
             return (
               <TouchableOpacity
                 key={pack.credits}
                 style={styles.creditPackCard}
-                onPress={() => handleCreditPurchase(totalCredits)}
+                onPress={() => handleCreditPurchase(pack.credits)}
               >
                 <Text style={styles.creditPackCredits}>
                   {pack.credits}
@@ -311,9 +311,9 @@ export function SettingsCreditsScreen() {
                 <Text style={styles.creditPackPrice}>
                   ${pack.price.toFixed(0)}
                 </Text>
-                {pack.bonus && (
+                {pack.discount && pack.discount > 0 && (
                   <View style={styles.bonusBadgeTopRight}>
-                    <Text style={styles.bonusTextTopRight}>+{pack.bonus}</Text>
+                    <Text style={styles.bonusTextTopRight}>-{pack.discount}%</Text>
                   </View>
                 )}
               </TouchableOpacity>

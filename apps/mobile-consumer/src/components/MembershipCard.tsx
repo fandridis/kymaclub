@@ -60,17 +60,12 @@ export function MembershipCard({
         >
           <View style={styles.header}>
             <Text style={styles.membershipText}>KymaClub membership</Text>
-            <View style={styles.subscriptionBadge}>
-              <Text style={styles.subscriptionBadgeText}>
-                {resolvedSubscriptionStatus.isActive ? 'Subscribed' : 'Free'}
-              </Text>
-            </View>
           </View>
 
           <View style={styles.creditsSection}>
             <Text style={styles.creditsSubtext}>AVAILABLE CREDITS</Text>
             <View style={styles.creditsRow}>
-              <DiamondIcon size={20} color="white" />
+              <DiamondIcon size={20} color="white" strokeWidth={3} />
               <Text style={styles.creditsAmount}>{creditBalance}</Text>
             </View>
 
@@ -125,18 +120,6 @@ const styles = StyleSheet.create({
   membershipText: {
     fontSize: theme.fontSize.lg,
     fontWeight: theme.fontWeight.extrabold,
-    color: 'white',
-  },
-  subscriptionBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'white',
-  },
-  subscriptionBadgeText: {
-    fontSize: theme.fontSize.sm,
-    fontWeight: theme.fontWeight.bold,
     color: 'white',
   },
   creditsSection: {

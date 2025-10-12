@@ -278,6 +278,171 @@ const evaluateDiscountCondition = (
 };
 
 /**
+ * Calculates final price for a class booking using only instance data
+ * 
+ * @description Simplified version that works with instance-only data since discount rules
+ * are now copied to instances at creation time. No template lookup required.
+ * 
+ * @param instance - Class instance containing all pricing data including discount rules
+ * @returns Promise<PricingResult> with originalPrice, finalPrice, discountPercentage, discountAmount (in cents)
+ * 
+ * @example
+ * // Instance with early bird rule (150 cents off if >48h)
+ * const instance = { 
+ *   startTime: Date.now() + (72 * 60 * 60 * 1000), // 72 hours future
+ *   price: 2000, // 20 business currency units in cents
+ *   discountRules: [{
+ *     id: "early-bird",
+ *     name: "Early Bird Special",
+ *     condition: { type: "hours_before_min", hours: 48 },
+ *     discount: { type: "fixed_amount", value: 150 }
+ *   }]
+ * };
+ * const result = await calculateFinalPriceFromInstance(instance);
+ * // Returns: { originalPrice: 2000, finalPrice: 1850, discountPercentage: 0.075, discountAmount: 150 }
+ * 
+ * @throws Never throws - all edge cases handled gracefully
+ * @safety Negative prices prevented - minimum final price is 0
+ * @safety Missing discount rules result in no discount (0 cents off)
+ */
+export const calculateFinalPriceFromInstance = async (
+  instance: Doc<"classInstances">
+): Promise<PricingResult> => {
+  logger.debug("Starting instance-only price calculation", {
+    instanceId: instance._id
+  });
+
+  // Get base price in cents (instance price or default 0)
+  const basePrice = instance.price || 0; // Default 0 in business currency (cents)
+  logger.debug("Base price determined", {
+    basePrice,
+    basePriceFormatted: `${(basePrice / 100).toFixed(2)}`,
+    priceSource: instance.price ? 'instance' : 'default'
+  });
+
+  // Check for discounts using instance discount rules
+  const discountAmount = await calculateDiscountFromInstance(instance);
+  const finalPrice = Math.max(0, basePrice - discountAmount); // Ensure price doesn't go negative
+  const discountPercentage = basePrice > 0 ? discountAmount / basePrice : 0;
+
+  logger.debug("Instance-only pricing calculation completed", {
+    basePrice,
+    discountPercentage: Number((discountPercentage * 100).toFixed(1)),
+    discountAmount,
+    finalPrice,
+    finalPriceFormatted: `${(finalPrice / 100).toFixed(2)}`
+  });
+
+  return {
+    originalPrice: basePrice,
+    finalPrice,
+    discountPercentage,
+    discountAmount
+  };
+};
+
+/**
+ * Calculates the best applicable discount amount using only instance data
+ * 
+ * @description Simplified version that evaluates discount rules from instance only.
+ * Since discount rules are copied to instances at creation time, no template lookup needed.
+ * 
+ * @param instance - Class instance containing discount rules and timing
+ * @returns Promise<number> discount amount in cents (not percentage)
+ * 
+ * @example
+ * // Instance with early bird rule (50 cents off if >48h)
+ * const instance = { 
+ *   startTime: Date.now() + (72 * 60 * 60 * 1000), // 72 hours future
+ *   discountRules: [{
+ *     id: "early-bird",
+ *     name: "Early Bird",
+ *     condition: { type: "hours_before_min", hours: 48 },
+ *     discount: { type: "fixed_amount", value: 50 }
+ *   }]
+ * };
+ * const discount = await calculateDiscountFromInstance(instance);
+ * // Returns: 50 (cents discount amount)
+ * 
+ * @internal This function is not exported - used only by calculateFinalPriceFromInstance
+ * @business_rule Returns the highest valid discount amount, not percentage
+ * @business_rule "always" condition type is always valid regardless of timing
+ */
+const calculateDiscountFromInstance = async (
+  instance: Doc<"classInstances">
+): Promise<number> => {
+  logger.debug("Evaluating instance discount rules", {
+    instanceId: instance._id,
+    startTime: instance.startTime
+  });
+
+  const currentTime = Date.now();
+  const hoursUntilClass = (instance.startTime - currentTime) / (1000 * 60 * 60);
+
+  logger.debug("Instance discount timing context", {
+    currentTime,
+    startTime: instance.startTime,
+    hoursUntilClass: Number(hoursUntilClass.toFixed(2))
+  });
+
+  // Get discount rules from instance (copied from template at creation time)
+  const discountRules = instance.discountRules || [];
+
+  if (discountRules.length === 0) {
+    logger.debug("No discount rules found in instance");
+    return 0;
+  }
+
+  logger.debug("Found instance discount rules", {
+    ruleCount: discountRules.length,
+    rules: discountRules.map(rule => ({
+      id: rule.id,
+      name: rule.name,
+      conditionType: rule.condition.type,
+      conditionHours: rule.condition.hours,
+      discountValue: rule.discount.value
+    }))
+  });
+
+  // Evaluate each rule and find the best valid discount
+  let bestDiscountAmount = 0;
+  let bestRuleName = null;
+
+  for (const rule of discountRules) {
+    const isValid = evaluateDiscountCondition(rule.condition, hoursUntilClass);
+
+    if (isValid && rule.discount.value > bestDiscountAmount) {
+      bestDiscountAmount = rule.discount.value;
+      bestRuleName = rule.name;
+
+      logger.debug("New best discount found", {
+        ruleName: rule.name,
+        ruleId: rule.id,
+        discountAmount: rule.discount.value,
+        conditionType: rule.condition.type,
+        conditionHours: rule.condition.hours
+      });
+    } else if (!isValid) {
+      logger.debug("Rule condition not met", {
+        ruleName: rule.name,
+        ruleId: rule.id,
+        conditionType: rule.condition.type,
+        conditionHours: rule.condition.hours,
+        hoursUntilClass: Number(hoursUntilClass.toFixed(2))
+      });
+    }
+  }
+
+  logger.debug("Instance discount evaluation completed", {
+    bestDiscountAmount,
+    bestRuleName,
+    totalRulesEvaluated: discountRules.length
+  });
+
+  return bestDiscountAmount;
+};
+
+/**
  * Exported pricing operations for external consumption
  * 
  * @description Centralized export object for all pricing-related functions.
@@ -286,7 +451,9 @@ const evaluateDiscountCondition = (
  * @example
  * import { pricingOperations } from './operations/pricing';
  * const result = await pricingOperations.calculateFinalPrice(instance, template);
+ * const result2 = await pricingOperations.calculateFinalPriceFromInstance(instance);
  */
 export const pricingOperations = {
   calculateFinalPrice,
+  calculateFinalPriceFromInstance,
 };

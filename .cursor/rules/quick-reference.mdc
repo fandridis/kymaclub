@@ -21,7 +21,7 @@ pnpm test
 
 ## 📁 Project Structure
 - **Apps**: `apps/mobile-consumer`, `apps/web-business`, `apps/web-consumer`, `apps/web-landing`
-- **Packages**: `packages/api`, `packages/utils`, `packages/ui`, `packages/frontend-shared`
+- **Packages**: `packages/api`, `packages/utils`, `packages/ui`
 - **Shared**: `packages/eslint-config`, `packages/typescript-config`
 
 ## 🎯 Key Technologies

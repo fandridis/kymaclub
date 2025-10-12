@@ -141,22 +141,19 @@ describe('Payment System Integration Tests', () => {
         expect(pricing.pricePerCredit).toBeGreaterThan(0);
         expect(pricing.discount).toBeGreaterThanOrEqual(0);
 
-        // Verify tier boundaries are correct (based on 0.65 euros per credit base price)
-        if (amount < 100) {
-          expect(pricing.discount).toBe(0);
-          expect(pricing.pricePerCredit).toBe(0.65);
-        } else if (amount < 200) {
-          expect(pricing.discount).toBe(3);
-          expect(pricing.pricePerCredit).toBe(0.63);
-        } else if (amount < 300) {
-          expect(pricing.discount).toBe(5.0);
-          expect(pricing.pricePerCredit).toBe(0.617);
-        } else if (amount < 450) {
-          expect(pricing.discount).toBe(7.0);
-          expect(pricing.pricePerCredit).toBe(0.604);
+        // Verify tier boundaries are correct (based on 0.60 euros per credit base price)
+        if (amount <= 50) {
+          expect(pricing.discount).toBe(10);
+          expect(pricing.pricePerCredit).toBe(0.54);
+        } else if (amount <= 100) {
+          expect(pricing.discount).toBe(15);
+          expect(pricing.pricePerCredit).toBe(0.51);
+        } else if (amount <= 300) {
+          expect(pricing.discount).toBe(15);
+          expect(pricing.pricePerCredit).toBe(0.51);
         } else {
-          expect(pricing.discount).toBe(10.0);
-          expect(pricing.pricePerCredit).toBe(0.585);
+          expect(pricing.discount).toBe(20);
+          expect(pricing.pricePerCredit).toBe(0.48);
         }
       }
     });

@@ -318,7 +318,7 @@ export function SubscriptionScreen() {
                                                     option.discount > 0 ? styles.badgeTextDiscount : styles.badgeTextNeutral,
                                                 ]}
                                             >
-                                                {option.discount > 0 ? `${option.discount}% off` : 'Full price'}
+                                                {option.discount > 0 ? `Save ${option.discount}%` : 'Standard rate'}
                                             </Text>
                                         </View>
                                     </TouchableOpacity>
@@ -362,8 +362,9 @@ export function SubscriptionScreen() {
 
                 {/* Info Section */}
                 <View style={styles.infoSection}>
-                    <Text style={styles.infoTitle}>How it works</Text>
+                    <Text style={styles.infoTitle}>Why subscribe?</Text>
                     <Text style={styles.infoText}>
+                        • Save 3-12% compared to one-time purchases{'\n'}
                         • Credits are added to your account each month{'\n'}
                         • Use credits to book classes at any partner studio{'\n'}
                         • Unused credits roll over for up to 3 months{'\n'}

@@ -15,149 +15,120 @@ import {
 describe('Payment Operations', () => {
 
   describe('calculateSubscriptionPricing', () => {
-    it('should calculate pricing for tier 1 (5-99 credits) with no discount', () => {
+    it('should calculate pricing for tier 1 (1-50 credits) with 10% discount', () => {
       const pricing5 = calculateSubscriptionPricing(5);
       expect(pricing5).toEqual({
         credits: 5,
-        priceInCents: 325, // 3.25 (0.65 per credit)
-        pricePerCredit: 0.65,
-        discount: 0
+        priceInCents: 270, // 2.70 (0.54 per credit with 10% discount)
+        pricePerCredit: 0.54,
+        discount: 10
       });
 
       const pricing25 = calculateSubscriptionPricing(25);
       expect(pricing25).toEqual({
         credits: 25,
-        priceInCents: 1625, // 16.25 (0.65 per credit)
-        pricePerCredit: 0.65,
-        discount: 0
+        priceInCents: 1350, // 13.50 (0.54 per credit with 10% discount)
+        pricePerCredit: 0.54,
+        discount: 10
       });
 
-      const pricing95 = calculateSubscriptionPricing(95);
-      expect(pricing95).toEqual({
-        credits: 95,
-        priceInCents: 6175, // 61.75 (0.65 per credit)
-        pricePerCredit: 0.65,
-        discount: 0
+      const pricing50 = calculateSubscriptionPricing(50);
+      expect(pricing50).toEqual({
+        credits: 50,
+        priceInCents: 2700, // 27.00 (0.54 per credit with 10% discount)
+        pricePerCredit: 0.54,
+        discount: 10
       });
     });
 
-    it('should calculate pricing for tier 2 (100-199 credits) with 3% discount', () => {
+    it('should calculate pricing for tier 2 (51-100 credits) with 15% discount', () => {
+      const pricing75 = calculateSubscriptionPricing(75);
+      expect(pricing75).toEqual({
+        credits: 75,
+        priceInCents: 3825, // 38.25 (0.51 per credit with 15% discount)
+        pricePerCredit: 0.51,
+        discount: 15
+      });
+
       const pricing100 = calculateSubscriptionPricing(100);
       expect(pricing100).toEqual({
         credits: 100,
-        priceInCents: 6305, // 63.05 (0.63 per credit with 3% discount)
-        pricePerCredit: 0.63,
-        discount: 3
+        priceInCents: 5100, // 51.00 (0.51 per credit with 15% discount)
+        pricePerCredit: 0.51,
+        discount: 15
       });
+    });
 
+    it('should calculate pricing for tier 3 (101-300 credits) with 15% discount', () => {
       const pricing150 = calculateSubscriptionPricing(150);
       expect(pricing150).toEqual({
         credits: 150,
-        priceInCents: 9457, // 94.57 (0.63 per credit with 3% discount)
-        pricePerCredit: 0.63,
-        discount: 3
+        priceInCents: 7650, // 76.50 (0.51 per credit with 15% discount)
+        pricePerCredit: 0.51,
+        discount: 15
       });
 
-      const pricing195 = calculateSubscriptionPricing(195);
-      expect(pricing195).toEqual({
-        credits: 195,
-        priceInCents: 12295, // 122.95 (0.63 per credit with 3% discount)
-        pricePerCredit: 0.63,
-        discount: 3
-      });
-    });
-
-    it('should calculate pricing for tier 3 (200-299 credits) with 5% discount', () => {
       const pricing200 = calculateSubscriptionPricing(200);
       expect(pricing200).toEqual({
         credits: 200,
-        priceInCents: 12350, // 123.50 (0.617 per credit with 5% discount)
-        pricePerCredit: 0.617,
-        discount: 5.0
+        priceInCents: 10200, // 102.00 (0.51 per credit with 15% discount)
+        pricePerCredit: 0.51,
+        discount: 15
       });
 
-      const pricing250 = calculateSubscriptionPricing(250);
-      expect(pricing250).toEqual({
-        credits: 250,
-        priceInCents: 15437, // 154.37 (0.617 per credit with 5% discount)
-        pricePerCredit: 0.617,
-        discount: 5.0
-      });
-
-      const pricing295 = calculateSubscriptionPricing(295);
-      expect(pricing295).toEqual({
-        credits: 295,
-        priceInCents: 18216, // 182.16 (0.617 per credit with 5% discount)
-        pricePerCredit: 0.617,
-        discount: 5.0
-      });
-    });
-
-    it('should calculate pricing for tier 4 (300-449 credits) with 7% discount', () => {
       const pricing300 = calculateSubscriptionPricing(300);
       expect(pricing300).toEqual({
         credits: 300,
-        priceInCents: 18135, // 181.35 (0.604 per credit with 7% discount)
-        pricePerCredit: 0.604,
-        discount: 7.0
+        priceInCents: 15300, // 153.00 (0.51 per credit with 15% discount)
+        pricePerCredit: 0.51,
+        discount: 15
+      });
+    });
+
+    it('should calculate pricing for tier 4 (301-500 credits) with 20% discount', () => {
+      const pricing350 = calculateSubscriptionPricing(350);
+      expect(pricing350).toEqual({
+        credits: 350,
+        priceInCents: 16800, // 168.00 (0.48 per credit with 20% discount)
+        pricePerCredit: 0.48,
+        discount: 20
       });
 
       const pricing400 = calculateSubscriptionPricing(400);
       expect(pricing400).toEqual({
         credits: 400,
-        priceInCents: 24180, // 241.80 (0.604 per credit with 7% discount)
-        pricePerCredit: 0.604,
-        discount: 7.0
-      });
-    });
-
-    it('should calculate pricing for tier 5 (450-500 credits) with 10% discount', () => {
-      const pricing450 = calculateSubscriptionPricing(450);
-      expect(pricing450).toEqual({
-        credits: 450,
-        priceInCents: 26325, // 263.25 (0.585 per credit with 10% discount)
-        pricePerCredit: 0.585,
-        discount: 10.0
+        priceInCents: 19200, // 192.00 (0.48 per credit with 20% discount)
+        pricePerCredit: 0.48,
+        discount: 20
       });
 
       const pricing500 = calculateSubscriptionPricing(500);
       expect(pricing500).toEqual({
         credits: 500,
-        priceInCents: 29250, // 292.50 (0.585 per credit with 10% discount)
-        pricePerCredit: 0.585,
-        discount: 10.0
+        priceInCents: 24000, // 240.00 (0.48 per credit with 20% discount)
+        pricePerCredit: 0.48,
+        discount: 20
       });
     });
 
     it('should handle boundary values correctly', () => {
       // Test boundary between tier 1 and 2
-      const tier1Max = calculateSubscriptionPricing(99);
-      const tier2Min = calculateSubscriptionPricing(100);
-
-      expect(tier1Max.discount).toBe(0);
-      expect(tier2Min.discount).toBe(3);
-      expect(tier2Min.pricePerCredit).toBeLessThan(tier1Max.pricePerCredit); // Should be cheaper per credit
+      const pricing50 = calculateSubscriptionPricing(50);
+      const pricing51 = calculateSubscriptionPricing(51);
+      expect(pricing50.discount).toBe(10);
+      expect(pricing51.discount).toBe(15);
 
       // Test boundary between tier 2 and 3
-      const tier2Max = calculateSubscriptionPricing(199);
-      const tier3Min = calculateSubscriptionPricing(200);
-
-      expect(tier2Max.discount).toBe(3);
-      expect(tier3Min.discount).toBe(5.0);
+      const pricing100 = calculateSubscriptionPricing(100);
+      const pricing101 = calculateSubscriptionPricing(101);
+      expect(pricing100.discount).toBe(15);
+      expect(pricing101.discount).toBe(15);
 
       // Test boundary between tier 3 and 4
-      const tier3Max = calculateSubscriptionPricing(299);
-      const tier4Min = calculateSubscriptionPricing(300);
-
-      expect(tier3Max.discount).toBe(5.0);
-      expect(tier4Min.discount).toBe(7.0);
-
-      // Test boundary between tier 4 and 5
-      const tier4Max = calculateSubscriptionPricing(449);
-      const tier5Min = calculateSubscriptionPricing(450);
-
-      expect(tier4Max.discount).toBe(7.0);
-      expect(tier5Min.discount).toBe(10.0);
+      const pricing300 = calculateSubscriptionPricing(300);
+      const pricing301 = calculateSubscriptionPricing(301);
+      expect(pricing300.discount).toBe(15);
+      expect(pricing301.discount).toBe(20);
     });
   });
 
@@ -167,32 +138,32 @@ describe('Payment Operations', () => {
       const pricing10 = calculateOneTimePricing(10);
       expect(pricing10).toEqual({
         credits: 10,
-        priceInCents: 650, // 6.50 (0.65 per credit)
-        pricePerCredit: 0.65,
+        priceInCents: 600, // 6.00 (0.60 per credit)
+        pricePerCredit: 0.6,
         discount: 0
       });
 
       const pricing25 = calculateOneTimePricing(25);
       expect(pricing25).toEqual({
         credits: 25,
-        priceInCents: 1625, // 16.25 (0.65 per credit)
-        pricePerCredit: 0.65,
+        priceInCents: 1500, // 15.00 (0.60 per credit)
+        pricePerCredit: 0.6,
         discount: 0
       });
 
       const pricing100 = calculateOneTimePricing(100);
       expect(pricing100).toEqual({
         credits: 100,
-        priceInCents: 6338, // 63.38 (0.63 per credit with 2.5% discount)
-        pricePerCredit: 0.63,
+        priceInCents: 5850, // 58.50 (0.585 per credit with 2.5% discount)
+        pricePerCredit: 0.58,
         discount: 2.5
       });
 
       const pricing500 = calculateOneTimePricing(500);
       expect(pricing500).toEqual({
         credits: 500,
-        priceInCents: 27625, // 276.25 (0.55 per credit with 15% discount)
-        pricePerCredit: 0.55,
+        priceInCents: 25500, // 255.00 (0.51 per credit with 15% discount)
+        pricePerCredit: 0.51,
         discount: 15
       });
     });
@@ -218,9 +189,9 @@ describe('Payment Operations', () => {
     it('should validate credit pack consistency', () => {
       // Verify CREDIT_PACKS constant is as expected
       expect(CREDIT_PACKS).toHaveLength(8);
-      expect(CREDIT_PACKS[0]).toEqual({ credits: 10, price: 6.5 });
-      expect(CREDIT_PACKS[1]).toEqual({ credits: 25, price: 16.25 });
-      expect(CREDIT_PACKS[7]).toEqual({ credits: 500, price: 276.25, discount: 15 });
+      expect(CREDIT_PACKS[0]).toEqual({ credits: 10, price: 6 });
+      expect(CREDIT_PACKS[1]).toEqual({ credits: 25, price: 15 });
+      expect(CREDIT_PACKS[7]).toEqual({ credits: 500, price: 255, discount: 15 });
     });
   });
 
@@ -283,16 +254,16 @@ describe('Payment Operations', () => {
   describe('getSubscriptionProductDescription', () => {
     it('should generate correct descriptions with discount information', () => {
       const desc5 = getSubscriptionProductDescription(5);
-      expect(desc5).toBe('5 credits every month at 0.65 per credit');
+      expect(desc5).toBe('5 credits every month at 0.54 per credit (10% discount)');
 
       const desc100 = getSubscriptionProductDescription(100);
-      expect(desc100).toBe('100 credits every month at 0.63 per credit (3% discount)');
+      expect(desc100).toBe('100 credits every month at 0.51 per credit (15% discount)');
 
       const desc200 = getSubscriptionProductDescription(200);
-      expect(desc200).toBe('200 credits every month at 0.62 per credit (5% discount)');
+      expect(desc200).toBe('200 credits every month at 0.51 per credit (15% discount)');
 
       const desc450 = getSubscriptionProductDescription(450);
-      expect(desc450).toBe('450 credits every month at 0.58 per credit (10% discount)');
+      expect(desc450).toBe('450 credits every month at 0.48 per credit (20% discount)');
     });
   });
 
@@ -307,13 +278,13 @@ describe('Payment Operations', () => {
   describe('getOneTimeProductDescription', () => {
     it('should generate correct descriptions for predefined packs', () => {
       const desc10 = getOneTimeProductDescription(10);
-      expect(desc10).toBe('10 credits at $0.65 per credit');
+      expect(desc10).toBe('10 credits at $0.60 per credit');
 
       const desc100 = getOneTimeProductDescription(100);
-      expect(desc100).toBe('100 credits at $0.63 per credit (2.5% discount)');
+      expect(desc100).toBe('100 credits at $0.58 per credit (2.5% discount)');
 
       const desc500 = getOneTimeProductDescription(500);
-      expect(desc500).toBe('500 credits at $0.55 per credit (15% discount)');
+      expect(desc500).toBe('500 credits at $0.51 per credit (15% discount)');
     });
 
     it('should generate correct descriptions for non-predefined amounts', () => {
@@ -329,13 +300,13 @@ describe('Payment Operations', () => {
     it('should handle floating point arithmetic correctly', () => {
       // Test problematic floating point calculations
       const pricing100 = calculateSubscriptionPricing(100);
-      expect(pricing100.priceInCents).toBe(6305); // Should be exact, no rounding errors
+      expect(pricing100.priceInCents).toBe(5100); // Should be exact, no rounding errors
 
       const pricing200 = calculateSubscriptionPricing(200);
-      expect(pricing200.priceInCents).toBe(12350); // Should be exact
+      expect(pricing200.priceInCents).toBe(10200); // Should be exact
 
       const pricing450 = calculateSubscriptionPricing(450);
-      expect(pricing450.priceInCents).toBe(26325); // Should be exact
+      expect(pricing450.priceInCents).toBe(21600); // Should be exact
     });
 
     it('should round to nearest cent for fractional amounts', () => {
@@ -348,17 +319,15 @@ describe('Payment Operations', () => {
 
   describe('business logic consistency', () => {
     it('should ensure subscription pricing tiers provide meaningful savings', () => {
-      const tier1Max = calculateSubscriptionPricing(99);
-      const tier2Min = calculateSubscriptionPricing(100);
-      const tier3Min = calculateSubscriptionPricing(200);
-      const tier4Min = calculateSubscriptionPricing(300);
-      const tier5Min = calculateSubscriptionPricing(450);
+      const tier1Max = calculateSubscriptionPricing(50);
+      const tier2Min = calculateSubscriptionPricing(51);
+      const tier3Min = calculateSubscriptionPricing(101);
+      const tier4Min = calculateSubscriptionPricing(301);
 
       // Each tier should offer better value per credit
       expect(tier2Min.pricePerCredit).toBeLessThan(tier1Max.pricePerCredit);
-      expect(tier3Min.pricePerCredit).toBeLessThan(tier2Min.pricePerCredit);
+      expect(tier3Min.pricePerCredit).toBeLessThanOrEqual(tier2Min.pricePerCredit); // Same discount, so same or better
       expect(tier4Min.pricePerCredit).toBeLessThan(tier3Min.pricePerCredit);
-      expect(tier5Min.pricePerCredit).toBeLessThan(tier4Min.pricePerCredit);
     });
 
     it('should ensure one-time pricing incentivizes larger purchases', () => {

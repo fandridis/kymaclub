@@ -12,7 +12,7 @@
  * - Base pricing: Uses shared credit conversion constants for consistency
  */
 
-import { CREDITS_TO_CENTS_RATIO } from '@repo/utils/credits';
+import { CREDITS_TO_CENTS_RATIO, BASE_PURCHASE_PRICE_PER_CREDIT } from '@repo/utils/credits';
 
 // ADR-009: Credit Conversion Ratio
 // Decision: Use 1 credit = 50 cents spending value (CREDITS_TO_CENTS_RATIO = 50)
@@ -58,8 +58,7 @@ export type CreditPack = {
  * Purchase price includes business markup (typically 1.3x the base cost = $0.65 per credit)
  */
 const calculatePackPrice = (credits: number, discount: number = 0): number => {
-  const basePricePerCredit = 0.65; // $0.65 per credit base price
-  const priceBeforeDiscount = credits * basePricePerCredit;
+  const priceBeforeDiscount = credits * BASE_PURCHASE_PRICE_PER_CREDIT;
   return Number((priceBeforeDiscount * (1 - discount / 100)).toFixed(2));
 };
 
@@ -69,14 +68,14 @@ const calculatePackPrice = (credits: number, discount: number = 0): number => {
 // Alternative considered: Continuous pricing (rejected - too complex for UI)
 // Business logic: Minimum 10 credits prevents micro-transactions
 export const CREDIT_PACKS: CreditPack[] = [
-  { credits: 10, price: calculatePackPrice(10) },     // $0.65 per credit
-  { credits: 25, price: calculatePackPrice(25) },     // $0.65 per credit
-  { credits: 50, price: calculatePackPrice(50) },     // $0.65 per credit
-  { credits: 100, price: calculatePackPrice(100, 2.5), discount: 2.5 },   // $0.634 per credit with 2.5% discount
-  { credits: 150, price: calculatePackPrice(150, 5), discount: 5 },       // $0.618 per credit with 5% discount
-  { credits: 200, price: calculatePackPrice(200, 10), discount: 10 },     // $0.585 per credit with 10% discount
-  { credits: 300, price: calculatePackPrice(300, 10), discount: 10 },     // $0.585 per credit with 10% discount
-  { credits: 500, price: calculatePackPrice(500, 15), discount: 15 },     // $0.585 per credit with 10% discount
+  { credits: 10, price: calculatePackPrice(10) },     // $0.60 per credit
+  { credits: 25, price: calculatePackPrice(25) },     // $0.60 per credit
+  { credits: 50, price: calculatePackPrice(50) },     // $0.60 per credit
+  { credits: 100, price: calculatePackPrice(100, 2.5), discount: 2.5 },   // $0.585 per credit with 2.5% discount
+  { credits: 150, price: calculatePackPrice(150, 5), discount: 5 },       // $0.57 per credit with 5% discount
+  { credits: 200, price: calculatePackPrice(200, 10), discount: 10 },     // $0.54 per credit with 10% discount
+  { credits: 300, price: calculatePackPrice(300, 10), discount: 10 },     // $0.54 per credit with 10% discount
+  { credits: 500, price: calculatePackPrice(500, 15), discount: 15 },     // $0.51 per credit with 15% discount
 
 ];
 
@@ -84,48 +83,45 @@ export const CREDIT_PACKS: CreditPack[] = [
  * Calculates subscription pricing with tiered volume discounts
  * 
  * @description Implements tiered discount structure for monthly subscriptions:
- * - Up to 95 credits: no discount
- * - 100-195 credits: 3% discount  
- * - 200-295 credits: 5% discount
- * - 300-445 credits: 7% discount
- * - 450-500 credits: 10% discount
+ * - 1-50 credits: 10% discount (immediate savings for subscriptions)
+ * - 51-100 credits: 15% discount
+ * - 101-300 credits: 15% discount
+ * - 301-500 credits: 20% discount
  * 
  * @param credits - Number of credits per month (5-500)
  * @returns PricingTier with credits, priceInCents, pricePerCredit, discount
  * 
  * @example
- * // No discount tier
+ * // 10% discount tier (small subscriptions)
  * const tier1 = calculateSubscriptionPricing(50);
- * // Returns: { credits: 50, priceInCents: 3250, pricePerCredit: 0.65, discount: 0 }
+ * // Returns: { credits: 50, priceInCents: 2700, pricePerCredit: 0.54, discount: 10 }
  * 
  * @example
- * // 3% discount tier
- * const tier2 = calculateSubscriptionPricing(150);
- * // Returns: { credits: 150, priceInCents: 9458, pricePerCredit: 0.631, discount: 3 }
+ * // 15% discount tier
+ * const tier2 = calculateSubscriptionPricing(100);
+ * // Returns: { credits: 100, priceInCents: 5100, pricePerCredit: 0.51, discount: 15 }
  * 
- * @business_rule Base price: 0.65 euros per credit (same as one-time packs)
- * @business_rule Discounts start at 100 credits and increase every 50 credits
+ * @business_rule Base price: 0.60 euros per credit (same as one-time packs)
+ * @business_rule All subscriptions get immediate 10% discount, scaling to 20% for largest plans
  */
 // ADR-010: Subscription Pricing Tier Structure
-// Decision: 5-tier discount system with increasing benefits (0%, 3%, 5%, 7%, 10%)
-// Rationale: Encourages larger subscriptions while keeping base tier affordable
-// Alternative considered: Linear discount (rejected - less incentive for volume)
-// Business impact: 500 credit limit supports enterprise users
+// Decision: 4-tier discount system with immediate savings (10%, 15%, 15%, 20%)
+// Rationale: All subscriptions get immediate discount vs one-time purchases, encouraging recurring revenue
+// Alternative considered: No discount for small subscriptions (rejected - less incentive to subscribe)
+// Business impact: Immediate 10% savings makes subscriptions attractive even for small users
 export function calculateSubscriptionPricing(credits: number): PricingTier {
-  const basePricePerCredit = 0.65; // Base price per credit (same as one-time packs)
+  const basePricePerCredit = BASE_PURCHASE_PRICE_PER_CREDIT; // Base price per credit (same as one-time packs)
   let discount = 0;
 
   // Determine discount tier based on credit amount
-  if (credits >= 450) {
-    discount = 10; // 450-500 credits: 10% discount
-  } else if (credits >= 300) {
-    discount = 7;  // 300-445 credits: 7% discount
-  } else if (credits >= 200) {
-    discount = 5;  // 200-295 credits: 5% discount
-  } else if (credits >= 100) {
-    discount = 3;  // 100-195 credits: 3% discount
+  if (credits >= 301) {
+    discount = 20; // 301-500 credits: 20% discount
+  } else if (credits >= 101) {
+    discount = 15; // 101-300 credits: 15% discount
+  } else if (credits >= 51) {
+    discount = 15;  // 51-100 credits: 15% discount
   } else {
-    discount = 0;  // Up to 95 credits: no discount
+    discount = 10;  // 1-50 credits: 10% discount (immediate savings for subscriptions)
   }
 
   // Calculate discounted price per credit

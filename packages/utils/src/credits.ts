@@ -8,6 +8,7 @@
 
 // Constants
 export const CREDITS_TO_CENTS_RATIO = 50; // 1 credit = 50 cents (0.50 in business currency)
+export const BASE_PURCHASE_PRICE_PER_CREDIT = 0.60; // Base price consumers pay to purchase 1 credit (before discounts)
 export const CENTS_PER_EURO = 100;
 export const MIN_CREDITS = 0;
 export const MAX_CREDITS = 1_000_000; // Reasonable upper limit to prevent overflow
@@ -408,32 +409,32 @@ export const formatEuros = (
 };
 
 /**
- * Subscription pricing constants and utilities
- */
-export const SUBSCRIPTION_BASE_PRICE_PER_CREDIT = 0.65; // Base price per credit for subscriptions
-
-/**
  * Calculates subscription pricing with tiered discounts
+ * 
+ * @description Implements tiered discount structure for monthly subscriptions:
+ * - 1-50 credits: 10% discount (immediate savings for subscriptions)
+ * - 51-100 credits: 15% discount
+ * - 101-300 credits: 15% discount
+ * - 301-500 credits: 20% discount
+ * 
  * @param credits - Number of credits per month
  * @returns Object with pricing details
  */
 export const calculateSubscriptionPricing = (credits: number) => {
     validateAmount(credits, 'Credits');
 
-    const basePricePerCredit = SUBSCRIPTION_BASE_PRICE_PER_CREDIT;
+    const basePricePerCredit = BASE_PURCHASE_PRICE_PER_CREDIT;
     let discount = 0;
 
     // Determine discount tier based on credit amount
-    if (credits >= 450) {
-        discount = 10; // 450-500 credits: 10% discount
-    } else if (credits >= 300) {
-        discount = 7;  // 300-445 credits: 7% discount
-    } else if (credits >= 200) {
-        discount = 5;  // 200-295 credits: 5% discount
-    } else if (credits >= 100) {
-        discount = 3;  // 100-195 credits: 3% discount
+    if (credits >= 301) {
+        discount = 20; // 301-500 credits: 15% discount
+    } else if (credits >= 101) {
+        discount = 15; // 101-300 credits: 10% discount
+    } else if (credits >= 51) {
+        discount = 15;  // 51-100 credits: 7% discount
     } else {
-        discount = 0;  // Up to 95 credits: no discount
+        discount = 10;  // 1-50 credits: 5% discount (immediate savings for subscriptions)
     }
 
     // Calculate discounted price per credit

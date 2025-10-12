@@ -16,7 +16,6 @@ This is a **multi-tenant SaaS booking platform** with a monorepo structure manag
 - **`packages/api/`** - Convex backend with TypeScript (queries, mutations, operations, services)
 - **`packages/utils/`** - Shared utility functions and constants
 - **`packages/ui/`** - Shared UI components
-- **`packages/frontend-shared/`** - Frontend-specific shared code
 - **`packages/eslint-config/`** - Shared ESLint configurations
 - **`packages/typescript-config/`** - Shared TypeScript configurations
 

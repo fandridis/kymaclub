@@ -250,31 +250,13 @@ export const getLastMinuteDiscountedClassInstances = query({
             )
             .filter(q => q.lte(q.field("startTime"), args.endDate))
             .order("asc") // Order by start time
-            .take(limit * 3); // Take 3x limit to account for pricing filtering
-
-        // Get only essential template fields for pricing calculations
-        const templateIds = [...new Set(instances.map(i => i.templateId))];
-        const templateMap = new Map();
-
-        for (const id of templateIds) {
-            const template = await ctx.db.get(id);
-            if (template) {
-                // Only store essential fields for pricing calculation
-                templateMap.set(id, {
-                    _id: template._id,
-                    price: template.price,
-                    discountRules: template.discountRules,
-                });
-            }
-        }
+            .take(limit * 2); // Take 2x limit to account for pricing filtering
 
         const discountedInstances = [];
 
         for (const instance of instances) {
-            const template = templateMap.get(instance.templateId);
-            if (!template) continue;
-
-            const pricingResult = await pricingOperations.calculateFinalPrice(instance, template);
+            // Calculate pricing using only instance data (discount rules are now copied to instances)
+            const pricingResult = await pricingOperations.calculateFinalPriceFromInstance(instance);
 
             if (pricingResult.discountPercentage > 0) {
                 discountedInstances.push({
