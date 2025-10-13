@@ -35,6 +35,7 @@ import type * as queries_classInstances from "../queries/classInstances.js";
 import type * as queries_classTemplates from "../queries/classTemplates.js";
 import type * as queries_core from "../queries/core.js";
 import type * as queries_credits from "../queries/credits.js";
+import type * as queries_dashboard from "../queries/dashboard.js";
 import type * as queries_earnings from "../queries/earnings.js";
 import type * as queries_explore from "../queries/explore.js";
 import type * as queries_notifications from "../queries/notifications.js";
@@ -94,6 +95,7 @@ declare const fullApi: ApiFromModules<{
   "queries/classTemplates": typeof queries_classTemplates;
   "queries/core": typeof queries_core;
   "queries/credits": typeof queries_credits;
+  "queries/dashboard": typeof queries_dashboard;
   "queries/earnings": typeof queries_earnings;
   "queries/explore": typeof queries_explore;
   "queries/notifications": typeof queries_notifications;

@@ -18,61 +18,9 @@ import { UpcomingClasses } from "./upcoming-classes";
 import { MinimalStatCard } from "./minimal-stat-card";
 import { MinimalSection } from "./minimal-section";
 import { AISuggestionsModal } from "@/components/ai-suggestions-modal";
-
-const statCards = [
-    {
-        title: "Check-ins today",
-        value: "18",
-        change: "+12%",
-        changeTone: "positive" as const,
-        helper: "vs yesterday",
-        icon: <CalendarCheck />,
-    },
-    {
-        title: "Monthly visits",
-        value: "482",
-        change: "+8%",
-        changeTone: "positive" as const,
-        helper: "compared to January",
-        icon: <LineChart />,
-    },
-    {
-        title: "Monthly revenue",
-        value: "€12,940",
-        change: "+4%",
-        changeTone: "positive" as const,
-        helper: "projected payout on Feb 29",
-        icon: <CreditCard />,
-    },
-    {
-        title: "Attendance rate",
-        value: "86%",
-        change: "-3%",
-        changeTone: "negative" as const,
-        helper: "compared to the rolling average",
-        icon: <Activity />,
-    },
-];
-
-const revenueHighlights = [
-    {
-        label: "Projected payout",
-        value: "€1,240",
-        helper: "Scheduled for Feb 29",
-    },
-    {
-        label: "Avg. booking value",
-        value: "€17.60",
-        helper: "Across 42 bookings this week",
-    },
-];
+import { useDashboardMetrics } from "../hooks/use-dashboard-metrics";
 
 const occupancyInsights = [
-    {
-        label: "Average occupancy",
-        value: 86,
-        helper: "Goal: 80%",
-    },
     {
         label: "Check-ins on time",
         value: 92,
@@ -118,6 +66,74 @@ export default function DashboardPage() {
         classInstance: Doc<"classInstances"> | null;
         bookings: Doc<"bookings">[]
     } | null>(null);
+
+    const { metrics, isLoading } = useDashboardMetrics();
+
+    // Create stat cards from real metrics data
+    const statCards = metrics ? [
+        {
+            title: "Check-ins today",
+            value: metrics.checkInsToday.count.toString(),
+            change: `${metrics.checkInsToday.isPositive ? '+' : ''}${metrics.checkInsToday.change}%`,
+            changeTone: metrics.checkInsToday.isPositive ? "positive" as const : "negative" as const,
+            helper: "vs yesterday",
+            icon: <CalendarCheck />,
+        },
+        {
+            title: "Monthly visits",
+            value: metrics.monthlyVisits.count.toString(),
+            change: `${metrics.monthlyVisits.isPositive ? '+' : ''}${metrics.monthlyVisits.change}%`,
+            changeTone: metrics.monthlyVisits.isPositive ? "positive" as const : "negative" as const,
+            helper: "vs last month",
+            icon: <LineChart />,
+        },
+        {
+            title: "Monthly revenue",
+            value: `€${(metrics.monthlyRevenue.net / 100).toFixed(2)}`,
+            change: `${metrics.monthlyRevenue.isPositive ? '+' : ''}${metrics.monthlyRevenue.change}%`,
+            changeTone: metrics.monthlyRevenue.isPositive ? "positive" as const : "negative" as const,
+            helper: "vs last month",
+            icon: <CreditCard />,
+        },
+        {
+            title: "Attendance rate",
+            value: `${metrics.attendanceRate.percentage}%`,
+            change: `${metrics.attendanceRate.isPositive ? '+' : ''}${metrics.attendanceRate.change}%`,
+            changeTone: metrics.attendanceRate.isPositive ? "positive" as const : "negative" as const,
+            helper: "last 100 classes",
+            icon: <Activity />,
+        },
+    ] : [];
+
+    // Show loading skeleton when loading
+    if (isLoading) {
+        return (
+            <div className="space-y-8 pb-8">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <div className="h-8 w-64 bg-muted animate-pulse rounded" />
+                        <div className="h-4 w-96 bg-muted animate-pulse rounded mt-2" />
+                    </div>
+                    <div className="flex gap-2">
+                        <div className="h-8 w-32 bg-muted animate-pulse rounded" />
+                        <div className="h-8 w-40 bg-muted animate-pulse rounded" />
+                    </div>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="flex items-center gap-4 p-4 rounded-lg border border-muted">
+                            <div className="h-5 w-5 bg-muted animate-pulse rounded" />
+                            <div className="flex-1">
+                                <div className="h-4 w-24 bg-muted animate-pulse rounded mb-2" />
+                                <div className="h-6 w-16 bg-muted animate-pulse rounded mb-1" />
+                                <div className="h-3 w-20 bg-muted animate-pulse rounded" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8 pb-8">
@@ -171,19 +187,38 @@ export default function DashboardPage() {
                 >
                     <div className="space-y-6">
                         <div className="grid gap-4 sm:grid-cols-2">
-                            {revenueHighlights.map((highlight) => (
-                                <div key={highlight.label} className="rounded-lg border border-muted shadow-sm p-4">
-                                    <p className="text-sm text-muted-foreground">{highlight.label}</p>
-                                    <p className="text-2xl font-semibold mt-1">{highlight.value}</p>
-                                    <p className="text-xs text-muted-foreground mt-1">{highlight.helper}</p>
-                                </div>
-                            ))}
+                            {metrics && (
+                                <>
+                                    <div className="rounded-lg border border-muted shadow-sm p-4">
+                                        <p className="text-sm text-muted-foreground">Net earnings</p>
+                                        <p className="text-2xl font-semibold mt-1">€{(metrics.monthlyRevenue.net / 100).toFixed(2)}</p>
+                                        <p className="text-xs text-muted-foreground mt-1">After 20% platform fee</p>
+                                    </div>
+                                    <div className="rounded-lg border border-muted shadow-sm p-4">
+                                        <p className="text-sm text-muted-foreground">Gross revenue</p>
+                                        <p className="text-2xl font-semibold mt-1">€{(metrics.monthlyRevenue.gross / 100).toFixed(2)}</p>
+                                        <p className="text-xs text-muted-foreground mt-1">Before platform fee</p>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         <Separator className="opacity-50" />
 
                         <div className="space-y-5">
-                            {occupancyInsights.map((insight) => (
+                            {metrics && (
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between text-sm font-medium">
+                                        <span>Attendance rate</span>
+                                        <span>{metrics.attendanceRate.percentage}%</span>
+                                    </div>
+                                    <Progress value={metrics.attendanceRate.percentage} className="h-1.5" aria-label="Attendance rate" />
+                                    <p className="text-xs text-muted-foreground">
+                                        {metrics.attendanceRate.attended} attended out of {metrics.attendanceRate.capacity} capacity
+                                    </p>
+                                </div>
+                            )}
+                            {occupancyInsights.slice(1).map((insight) => (
                                 <div key={insight.label} className="space-y-2">
                                     <div className="flex items-center justify-between text-sm font-medium">
                                         <span>{insight.label}</span>
