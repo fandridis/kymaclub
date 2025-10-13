@@ -85,10 +85,27 @@ export const prepareCreateMultipleInstances = (args: CreateMultipleClassInstance
  * 
  * @description Enforces critical business rule: cannot update endTime without startTime.
  * Provides conditional validation - only validates time pairs when both provided.
- * Validates all other fields independently when present.
+ * Validates all other fields independently when present. Automatically recalculates
+ * hasDiscountRules when discountRules are updated.
  * 
  * @param args - Raw update arguments for single instance
  * @returns Partial<UpdateSingleInstanceArgs['instance']> - Validated update object
+ * 
+ * @example
+ * // Discount rules update with hasDiscountRules recalculation
+ * const updateArgs = {
+ *   discountRules: [{
+ *     id: "early-bird",
+ *     name: "Early Bird Special", 
+ *     condition: { type: "hours_before_min", hours: 48 },
+ *     discount: { type: "fixed_amount", value: 150 }
+ *   }]
+ * };
+ * const result = prepareUpdateInstance(updateArgs);
+ * // Returns: { 
+ * //   discountRules: validated_rules,
+ * //   hasDiscountRules: true  // Automatically calculated
+ * // }
  * 
  * @example
  * // Safe time update (both start and end provided)
@@ -167,6 +184,12 @@ export const prepareUpdateInstance = (args: UpdateSingleInstanceArgs['instance']
         ...(i.cancellationWindowHours !== undefined && { cancellationWindowHours: throwIfError(classValidations.validateCancellationWindowHours(i.cancellationWindowHours), 'cancellationWindowHours') }),
         ...(i.color !== undefined && { color: i.color }),
         ...(i.primaryCategory !== undefined && { primaryCategory: throwIfError(classValidations.validatePrimaryCategory(i.primaryCategory), 'primaryCategory') }),
+
+        // Discount rules with hasDiscountRules recalculation
+        ...(i.discountRules !== undefined && {
+            discountRules: throwIfError(classValidations.validateDiscountRules(i.discountRules), 'discountRules'),
+            hasDiscountRules: hasDiscountRules(i.discountRules),
+        }),
     };
 };
 
@@ -229,11 +252,11 @@ export const prepareInstanceUpdatesFromTemplateChanges = (
                 primaryCategory: templateChanges.primaryCategory,
                 disableBookings: templateChanges.disableBookings,
             }),
-            // Update hasDiscountRules when discountRules change
-            ...(templateChanges.discountRules !== undefined && {
-                discountRules: templateChanges.discountRules,
-                hasDiscountRules: hasDiscountRules(templateChanges.discountRules)
-            }),
+            // Update hasDiscountRules when discountRules change - WE DON'T DO THIS BECAUSE WE DON'T UPDATE THE DISCOUNT RULES for existing instances
+            // ...(templateChanges.discountRules !== undefined && {
+            //  discountRules: templateChanges.discountRules,
+            //  hasDiscountRules: hasDiscountRules(templateChanges.discountRules)
+            // }),
             // Historical snapshot preservation with selective updates
             templateSnapshot: {
                 ...instance.templateSnapshot, // Preserve existing snapshot data

@@ -116,7 +116,8 @@ export function NewsScreen() {
     const user = useAuthenticatedUser();
 
     const now = useCurrentTime();
-    const next12Hours = useMemo(() => new Date(now.getTime() + (12 * 60 * 60 * 1000)), [now]);
+    const next4Hours = useMemo(() => new Date(now.getTime() + (4 * 60 * 60 * 1000)), [now]);
+    const next24Hours = useMemo(() => new Date(now.getTime() + (24 * 60 * 60 * 1000)), [now]);
 
     // Query for user settings to check if welcome banner was dismissed
     // TODO: Update to use api.queries.settings.getUserSettings once API is regenerated
@@ -135,12 +136,21 @@ export function NewsScreen() {
         user ? { daysAhead: 7 } : "skip"
     );
 
-    // Query for last minute offers - OPTIMIZED VERSION
-    const lastMinuteDiscountedInstances = useQuery(
-        api.queries.classInstances.getLastMinuteDiscountedClassInstances,
+    // Query for starting soon classes (next 4 hours)
+    const startingSoonInstances = useQuery(
+        api.queries.classInstances.getStartingSoonClassInstances,
         {
             startDate: now.getTime(),
-            endDate: next12Hours.getTime(),
+            endDate: next4Hours.getTime(),
+        }
+    );
+
+    // Query for best offers (next 24 hours)
+    const bestOffersInstances = useQuery(
+        api.queries.classInstances.getBestOffersClassInstances,
+        {
+            startDate: now.getTime(),
+            endDate: next24Hours.getTime(),
         }
     );
 
@@ -182,7 +192,16 @@ export function NewsScreen() {
             }
         });
 
-        lastMinuteDiscountedInstances?.forEach(instance => {
+        startingSoonInstances?.forEach(instance => {
+            if (instance.templateSnapshot?.imageStorageIds) {
+                ids.push(...instance.templateSnapshot.imageStorageIds);
+            }
+            if (instance.venueSnapshot?.imageStorageIds) {
+                ids.push(...instance.venueSnapshot.imageStorageIds);
+            }
+        });
+
+        bestOffersInstances?.forEach(instance => {
             if (instance.templateSnapshot?.imageStorageIds) {
                 ids.push(...instance.templateSnapshot.imageStorageIds);
             }
@@ -192,7 +211,7 @@ export function NewsScreen() {
         });
 
         return [...new Set(ids)];
-    }, [upcomingClassInstances, lastMinuteDiscountedInstances]);
+    }, [upcomingClassInstances, startingSoonInstances, bestOffersInstances]);
 
     // Fetch image URLs
     const classImageUrlsQuery = useQuery(
@@ -293,14 +312,14 @@ export function NewsScreen() {
             .sort((a, b) => (a.startTime || 0) - (b.startTime || 0));
     }, [userBookings, upcomingClassInstances, combinedStorageIdToUrl, now]);
 
-    // Process data for last minute offers
-    const lastMinuteOffers = useMemo(() => {
-        const discountedInstancesData = lastMinuteDiscountedInstances || [];
-        if (!discountedInstancesData.length) return [];
+    // Process starting soon classes
+    const startingSoonClasses = useMemo(() => {
+        const instancesData = startingSoonInstances || [];
+        if (!instancesData.length) return [];
 
-        return discountedInstancesData
-            .filter(instance => canBookClass(instance, now.getTime())) // Filter out non-bookable classes
-            .slice(0, 6)
+        return instancesData
+            .filter(instance => canBookClass(instance, now.getTime()))
+            .slice(0, 10)
             .map(instance => {
                 const timeUntilStartMs = instance.startTime - now.getTime();
                 const timeUntilStartHours = Math.floor(timeUntilStartMs / (1000 * 60 * 60));
@@ -310,10 +329,6 @@ export function NewsScreen() {
                 const venueImageId = instance.venueSnapshot?.imageStorageIds?.[0];
                 const imageUrl = templateImageId ? combinedStorageIdToUrl.get(templateImageId) :
                     venueImageId ? combinedStorageIdToUrl.get(venueImageId) : null;
-
-                const originalPrice = instance.pricing.originalPrice;
-                const finalPrice = instance.pricing.finalPrice;
-                const discountPercentage = instance.discountPercentage;
 
                 let timeDisplay = '';
                 if (timeUntilStartHours > 0) {
@@ -328,18 +343,48 @@ export function NewsScreen() {
                     id: instance._id,
                     title: instance.name || 'Class',
                     subtitle: timeDisplay,
-                    originalPrice: `${centsToCredits(originalPrice)}`,
-                    discountedPrice: `${centsToCredits(finalPrice)}`,
-                    discountPercentage: `${discountPercentage}%`,
+                    originalPrice: `${centsToCredits(instance.pricing.originalPrice)}`,
+                    discountedPrice: `${centsToCredits(instance.pricing.finalPrice)}`,
+                    discountPercentage: instance.discountPercentage > 0 ? `${instance.discountPercentage}%` : null,
                     venueName: instance.venueSnapshot?.name,
                     venueCity: instance.venueSnapshot?.address?.city,
                     instructor: instance.templateSnapshot?.instructor,
                     imageUrl,
                     startTime: instance.startTime,
-                    classInstanceId: instance._id
+                    classInstanceId: instance._id,
                 };
             });
-    }, [lastMinuteDiscountedInstances, now, combinedStorageIdToUrl]);
+    }, [startingSoonInstances, now, combinedStorageIdToUrl]);
+
+    // Process best offers
+    const bestOffersClasses = useMemo(() => {
+        const instancesData = bestOffersInstances || [];
+        if (!instancesData.length) return [];
+
+        return instancesData
+            .filter(instance => canBookClass(instance, now.getTime()))
+            .slice(0, 10)
+            .map(instance => {
+                const templateImageId = instance.templateSnapshot?.imageStorageIds?.[0];
+                const venueImageId = instance.venueSnapshot?.imageStorageIds?.[0];
+                const imageUrl = templateImageId ? combinedStorageIdToUrl.get(templateImageId) :
+                    venueImageId ? combinedStorageIdToUrl.get(venueImageId) : null;
+
+                return {
+                    id: instance._id,
+                    title: instance.name || 'Class',
+                    originalPrice: `${centsToCredits(instance.pricing.originalPrice)}`,
+                    discountedPrice: `${centsToCredits(instance.pricing.finalPrice)}`,
+                    discountPercentage: `${instance.discountPercentage}%`,
+                    venueName: instance.venueSnapshot?.name,
+                    venueCity: instance.venueSnapshot?.address?.city,
+                    instructor: instance.templateSnapshot?.instructor,
+                    imageUrl,
+                    startTime: instance.startTime,
+                    classInstanceId: instance._id,
+                };
+            });
+    }, [bestOffersInstances, now, combinedStorageIdToUrl]);
 
     // Get new venues for VenueCard
     const newVenuesForCards = useMemo(() => {
@@ -390,7 +435,8 @@ export function NewsScreen() {
     // Loading state
     const isInitialLoading = user && (
         userBookings === undefined &&
-        lastMinuteDiscountedInstances === undefined &&
+        startingSoonInstances === undefined &&
+        bestOffersInstances === undefined &&
         (allVenues === undefined || venuesLoading)
     );
 
@@ -502,17 +548,17 @@ export function NewsScreen() {
                     </View>
                 )}
 
-                {/* Last Minute Offers Section */}
-                {lastMinuteOffers.length > 0 && (
+                {/* Starting Soon Section */}
+                {startingSoonClasses.length > 0 && (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Last minute offers</Text>
-                        <Text style={styles.sectionSubtitle}>Who doesn't like a good deal? These classes are starting soon.</Text>
+                        <Text style={styles.sectionTitle}>Starting Soon</Text>
+                        <Text style={styles.sectionSubtitle}>Classes starting in the next 4 hours</Text>
                         <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}
                             contentContainerStyle={styles.carouselScrollContent}
                         >
-                            {lastMinuteOffers.map((item) => {
+                            {startingSoonClasses.map((item) => {
                                 const discountBadge = item.discountPercentage ? `-${item.discountPercentage}` : null;
 
                                 const subtitleText = item.instructor
@@ -552,6 +598,112 @@ export function NewsScreen() {
                                                 </View>
                                             );
                                         }}
+                                        renderTopRight={() => {
+                                            if (!discountBadge) {
+                                                return null;
+                                            }
+
+                                            return (
+                                                <View style={[styles.lastMinuteBadge, styles.offerBadge]}>
+                                                    <Text style={styles.badgeText}>{discountBadge}</Text>
+                                                </View>
+                                            );
+                                        }}
+                                        renderFooter={() => (
+                                            <View style={styles.newsClassCardFooterRow}>
+                                                <View style={styles.newsClassCardFooterMetric}>
+                                                    <View style={styles.newsClassCardFooterIcon}>
+                                                        <DiamondIcon
+                                                            size={14}
+                                                            color={theme.colors.zinc[700]}
+                                                            strokeWidth={2}
+                                                        />
+                                                    </View>
+                                                    <Text
+                                                        style={styles.newsClassCardFooterText}
+                                                        numberOfLines={1}
+                                                    >
+                                                        {item.discountedPrice}
+                                                    </Text>
+                                                </View>
+                                                <View style={styles.newsClassCardFooterMetric}>
+                                                    <View style={styles.newsClassCardFooterIcon}>
+                                                        <ClockIcon
+                                                            size={14}
+                                                            color={theme.colors.zinc[700]}
+                                                            strokeWidth={2}
+                                                        />
+                                                    </View>
+                                                    <Text
+                                                        style={styles.newsClassCardFooterText}
+                                                        numberOfLines={1}
+                                                    >
+                                                        {startTime}
+                                                    </Text>
+                                                </View>
+                                                {item.venueCity ? (
+                                                    <View style={styles.newsClassCardFooterMetric}>
+                                                        <View style={styles.newsClassCardFooterIcon}>
+                                                            <MapPinIcon
+                                                                size={14}
+                                                                color={theme.colors.zinc[600]}
+                                                                strokeWidth={2}
+                                                            />
+                                                        </View>
+                                                        <Text
+                                                            style={styles.newsClassCardFooterText}
+                                                            numberOfLines={1}
+                                                        >
+                                                            {item.venueCity}
+                                                        </Text>
+                                                    </View>
+                                                ) : null}
+                                            </View>
+                                        )}
+                                        onPress={() => {
+                                            if (item.classInstanceId) {
+                                                navigation.navigate('ClassDetailsModal', {
+                                                    classInstanceId: item.classInstanceId,
+                                                });
+                                            }
+                                        }}
+                                        style={styles.lastMinuteCarouselCard}
+                                    />
+                                );
+                            })}
+                        </ScrollView>
+                    </View>
+                )}
+
+                {/* Best Offers Section */}
+                {bestOffersClasses.length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Best Offers</Text>
+                        <Text style={styles.sectionSubtitle}>Biggest discounts available right now</Text>
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.carouselScrollContent}
+                        >
+                            {bestOffersClasses.map((item) => {
+                                const discountBadge = item.discountPercentage ? `-${item.discountPercentage}` : null;
+
+                                const subtitleText = item.instructor
+                                    ? `with ${item.instructor}`
+                                    : item.venueName || undefined;
+
+                                const startTime = new Date(item.startTime).toLocaleTimeString('en-US', {
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true,
+                                });
+
+                                return (
+                                    <NewsClassCard
+                                        key={item.id}
+                                        title={item.title}
+                                        subtitle={subtitleText}
+                                        imageUrl={item.imageUrl}
                                         renderTopRight={() => {
                                             if (!discountBadge) {
                                                 return null;

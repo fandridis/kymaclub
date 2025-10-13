@@ -218,23 +218,21 @@ export const getTemplateInstancesOptimized = query({
 });
 
 /***************************************************************
- * Get Last Minute Discounted Class Instances
+ * Get Best Offers Class Instances
  * 
- * Returns class instances starting within the next 8 hours that have
- * actual discounts applied based on the pricing system rules.
- * 
- * Only returns classes with low capacity discounts (5%) since early bird
- * discounts require >48 hours advance booking.
+ * Returns class instances starting within the next 24 hours that have
+ * actual discounts applied, ordered by highest discount percentage first.
+ * Includes early bird, last minute, and always-on discounts.
  ***************************************************************/
 
-export const getLastMinuteDiscountedClassInstancesArgs = v.object({
+export const getBestOffersClassInstancesArgs = v.object({
     startDate: v.number(), // Current time
-    endDate: v.number(),   // 8 hours from now
+    endDate: v.number(),   // 24 hours from now
     limit: v.optional(v.number()),
 });
 
-export const getLastMinuteDiscountedClassInstances = query({
-    args: getLastMinuteDiscountedClassInstancesArgs,
+export const getBestOffersClassInstances = query({
+    args: getBestOffersClassInstancesArgs,
     handler: async (ctx, args) => {
         await getAuthenticatedUserOrThrow(ctx);
         const limit = args.limit || 10;
@@ -250,8 +248,10 @@ export const getLastMinuteDiscountedClassInstances = query({
                     .gte("startTime", args.startDate)
             )
             .filter(q => q.lte(q.field("startTime"), args.endDate))
-            .order("asc") // Order by start time
+            .order("asc") // Order by start time initially
             .take(limit);
+
+        console.log('gg1 instances', instances);
 
         const discountedInstances = [];
 
@@ -265,9 +265,9 @@ export const getLastMinuteDiscountedClassInstances = query({
                     _id: instance._id,
                     startTime: instance.startTime,
                     endTime: instance.endTime,
-                    name: instance.name,
+                    name: instance.name || 'Class',
                     instructor: instance.instructor,
-                    capacity: instance.capacity,
+                    capacity: instance.capacity || 0,
                     bookedCount: instance.bookedCount,
                     price: instance.price,
                     status: instance.status,
@@ -293,9 +293,117 @@ export const getLastMinuteDiscountedClassInstances = query({
             }
         }
 
+        // Sort by discount percentage (highest first), then by start time
         return discountedInstances
-            .sort((a, b) => a.startTime - b.startTime)
+            .sort((a, b) => {
+                if (b.discountPercentage !== a.discountPercentage) {
+                    return b.discountPercentage - a.discountPercentage;
+                }
+                return a.startTime - b.startTime;
+            })
             .slice(0, limit);
+    }
+});
+
+/***************************************************************
+ * Get Starting Soon Class Instances
+ * 
+ * Returns class instances starting within the next 4 hours,
+ * ordered by start time (earliest first). Includes all classes
+ * regardless of discount status for maximum coverage.
+ ***************************************************************/
+
+export const getStartingSoonClassInstancesArgs = v.object({
+    startDate: v.number(), // Current time
+    endDate: v.number(),   // 4 hours from now
+    limit: v.optional(v.number()),
+});
+
+export const getStartingSoonClassInstances = query({
+    args: getStartingSoonClassInstancesArgs,
+    returns: v.array(v.object({
+        _id: v.id("classInstances"),
+        startTime: v.number(),
+        endTime: v.number(),
+        name: v.string(),
+        instructor: v.optional(v.string()),
+        capacity: v.number(),
+        bookedCount: v.number(),
+        price: v.optional(v.number()),
+        status: v.string(),
+        color: v.optional(v.string()),
+        disableBookings: v.optional(v.boolean()),
+        templateSnapshot: v.object({
+            name: v.string(),
+            instructor: v.optional(v.string()),
+            imageStorageIds: v.optional(v.array(v.id("_storage"))),
+        }),
+        venueSnapshot: v.object({
+            name: v.string(),
+            address: v.object({
+                city: v.string(),
+            }),
+            imageStorageIds: v.optional(v.array(v.id("_storage"))),
+        }),
+        pricing: v.object({
+            originalPrice: v.number(),
+            finalPrice: v.number(),
+            discountPercentage: v.number(),
+            discountAmount: v.number(),
+        }),
+        discountPercentage: v.number(),
+    })),
+    handler: async (ctx, args) => {
+        await getAuthenticatedUserOrThrow(ctx);
+        const limit = args.limit || 10;
+
+        // Use efficient index to fetch scheduled classes in time window
+        const instances = await ctx.db
+            .query("classInstances")
+            .withIndex("by_status_deleted_start_time", (q) =>
+                q.eq("status", "scheduled")
+                    .eq("deleted", undefined)
+                    .gte("startTime", args.startDate)
+            )
+            .filter(q => q.lte(q.field("startTime"), args.endDate))
+            .order("asc")
+            .take(limit);
+
+        // Calculate pricing for each instance
+        const enrichedInstances = [];
+        for (const instance of instances) {
+            const pricingResult = await pricingOperations.calculateFinalPriceFromInstance(instance);
+
+            enrichedInstances.push({
+                _id: instance._id,
+                startTime: instance.startTime,
+                endTime: instance.endTime,
+                name: instance.name || 'Class',
+                instructor: instance.instructor,
+                capacity: instance.capacity || 0,
+                bookedCount: instance.bookedCount,
+                price: instance.price,
+                status: instance.status,
+                color: instance.color,
+                disableBookings: instance.disableBookings,
+                templateSnapshot: {
+                    name: instance.templateSnapshot.name,
+                    instructor: instance.templateSnapshot.instructor,
+                    imageStorageIds: instance.templateSnapshot.imageStorageIds,
+                },
+                venueSnapshot: {
+                    name: instance.venueSnapshot.name,
+                    address: {
+                        city: instance.venueSnapshot.address.city,
+                    },
+                    imageStorageIds: instance.venueSnapshot.imageStorageIds,
+                },
+                pricing: pricingResult,
+                discountPercentage: Math.round(pricingResult.discountPercentage * 100),
+            });
+        }
+
+        return enrichedInstances;
     }
 });
 

@@ -40,7 +40,9 @@ vi.mock("../validations/class", () => ({
       return { success: true, value: credits };
     }),
     validateBookingWindow: vi.fn((window) => ({ success: true, value: window })),
-    validateCancellationWindowHours: vi.fn((hours) => ({ success: true, value: hours }))
+    validateCancellationWindowHours: vi.fn((hours) => ({ success: true, value: hours })),
+    validateDiscountRules: vi.fn((rules) => ({ success: true, value: rules })),
+    validatePrimaryCategory: vi.fn((category) => ({ success: true, value: category }))
   }
 }));
 
@@ -119,6 +121,44 @@ describe('Class Instance Operations - Safety Tests', () => {
       });
 
       expect(() => prepareUpdateInstance(updateArgs)).toThrow("Capacity must be positive");
+    });
+
+    it('should recalculate hasDiscountRules when discountRules are updated', () => {
+      const updateArgs = {
+        discountRules: [{
+          id: "early-bird",
+          name: "Early Bird Special",
+          condition: { type: "hours_before_min" as any, hours: 48 },
+          discount: { type: "fixed_amount" as any, value: 150 }
+        }]
+      };
+
+      const result = prepareUpdateInstance(updateArgs);
+
+      expect(result.discountRules).toEqual(updateArgs.discountRules);
+      expect(result.hasDiscountRules).toBe(true);
+    });
+
+    it('should set hasDiscountRules to false when discountRules are cleared', () => {
+      const updateArgs = {
+        discountRules: []
+      };
+
+      const result = prepareUpdateInstance(updateArgs);
+
+      expect(result.discountRules).toEqual([]);
+      expect(result.hasDiscountRules).toBe(false);
+    });
+
+    it('should not include hasDiscountRules when discountRules are undefined', () => {
+      const updateArgs = {
+        discountRules: undefined
+      };
+
+      const result = prepareUpdateInstance(updateArgs);
+
+      expect(result.discountRules).toBeUndefined();
+      expect(result.hasDiscountRules).toBeUndefined();
     });
   });
 
