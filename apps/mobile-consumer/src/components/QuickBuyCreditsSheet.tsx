@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Linking,
   ScrollView,
@@ -114,9 +115,14 @@ export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyC
                 return (
                   <TouchableOpacity
                     key={pack.credits}
-                    style={[styles.creditCard, isSelected && styles.creditCardSelected]}
-                    onPress={() => handlePackSelect(pack.credits)}
+                    style={[
+                      styles.creditCard,
+                      isSelected && styles.creditCardSelected,
+                      isProcessing && styles.creditCardDisabled
+                    ]}
+                    onPress={() => !isProcessing && handlePackSelect(pack.credits)}
                     activeOpacity={0.85}
+                    disabled={isProcessing}
                   >
                     <View style={styles.cardHeader}>
                       <DiamondIcon size={24} color={theme.colors.emerald[500]} />
@@ -156,9 +162,18 @@ export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyC
             activeOpacity={0.85}
             disabled={isProcessing}
           >
-            <Text style={styles.buyButtonText}>
-              {isProcessing ? 'Processing...' : 'Buy now'}
-            </Text>
+            {isProcessing ? (
+              <View style={styles.buttonContent}>
+                <ActivityIndicator size="small" color="#fff" />
+                <Text style={[styles.buyButtonText, styles.buttonTextWithSpinner]}>
+                  Processing...
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.buyButtonText}>
+                Buy now
+              </Text>
+            )}
           </TouchableOpacity>
         </BottomSheetView>
       </BottomSheetModal>
@@ -232,6 +247,9 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.emerald[500],
     shadowOpacity: 0.12,
   },
+  creditCardDisabled: {
+    opacity: 0.5,
+  },
   cardHeader: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -294,5 +312,14 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.semibold,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.sm,
+  },
+  buttonTextWithSpinner: {
+    marginLeft: theme.spacing.xs,
   },
 });

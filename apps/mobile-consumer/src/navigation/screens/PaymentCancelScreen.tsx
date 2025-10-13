@@ -11,37 +11,44 @@ export function PaymentCancelScreen() {
   const route = useRoute<PaymentCancelRouteProp>();
   const { type } = route.params;
 
-  const handleTryAgain = () => {
-    if (type === 'subscription') {
-      navigation.navigate('Subscription' as never);
-    } else {
-      navigation.navigate('BuyCredits' as never);
-    }
-  };
+  // const handleTryAgain = () => {
+  //   if (type === 'subscription') {
+  //     navigation.navigate('Subscription');
+  //   } else {
+  //     navigation.navigate('BuyCredits');
+  //   }
+  // };
 
-  const handleGoHome = () => {
-    navigation.navigate('Home' as never);
+  const handleGoBack = () => {
+    // Navigate to home tab first, then to settings, replacing the navigation history
+    navigation.reset({
+      index: 0,
+      routes: [
+        { name: 'Home' },
+        { name: 'Settings' }
+      ],
+    });
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.content}>
         <XCircle size={80} color="#EF4444" strokeWidth={1.5} />
-        
+
         <Text style={styles.title}>Payment Cancelled</Text>
         <Text style={styles.message}>
-          Your {type === 'subscription' ? 'subscription' : 'credit purchase'} was cancelled. 
+          Your {type === 'subscription' ? 'subscription' : 'credit purchase'} was cancelled.
           No charges were made to your account.
         </Text>
-        
+
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.primaryButton} onPress={handleTryAgain}>
+          {/* <TouchableOpacity style={styles.primaryButton} onPress={handleTryAgain}>
             <Text style={styles.primaryButtonText}>Try Again</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.secondaryButton} onPress={handleGoHome}>
+          </TouchableOpacity> */}
+
+          <TouchableOpacity style={styles.secondaryButton} onPress={handleGoBack}>
             <ArrowLeft size={20} color="#6b7280" />
-            <Text style={styles.secondaryButtonText}>Go to Home</Text>
+            <Text style={styles.secondaryButtonText}>Go back</Text>
           </TouchableOpacity>
         </View>
       </View>

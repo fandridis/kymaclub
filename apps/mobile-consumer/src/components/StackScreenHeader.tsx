@@ -21,11 +21,11 @@ export function StackScreenHeader({ title, renderRightSide, onBackPress }: Stack
         if (navigation.canGoBack()) {
           navigation.goBack();
         } else {
-          navigation.navigate('Home' as never);
+          navigation.navigate('Home');
         }
       } catch (error) {
         console.error('Navigation error:', error);
-        navigation.navigate('Home' as never);
+        navigation.navigate('Home');
       }
     }
   };

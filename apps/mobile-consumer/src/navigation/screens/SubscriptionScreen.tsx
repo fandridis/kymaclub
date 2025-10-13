@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, Linking } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, Linking, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useNavigation } from '@react-navigation/native';
@@ -46,6 +46,7 @@ export function SubscriptionScreen() {
     const navigation = useNavigation();
     const user = useAuthenticatedUser();
     const [selectedCredits, setSelectedCredits] = useState<number>(25);
+    const [isLoading, setIsLoading] = useState(false);
 
     // Get current subscription status
     const subscription = useQuery(api.queries.subscriptions.getCurrentUserSubscription);
@@ -86,7 +87,7 @@ export function SubscriptionScreen() {
     };
 
     const handleSubscriptionChange = () => {
-        if (selectedCredits) {
+        if (selectedCredits && !isLoading) {
             const isUpdate = isSubscriptionActive();
             const nextBillingDate = subscription ? new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null;
 
@@ -100,27 +101,24 @@ export function SubscriptionScreen() {
                     {
                         text: isUpdate ? 'Update' : 'Start & Pay',
                         onPress: async () => {
-                            if (isUpdate) {
-                                try {
+                            setIsLoading(true);
+                            try {
+                                if (isUpdate) {
                                     const result = await updateSubscription({ newCreditAmount: selectedCredits });
                                     Alert.alert('Subscription Updated!', result.message);
-                                } catch (error) {
-                                    console.error('Error updating subscription:', error);
-                                    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-                                    Alert.alert('Error', `Failed to update subscription. ${errorMessage}`);
-                                }
-                            } else {
-                                // For new subscriptions, go directly to checkout
-                                try {
+                                } else {
+                                    // For new subscriptions, go directly to checkout
                                     const result = await createDynamicCheckout({ creditAmount: selectedCredits });
                                     if (result.checkoutUrl) {
                                         await Linking.openURL(result.checkoutUrl);
                                     }
-                                } catch (error) {
-                                    console.error('Error creating checkout:', error);
-                                    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-                                    Alert.alert('Error', `Failed to start subscription. ${errorMessage}`);
                                 }
+                            } catch (error) {
+                                console.error('Error with subscription:', error);
+                                const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+                                Alert.alert('Error', `Failed to ${isUpdate ? 'update' : 'start'} subscription. ${errorMessage}`);
+                            } finally {
+                                setIsLoading(false);
                             }
                         }
                     }
@@ -130,6 +128,8 @@ export function SubscriptionScreen() {
     };
 
     const handleCancelSubscription = async () => {
+        if (isLoading) return;
+
         Alert.alert(
             'Cancel Subscription',
             'Are you sure you want to cancel your subscription? You\'ll continue to have access until the end of your current billing period.',
@@ -139,12 +139,17 @@ export function SubscriptionScreen() {
                     text: 'Cancel Subscription',
                     style: 'destructive',
                     onPress: async () => {
+                        setIsLoading(true);
                         try {
+                            console.log('Cancelling subscription...');
                             await cancelSubscription({});
+                            console.log('Subscription cancelled!!!');
                             Alert.alert('Subscription Cancelled', 'Your subscription will end at the end of your current billing period.');
                         } catch (error) {
                             console.error('Error canceling subscription:', error);
                             Alert.alert('Error', 'Failed to cancel subscription. Please try again.');
+                        } finally {
+                            setIsLoading(false);
                         }
                     }
                 }
@@ -154,6 +159,8 @@ export function SubscriptionScreen() {
 
 
     const handleReactivateSubscription = async () => {
+        if (isLoading) return;
+
         // Check subscription status and what will happen
         const currentOption = getCurrentOption();
         const subscriptionExpired = subscription?.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).getTime() < Date.now() : true;
@@ -183,6 +190,7 @@ export function SubscriptionScreen() {
                 {
                     text: buttonText,
                     onPress: async () => {
+                        setIsLoading(true);
                         try {
                             // Pass the selected credit amount to the reactivation
                             const result = await reactivateSubscription({ newCreditAmount: selectedCredits });
@@ -191,6 +199,8 @@ export function SubscriptionScreen() {
                             console.error('Error reactivating subscription:', error);
                             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
                             Alert.alert('Error', `Failed to reactivate subscription. ${errorMessage}`);
+                        } finally {
+                            setIsLoading(false);
                         }
                     }
                 }
@@ -261,12 +271,25 @@ export function SubscriptionScreen() {
                                         </Text>
                                     </View>
                                     <TouchableOpacity
-                                        style={styles.cancelButton}
+                                        style={[
+                                            styles.cancelButton,
+                                            isLoading && styles.cancelButtonDisabled
+                                        ]}
                                         onPress={handleCancelSubscription}
+                                        disabled={isLoading}
                                     >
-                                        <Text style={styles.cancelButtonText}>
-                                            Cancel
-                                        </Text>
+                                        {isLoading ? (
+                                            <View style={styles.buttonContent}>
+                                                <ActivityIndicator size="small" color={theme.colors.rose[600]} />
+                                                <Text style={[styles.cancelButtonText, styles.buttonTextWithSpinner]}>
+                                                    Canceling...
+                                                </Text>
+                                            </View>
+                                        ) : (
+                                            <Text style={styles.cancelButtonText}>
+                                                Cancel
+                                            </Text>
+                                        )}
                                     </TouchableOpacity>
                                 </View>
                             </>
@@ -294,9 +317,14 @@ export function SubscriptionScreen() {
                                 return (
                                     <TouchableOpacity
                                         key={credits}
-                                        style={[styles.subscriptionCard, isSelected && styles.subscriptionCardSelected]}
-                                        onPress={() => setSelectedCredits(credits)}
+                                        style={[
+                                            styles.subscriptionCard,
+                                            isSelected && styles.subscriptionCardSelected,
+                                            isLoading && styles.subscriptionCardDisabled
+                                        ]}
+                                        onPress={() => !isLoading && setSelectedCredits(credits)}
                                         activeOpacity={0.85}
+                                        disabled={isLoading}
                                     >
                                         <View style={styles.cardHeader}>
                                             <DiamondIcon size={24} color={theme.colors.emerald[500]} />
@@ -331,29 +359,51 @@ export function SubscriptionScreen() {
                     <View style={styles.actionSection}>
                         {isSubscriptionCanceling() ? (
                             <TouchableOpacity
-                                style={styles.primaryButton}
+                                style={[
+                                    styles.primaryButton,
+                                    isLoading && styles.primaryButtonDisabled
+                                ]}
                                 onPress={handleReactivateSubscription}
+                                disabled={isLoading}
                             >
-                                <Text style={styles.primaryButtonText}>
-                                    Reactivate Subscription
-                                </Text>
+                                {isLoading ? (
+                                    <View style={styles.buttonContent}>
+                                        <ActivityIndicator size="small" color="#fff" />
+                                        <Text style={[styles.primaryButtonText, styles.buttonTextWithSpinner]}>
+                                            Reactivating...
+                                        </Text>
+                                    </View>
+                                ) : (
+                                    <Text style={styles.primaryButtonText}>
+                                        Reactivate Subscription
+                                    </Text>
+                                )}
                             </TouchableOpacity>
                         ) : (
                             <>
                                 <TouchableOpacity
                                     style={[
                                         styles.primaryButton,
-                                        isSubscriptionActive() && selectedCredits === (subscription?.creditAmount ?? 0) && styles.primaryButtonDisabled
+                                        (isSubscriptionActive() && selectedCredits === (subscription?.creditAmount ?? 0)) || isLoading ? styles.primaryButtonDisabled : null
                                     ]}
                                     onPress={handleSubscriptionChange}
-                                    disabled={isSubscriptionActive() && selectedCredits === (subscription?.creditAmount ?? 0)}
+                                    disabled={(isSubscriptionActive() && selectedCredits === (subscription?.creditAmount ?? 0)) || isLoading}
                                 >
-                                    <Text style={[
-                                        styles.primaryButtonText,
-                                        isSubscriptionActive() && selectedCredits === (subscription?.creditAmount ?? 0) && styles.primaryButtonTextDisabled
-                                    ]}>
-                                        {isSubscriptionActive() ? 'Update Plan' : 'Start Subscription'}
-                                    </Text>
+                                    {isLoading ? (
+                                        <View style={styles.buttonContent}>
+                                            <ActivityIndicator size="small" color="#fff" />
+                                            <Text style={[styles.primaryButtonText, styles.buttonTextWithSpinner]}>
+                                                {isSubscriptionActive() ? 'Updating...' : 'Starting...'}
+                                            </Text>
+                                        </View>
+                                    ) : (
+                                        <Text style={[
+                                            styles.primaryButtonText,
+                                            isSubscriptionActive() && selectedCredits === (subscription?.creditAmount ?? 0) && styles.primaryButtonTextDisabled
+                                        ]}>
+                                            {isSubscriptionActive() ? 'Update Plan' : 'Start Subscription'}
+                                        </Text>
+                                    )}
                                 </TouchableOpacity>
                             </>
                         )}
@@ -504,6 +554,9 @@ const styles = StyleSheet.create({
         fontWeight: theme.fontWeight.medium,
         color: theme.colors.rose[600],
     },
+    cancelButtonDisabled: {
+        opacity: 0.6,
+    },
 
     // Selection Display
     selectionDisplay: {
@@ -594,6 +647,9 @@ const styles = StyleSheet.create({
         borderColor: theme.colors.emerald[500],
         shadowOpacity: 0.12,
     },
+    subscriptionCardDisabled: {
+        opacity: 0.5,
+    },
     cardHeader: {
         alignItems: 'center',
         justifyContent: 'center',
@@ -669,6 +725,15 @@ const styles = StyleSheet.create({
     },
     primaryButtonTextDisabled: {
         color: theme.colors.zinc[500],
+    },
+    buttonContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: theme.spacing.sm,
+    },
+    buttonTextWithSpinner: {
+        marginLeft: theme.spacing.xs,
     },
     secondaryButton: {
         backgroundColor: 'transparent',
