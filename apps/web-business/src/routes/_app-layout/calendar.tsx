@@ -5,6 +5,8 @@ import { useClassInstances } from '@/features/calendar/hooks/use-class-instances
 import { useCurrentUser } from '@/components/stores/auth';
 import { Header } from '@/components/layout/header';
 import { Main } from '@/components/layout/main';
+import { useEffect } from 'react';
+import { format } from 'date-fns';
 
 const currentDate = new Date();
 
@@ -19,9 +21,21 @@ export const Route = createFileRoute('/_app-layout/calendar')({
 
 function RouteComponent() {
     const { date } = Route.useSearch();
+    const navigate = Route.useNavigate();
     const user = useCurrentUser();
     const startDate = date ? new Date(date) : currentDate;
-    const { classInstances } = useClassInstances({ startDate: startDate.getTime() });
+    const { classInstances, loading } = useClassInstances({ startDate: startDate.getTime() });
+
+    // Update URL to include date param when it's missing
+    useEffect(() => {
+        if (!date) {
+            const currentDateString = format(currentDate, 'yyyy-MM-dd');
+            navigate({
+                search: { date: currentDateString },
+                replace: true,
+            });
+        }
+    }, [date, navigate]);
 
     return (
         <>
@@ -31,6 +45,7 @@ function RouteComponent() {
                     startDate={startDate}
                     classInstances={classInstances}
                     user={user}
+                    loading={loading}
                 />
             </Main>
         </>

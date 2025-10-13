@@ -137,9 +137,10 @@ export function NewsScreen() {
 
     // Query for last minute offers - OPTIMIZED VERSION
     const lastMinuteDiscountedInstances = useQuery(
-        api.queries.classInstances.getLastMinuteDiscountedClassInstancesOptimized,
+        api.queries.classInstances.getLastMinuteDiscountedClassInstances,
         {
-            limit: 6
+            startDate: now.getTime(),
+            endDate: next12Hours.getTime(),
         }
     );
 

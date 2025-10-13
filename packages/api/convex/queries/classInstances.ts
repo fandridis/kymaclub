@@ -251,7 +251,7 @@ export const getLastMinuteDiscountedClassInstances = query({
             )
             .filter(q => q.lte(q.field("startTime"), args.endDate))
             .order("asc") // Order by start time
-            .take(limit * 2); // Take 2x limit to account for pricing filtering
+            .take(limit);
 
         const discountedInstances = [];
 

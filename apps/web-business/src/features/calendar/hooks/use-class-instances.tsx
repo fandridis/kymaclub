@@ -6,13 +6,24 @@ interface UseClassInstancesProps {
     endDate?: number;
 }
 
-const THIRTY_DAYS_IN_MS = 1000 * 60 * 60 * 24 * 30;
+const SEVEN_DAYS_IN_MS = 1000 * 60 * 60 * 24 * 7;
 
 export function useClassInstances({ startDate, endDate }: UseClassInstancesProps) {
-    const finalEndDate = endDate ?? startDate + THIRTY_DAYS_IN_MS;
+    const finalEndDate = endDate ?? startDate + SEVEN_DAYS_IN_MS;
+
+    // Fetch current week's data
     const classInstances = useQuery(api.queries.classInstances.getClassInstances, {
         startDate,
         endDate: finalEndDate,
+    });
+
+    // Prefetch next week's data (7 days ahead)
+    const nextWeekStart = startDate + SEVEN_DAYS_IN_MS;
+    const nextWeekEnd = nextWeekStart + SEVEN_DAYS_IN_MS;
+
+    useQuery(api.queries.classInstances.getClassInstances, {
+        startDate: nextWeekStart,
+        endDate: nextWeekEnd,
     });
 
     return {

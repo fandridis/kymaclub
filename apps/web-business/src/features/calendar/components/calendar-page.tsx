@@ -35,9 +35,10 @@ interface CalendarPageProps {
     startDate: Date;
     classInstances: ClassInstance[];
     user: UserWithBusiness;
+    loading: boolean;
 }
 
-export function CalendarPage({ startDate, classInstances, user }: CalendarPageProps) {
+export function CalendarPage({ startDate, classInstances, user, loading }: CalendarPageProps) {
     const navigate = useNavigate({ from: '/calendar' });
     const isMobile = useIsMobile();
     const { state: sidebarState } = useSidebar();
@@ -118,50 +119,55 @@ export function CalendarPage({ startDate, classInstances, user }: CalendarPagePr
                     New class
                 </Button>
             </div>
-            <FullCalendar
-                ref={calendarRef}
-                initialView={isMobile ? 'timeGridWeek' : 'timeGrid'}
-                dateAlignment={isMobile ? 'day' : 'week'}
-                duration={{ days: isMobile ? 2 : 7 }}
-                plugins={[timeGridPlugin, interactionPlugin]}
-                locales={[elLocale, enGbLocale, ltLocale]}
-                locale={getLocale(i18n.language)}
-                height="100%"
-                expandRows={true}
-                allDaySlot={false}
-                initialDate={startDate}
-                events={preparedCalendarEvents}
-                editable={true}
-                selectable={true}
-                select={(info) => handleSelectTimeSlot(info.startStr)}
-                selectAllow={(selectInfo) => {
-                    // Allow only if selection is exactly one slot (30min)
-                    const { start, end } = selectInfo;
-                    const diff = end.getTime() - start.getTime();
-                    return diff === 30 * 60 * 1000;
-                }}
-                eventDrop={eventHandlers.handleEventDrop}
-                eventResize={eventHandlers.handleEventResize}
-                eventAllow={(dropInfo) => dropInfo.start.toDateString() === dropInfo.end.toDateString()}
-                slotMinTime="06:00:00"
-                slotMaxTime="24:00:00"
-                businessHours={{
-                    daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
-                    startTime: '06:00',
-                    endTime: '24:00',
-                }}
-                snapDuration="00:30:00"
-                droppable={true}
-                datesSet={(arg) => handleDatesSet(arg.start)}
-                eventContent={(eventInfo) =>
-                    <CalendarEventCard
-                        eventInfo={eventInfo}
-                        onEdit={handleEdit}
-                        onDelete={handleDeleteEvent}
-                        onViewBookings={handleViewBookings}
-                        onToggleBookings={handleToggleBookings}
-                    />}
-            />
+            <div className='w-full h-full relative'>
+                {loading && (
+                    <div className='absolute inset-0 backdrop-blur-xs z-10 flex items-center justify-center' />
+                )}
+                <FullCalendar
+                    ref={calendarRef}
+                    initialView={isMobile ? 'timeGridWeek' : 'timeGrid'}
+                    dateAlignment={isMobile ? 'day' : 'week'}
+                    duration={{ days: isMobile ? 2 : 7 }}
+                    plugins={[timeGridPlugin, interactionPlugin]}
+                    locales={[elLocale, enGbLocale, ltLocale]}
+                    locale={getLocale(i18n.language)}
+                    height="100%"
+                    expandRows={true}
+                    allDaySlot={false}
+                    initialDate={startDate}
+                    events={preparedCalendarEvents}
+                    editable={true}
+                    selectable={true}
+                    select={(info) => handleSelectTimeSlot(info.startStr)}
+                    selectAllow={(selectInfo) => {
+                        // Allow only if selection is exactly one slot (30min)
+                        const { start, end } = selectInfo;
+                        const diff = end.getTime() - start.getTime();
+                        return diff === 30 * 60 * 1000;
+                    }}
+                    eventDrop={eventHandlers.handleEventDrop}
+                    eventResize={eventHandlers.handleEventResize}
+                    eventAllow={(dropInfo) => dropInfo.start.toDateString() === dropInfo.end.toDateString()}
+                    slotMinTime="06:00:00"
+                    slotMaxTime="24:00:00"
+                    businessHours={{
+                        daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+                        startTime: '06:00',
+                        endTime: '24:00',
+                    }}
+                    snapDuration="00:30:00"
+                    droppable={true}
+                    datesSet={(arg) => handleDatesSet(arg.start)}
+                    eventContent={(eventInfo) =>
+                        <CalendarEventCard
+                            eventInfo={eventInfo}
+                            onEdit={handleEdit}
+                            onDelete={handleDeleteEvent}
+                            onViewBookings={handleViewBookings}
+                            onToggleBookings={handleToggleBookings}
+                        />}
+                />
+            </div>
 
             {/* Hover Overlay */}
             {/* {hoveredCell && (
