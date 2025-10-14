@@ -147,7 +147,7 @@ export function AISuggestionsModal({
                 <Button
                     variant="ghost"
                     size={size === "sm" ? "sm" : size === "lg" ? "lg" : "default"}
-                    className={`cursor-pointer hover:bg-purple-100 hover:text-purple-800 hover:border-purple-200 transition-colors focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 border border-purple-200 bg-purple-50/50 text-purple-800 ${className}`}
+                    className={`cursor-pointer hover:bg-purple-100 hover:border-purple-200 transition-colors focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 border border-purple-200 bg-purple-50/50 text-purple-950 ${className}`}
                     aria-label={`Open AI insights modal - ${text}`}
                 >
                     {showIcon && <Sparkles className="h-3 w-3 mr-1" aria-hidden="true" />}
@@ -155,11 +155,11 @@ export function AISuggestionsModal({
                 </Button>
             </DialogTrigger>
 
-            <DialogContent className="w-full max-w-xl max-h-[85vh] overflow-y-auto">
+            <DialogContent className="w-full max-w-3xl md:max-w-3xl max-h-[85vh] overflow-y-auto">
                 <DialogHeader className="pb-6">
                     <div className="flex items-center gap-2">
                         <Sparkles className="h-5 w-5 text-purple-600" />
-                        <DialogTitle className="text-xl font-semibold text-purple-900">
+                        <DialogTitle className="text-xl font-semibold text-purple-950">
                             AI Insights
                         </DialogTitle>
                         <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200">
@@ -176,7 +176,7 @@ export function AISuggestionsModal({
                     <section className="space-y-4" aria-labelledby="positives-heading">
                         <div className="flex items-center gap-2">
                             <TrendingUp className="h-5 w-5 text-emerald-600" aria-hidden="true" />
-                            <h2 id="positives-heading" className="font-semibold text-emerald-900 text-lg">What's Working Well</h2>
+                            <h2 id="positives-heading" className="font-semibold text-emerald-950 text-lg">What's Working Well</h2>
                         </div>
                         <div className="grid gap-4">
                             {data.positives.map((item) => (
@@ -184,7 +184,7 @@ export function AISuggestionsModal({
                                     {getIcon(item.type)}
                                     <div className="flex-1 space-y-2">
                                         <div className="flex items-center gap-2">
-                                            <p className="font-medium text-base text-emerald-900">{item.title}</p>
+                                            <p className="font-medium text-base text-emerald-950">{item.title}</p>
                                             {item.confidence && (
                                                 <Badge variant="outline" className={`text-xs ${getBadgeColor(item.type)}`}>
                                                     {item.confidence}% confidence
@@ -204,7 +204,7 @@ export function AISuggestionsModal({
                     <section className="space-y-4" aria-labelledby="pain-points-heading">
                         <div className="flex items-center gap-2">
                             <AlertTriangle className="h-5 w-5 text-amber-600" aria-hidden="true" />
-                            <h2 id="pain-points-heading" className="font-semibold text-amber-900 text-lg">Areas for Improvement</h2>
+                            <h2 id="pain-points-heading" className="font-semibold text-amber-950 text-lg">Areas for Improvement</h2>
                         </div>
                         <div className="grid gap-4">
                             {data.painPoints.map((item) => (
@@ -212,7 +212,7 @@ export function AISuggestionsModal({
                                     {getIcon(item.type)}
                                     <div className="flex-1 space-y-2">
                                         <div className="flex items-center gap-2">
-                                            <p className="font-medium text-base text-amber-900">{item.title}</p>
+                                            <p className="font-medium text-base text-amber-950">{item.title}</p>
                                             {item.confidence && (
                                                 <Badge variant="outline" className={`text-xs ${getBadgeColor(item.type)}`}>
                                                     {item.confidence}% confidence
@@ -232,7 +232,7 @@ export function AISuggestionsModal({
                     <section className="space-y-4" aria-labelledby="suggestions-heading">
                         <div className="flex items-center gap-2">
                             <Lightbulb className="h-5 w-5 text-blue-600" aria-hidden="true" />
-                            <h2 id="suggestions-heading" className="font-semibold text-blue-900 text-lg">Recommended Actions</h2>
+                            <h2 id="suggestions-heading" className="font-semibold text-blue-950 text-lg">Recommended Actions</h2>
                         </div>
                         <div className="grid gap-4">
                             {data.suggestions.map((item) => (
@@ -240,7 +240,7 @@ export function AISuggestionsModal({
                                     {getIcon(item.type)}
                                     <div className="flex-1 space-y-2">
                                         <div className="flex items-center gap-2">
-                                            <p className="font-medium text-base text-blue-900">{item.title}</p>
+                                            <p className="font-medium text-base text-blue-950">{item.title}</p>
                                             {item.confidence && (
                                                 <Badge variant="outline" className={`text-xs ${getBadgeColor(item.type)}`}>
                                                     {item.confidence}% confidence

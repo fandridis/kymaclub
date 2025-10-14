@@ -95,7 +95,7 @@ export function UpcomingClasses({ className }: UpcomingClassesProps) {
             <div className={cn("space-y-8", className)}>
                 {sections.map(([date, classes]) => (
                     <div key={date} className="space-y-4">
-                        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-2">
+                        <div className="sticky top-0 z-10 pb-2 bg-white">
                             <div className="flex items-center gap-3">
                                 <h2 className="text-sm font-semibold tracking-tight">{date}</h2>
                                 <div className="h-px flex-1 bg-border" />

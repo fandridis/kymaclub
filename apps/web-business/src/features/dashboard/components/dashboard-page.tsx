@@ -6,6 +6,7 @@ import {
     CreditCard,
     LineChart,
     Star,
+    Eye,
 } from "lucide-react";
 import { ClassBookingsDialog } from "@/features/bookings/components/class-bookings-dialog";
 import type { Doc } from "@repo/api/convex/_generated/dataModel";
@@ -14,34 +15,11 @@ import { MinimalStatCard } from "./minimal-stat-card";
 import { MinimalSection } from "./minimal-section";
 import { AISuggestionsModal } from "@/components/ai-suggestions-modal";
 import { useDashboardMetrics } from "../hooks/use-dashboard-metrics";
+import { useBusinessReviews } from "@/hooks/use-business-reviews";
+import { useAuthStore } from "@/components/stores/auth";
+import { Button } from "@/components/ui/button";
+import { formatDistanceToNow } from "date-fns";
 
-
-const memberFeedback = [
-    {
-        id: 1,
-        member: "Eleni P.",
-        className: "Morning Flow",
-        rating: 5,
-        comment: "Loved the adjustments today!",
-        submitted: "1 hour ago",
-    },
-    {
-        id: 2,
-        member: "Giorgos M.",
-        className: "Power Cycle",
-        rating: 4,
-        comment: "Great energy, could use cooler air earlier.",
-        submitted: "Yesterday",
-    },
-    {
-        id: 3,
-        member: "Nadia T.",
-        className: "Reformer Foundations",
-        rating: 5,
-        comment: "Instructor explained every move clearly.",
-        submitted: "2 days ago",
-    },
-];
 
 export default function DashboardPage() {
     const [bookingsDialog, setBookingsDialog] = useState<{
@@ -50,7 +28,11 @@ export default function DashboardPage() {
         bookings: Doc<"bookings">[]
     } | null>(null);
 
+    const { user } = useAuthStore();
+    const businessId = user?.businessId || null;
+
     const { metrics, isLoading } = useDashboardMetrics();
+    const { reviews, isLoading: reviewsLoading } = useBusinessReviews(businessId, 10);
 
     // Create stat cards from real metrics data
     const statCards = metrics ? [
@@ -89,7 +71,7 @@ export default function DashboardPage() {
     ] : [];
 
     // Show loading skeleton when loading
-    if (isLoading) {
+    if (isLoading || reviewsLoading) {
         return (
             <div className="space-y-8 pb-8">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -155,29 +137,49 @@ export default function DashboardPage() {
                 <MinimalSection
                     title="Member feedback"
                     description="Celebrate wins and discover improvement opportunities"
-                    headerAction={<AISuggestionsModal size="sm" text="AI Insights" />}
+                    headerAction={
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => {/* TODO: Open reviews modal */ }}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View All
+                            </Button>
+                            <AISuggestionsModal size="sm" text="Insights" />
+                        </div>
+                    }
                     className="max-h-[70vh] overflow-y-auto"
                 >
                     <div className="space-y-4">
-                        {memberFeedback.map((feedback) => (
-                            <div key={feedback.id} className="rounded-lg border border-muted shadow-sm p-4 hover:shadow-md transition-all">
-                                <div className="flex items-center justify-between text-sm font-medium">
-                                    <span>{feedback.member}</span>
-                                    <span className="text-muted-foreground text-xs">{feedback.submitted}</span>
-                                </div>
-                                <p className="text-sm text-muted-foreground">{feedback.className}</p>
-                                <div className="mt-2 flex items-center gap-1">
-                                    {Array.from({ length: 5 }).map((_, index) => (
-                                        <Star
-                                            key={index}
-                                            className={`h-3.5 w-3.5 ${index < feedback.rating ? "fill-amber-500 text-amber-500" : "text-muted-foreground"}`}
-                                            aria-hidden="true"
-                                        />
-                                    ))}
-                                </div>
-                                <p className="mt-2 text-sm">{feedback.comment}</p>
+                        {reviews.length === 0 ? (
+                            <div className="text-center py-8 text-muted-foreground">
+                                <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                <p>No reviews yet</p>
+                                <p className="text-sm">Reviews will appear here once customers start rating your venues</p>
                             </div>
-                        ))}
+                        ) : (
+                            reviews.map((review) => (
+                                <div key={review._id} className="rounded-lg border border-muted shadow-sm p-4 hover:shadow-md transition-all">
+                                    <div className="flex items-center justify-between text-sm font-medium">
+                                        <span>{review.userSnapshot.name || 'Anonymous'}</span>
+                                        <span className="text-muted-foreground text-xs">
+                                            {formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">{review.venueSnapshot.name}</p>
+                                    <div className="mt-2 flex items-center gap-1">
+                                        {Array.from({ length: 5 }).map((_, index) => (
+                                            <Star
+                                                key={index}
+                                                className={`h-3.5 w-3.5 ${index < review.rating ? "fill-amber-500 text-amber-500" : "text-muted-foreground"}`}
+                                                aria-hidden="true"
+                                            />
+                                        ))}
+                                    </div>
+                                    {review.comment && (
+                                        <p className="mt-2 text-sm">{review.comment}</p>
+                                    )}
+                                </div>
+                            ))
+                        )}
                     </div>
                 </MinimalSection>
             </div>

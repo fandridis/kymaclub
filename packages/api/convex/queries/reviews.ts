@@ -102,6 +102,33 @@ export const getVenueRatingSummary = query({
 });
 
 /***************************************************************
+ * Get Reviews for All Venues of a Business
+ ***************************************************************/
+export const getBusinessReviews = query({
+  args: {
+    businessId: v.id("businesses"),
+    limit: v.optional(v.number())
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.min(args.limit || 10, 50); // Max 50 reviews per request
+
+    const reviews = await ctx.db
+      .query("venueReviews")
+      .withIndex("by_business_created", (q) =>
+        q.eq("businessId", args.businessId)
+      )
+      .filter((q) => q.and(
+        q.eq(q.field("deleted"), false),
+        q.eq(q.field("isVisible"), true)
+      ))
+      .order("desc") // Most recent first
+      .take(limit);
+
+    return reviews;
+  }
+});
+
+/***************************************************************
  * Get Review by ID (Internal)
  ***************************************************************/
 export const getReviewById = internalQuery({
