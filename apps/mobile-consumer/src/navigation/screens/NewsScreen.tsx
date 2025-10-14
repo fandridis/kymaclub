@@ -445,7 +445,7 @@ export function NewsScreen() {
             <SafeAreaView style={styles.container}>
                 <TabScreenHeader
                     title={t('welcome.title')}
-                    subtitle="Discover amazing fitness classes"
+                    //subtitle="Discover amazing fitness classes"
                     renderRightSide={() => (
                         <TouchableOpacity
                             onPress={() => navigation.navigate('Settings')}
@@ -467,7 +467,7 @@ export function NewsScreen() {
         <SafeAreaView style={styles.container}>
             <TabScreenHeader
                 title={t('welcome.title')}
-                subtitle="Discover amazing fitness classes"
+                // subtitle="Discover amazing fitness classes"
                 renderRightSide={() => (
                     <TouchableOpacity
                         onPress={() => navigation.navigate('Settings')}

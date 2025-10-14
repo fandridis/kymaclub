@@ -422,7 +422,6 @@ export const bookingService = {
 
         // Load instance and template
         const instance = await ctx.db.get(args.classInstanceId);
-        console.log('gg instance', instance?.deleted, instance?.deletedAt);
 
         if (!instance || instance.deleted) {
             throw new ConvexError({

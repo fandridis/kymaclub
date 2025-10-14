@@ -131,6 +131,10 @@ export const getDashboardMetrics = query({
             change: v.number(),
             isPositive: v.boolean(),
         }),
+        allTimeEarnings: v.object({
+            gross: v.number(),
+            net: v.number(),
+        }),
         attendanceRate: v.object({
             percentage: v.number(),
             attended: v.number(),
@@ -142,12 +146,6 @@ export const getDashboardMetrics = query({
     handler: async (ctx, args) => {
         // Authenticate and validate business access
         const user = await getAuthenticatedUserOrThrow(ctx);
-
-        // Validate business access
-        const business = await ctx.db.get(args.businessId);
-        if (!business || business.createdBy !== user._id) {
-            throw new Error("Business not found or access denied");
-        }
 
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -163,6 +161,12 @@ export const getDashboardMetrics = query({
         const startOfPreviousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
         const endOfPreviousMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 
+        // Get business creation date for all-time earnings calculation
+        const business = await ctx.db.get(args.businessId);
+        if (!business || business.createdBy !== user._id) {
+            throw new Error("Business not found or access denied");
+        }
+
         // Parallel queries for all metrics
         const [
             checkInsToday,
@@ -171,6 +175,7 @@ export const getDashboardMetrics = query({
             previousMonthBookings,
             currentMonthEarnings,
             previousMonthEarnings,
+            allTimeBookings,
             latestCompletedInstances,
             previousCompletedInstances
         ] = await Promise.all([
@@ -237,6 +242,19 @@ export const getDashboardMetrics = query({
             // Previous month earnings
             getMonthEarningsData(ctx, args.businessId,
                 `${now.getFullYear()}-${String(now.getMonth()).padStart(2, '0')}`),
+
+            // All-time earnings (from business creation to now)
+            ctx.db
+                .query("bookings")
+                .withIndex("by_business_created", (q) =>
+                    q.eq("businessId", args.businessId)
+                        .gte("createdAt", business.createdAt)
+                )
+                .filter((q) => q.and(
+                    q.eq(q.field("status"), "completed"),
+                    q.neq(q.field("deleted"), true)
+                ))
+                .collect(),
 
             // Latest 100 completed class instances for attendance rate
             ctx.db
@@ -305,6 +323,14 @@ export const getDashboardMetrics = query({
 
         const attendanceChange = calculatePercentageChange(latestAttendanceRate, previousAttendanceRate);
 
+        // Calculate all-time earnings
+        const allTimeGrossEarnings = allTimeBookings.reduce(
+            (sum, booking) => sum + booking.finalPrice,
+            0
+        );
+        const systemCutRate = 0.20;
+        const allTimeNetEarnings = allTimeGrossEarnings - Math.round(allTimeGrossEarnings * systemCutRate);
+
         return {
             checkInsToday: {
                 count: checkInsTodayCount,
@@ -321,6 +347,10 @@ export const getDashboardMetrics = query({
                 net: currentMonthEarnings.totalNetEarnings,
                 change: monthlyRevenueChange.change,
                 isPositive: monthlyRevenueChange.isPositive,
+            },
+            allTimeEarnings: {
+                gross: allTimeGrossEarnings,
+                net: allTimeNetEarnings,
             },
             attendanceRate: {
                 percentage: latestAttendanceRate,

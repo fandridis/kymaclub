@@ -1,15 +1,12 @@
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import {
     Activity,
     CalendarCheck,
-    CalendarClock,
     CreditCard,
     LineChart,
-    MessageSquare,
     Star,
 } from "lucide-react";
 import { ClassBookingsDialog } from "@/features/bookings/components/class-bookings-dialog";
@@ -144,17 +141,6 @@ export default function DashboardPage() {
                         Track your studio performance, act on today's priorities, and spot opportunities at a glance.
                     </p>
                 </div>
-
-                <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm">
-                        <CalendarClock className="h-4 w-4" />
-                        View calendar
-                    </Button>
-                    <Button size="sm">
-                        <MessageSquare className="h-4 w-4" />
-                        New announcement
-                    </Button>
-                </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -181,8 +167,8 @@ export default function DashboardPage() {
                 </MinimalSection>
 
                 <MinimalSection
-                    title="Revenue & capacity"
-                    description="Monitor cash flow and occupancy goals"
+                    title="Earnings overview"
+                    description="Track your monthly and all-time revenue"
                     className="max-h-[70vh] overflow-y-auto"
                 >
                     <div className="space-y-6">
@@ -190,14 +176,14 @@ export default function DashboardPage() {
                             {metrics && (
                                 <>
                                     <div className="rounded-lg border border-muted shadow-sm p-4">
-                                        <p className="text-sm text-muted-foreground">Net earnings</p>
+                                        <p className="text-sm text-muted-foreground">Monthly earnings</p>
                                         <p className="text-2xl font-semibold mt-1">€{(metrics.monthlyRevenue.net / 100).toFixed(2)}</p>
-                                        <p className="text-xs text-muted-foreground mt-1">After 20% platform fee</p>
+                                        <p className="text-xs text-muted-foreground mt-1">Your revenue this month</p>
                                     </div>
                                     <div className="rounded-lg border border-muted shadow-sm p-4">
-                                        <p className="text-sm text-muted-foreground">Gross revenue</p>
-                                        <p className="text-2xl font-semibold mt-1">€{(metrics.monthlyRevenue.gross / 100).toFixed(2)}</p>
-                                        <p className="text-xs text-muted-foreground mt-1">Before platform fee</p>
+                                        <p className="text-sm text-muted-foreground">All-time earnings</p>
+                                        <p className="text-2xl font-semibold mt-1">€{(metrics.allTimeEarnings.net / 100).toFixed(2)}</p>
+                                        <p className="text-xs text-muted-foreground mt-1">Total lifetime revenue</p>
                                     </div>
                                 </>
                             )}

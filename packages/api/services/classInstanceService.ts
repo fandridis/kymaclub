@@ -228,8 +228,6 @@ export const classInstanceService = {
             );
         }
 
-        console.log('bookingsAffected: ', bookingsAffected);
-
         return { updatedInstanceId: args.instanceId, bookingsAffected };
     },
 

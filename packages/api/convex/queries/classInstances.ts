@@ -251,8 +251,6 @@ export const getBestOffersClassInstances = query({
             .order("asc") // Order by start time initially
             .take(limit);
 
-        console.log('gg1 instances', instances);
-
         const discountedInstances = [];
 
         for (const instance of instances) {
