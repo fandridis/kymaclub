@@ -1,5 +1,4 @@
 import { Card } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import type { Doc } from "@repo/api/convex/_generated/dataModel"
 import { TEMPLATE_COLORS_MAP } from "@/utils/colors"
@@ -9,7 +8,6 @@ interface Booking {
     id: string
     user: {
         name: string
-        avatar?: string
     }
     status: string
 }
@@ -19,7 +17,6 @@ interface ClassBookingRowProps {
     instructor: string
     date?: string
     time: string
-    location: string
     bookings: Booking[]
     maxCapacity: number
     onClick?: () => void
@@ -30,7 +27,6 @@ export function ClassBookingRow({
     instructor,
     date,
     time,
-    location,
     bookings,
     maxCapacity,
     onClick,
@@ -90,30 +86,9 @@ export function ClassBookingRow({
 
                 {/* Middle Column - Class Details */}
                 <div className="flex-1 min-w-0">
-                    <div className="mb-2">
+                    <div>
                         <h3 className="font-semibold text-lg leading-tight">{classInstance.templateSnapshot?.name}</h3>
                         <p className="text-sm">with {instructor}</p>
-                    </div>
-
-                    {/* Avatars - Show only pending bookings */}
-                    <div className="flex -space-x-2">
-                        {pendingBookings.slice(0, 4).map((booking) => (
-                            <Avatar key={booking.id} className="h-8 w-8 border-2 border-background">
-                                <AvatarImage src={booking.user.avatar || "/placeholder.svg"} alt={booking.user.name} />
-                                <AvatarFallback className="text-xs">
-                                    {booking.user.name
-                                        .split(" ")
-                                        .map((n) => n[0])
-                                        .join("")
-                                        .toUpperCase()}
-                                </AvatarFallback>
-                            </Avatar>
-                        ))}
-                        {pendingCount > 4 && (
-                            <div className="h-8 w-8 rounded-full bg-muted border-2 border-background flex items-center justify-center">
-                                <span className="text-xs text-muted-foreground font-medium">+{pendingCount - 4}</span>
-                            </div>
-                        )}
                     </div>
                 </div>
 

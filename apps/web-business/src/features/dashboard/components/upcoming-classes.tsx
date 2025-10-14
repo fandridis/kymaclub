@@ -14,7 +14,6 @@ interface Booking {
     id: string
     user: {
         name: string
-        avatar?: string
     }
     status: string
 }
@@ -96,10 +95,12 @@ export function UpcomingClasses({ className }: UpcomingClassesProps) {
             <div className={cn("space-y-8", className)}>
                 {sections.map(([date, classes]) => (
                     <div key={date} className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <h2 className="text-sm font-semibold tracking-tight">{date}</h2>
-                            <div className="h-px flex-1 bg-border" />
-                            <span className="text-sm text-muted-foreground">{classes.length} {classes.length === 1 ? 'class' : 'classes'}</span>
+                        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-2">
+                            <div className="flex items-center gap-3">
+                                <h2 className="text-sm font-semibold tracking-tight">{date}</h2>
+                                <div className="h-px flex-1 bg-border" />
+                                <span className="text-sm text-muted-foreground">{classes.length} {classes.length === 1 ? 'class' : 'classes'}</span>
+                            </div>
                         </div>
 
                         <div className="grid gap-4">
@@ -108,17 +109,13 @@ export function UpcomingClasses({ className }: UpcomingClassesProps) {
                                 const instructor = classInstance.instructor || 'TBD'
                                 const dateStr = formatDate(new Date(classInstance.startTime))
                                 const timeStr = formatTime(classInstance.startTime)
-                                const location = classInstance.venueSnapshot?.address ?
-                                    `${classInstance.venueSnapshot.address.street}, ${classInstance.venueSnapshot.address.city}` :
-                                    'Location TBD'
                                 const maxCapacity = classInstance.capacity || 0
 
                                 // Transform bookings to match the new interface
                                 const transformedBookings: Booking[] = (bookings || []).map(booking => ({
                                     id: booking._id || Math.random().toString(),
                                     user: {
-                                        name: booking.userSnapshot?.name || 'Unknown User',
-                                        avatar: undefined // userSnapshot doesn't have avatar field
+                                        name: booking.userSnapshot?.name || 'Unknown User'
                                     },
                                     status: booking.status || 'pending'
                                 }))
@@ -134,7 +131,6 @@ export function UpcomingClasses({ className }: UpcomingClassesProps) {
                                             instructor={instructor}
                                             date={dateStr}
                                             time={timeStr}
-                                            location={location}
                                             bookings={transformedBookings}
                                             maxCapacity={maxCapacity}
                                         />
