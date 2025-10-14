@@ -174,11 +174,9 @@ export const removeAllSessions = mutation({
     args: {},
     handler: async (ctx) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
-        console.log("removeAllSessions", user._id);
         // remove all records from authSessions table with column userId equal to user._id
         // first find them and then delete
         const sessions = await ctx.db.query("authSessions").withIndex("userId", q => q.eq("userId", user._id)).collect();
-        console.log("sessions found", sessions.length);
 
         for (const session of sessions) {
             await ctx.db.delete(session._id);

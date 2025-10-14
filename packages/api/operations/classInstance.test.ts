@@ -184,9 +184,10 @@ describe('Class Instance Operations - Safety Tests', () => {
       imageStorageIds: ["img_1", "img_2"] as any,
       discountRules: [
         {
-          type: "early_bird" as const,
-          hoursBeforeClass: 48,
-          discountPercentage: 10
+          id: "early-bird",
+          name: "Early Bird Special",
+          condition: { type: "hours_before_min" as const, hours: 48 },
+          discount: { type: "fixed_amount" as const, value: 150 }
         }
       ],
       primaryCategory: 'wellness_center' as any,

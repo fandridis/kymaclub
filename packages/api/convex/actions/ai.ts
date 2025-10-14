@@ -33,8 +33,6 @@ export const validateUserVenueReview = internalAction({
 export const testProbabilityThresholds = internalAction({
     args: {},
     handler: async (ctx, args) => {
-        console.log("Testing simplified probability threshold logic...");
-
         const testCases = [
             { probabilityToBeBad: 0.1, expected: "auto_approved" },
             { probabilityToBeBad: 0.3, expected: "auto_approved" },

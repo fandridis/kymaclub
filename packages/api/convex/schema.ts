@@ -1031,7 +1031,9 @@ export default defineSchema({
     // 🚀 GLOBAL CONSUMER QUERY OPTIMIZATION - eliminates expensive filters
     .index("by_status_deleted_start_time", ["status", "deleted", "startTime"])
     // 🎯 DISCOUNT OPTIMIZATION - only fetch instances with discount rules
-    .index("by_status_deleted_hasDiscountRules_start_time", ["status", "deleted", "hasDiscountRules", "startTime"]),
+    .index("by_status_deleted_hasDiscountRules_start_time", ["status", "deleted", "hasDiscountRules", "startTime"])
+    // 🏁 CLASS COMPLETION OPTIMIZATION - efficient queries for classes that have ended
+    .index("by_status_deleted_end_time", ["status", "deleted", "endTime"]),
 
   /** 
    * Bookings - customer reservations for class instances (simplified)

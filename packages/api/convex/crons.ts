@@ -22,6 +22,24 @@ crons.interval(
     {}
 );
 
+/**
+ * Mark Classes Completed - Runs every hour
+ * 
+ * Finds all scheduled classes that ended more than 2 hours ago
+ * and marks them as completed.
+ * 
+ * The 2-hour grace period allows time for late check-ins and gives
+ * businesses a window to handle any final administrative tasks.
+ * This runs hourly to ensure timely completion without managing
+ * individual scheduled jobs per class.
+ */
+crons.interval(
+    "mark-classes-completed",
+    { hours: 1 },
+    internal.crons.markClassesCompleted,
+    {}
+);
+
 
 /**
  * Mark No-Shows Internal Mutation
@@ -54,7 +72,6 @@ export const markNoShows = internalMutation({
 
         console.log(`[No-Show Cron] Found ${recentBookings.length} pending bookings to check for no-shows`);
 
-        console.log('Grace period: ', GRACE_PERIOD_MS);
         let markedCount = 0;
 
         for (const booking of recentBookings) {
@@ -86,6 +103,61 @@ export const markNoShows = internalMutation({
 
         // Log for monitoring
         console.log(`[No-Show Cron] Marked ${markedCount} bookings as no-show`);
+
+        return null;
+    },
+});
+
+/**
+ * Mark Classes Completed Internal Mutation
+ * 
+ * Efficiently finds and marks completed classes by:
+ * 1. Only checking classes from the last 3 days (optimization)
+ * 2. Only processing scheduled classes
+ * 3. Checking if 2 hours have passed since class end
+ */
+export const markClassesCompleted = internalMutation({
+    args: {},
+    returns: v.null(),
+    handler: async (ctx, args) => {
+        const now = Date.now();
+        const GRACE_PERIOD_MS = 2 * 60 * 60 * 1000; // 2 hours after class end
+        const THREE_DAYS_AGO = now - (3 * 24 * 60 * 60 * 1000); // Only check last 3 days for efficiency
+
+        console.log(`[Class Completion Cron] Marking completed classes from the last 3 days`);
+
+        // Get all scheduled classes from the last 3 days using efficient compound index
+        // This avoids scanning the entire classInstances table by leveraging the index
+        const recentClasses = await ctx.db
+            .query("classInstances")
+            .withIndex("by_status_deleted_end_time", q =>
+                q
+                    .eq("status", "scheduled")
+                    .eq("deleted", undefined)
+                    .gt("endTime", THREE_DAYS_AGO)
+            )
+            .collect();
+
+        console.log(`[Class Completion Cron] Found ${recentClasses.length} scheduled classes to check`);
+
+        let completedCount = 0;
+
+        for (const classInstance of recentClasses) {
+            const completionCutoff = classInstance.endTime + GRACE_PERIOD_MS;
+
+            // If current time is past the grace period, mark as completed
+            if (now > completionCutoff) {
+                await ctx.db.patch(classInstance._id, {
+                    status: "completed",
+                    updatedAt: now,
+                });
+
+                completedCount++;
+            }
+        }
+
+        // Log for monitoring
+        console.log(`[Class Completion Cron] Marked ${completedCount} classes as completed`);
 
         return null;
     },
