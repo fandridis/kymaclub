@@ -494,7 +494,6 @@ export function NewsScreen() {
                 {upcomingClasses.length > 0 ? (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Your Schedule</Text>
-                        <Text style={styles.sectionSubtitle}>Here's what you've got coming up.</Text>
                         <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}
@@ -543,7 +542,6 @@ export function NewsScreen() {
                 ) : (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Your Schedule</Text>
-                        <Text style={styles.sectionSubtitle}>Here's what you've got coming up.</Text>
                         <NoUpcomingClassesMessage onExplorePress={handleExplorePress} />
                     </View>
                 )}
@@ -552,7 +550,6 @@ export function NewsScreen() {
                 {startingSoonClasses.length > 0 && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Starting Soon</Text>
-                        <Text style={styles.sectionSubtitle}>Classes starting in the next 4 hours</Text>
                         <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}
@@ -679,7 +676,6 @@ export function NewsScreen() {
                 {bestOffersClasses.length > 0 && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Best Offers</Text>
-                        <Text style={styles.sectionSubtitle}>Biggest discounts available right now</Text>
                         <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}
@@ -785,7 +781,6 @@ export function NewsScreen() {
                 {newVenuesForCards.length > 0 && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>New studios</Text>
-                        <Text style={styles.sectionSubtitle}>The latest additions to the Kyma network.</Text>
                         <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}

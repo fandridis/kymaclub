@@ -271,6 +271,7 @@ export const getBestOffersClassInstances = query({
                     status: instance.status,
                     color: instance.color,
                     disableBookings: instance.disableBookings,
+                    bookingWindow: instance.bookingWindow,
                     // Minimal snapshots with image data
                     templateSnapshot: {
                         name: instance.templateSnapshot.name,
@@ -331,6 +332,10 @@ export const getStartingSoonClassInstances = query({
         status: v.string(),
         color: v.optional(v.string()),
         disableBookings: v.optional(v.boolean()),
+        bookingWindow: v.optional(v.object({
+            minHours: v.number(),
+            maxHours: v.number(),
+        })),
         templateSnapshot: v.object({
             name: v.string(),
             instructor: v.optional(v.string()),
@@ -384,6 +389,7 @@ export const getStartingSoonClassInstances = query({
                 status: instance.status,
                 color: instance.color,
                 disableBookings: instance.disableBookings,
+                bookingWindow: instance.bookingWindow,
                 templateSnapshot: {
                     name: instance.templateSnapshot.name,
                     instructor: instance.templateSnapshot.instructor,
