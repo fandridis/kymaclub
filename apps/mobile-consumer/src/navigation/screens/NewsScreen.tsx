@@ -29,42 +29,6 @@ const SECTION_PADDING = 12; // Horizontal padding for sections
 
 const CAROUSEL_ITEM_WIDTH = (screenWidth - (SECTION_PADDING * 2)) / 1.40;
 
-/**
- * Helper function to check if a class instance can be booked
- * @param instance - The class instance to check
- * @param currentTime - Current timestamp in milliseconds
- * @returns true if the class can be booked, false otherwise
- */
-const canBookClass = (instance: any, currentTime: number): boolean => {
-    // Check if bookings are disabled
-    if (instance.disableBookings === true) {
-        return false;
-    }
-
-    // Check if class has already started
-    if (instance.startTime <= currentTime) {
-        return false;
-    }
-
-    // Check booking window if it exists
-    if (instance.bookingWindow) {
-        const timeUntilStartMs = instance.startTime - currentTime;
-        const hoursUntilStart = timeUntilStartMs / (1000 * 60 * 60);
-
-        // Too late to book (within minimum advance time)
-        if (hoursUntilStart < instance.bookingWindow.minHours) {
-            return false;
-        }
-
-        // Too early to book (beyond maximum advance time)
-        if (hoursUntilStart > instance.bookingWindow.maxHours) {
-            return false;
-        }
-    }
-
-    return true;
-};
-
 const WelcomeBanner = ({
     onDismiss,
     onExplore
@@ -118,6 +82,11 @@ export function NewsScreen() {
     const now = useCurrentTime();
     const next4Hours = useMemo(() => new Date(now.getTime() + (4 * 60 * 60 * 1000)), [now]);
     const next24Hours = useMemo(() => new Date(now.getTime() + (24 * 60 * 60 * 1000)), [now]);
+    const endOfToday = useMemo(() => {
+        const end = new Date(now);
+        end.setHours(23, 59, 59, 999);
+        return end;
+    }, [now]);
 
     // Query for user settings to check if welcome banner was dismissed
     // TODO: Update to use api.queries.settings.getUserSettings once API is regenerated
@@ -136,12 +105,12 @@ export function NewsScreen() {
         user ? { daysAhead: 7 } : "skip"
     );
 
-    // Query for starting soon classes (next 4 hours)
-    const startingSoonInstances = useQuery(
-        api.queries.classInstances.getStartingSoonClassInstances,
+    // Query for happening today classes (until midnight)
+    const happeningTodayInstances = useQuery(
+        api.queries.classInstances.getHappeningTodayClassInstances,
         {
             startDate: now.getTime(),
-            endDate: next4Hours.getTime(),
+            endDate: endOfToday.getTime(),
         }
     );
 
@@ -192,12 +161,12 @@ export function NewsScreen() {
             }
         });
 
-        startingSoonInstances?.forEach(instance => {
-            if (instance.templateSnapshot?.imageStorageIds) {
-                ids.push(...instance.templateSnapshot.imageStorageIds);
+        happeningTodayInstances?.forEach(instance => {
+            if (instance.templateImageId) {
+                ids.push(instance.templateImageId);
             }
-            if (instance.venueSnapshot?.imageStorageIds) {
-                ids.push(...instance.venueSnapshot.imageStorageIds);
+            if (instance.venueImageId) {
+                ids.push(instance.venueImageId);
             }
         });
 
@@ -211,7 +180,7 @@ export function NewsScreen() {
         });
 
         return [...new Set(ids)];
-    }, [upcomingClassInstances, startingSoonInstances, bestOffersInstances]);
+    }, [upcomingClassInstances, happeningTodayInstances, bestOffersInstances]);
 
     // Fetch image URLs
     const classImageUrlsQuery = useQuery(
@@ -312,23 +281,24 @@ export function NewsScreen() {
             .sort((a, b) => (a.startTime || 0) - (b.startTime || 0));
     }, [userBookings, upcomingClassInstances, combinedStorageIdToUrl, now]);
 
-    // Process starting soon classes
-    const startingSoonClasses = useMemo(() => {
-        const instancesData = startingSoonInstances || [];
+    // Process happening today classes
+    const happeningTodayClasses = useMemo(() => {
+        const instancesData = happeningTodayInstances || [];
         if (!instancesData.length) return [];
 
         return instancesData
-            .filter(instance => canBookClass(instance, now.getTime()))
             .slice(0, 10)
             .map(instance => {
                 const timeUntilStartMs = instance.startTime - now.getTime();
                 const timeUntilStartHours = Math.floor(timeUntilStartMs / (1000 * 60 * 60));
                 const timeUntilStartMinutes = Math.floor((timeUntilStartMs % (1000 * 60 * 60)) / (1000 * 60));
 
-                const templateImageId = instance.templateSnapshot?.imageStorageIds?.[0];
-                const venueImageId = instance.venueSnapshot?.imageStorageIds?.[0];
-                const imageUrl = templateImageId ? combinedStorageIdToUrl.get(templateImageId) :
-                    venueImageId ? combinedStorageIdToUrl.get(venueImageId) : null;
+                // Simplified image URL logic
+                const imageUrl = instance.templateImageId
+                    ? combinedStorageIdToUrl.get(instance.templateImageId)
+                    : instance.venueImageId
+                        ? combinedStorageIdToUrl.get(instance.venueImageId)
+                        : null;
 
                 let timeDisplay = '';
                 if (timeUntilStartHours > 0) {
@@ -345,16 +315,16 @@ export function NewsScreen() {
                     subtitle: timeDisplay,
                     originalPrice: `${centsToCredits(instance.pricing.originalPrice)}`,
                     discountedPrice: `${centsToCredits(instance.pricing.finalPrice)}`,
-                    discountPercentage: instance.discountPercentage > 0 ? `${instance.discountPercentage}%` : null,
-                    venueName: instance.venueSnapshot?.name,
-                    venueCity: instance.venueSnapshot?.address?.city,
-                    instructor: instance.templateSnapshot?.instructor,
+                    discountPercentage: instance.pricing.discountPercentage > 0 ? `${Math.round(instance.pricing.discountPercentage * 100)}%` : null,
+                    venueName: instance.venueName,
+                    venueCity: instance.venueCity,
+                    instructor: instance.instructor,
                     imageUrl,
                     startTime: instance.startTime,
                     classInstanceId: instance._id,
                 };
             });
-    }, [startingSoonInstances, now, combinedStorageIdToUrl]);
+    }, [happeningTodayInstances, now, combinedStorageIdToUrl]);
 
     // Process best offers
     const bestOffersClasses = useMemo(() => {
@@ -362,7 +332,6 @@ export function NewsScreen() {
         if (!instancesData.length) return [];
 
         return instancesData
-            .filter(instance => canBookClass(instance, now.getTime()))
             .slice(0, 10)
             .map(instance => {
                 const templateImageId = instance.templateSnapshot?.imageStorageIds?.[0];
@@ -435,7 +404,7 @@ export function NewsScreen() {
     // Loading state
     const isInitialLoading = user && (
         userBookings === undefined &&
-        startingSoonInstances === undefined &&
+        happeningTodayInstances === undefined &&
         bestOffersInstances === undefined &&
         (allVenues === undefined || venuesLoading)
     );
@@ -546,16 +515,16 @@ export function NewsScreen() {
                     </View>
                 )}
 
-                {/* Starting Soon Section */}
-                {startingSoonClasses.length > 0 && (
+                {/* Happening Today Section */}
+                {happeningTodayClasses.length > 0 && (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Starting Soon</Text>
+                        <Text style={styles.sectionTitle}>Happening Today</Text>
                         <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}
                             contentContainerStyle={styles.carouselScrollContent}
                         >
-                            {startingSoonClasses.map((item) => {
+                            {happeningTodayClasses.map((item) => {
                                 const discountBadge = item.discountPercentage ? `-${item.discountPercentage}` : null;
 
                                 const subtitleText = item.instructor

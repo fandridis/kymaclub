@@ -305,60 +305,71 @@ export const getBestOffersClassInstances = query({
 });
 
 /***************************************************************
- * Get Starting Soon Class Instances
+ * Get Happening Today Class Instances
  * 
- * Returns class instances starting within the next 4 hours,
- * ordered by start time (earliest first). Includes all classes
- * regardless of discount status for maximum coverage.
+ * Returns class instances happening today until midnight,
+ * ordered by start time (earliest first). Only includes classes
+ * that can be booked based on booking windows. Returns minimal
+ * data needed for NewsClassCard rendering.
  ***************************************************************/
 
-export const getStartingSoonClassInstancesArgs = v.object({
+export const getHappeningTodayClassInstancesArgs = v.object({
     startDate: v.number(), // Current time
-    endDate: v.number(),   // 4 hours from now
+    endDate: v.number(),   // End of today (midnight)
     limit: v.optional(v.number()),
 });
 
-export const getStartingSoonClassInstances = query({
-    args: getStartingSoonClassInstancesArgs,
+export const getHappeningTodayClassInstances = query({
+    args: getHappeningTodayClassInstancesArgs,
     returns: v.array(v.object({
         _id: v.id("classInstances"),
         startTime: v.number(),
-        endTime: v.number(),
         name: v.string(),
         instructor: v.optional(v.string()),
-        capacity: v.number(),
-        bookedCount: v.number(),
-        price: v.optional(v.number()),
-        status: v.string(),
-        color: v.optional(v.string()),
-        disableBookings: v.optional(v.boolean()),
-        bookingWindow: v.optional(v.object({
-            minHours: v.number(),
-            maxHours: v.number(),
-        })),
-        templateSnapshot: v.object({
-            name: v.string(),
-            instructor: v.optional(v.string()),
-            imageStorageIds: v.optional(v.array(v.id("_storage"))),
-        }),
-        venueSnapshot: v.object({
-            name: v.string(),
-            address: v.object({
-                city: v.string(),
-            }),
-            imageStorageIds: v.optional(v.array(v.id("_storage"))),
-        }),
+        venueName: v.string(),
+        venueCity: v.string(),
+        templateImageId: v.optional(v.id("_storage")),
+        venueImageId: v.optional(v.id("_storage")),
         pricing: v.object({
             originalPrice: v.number(),
             finalPrice: v.number(),
             discountPercentage: v.number(),
-            discountAmount: v.number(),
         }),
-        discountPercentage: v.number(),
     })),
     handler: async (ctx, args) => {
         await getAuthenticatedUserOrThrow(ctx);
         const limit = args.limit || 10;
+
+        // Helper function to check if a class instance can be booked
+        const canBookClass = (instance: any, currentTime: number): boolean => {
+            // Check if bookings are disabled
+            if (instance.disableBookings === true) {
+                return false;
+            }
+
+            // Check if class has already started
+            if (instance.startTime <= currentTime) {
+                return false;
+            }
+
+            // Check booking window if it exists
+            if (instance.bookingWindow) {
+                const timeUntilStartMs = instance.startTime - currentTime;
+                const hoursUntilStart = timeUntilStartMs / (1000 * 60 * 60);
+
+                // Too late to book (within minimum advance time)
+                if (hoursUntilStart < instance.bookingWindow.minHours) {
+                    return false;
+                }
+
+                // Too early to book (beyond maximum advance time)
+                if (hoursUntilStart > instance.bookingWindow.maxHours) {
+                    return false;
+                }
+            }
+
+            return true;
+        };
 
         // Use efficient index to fetch scheduled classes in time window
         const instances = await ctx.db
@@ -372,38 +383,32 @@ export const getStartingSoonClassInstances = query({
             .order("asc")
             .take(limit);
 
-        // Calculate pricing for each instance
+        const currentTime = Date.now();
         const enrichedInstances = [];
+
+        // Calculate pricing for each instance and filter by booking windows
         for (const instance of instances) {
+            // Skip instances that can't be booked
+            if (!canBookClass(instance, currentTime)) {
+                continue;
+            }
+
             const pricingResult = await pricingOperations.calculateFinalPriceFromInstance(instance);
 
             enrichedInstances.push({
                 _id: instance._id,
                 startTime: instance.startTime,
-                endTime: instance.endTime,
                 name: instance.name || 'Class',
                 instructor: instance.instructor,
-                capacity: instance.capacity || 0,
-                bookedCount: instance.bookedCount,
-                price: instance.price,
-                status: instance.status,
-                color: instance.color,
-                disableBookings: instance.disableBookings,
-                bookingWindow: instance.bookingWindow,
-                templateSnapshot: {
-                    name: instance.templateSnapshot.name,
-                    instructor: instance.templateSnapshot.instructor,
-                    imageStorageIds: instance.templateSnapshot.imageStorageIds,
+                venueName: instance.venueSnapshot.name,
+                venueCity: instance.venueSnapshot.address.city,
+                templateImageId: instance.templateSnapshot.imageStorageIds?.[0],
+                venueImageId: instance.venueSnapshot.imageStorageIds?.[0],
+                pricing: {
+                    originalPrice: pricingResult.originalPrice,
+                    finalPrice: pricingResult.finalPrice,
+                    discountPercentage: pricingResult.discountPercentage, // Keep as 0-1 decimal
                 },
-                venueSnapshot: {
-                    name: instance.venueSnapshot.name,
-                    address: {
-                        city: instance.venueSnapshot.address.city,
-                    },
-                    imageStorageIds: instance.venueSnapshot.imageStorageIds,
-                },
-                pricing: pricingResult,
-                discountPercentage: Math.round(pricingResult.discountPercentage * 100),
             });
         }
 
