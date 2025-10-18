@@ -28,6 +28,7 @@ import type * as mutations_pushNotifications from "../mutations/pushNotification
 import type * as mutations_reviews from "../mutations/reviews.js";
 import type * as mutations_settings from "../mutations/settings.js";
 import type * as mutations_uploads from "../mutations/uploads.js";
+import type * as mutations_users from "../mutations/users.js";
 import type * as mutations_venues from "../mutations/venues.js";
 import type * as queries_bookings from "../queries/bookings.js";
 import type * as queries_chat from "../queries/chat.js";
@@ -88,6 +89,7 @@ declare const fullApi: ApiFromModules<{
   "mutations/reviews": typeof mutations_reviews;
   "mutations/settings": typeof mutations_settings;
   "mutations/uploads": typeof mutations_uploads;
+  "mutations/users": typeof mutations_users;
   "mutations/venues": typeof mutations_venues;
   "queries/bookings": typeof queries_bookings;
   "queries/chat": typeof queries_chat;

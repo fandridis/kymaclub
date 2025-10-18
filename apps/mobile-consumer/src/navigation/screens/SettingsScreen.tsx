@@ -13,6 +13,7 @@ import { useAuthenticatedUser } from '../../stores/auth-store';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { useCompressedImageUpload } from '../../hooks/useCompressedImageUpload';
+import { useProfileImageModeration } from '../../hooks/useProfileImageModeration';
 import { StackScreenHeader } from '../../components/StackScreenHeader';
 import { MembershipCard } from '../../components/MembershipCard';
 import { QuickBuyCreditsSheet } from '../../components/QuickBuyCreditsSheet';
@@ -35,6 +36,9 @@ export function SettingsScreen() {
   // Get user subscription status
   const subscription = useQuery(api.queries.subscriptions.getCurrentUserSubscription);
 
+  // Profile image moderation status
+  const { moderationStatus, isPending, isRejected, statusMessage } = useProfileImageModeration();
+
   // Image upload hooks and mutations
   const { status, pickAndUploadImage, takeAndUploadPhoto } = useCompressedImageUpload({
     preCompressionMaxBytes: 10 * 1024 * 1024, // 10MB
@@ -52,8 +56,28 @@ export function SettingsScreen() {
   const bookingStats = useQuery(api.queries.bookings.getUserBookingStats);
 
   const handleAvatarPress = () => {
-    if (status !== "idle") return; // Prevent multiple uploads
+    if (status !== "idle") return;
 
+    // Show rejection message if image was rejected
+    if (isRejected && statusMessage) {
+      Alert.alert(
+        'Image Not Approved',
+        statusMessage + '\n\nWould you like to upload a new image?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Upload New Image',
+            onPress: () => showUploadOptions()
+          }
+        ]
+      );
+      return;
+    }
+
+    showUploadOptions();
+  };
+
+  const showUploadOptions = () => {
     Alert.alert(
       'Profile Photo',
       'Choose an option',
@@ -259,27 +283,43 @@ export function SettingsScreen() {
           {/* New Header Design */}
           <View style={styles.headerSection}>
             <Text style={styles.greeting}>Hi {user.name?.split(' ')[0] || 'there'}!</Text>
-            <TouchableOpacity
-              style={styles.avatarContainer}
-              onPress={handleAvatarPress}
-              disabled={status !== "idle"}
-            >
-              {profileImageUrl ? (
-                <Image source={{ uri: profileImageUrl }} style={styles.avatar} />
-              ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <Text style={styles.avatarInitials}>
-                    {getInitials(user.name || 'User')}
-                  </Text>
+            <View style={styles.avatarRow}>
+              <TouchableOpacity
+                style={styles.avatarContainer}
+                onPress={handleAvatarPress}
+                disabled={status !== "idle"}
+              >
+                {profileImageUrl ? (
+                  <Image source={{ uri: profileImageUrl }} style={styles.avatar} />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <Text style={styles.avatarInitials}>
+                      {getInitials(user.name || 'User')}
+                    </Text>
+                  </View>
+                )}
+                <View style={[styles.avatarOverlay, status !== "idle" && styles.avatarOverlayLoading]}>
+                  <CameraIcon
+                    size={16}
+                    color={status !== "idle" ? theme.colors.zinc[400] : "#fff"}
+                  />
+                </View>
+              </TouchableOpacity>
+
+              {/* Status indicator on the side */}
+              {isPending && (
+                <View style={styles.statusIndicator}>
+                  <View style={styles.statusIndicatorDot} />
+                  <Text style={styles.statusText}>Reviewing...</Text>
                 </View>
               )}
-              <View style={[styles.avatarOverlay, status !== "idle" && styles.avatarOverlayLoading]}>
-                <CameraIcon
-                  size={16}
-                  color={status !== "idle" ? theme.colors.zinc[400] : "#fff"}
-                />
+            </View>
+
+            {statusMessage && isRejected && (
+              <View style={styles.rejectionNotice}>
+                <Text style={styles.rejectionText}>{statusMessage}</Text>
               </View>
-            </TouchableOpacity>
+            )}
           </View>
 
           {/* Membership Card */}
@@ -660,5 +700,49 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.sm,
     color: theme.colors.zinc[600],
     fontWeight: theme.fontWeight.medium,
+  },
+
+  // Profile image moderation styles
+  avatarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: theme.spacing.md,
+  },
+  statusIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: theme.spacing.md,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    backgroundColor: theme.colors.amber[50],
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.amber[200],
+  },
+  statusIndicatorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: theme.colors.amber[500],
+    marginRight: theme.spacing.xs,
+  },
+  statusText: {
+    color: theme.colors.amber[700],
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.medium,
+  },
+  rejectionNotice: {
+    marginTop: theme.spacing.md,
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.rose[50],
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.rose[200],
+  },
+  rejectionText: {
+    color: theme.colors.rose[700],
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

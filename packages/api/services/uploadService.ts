@@ -1,9 +1,10 @@
-import type { MutationCtx, QueryCtx } from "../convex/_generated/server";
+import type { MutationCtx, QueryCtx, ActionCtx } from "../convex/_generated/server";
 import type { Id, Doc } from "../convex/_generated/dataModel";
 import { ConvexError } from "convex/values";
 import { ERROR_CODES } from "../utils/errorCodes";
 import { classTemplateRules } from "../rules/classTemplate";
 import { venueRules } from "../rules/venue";
+import { internal } from "../convex/_generated/api";
 
 /**
  * Upload service for managing file uploads and associations with entities.
@@ -173,14 +174,22 @@ export const uploadService = {
     args: { storageId: Id<"_storage"> };
     user: Doc<"users">;
   }): Promise<{ storageId: Id<"_storage">; updatedUserId: Id<"users"> }> => {
-    // Remove old profile image if it exists
-    if (user.consumerProfileImageStorageId) {
-      await ctx.storage.delete(user.consumerProfileImageStorageId);
+    const oldStorageId = user.consumerProfileImageStorageId;
+
+    // Delete old profile image if it exists
+    if (oldStorageId) {
+      await ctx.storage.delete(oldStorageId);
     }
 
-    // Update user with new profile image
+    // Set new image with pending moderation status
     await ctx.db.patch(user._id, {
       consumerProfileImageStorageId: args.storageId,
+      profileImageModerationStatus: "pending",
+      profileImageModerationScore: undefined,
+      profileImageModerationReason: undefined,
+      profileImageModeratedAt: undefined,
+      profileImageFlaggedAt: undefined,
+      profileImageFlaggedReason: undefined,
     });
 
     return { storageId: args.storageId, updatedUserId: user._id };
@@ -211,5 +220,67 @@ export const uploadService = {
     }
 
     return { removedStorageId: oldStorageId, updatedUserId: user._id };
+  },
+
+  /**
+   * Process AI moderation result for profile image (action-compatible)
+   */
+  processProfileImageModerationFromAction: async ({
+    ctx,
+    userId,
+    imageStorageId,
+    moderationResult
+  }: {
+    ctx: ActionCtx,
+    userId: Id<"users">,
+    imageStorageId: Id<"_storage">,
+    moderationResult: {
+      score: number; // 0-100 confidence score
+      reason?: string;
+      status: "auto_approved" | "flagged" | "auto_rejected";
+    }
+  }): Promise<void> => {
+    console.log('💾 processProfileImageModerationFromAction: Starting for user:', userId, 'status:', moderationResult.status);
+
+    const now = Date.now();
+
+    const updateData: Partial<Doc<"users">> = {
+      profileImageModerationStatus: moderationResult.status,
+      profileImageModerationScore: moderationResult.score,
+      profileImageModerationReason: moderationResult.reason,
+      profileImageModeratedAt: now,
+    };
+
+    console.log('💾 processProfileImageModerationFromAction: Base update data:', updateData);
+
+    // Handle different moderation statuses
+    if (moderationResult.status === "auto_approved") {
+      // Image approved - keep it visible
+      console.log('💾 processProfileImageModerationFromAction: Auto-approved - keeping image visible');
+      updateData.consumerProfileImageStorageId = imageStorageId;
+    } else if (moderationResult.status === "flagged") {
+      // Flagged for review - hide but keep for admin review
+      console.log('💾 processProfileImageModerationFromAction: Flagged - hiding image from user');
+      updateData.consumerProfileImageStorageId = undefined;
+      updateData.profileImageFlaggedAt = now;
+      updateData.profileImageFlaggedReason = moderationResult.reason;
+    } else if (moderationResult.status === "auto_rejected") {
+      // Auto-rejected - remove and delete from storage
+      console.log('💾 processProfileImageModerationFromAction: Auto-rejected - deleting image');
+      updateData.consumerProfileImageStorageId = undefined;
+
+      // Delete the inappropriate image
+      await ctx.storage.delete(imageStorageId);
+    }
+
+    console.log('💾 processProfileImageModerationFromAction: Final update data:', updateData);
+
+    // Update user via internal mutation
+    console.log('💾 processProfileImageModerationFromAction: Calling internal mutation...');
+    await ctx.runMutation(internal.mutations.users.updateUserForModeration, {
+      userId,
+      updateData
+    });
+    console.log('💾 processProfileImageModerationFromAction: Internal mutation completed successfully');
   },
 };

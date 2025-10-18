@@ -75,6 +75,21 @@ export const usersFields = {
   // Consumer profile image
   consumerProfileImageStorageId: v.optional(v.id("_storage")),
 
+  // Profile image moderation fields
+  profileImageModerationStatus: v.optional(v.union(
+    v.literal("pending"),
+    v.literal("auto_approved"),
+    v.literal("flagged"),
+    v.literal("auto_rejected"),
+    v.literal("manual_approved"),
+    v.literal("manual_rejected")
+  )),
+  profileImageModerationScore: v.optional(v.number()), // 0-100 confidence score
+  profileImageModerationReason: v.optional(v.string()),
+  profileImageModeratedAt: v.optional(v.number()),
+  profileImageFlaggedAt: v.optional(v.number()),
+  profileImageFlaggedReason: v.optional(v.string()),
+
   // Stripe customer ID for payments
   stripeCustomerId: v.optional(v.string()),
 

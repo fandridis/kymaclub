@@ -35,7 +35,7 @@ export function useCompressedImageUpload(options?: UseCompressedImageUploadOptio
 
                 // Pick image
                 const result = await ImagePicker.launchImageLibraryAsync({
-                    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                    mediaTypes: 'images',
                     allowsEditing: true,
                     aspect: [1, 1], // Square aspect ratio for profile images
                     quality: 1,
