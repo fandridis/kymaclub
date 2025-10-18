@@ -152,7 +152,17 @@ export function useCompressedImageUpload(options?: UseCompressedImageUploadOptio
                     body: blob,
                 });
 
-                const { storageId } = await uploadResult.json();
+                if (!uploadResult.ok) {
+                    const errorText = await uploadResult.text();
+                    throw new Error(`Upload failed: ${uploadResult.status} ${uploadResult.statusText}`);
+                }
+
+                const uploadData = await uploadResult.json();
+                const { storageId } = uploadData;
+
+                if (!storageId) {
+                    throw new Error('No storage ID returned from upload');
+                }
 
                 let saveResult: any = undefined;
                 if (onSave) {

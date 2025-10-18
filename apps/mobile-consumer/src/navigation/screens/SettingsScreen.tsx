@@ -87,11 +87,15 @@ export function SettingsScreen() {
           onPress: async () => {
             try {
               await takeAndUploadPhoto(async (storageId: string) => {
+                if (!storageId) {
+                  throw new Error('No storage ID returned from photo capture');
+                }
                 await updateProfileImage({ storageId: storageId as any });
                 return storageId;
               });
             } catch (error) {
               console.error('Error taking photo:', error);
+              Alert.alert('Upload Failed', 'Failed to upload photo. Please try again.');
             }
           }
         },
@@ -100,11 +104,15 @@ export function SettingsScreen() {
           onPress: async () => {
             try {
               await pickAndUploadImage(async (storageId: string) => {
+                if (!storageId) {
+                  throw new Error('No storage ID returned from image picker');
+                }
                 await updateProfileImage({ storageId: storageId as any });
                 return storageId;
               });
             } catch (error) {
               console.error('Error picking image:', error);
+              Alert.alert('Upload Failed', 'Failed to upload image. Please try again.');
             }
           }
         },
@@ -306,21 +314,34 @@ export function SettingsScreen() {
                 </View>
               </TouchableOpacity>
 
-              {/* Status indicator on the side */}
-              {isPending && (
-                <View style={styles.statusIndicator}>
-                  <View style={styles.statusIndicatorDot} />
-                  <Text style={styles.statusText}>Reviewing...</Text>
-                </View>
-              )}
             </View>
-
-            {statusMessage && isRejected && (
-              <View style={styles.rejectionNotice}>
-                <Text style={styles.rejectionText}>{statusMessage}</Text>
-              </View>
-            )}
           </View>
+
+          {/* Profile Image Moderation Alerts - Full Width */}
+          {isPending && (
+            <View style={styles.pendingNotice}>
+              <Text style={styles.pendingText}>Your profile image is being reviewed...</Text>
+            </View>
+          )}
+
+          {statusMessage && isRejected && (
+            <View style={styles.rejectionNotice}>
+              <Text style={styles.rejectionText}>{statusMessage}</Text>
+              <TouchableOpacity
+                style={styles.dismissButton}
+                onPress={async () => {
+                  try {
+                    await removeProfileImage({});
+                  } catch (error) {
+                    console.error('Error dismissing image:', error);
+                    Alert.alert('Error', 'Failed to dismiss image. Please try again.');
+                  }
+                }}
+              >
+                <Text style={styles.dismissButtonText}>Dismiss</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Membership Card */}
           <MembershipCard
@@ -708,31 +729,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: theme.spacing.md,
   },
-  statusIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: theme.spacing.md,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    backgroundColor: theme.colors.amber[50],
-    borderRadius: 16,
+  pendingNotice: {
+    marginHorizontal: theme.spacing.lg,
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.sky[50],
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: theme.colors.amber[200],
+    borderColor: theme.colors.sky[200],
   },
-  statusIndicatorDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: theme.colors.amber[500],
-    marginRight: theme.spacing.xs,
-  },
-  statusText: {
-    color: theme.colors.amber[700],
-    fontSize: theme.fontSize.sm,
-    fontWeight: theme.fontWeight.medium,
+  pendingText: {
+    color: theme.colors.sky[700],
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   rejectionNotice: {
+    marginHorizontal: theme.spacing.lg,
     marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
     padding: theme.spacing.md,
     backgroundColor: theme.colors.rose[50],
     borderRadius: 12,
@@ -744,5 +760,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
+    marginBottom: theme.spacing.sm,
+  },
+  dismissButton: {
+    marginTop: theme.spacing.sm,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.lg,
+    backgroundColor: theme.colors.zinc[200],
+    borderRadius: 8,
+    alignSelf: 'center',
+    minWidth: 100,
+  },
+  dismissButtonText: {
+    color: theme.colors.zinc[800],
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.semibold,
+    textAlign: 'center',
   },
 });

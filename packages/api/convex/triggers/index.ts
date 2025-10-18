@@ -112,18 +112,11 @@ triggers.register("users", async (ctx, change) => {
         newDoc.consumerProfileImageStorageId &&
         newDoc.profileImageModerationStatus === "pending"
     ) {
-        console.log('🎯 Profile image moderation trigger fired for user:', id);
-        console.log('🎯 Old image storage ID:', oldDoc.consumerProfileImageStorageId);
-        console.log('🎯 New image storage ID:', newDoc.consumerProfileImageStorageId);
-        console.log('🎯 Moderation status:', newDoc.profileImageModerationStatus);
-
         // Schedule AI moderation for the new profile image
-        console.log('🎯 Scheduling AI moderation action...');
         await ctx.scheduler.runAfter(0, internal.actions.ai.moderateProfileImage, {
             imageStorageId: newDoc.consumerProfileImageStorageId,
             userId: id,
         });
-        console.log('🎯 AI moderation action scheduled successfully');
     }
 });
 

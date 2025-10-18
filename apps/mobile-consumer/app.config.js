@@ -16,7 +16,7 @@ export default ({ config }) => ({
   },
   ios: {
     ...config.ios,
-    buildNumber: "3",
+    // buildNumber: "3",
     icon: "./assets/icon.png",
     supportsTablet: true,
     bundleIdentifier: "com.kymaclub.app",

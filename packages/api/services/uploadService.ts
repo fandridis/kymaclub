@@ -178,7 +178,11 @@ export const uploadService = {
 
     // Delete old profile image if it exists
     if (oldStorageId) {
-      await ctx.storage.delete(oldStorageId);
+      try {
+        await ctx.storage.delete(oldStorageId);
+      } catch (error) {
+        // Don't throw error - file may have been deleted by AI moderation
+      }
     }
 
     // Set new image with pending moderation status
@@ -209,14 +213,24 @@ export const uploadService = {
   }): Promise<{ removedStorageId: Id<"_storage"> | null; updatedUserId: Id<"users"> }> => {
     const oldStorageId = user.consumerProfileImageStorageId || null;
 
-    // Remove profile image reference from user
+    // Remove profile image reference and clear moderation status
     await ctx.db.patch(user._id, {
       consumerProfileImageStorageId: undefined,
+      profileImageModerationStatus: undefined,
+      profileImageModerationScore: undefined,
+      profileImageModerationReason: undefined,
+      profileImageModeratedAt: undefined,
+      profileImageFlaggedAt: undefined,
+      profileImageFlaggedReason: undefined,
     });
 
     // Delete the image from storage if it exists
     if (oldStorageId) {
-      await ctx.storage.delete(oldStorageId);
+      try {
+        await ctx.storage.delete(oldStorageId);
+      } catch (error) {
+        // Don't throw error - file may have been deleted by AI moderation
+      }
     }
 
     return { removedStorageId: oldStorageId, updatedUserId: user._id };
@@ -240,8 +254,6 @@ export const uploadService = {
       status: "auto_approved" | "flagged" | "auto_rejected";
     }
   }): Promise<void> => {
-    console.log('💾 processProfileImageModerationFromAction: Starting for user:', userId, 'status:', moderationResult.status);
-
     const now = Date.now();
 
     const updateData: Partial<Doc<"users">> = {
@@ -251,36 +263,31 @@ export const uploadService = {
       profileImageModeratedAt: now,
     };
 
-    console.log('💾 processProfileImageModerationFromAction: Base update data:', updateData);
-
     // Handle different moderation statuses
     if (moderationResult.status === "auto_approved") {
       // Image approved - keep it visible
-      console.log('💾 processProfileImageModerationFromAction: Auto-approved - keeping image visible');
       updateData.consumerProfileImageStorageId = imageStorageId;
     } else if (moderationResult.status === "flagged") {
       // Flagged for review - hide but keep for admin review
-      console.log('💾 processProfileImageModerationFromAction: Flagged - hiding image from user');
       updateData.consumerProfileImageStorageId = undefined;
       updateData.profileImageFlaggedAt = now;
       updateData.profileImageFlaggedReason = moderationResult.reason;
     } else if (moderationResult.status === "auto_rejected") {
       // Auto-rejected - remove and delete from storage
-      console.log('💾 processProfileImageModerationFromAction: Auto-rejected - deleting image');
       updateData.consumerProfileImageStorageId = undefined;
 
       // Delete the inappropriate image
-      await ctx.storage.delete(imageStorageId);
+      try {
+        await ctx.storage.delete(imageStorageId);
+      } catch (error) {
+        // Don't throw error - continue with user record update
+      }
     }
 
-    console.log('💾 processProfileImageModerationFromAction: Final update data:', updateData);
-
     // Update user via internal mutation
-    console.log('💾 processProfileImageModerationFromAction: Calling internal mutation...');
     await ctx.runMutation(internal.mutations.users.updateUserForModeration, {
       userId,
       updateData
     });
-    console.log('💾 processProfileImageModerationFromAction: Internal mutation completed successfully');
   },
 };

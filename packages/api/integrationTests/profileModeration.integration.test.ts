@@ -14,7 +14,7 @@ describe('Profile Image Moderation Integration', () => {
         });
 
         // Step 1: Upload profile image (sets to pending)
-        await asUser.mutation(api.mutations.users.updateUserForModeration, {
+        await asUser.mutation(internal.mutations.users.updateUserForModeration, {
             userId,
             updateData: {
                 consumerProfileImageStorageId: storageId,
@@ -32,7 +32,7 @@ describe('Profile Image Moderation Integration', () => {
         expect(user?.user?.profileImageModerationStatus).toBe("pending");
 
         // Step 2: Simulate AI moderation result (auto-approved)
-        await asUser.mutation(api.mutations.users.updateUserForModeration, {
+        await asUser.mutation(internal.mutations.users.updateUserForModeration, {
             userId,
             updateData: {
                 profileImageModerationStatus: "auto_approved",
@@ -64,7 +64,7 @@ describe('Profile Image Moderation Integration', () => {
         });
 
         // Step 1: Upload profile image
-        await asUser.mutation(api.mutations.users.updateUserForModeration, {
+        await asUser.mutation(internal.mutations.users.updateUserForModeration, {
             userId,
             updateData: {
                 consumerProfileImageStorageId: storageId,
@@ -73,7 +73,7 @@ describe('Profile Image Moderation Integration', () => {
         });
 
         // Step 2: Simulate AI moderation result (auto-rejected)
-        await asUser.mutation(api.mutations.users.updateUserForModeration, {
+        await asUser.mutation(internal.mutations.users.updateUserForModeration, {
             userId,
             updateData: {
                 profileImageModerationStatus: "auto_rejected",
@@ -107,7 +107,7 @@ describe('Profile Image Moderation Integration', () => {
         });
 
         // Step 1: Upload profile image
-        await asUser.mutation(api.mutations.users.updateUserForModeration, {
+        await asUser.mutation(internal.mutations.users.updateUserForModeration, {
             userId,
             updateData: {
                 consumerProfileImageStorageId: storageId,
@@ -116,7 +116,7 @@ describe('Profile Image Moderation Integration', () => {
         });
 
         // Step 2: Simulate AI moderation result (flagged)
-        await asUser.mutation(api.mutations.users.updateUserForModeration, {
+        await asUser.mutation(internal.mutations.users.updateUserForModeration, {
             userId,
             updateData: {
                 profileImageModerationStatus: "flagged",
@@ -154,7 +154,7 @@ describe('Profile Image Moderation Integration', () => {
         });
 
         // Step 1: Set user with flagged image
-        await asUser.mutation(api.mutations.users.updateUserForModeration, {
+        await asUser.mutation(internal.mutations.users.updateUserForModeration, {
             userId,
             updateData: {
                 consumerProfileImageStorageId: storageId,
@@ -165,7 +165,7 @@ describe('Profile Image Moderation Integration', () => {
         });
 
         // Step 2: Manual approval by admin
-        await asUser.mutation(api.mutations.users.updateUserForModeration, {
+        await asUser.mutation(internal.mutations.users.updateUserForModeration, {
             userId,
             updateData: {
                 profileImageModerationStatus: "manual_approved",
