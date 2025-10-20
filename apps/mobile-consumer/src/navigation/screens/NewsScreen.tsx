@@ -11,7 +11,6 @@ import { theme } from '../../theme';
 import { TabScreenHeader } from '../../components/TabScreenHeader';
 import { useAuthenticatedUser } from '../../stores/auth-store';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
-import { useCurrentTime } from '../../hooks/use-current-time';
 import { useAllVenues } from '../../features/explore/hooks/useAllVenues';
 import type { RootStackParamListWithNestedTabs } from '../index';
 import { centsToCredits } from '@repo/utils/credits';
@@ -79,7 +78,7 @@ export function NewsScreen() {
     const navigation = useNavigation<NavigationProp<RootStackParamListWithNestedTabs>>();
     const user = useAuthenticatedUser();
 
-    const now = useCurrentTime();
+    const now = new Date();
     const next4Hours = useMemo(() => new Date(now.getTime() + (4 * 60 * 60 * 1000)), [now]);
     const next24Hours = useMemo(() => new Date(now.getTime() + (24 * 60 * 60 * 1000)), [now]);
     const endOfToday = useMemo(() => {
