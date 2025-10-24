@@ -17,6 +17,8 @@ import { centsToCredits } from '@repo/utils/credits';
 import { NewsClassCard } from '../../components/news/NewsCard';
 import { XIcon } from 'lucide-react-native';
 
+const now = new Date();
+
 const { width: screenWidth } = Dimensions.get('window');
 
 // Unified carousel constants
@@ -78,7 +80,6 @@ export function NewsScreen() {
     const navigation = useNavigation<NavigationProp<RootStackParamListWithNestedTabs>>();
     const user = useAuthenticatedUser();
 
-    const now = new Date();
     const next4Hours = useMemo(() => new Date(now.getTime() + (4 * 60 * 60 * 1000)), [now]);
     const next24Hours = useMemo(() => new Date(now.getTime() + (24 * 60 * 60 * 1000)), [now]);
     const endOfToday = useMemo(() => {
