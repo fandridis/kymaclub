@@ -19,7 +19,6 @@
     "./distances": "./src/distances.ts",
     "./types": "./src/types.ts",
     "./crypto-utils": "./src/crypto-utils.ts",
-    "./i18n-typed": "./src/i18n-typed.ts",
     "./colors": "./src/colors.ts",
     "./credits": "./src/credits.ts",
     "./exploreFilters": "./src/exploreFilters.ts"
