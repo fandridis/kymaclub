@@ -15,7 +15,8 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useNavigation } from '@react-navigation/native';
 import { useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
-import { secureStorage } from '../../../utils/storage';
+import { getDeviceId } from '../../../utils/storage';
+import { checkRateLimit, clearRateLimit, formatTimeRemaining } from '../../../utils/rateLimiter';
 
 interface SimpleRegisterFormProps {
     onSuccess: () => void;
@@ -36,6 +37,20 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
     const handleSendCode = async () => {
         if (!email.trim()) {
             Alert.alert('Error', 'Please enter your email address');
+            return;
+        }
+
+        // Check rate limits before proceeding
+        const deviceId = getDeviceId();
+        const rateLimitResult = checkRateLimit('register', email.trim(), deviceId);
+
+        if (!rateLimitResult.allowed) {
+            const timeText = formatTimeRemaining(rateLimitResult.timeUntilReset || 0);
+            Alert.alert(
+                'Too Many Registration Attempts',
+                `Please try again in ${timeText}.`,
+                [{ text: 'OK' }]
+            );
             return;
         }
 
@@ -96,6 +111,10 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
             formData.append('code', code);
 
             await signIn("resend-otp", formData);
+
+            // Registration successful! Clear rate limit for this email
+            const deviceId = getDeviceId();
+            clearRateLimit('register', email.trim(), deviceId);
 
             // // Registration successful!
             // // The auth state will update automatically, which will trigger

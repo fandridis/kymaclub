@@ -5,6 +5,7 @@ import { getAuthenticatedUserOrThrow } from "../utils";
 import { pricingOperations } from "../../operations/pricing";
 import { ERROR_CODES } from "../../utils/errorCodes";
 import { calculateDistance } from "@repo/utils/distances";
+import { rateLimiter } from "../utils/rateLimiter";
 
 /***************************************************************
  * Get Class Instance By ID
@@ -338,6 +339,7 @@ export const getHappeningTodayClassInstances = query({
     })),
     handler: async (ctx, args) => {
         await getAuthenticatedUserOrThrow(ctx);
+
         const limit = args.limit || 10;
 
         // Helper function to check if a class instance can be booked

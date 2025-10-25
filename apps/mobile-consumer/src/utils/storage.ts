@@ -1,4 +1,13 @@
-import { MMKV, useMMKVBoolean, useMMKVNumber, useMMKVString, useMMKVObject } from 'react-native-mmkv';
+import { createMMKV, useMMKVBoolean, useMMKVNumber, useMMKVString, useMMKVObject } from 'react-native-mmkv';
+
+// Simple UUID generator without external dependencies
+const generateUUID = (): string => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+};
 
 // Define storage schemas
 interface AppStorageSchema {
@@ -62,16 +71,16 @@ interface SecureStorageSchema {
  * ✅ Clean separation between auth state and user preferences
  * ✅ Security maintained - different users get clean slate
  */
-export const appStorageMMKV = new MMKV({
+export const appStorageMMKV = createMMKV({
     id: 'app-storage'
 });
 
-export const secureStorageMMKV = new MMKV({
+export const secureStorageMMKV = createMMKV({
     id: 'secure-storage',
     encryptionKey: 'djgefaojdisoiajdthejoiabesthfu'
 });
 
-export const convexAuthMMKV = new MMKV({
+export const convexAuthMMKV = createMMKV({
     id: 'convex-auth-storage',
     encryptionKey: 'eoijgefaeoifjisfthejodiaebestfr'
 });
@@ -109,7 +118,7 @@ export const secureStorage = {
     // Last authenticated user ID - persists across app restarts for user change detection
     getLastUserId: () => secureStorageMMKV.getString('lastAuthenticatedUserId') || null,
     setLastUserId: (userId: string) => secureStorageMMKV.set('lastAuthenticatedUserId', userId),
-    clearLastUserId: () => secureStorageMMKV.delete('lastAuthenticatedUserId'),
+    clearLastUserId: () => secureStorageMMKV.remove('lastAuthenticatedUserId'),
 
     getSecureValue: <K extends keyof SecureStorageSchema>(key: K): SecureStorageSchema[K] | undefined => {
         const value = secureStorageMMKV.getString(key);
@@ -133,7 +142,22 @@ export const secureStorage = {
 export const convexAuthStorage = {
     getItem: (key: string) => convexAuthMMKV.getString(key),
     setItem: (key: string, value: string) => convexAuthMMKV.set(key, value),
-    removeItem: (key: string) => convexAuthMMKV.delete(key),
+    removeItem: (key: string) => {
+        convexAuthMMKV.remove(key);
+    },
+};
+
+/**
+ * Get or create a unique device identifier for rate limiting
+ * This persists across app restarts and is used for additional security
+ */
+export const getDeviceId = (): string => {
+    let deviceId = secureStorageMMKV.getString('deviceId');
+    if (!deviceId) {
+        deviceId = generateUUID();
+        secureStorageMMKV.set('deviceId', deviceId);
+    }
+    return deviceId;
 };
 
 

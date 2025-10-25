@@ -3,6 +3,7 @@ import { Infer, v } from "convex/values";
 import { getAuthenticatedUserOrThrow } from "../utils";
 import { chatService } from "../../services/chatService";
 import { mutationWithTriggers } from "../triggers";
+import { rateLimiter } from "../utils/rateLimiter";
 
 // Mutation args validation
 export const sendMessageArgs = v.object({
@@ -65,7 +66,7 @@ export const sendMessage = mutationWithTriggers({
   args: sendMessageArgs,
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
-    
+
     // Delegate to service layer
     const result = await chatService.sendMessage({ ctx, args, user });
     return result;
@@ -80,7 +81,7 @@ export const markMessagesAsRead = mutation({
   args: markMessagesAsReadArgs,
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
-    
+
     const result = await chatService.markMessagesAsRead({ ctx, args, user });
     return result;
   },
@@ -95,7 +96,7 @@ export const createSystemMessage = mutationWithTriggers({
   handler: async (ctx, args) => {
     // Note: This doesn't require authentication as it's called internally
     // The service will validate the caller has appropriate permissions
-    
+
     const result = await chatService.createSystemMessage({ ctx, args });
     return result;
   },
@@ -109,7 +110,7 @@ export const archiveThread = mutation({
   args: archiveThreadArgs,
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
-    
+
     const result = await chatService.archiveThread({ ctx, args, user });
     return result;
   },
@@ -125,7 +126,7 @@ export const getOrCreateThread = mutation({
   }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
-    
+
     const result = await chatService.getOrCreateThread({ ctx, args, user });
     return result;
   },
@@ -166,7 +167,7 @@ export const deleteThread = mutation({
   }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
-    
+
     const result = await chatService.deleteThread({ ctx, args, user });
     return result;
   },
