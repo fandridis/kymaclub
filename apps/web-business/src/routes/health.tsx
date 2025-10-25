@@ -5,5 +5,7 @@ export const Route = createFileRoute('/health')({
 })
 
 function RouteComponent() {
-    return <div>It is alive! #3</div>
+    return <div>It is alive! #4
+
+    </div>
 }

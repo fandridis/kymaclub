@@ -1,5 +1,5 @@
 // src/i18n/typed.ts - Typed i18n setup for this app
-import { createTypedI18n, type ExtractTranslationKeys } from '@repo/utils/i18n-typed';
+import { createTypedI18n, type ExtractTranslationKeys } from './i18n-typed';
 import { Trans as TransOriginal } from 'react-i18next';
 import en from '../locales/en/translation.json';
 
