@@ -35,7 +35,6 @@ export function ClassBookingsItem({
     booking,
     onCancelBooking,
     className,
-    onDeleteBooking,
 }: ClassBookingsItemProps) {
     const [isCancelling, setIsCancelling] = useState(false);
     const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -241,18 +240,6 @@ export function ClassBookingsItem({
                                         </DropdownMenuItem>
                                     )}
 
-                                    {/* Only show Remove Booking for cancelled bookings */}
-                                    {/* {(booking.status === 'cancelled_by_consumer' ||
-                                        booking.status === 'cancelled_by_business' ||
-                                        booking.status === 'cancelled_by_business_rebookable') &&
-                                        onDeleteBooking && (
-                                            <DropdownMenuItem
-                                                onClick={() => onDeleteBooking(booking._id)}
-                                                className="text-destructive focus:text-destructive"
-                                            >
-                                                Remove Booking
-                                            </DropdownMenuItem>
-                                        )} */}
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         );

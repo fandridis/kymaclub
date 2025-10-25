@@ -1,13 +1,5 @@
 export default {
-  async fetch(request, env, ctx): Promise<Response> {
-    const url = new URL(request.url);
-
-    // if (url.pathname.startsWith("/api/")) {
-    //   return Response.json({
-    //     name: "Cloudflare",
-    //   });
-    // }
-
+  async fetch(request, env): Promise<Response> {
     // Serve static assets from Vite build
     try {
       // @ts-ignore - ASSETS is injected by Cloudflare

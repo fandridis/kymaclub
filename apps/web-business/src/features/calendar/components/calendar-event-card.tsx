@@ -1,5 +1,5 @@
 import type { EventContentArg } from "@fullcalendar/core/index.js";
-import { MoreVertical, Edit, Trash2, Users, Lock, Unlock, CalendarPlus, CalendarOff, CalendarIcon, CalendarOffIcon, User } from "lucide-react";
+import { MoreVertical, Edit, Trash2, Users, Lock, Unlock, CalendarIcon, User } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -138,7 +138,7 @@ export const CalendarEventCard = ({ eventInfo, onEdit, onDelete, onViewBookings,
                             {bookingWindowStatus === 'open' ? (
                                 <CalendarIcon className="h-3 w-3 opacity-60" />
                             ) : (
-                                <CalendarOffIcon className="h-3 w-3 opacity-60" />
+                                <CalendarIcon className="h-3 w-3 opacity-60" />
                             )}
                         </>
                     )}

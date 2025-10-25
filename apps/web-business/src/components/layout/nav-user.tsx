@@ -1,11 +1,8 @@
 import { Link } from '@tanstack/react-router'
 import {
     BadgeCheck,
-    Bell,
     ChevronsUpDown,
-    CreditCard,
     LogOut,
-    Sparkles,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -68,13 +65,6 @@ export function NavUser() {
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        {/* <DropdownMenuGroup>
-                            <DropdownMenuItem>
-                                <Sparkles />
-                                Upgrade to Pro
-                            </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                        <DropdownMenuSeparator /> */}
                         <DropdownMenuGroup>
                             <DropdownMenuItem asChild>
                                 <Link to='/settings'>
@@ -82,18 +72,6 @@ export function NavUser() {
                                     Settings
                                 </Link>
                             </DropdownMenuItem>
-                            {/* <DropdownMenuItem asChild>
-                                <Link to='/dashboard'>
-                                    <CreditCard />
-                                    Billing
-                                </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                                <Link to='/dashboard'>
-                                    <Bell />
-                                    Notifications
-                                </Link>
-                            </DropdownMenuItem> */}
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className='text-red-500' onClick={() => {
