@@ -1,0 +1,52 @@
+name: Deploy Web Business to Production
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web-business/**'
+      - 'packages/api/**'
+      - 'packages/utils/**'
+      - 'packages/ui/**'
+      - 'pnpm-lock.yaml'
+      - 'package.json'
+      - 'turbo.json'
+
+jobs:
+  deploy:
+    name: Deploy to partners.kymaclub.com
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web-business
+        run: pnpm --filter @repo/web-business build
+        env:
+          VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL }}
+
+      - name: Deploy to Cloudflare Workers
+        run: pnpm --filter @repo/web-business deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deployment summary
+        run: |
+          echo "✅ Web business app deployed successfully to https://partners.kymaclub.com"
