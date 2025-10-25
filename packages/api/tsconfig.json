@@ -11,6 +11,9 @@
     "jsx": "react-jsx",
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "verbatimModuleSyntax": false,
     /* These compiler options are required by Convex */
     "target": "ESNext",
     "lib": [

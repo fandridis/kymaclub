@@ -449,40 +449,40 @@ export const creditService = {
     }, {} as Record<string, any[]>);
 
     // 🔥 OPTIMIZED: Process each type directly from organized results
-    const purchased = transactionsByType.purchase
+    const purchased = (transactionsByType.purchase ?? [])
       .reduce((sum, tx) => sum + tx.amount, 0);
 
     // 🔥 OPTIMIZED: Process each category directly from type-organized data
-    const giftWelcome = transactionsByType.gift
+    const giftWelcome = (transactionsByType.gift ?? [])
       .filter(tx => tx.reason === "welcome_bonus")
       .reduce((sum, tx) => sum + tx.amount, 0);
 
-    const giftReferral = transactionsByType.gift
+    const giftReferral = (transactionsByType.gift ?? [])
       .filter(tx => tx.reason === "referral_bonus")
       .reduce((sum, tx) => sum + tx.amount, 0);
 
-    const giftAdmin = transactionsByType.gift
+    const giftAdmin = (transactionsByType.gift ?? [])
       .filter(tx => tx.reason === "admin_gift" || !tx.reason)
       .reduce((sum, tx) => sum + tx.amount, 0);
 
-    const giftCampaign = transactionsByType.gift
+    const giftCampaign = (transactionsByType.gift ?? [])
       .filter(tx => tx.reason === "campaign_bonus")
       .reduce((sum, tx) => sum + tx.amount, 0);
 
-    const totalSpent = transactionsByType.spend
+    const totalSpent = (transactionsByType.spend ?? [])
       .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
 
     const refundsByReason = {
-      userCancellation: transactionsByType.refund
+      userCancellation: (transactionsByType.refund ?? [])
         .filter(tx => tx.reason === "user_cancellation")
         .reduce((sum, tx) => sum + tx.amount, 0),
-      businessCancellation: transactionsByType.refund
+      businessCancellation: (transactionsByType.refund ?? [])
         .filter(tx => tx.reason === "business_cancellation")
         .reduce((sum, tx) => sum + tx.amount, 0),
-      paymentIssue: transactionsByType.refund
+      paymentIssue: (transactionsByType.refund ?? [])
         .filter(tx => tx.reason === "payment_issue")
         .reduce((sum, tx) => sum + tx.amount, 0),
-      general: transactionsByType.refund
+      general: (transactionsByType.refund ?? [])
         .filter(tx => tx.reason === "general_refund" || !tx.reason)
         .reduce((sum, tx) => sum + tx.amount, 0),
     };

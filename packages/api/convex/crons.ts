@@ -291,7 +291,7 @@ export const getNoShowStats = internalQuery({
         const recentNoShows = [];
 
         for (const booking of noShowBookings) {
-            const date = new Date(booking.updatedAt ?? booking.createdAt).toISOString().split('T')[0];
+            const date = new Date(booking.updatedAt ?? booking.createdAt ?? Date.now()).toISOString().split('T')[0];
             noShowsByDay.set(date, (noShowsByDay.get(date) ?? 0) + 1);
 
             // Collect recent no-shows (last 10)

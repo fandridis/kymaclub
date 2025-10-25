@@ -4,6 +4,16 @@
         "noUnusedLocals": false,
         "noUnusedParameters": false,
         "verbatimModuleSyntax": false,
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "noImplicitAny": false,
+        "strictNullChecks": false,
+        "strictFunctionTypes": false,
+        "noImplicitReturns": false,
+        "noFallthroughCasesInSwitch": false,
+        "strict": false,
+        "noImplicitThis": false,
+        "alwaysStrict": false,
+        "noUncheckedIndexedAccess": false,
+        "exactOptionalPropertyTypes": false
     }
 }

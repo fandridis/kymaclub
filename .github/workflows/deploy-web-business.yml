@@ -35,7 +35,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build web-business
-        run: pnpm --filter @repo/web-business build
+        run: |
+          cd apps/web-business
+          echo "Current build script:"
+          cat package.json | grep -A 1 '"build"'
+          pnpm run build
         env:
           VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL }}
 
