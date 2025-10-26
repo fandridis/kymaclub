@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useIsMobile } from '@/hooks/use-mobile';
 
 import {
     Drawer,
@@ -119,6 +120,7 @@ interface CreateTemplateDialogProps {
 
 export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigger, onClose }: CreateTemplateDialogProps) {
     const { venues } = useVenues();
+    const isMobile = useIsMobile();
     const [open, setOpen] = useState(isOpen ?? false);
     const [loading, setLoading] = useState(false);
     const [currentTag, setCurrentTag] = useState("");
@@ -307,13 +309,13 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                 </Button>
             )}
 
-            <Drawer direction='right' open={open ?? isOpen} onOpenChange={(isOpen) => {
+            <Drawer direction={isMobile ? 'bottom' : 'right'} open={open ?? isOpen} onOpenChange={(isOpen) => {
                 if (!isOpen) {
                     onClose?.();
                 }
                 setOpen(isOpen);
             }}>
-                <DrawerContent className="flex flex-col h-screen data-[vaul-drawer-direction=right]:sm:max-w-md">
+                <DrawerContent className={`flex flex-col h-screen ${!isMobile ? 'data-[vaul-drawer-direction=right]:sm:max-w-md' : ''}`}>
                     <DrawerHeader className="h-[64px] border-b">
                         <DrawerTitle className="text-xl">
                             {isEditMode ? 'Edit Template' : 'Create Template'}

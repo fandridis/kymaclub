@@ -155,7 +155,6 @@ export function MessagesPage() {
                     <div className="p-4 border-b border-border">
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3">
                             <div>
-                                <h1 className="text-xl font-bold text-foreground">Messages</h1>
                                 <p className="text-sm text-muted-foreground">
                                     Customer conversations
                                 </p>

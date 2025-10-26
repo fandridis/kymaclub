@@ -27,6 +27,7 @@ import { api } from '@repo/api/convex/_generated/api';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { DateTimePicker } from "@/components/ui/datetime-picker";
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export interface CreateInstanceFromTemplateDialogProps {
     /** Whether the drawer is open */
@@ -56,6 +57,7 @@ export function CreateInstanceFromTemplateDialog({
     selectedDateTime,
     onClose,
 }: CreateInstanceFromTemplateDialogProps) {
+    const isMobile = useIsMobile();
     const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
     const [scheduledDateTime, setScheduledDateTime] = useState(selectedDateTime);
     const [isRecurring, setIsRecurring] = useState(false);
@@ -172,8 +174,8 @@ export function CreateInstanceFromTemplateDialog({
     const weeksOptions = Array.from({ length: 15 }, (_, i) => i + 2);
 
     return (
-        <Drawer open={open} onOpenChange={onClose} direction="right">
-            <DrawerContent className="max-w-[500px] w-full h-full flex flex-col">
+        <Drawer open={open} onOpenChange={onClose} direction={isMobile ? 'bottom' : 'right'}>
+            <DrawerContent className={`w-full h-full flex flex-col ${!isMobile ? 'max-w-[500px]' : ''}`}>
                 <DrawerHeader className="text-left shrink-0">
                     <DrawerTitle className="flex items-center gap-2">
                         <Calendar className="h-5 w-5" />

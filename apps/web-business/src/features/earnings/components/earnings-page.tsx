@@ -202,20 +202,20 @@ export default function EarningsPage() {
             {/* Bookings Table */}
             <Card>
                 <CardHeader>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-4">
                         <div>
                             <CardTitle className="text-xl font-semibold text-card-foreground">
                                 Booking Details - {selectedMonthLabel}
                             </CardTitle>
                             <p className="text-sm text-muted-foreground">Detailed breakdown of all class bookings and earnings. Records appear after the class has been completed.</p>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <Button onClick={handleExport} variant="outline">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                            <Button onClick={handleExport} variant="outline" className="w-full sm:w-auto">
                                 <Download className="w-4 h-4 mr-2" />
                                 Export Data
                             </Button>
                             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                                <SelectTrigger className="w-48">
+                                <SelectTrigger className="w-full sm:w-48">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
