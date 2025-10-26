@@ -17,6 +17,14 @@ export const Route = createFileRoute('/_app-layout')({
                 }
             })
         }
+
+        // Redirect to onboarding if user exists but hasn't created a business yet
+        if (user && !user.hasBusinessOnboarded) {
+            throw redirect({
+                to: '/onboarding',
+                replace: true,
+            })
+        }
     }
 })
 
@@ -26,6 +34,10 @@ function RouteComponent() {
     useRedirectGuard(({ user }) => {
         if (user === null) {
             return '/sign-in';
+        }
+        // Redirect to onboarding if user exists but hasn't created a business yet
+        if (user && !user.hasBusinessOnboarded) {
+            return '/onboarding';
         }
         return null;
     })
