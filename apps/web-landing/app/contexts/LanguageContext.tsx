@@ -27,7 +27,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
 
   const availableLanguages = [
     { code: 'en', name: 'English' },
-    { code: 'gr', name: 'Ελληνικά' }
+    { code: 'el', name: 'Ελληνικά' }
   ];
 
   const changeLanguage = (language: string) => {

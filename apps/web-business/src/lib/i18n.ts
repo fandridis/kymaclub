@@ -7,6 +7,14 @@ export const AVAILABLE_LANGUAGES = ['en', 'el', 'lt'];
 
 const DEFAULT_LANGUAGE = 'en';
 
+// Migrate old 'gr' language code to 'el'
+if (typeof window !== 'undefined') {
+    const storedLng = localStorage.getItem('i18nextLng');
+    if (storedLng === 'gr') {
+        localStorage.setItem('i18nextLng', 'el');
+    }
+}
+
 i18n
     .use(Backend)
     .use(LanguageDetector)
@@ -24,6 +32,7 @@ i18n
         detection: {
             order: ['localStorage', 'navigator', 'htmlTag'],
             caches: ['localStorage'],
+            lookupLocalStorage: 'i18nextLng',
         },
 
         interpolation: {

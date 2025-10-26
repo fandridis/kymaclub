@@ -4,14 +4,14 @@ import LanguageDetector from "i18next-browser-languagedetector";
 
 // Import translation files
 import enTranslations from "./locales/en.json";
-import grTranslations from "./locales/gr.json";
+import elTranslations from "./locales/el.json";
 
 const resources = {
   en: {
     translation: enTranslations,
   },
-  gr: {
-    translation: grTranslations,
+  el: {
+    translation: elTranslations,
   },
 };
 
@@ -20,8 +20,8 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: "gr", // Set default language to Greek
-    fallbackLng: "gr", // Keep Greek as fallback
+    lng: "el", // Set default language to Greek
+    fallbackLng: "el", // Keep Greek as fallback
     debug: false,
 
     interpolation: {

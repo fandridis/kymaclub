@@ -31,7 +31,7 @@ export function Navigation({
   }, []);
 
   const handleLanguageToggle = () => {
-    const nextLanguage = currentLanguage === 'gr' ? 'en' : 'gr';
+    const nextLanguage = currentLanguage === 'el' ? 'en' : 'el';
     changeLanguage(nextLanguage);
   };
 
@@ -146,7 +146,7 @@ export function Navigation({
                 }`}
             >
               <Globe className="h-3 w-3" />
-              {currentLanguage === 'gr' ? 'EN' : 'GR'}
+              {currentLanguage === 'el' ? 'EN' : 'EL'}
             </button>
           </nav>
 
@@ -284,7 +284,7 @@ export function Navigation({
                 className="w-full flex items-center justify-between p-3 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-all duration-200 text-gray-700 hover:text-gray-900"
               >
                 <span className="font-medium">
-                  {currentLanguage === 'gr' ? 'Ελληνικά' : 'English'}
+                  {currentLanguage === 'el' ? 'Ελληνικά' : 'English'}
                 </span>
               </button>
             </div>

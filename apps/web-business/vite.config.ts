@@ -12,7 +12,8 @@ const copyLocales = () => ({
   name: 'copy-locales',
   closeBundle() {
     const srcDir = path.resolve(__dirname, 'src/locales')
-    const distDir = path.resolve(__dirname, 'dist/locales')
+    // Copy to dist/client/locales for proper static asset serving
+    const distDir = path.resolve(__dirname, 'dist/client/locales')
 
     if (!existsSync(distDir)) {
       mkdirSync(distDir, { recursive: true })

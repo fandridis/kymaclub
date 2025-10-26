@@ -23,7 +23,7 @@ export function MinimalStatCard({
     const changeToneClass = changeTone === "negative" ? "text-destructive" : "text-emerald-600"
 
     return (
-        <div className={cn("flex items-center gap-4 p-4 rounded-lg border border-muted shadow-xl", className)}>
+        <div className={cn("flex items-center gap-4 p-4 rounded-lg border bg-card border-border shadow-sm", className)}>
             <div className="flex-shrink-0">
                 {React.cloneElement(icon, {
                     className: "h-5 w-5 text-muted-foreground",
