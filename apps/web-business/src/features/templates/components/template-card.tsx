@@ -150,11 +150,11 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
         <Card className="w-full max-w-md hover:shadow-lg transition-shadow duration-200">
             <CardHeader className="pb-3 flex-1">
                 <div>
-                    <div className="flex items-start justify-between">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <CardTitle className="text-xl font-semibold leading-tight">
                             {template.name}
                         </CardTitle>
-                        <div className="flex items-center gap-2 ml-2">
+                        <div className="flex items-center gap-2 sm:ml-2 sm:shrink-0">
                             <Badge variant={template.isActive ? "default" : "secondary"} className="shrink-0">
                                 {template.isActive ? "Active" : "Inactive"}
                             </Badge>
@@ -267,7 +267,6 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
                             variant="outline"
                             onClick={() => fileInputRef.current?.click()}
                             disabled={status !== "idle" || imageStorageIds.length >= 4}
-                            className="w-full"
                         >
                             {status !== "idle" ? (
                                 <>

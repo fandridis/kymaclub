@@ -153,7 +153,7 @@ export function MessagesPage() {
                     } md:flex w-full md:w-96 border-r border-border flex-col`}>
                     {/* Header */}
                     <div className="p-4 border-b border-border">
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3">
                             <div>
                                 <h1 className="text-xl font-bold text-foreground">Messages</h1>
                                 <p className="text-sm text-muted-foreground">
@@ -161,7 +161,7 @@ export function MessagesPage() {
                                 </p>
                             </div>
                             {totalUnreadCount > 0 && (
-                                <Badge variant="secondary" className="text-sm px-2 py-1">
+                                <Badge variant="secondary" className="text-sm px-2 py-1 sm:shrink-0">
                                     {totalUnreadCount}
                                 </Badge>
                             )}

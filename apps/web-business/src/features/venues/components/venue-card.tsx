@@ -254,7 +254,7 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
 
                 {/* Images Section - Takes available space */}
                 <div className="flex-1 flex flex-col">
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-2">
                         <h4 className="text-sm font-medium">Venue Images ({imageStorageIds.length}/{MAX_IMAGES})</h4>
                         <input
                             type="file"

@@ -84,7 +84,7 @@ export default function DashboardPage() {
                         <div className="h-8 w-40 bg-muted animate-pulse rounded" />
                     </div>
                 </div>
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-2">
                     {Array.from({ length: 4 }).map((_, i) => (
                         <div key={i} className="flex items-center gap-4 p-4 rounded-lg border border-muted">
                             <div className="h-5 w-5 bg-muted animate-pulse rounded" />
@@ -111,7 +111,7 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2">
                 {statCards.map((stat) => (
                     <MinimalStatCard
                         key={stat.title}

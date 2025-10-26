@@ -36,7 +36,7 @@ export function VenuesTab() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h3 className="text-lg font-semibold">Your Venues</h3>
                     <p className="text-sm text-muted-foreground">

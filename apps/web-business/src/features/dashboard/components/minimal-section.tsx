@@ -14,13 +14,13 @@ export function MinimalSection({ title, description, children, className, header
         <div className={cn("flex flex-col rounded-lg border bg-card border-border shadow-sm", className)}>
             {(title || description || headerAction) && (
                 <div className="space-y-1 p-6 pb-4 flex-shrink-0">
-                    <div className="flex items-start justify-between">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="space-y-1">
                             {title && <h3 className="text-lg font-semibold">{title}</h3>}
                             {description && <p className="text-sm text-muted-foreground">{description}</p>}
                         </div>
                         {headerAction && (
-                            <div className="ml-4 flex-shrink-0">
+                            <div className="sm:ml-4 flex-shrink-0">
                                 {headerAction}
                             </div>
                         )}

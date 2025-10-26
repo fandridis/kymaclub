@@ -141,7 +141,7 @@ export function ClassBookingsItem({
 
     return (
         <>
-            <div className={cn("flex items-center justify-between py-3 px-3", className)}>
+            <div className={cn("flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between py-3 px-3", className)}>
                 <div className="flex items-center gap-3 flex-1">
                     {/* Customer Avatar/Icon */}
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
@@ -183,7 +183,7 @@ export function ClassBookingsItem({
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 sm:shrink-0">
                     {/* Status Badge */}
                     <Badge
                         variant={getStatusVariant(booking.status)}

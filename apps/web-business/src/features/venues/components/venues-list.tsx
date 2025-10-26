@@ -23,7 +23,7 @@ export function VenuesList() {
     }
 
     return (
-        <div className="max-w-7xl grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2">
             {venues.map((venue) => (
                 <VenueCard key={venue._id} venue={venue} onEdit={() => setEditingVenue(venue)} onDelete={() => setDeletingVenue(venue)} />
             ))}

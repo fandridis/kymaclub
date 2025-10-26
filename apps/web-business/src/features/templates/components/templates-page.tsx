@@ -92,15 +92,17 @@ export default function TemplatesPage() {
 
     return (
         <>
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-2">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Class Templates</h1>
-                    <p className="text-muted-foreground mt-2">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Class Templates</h1>
+                    <p className="text-muted-foreground mt-1 text-sm sm:text-base">
                         Create and manage your class templates for easy scheduling
                     </p>
                 </div>
 
-                <CreateTemplateDialog />
+                <div className="w-full sm:w-auto sm:shrink-0">
+                    <CreateTemplateDialog />
+                </div>
             </div>
 
             {isInitialLoading ? (
@@ -115,7 +117,7 @@ export default function TemplatesPage() {
                 renderEmptyState()
             ) : (
                 <>
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-6 md:grid-cols-2">
                         {templates.map((template: Doc<"classTemplates">) => (
                             <TemplateCard
                                 key={template._id}

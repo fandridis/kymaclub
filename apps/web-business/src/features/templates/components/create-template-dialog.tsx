@@ -301,7 +301,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
     return (
         <div className="p-8">
             {!hideTrigger && (
-                <Button onClick={() => setOpen(true)} className="mb-4">
+                <Button onClick={() => setOpen(true)} className="w-full sm:w-auto mb-4">
                     <Plus className="w-4 h-4 mr-2" />
                     Create Template
                 </Button>
