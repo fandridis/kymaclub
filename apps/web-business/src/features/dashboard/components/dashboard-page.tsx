@@ -157,7 +157,7 @@ export default function DashboardPage() {
                             </div>
                         ) : (
                             reviews.map((review) => (
-                                <div key={review._id} className="rounded-lg border border-muted shadow-sm p-4 hover:shadow-md transition-all">
+                                <div key={review._id} className="rounded-lg border bg-card border-border shadow-sm p-4 hover:opacity-80 transition-opacity">
                                     <div className="flex items-center justify-between text-sm font-medium">
                                         <span>{review.userSnapshot.name || 'Anonymous'}</span>
                                         <span className="text-muted-foreground text-xs">

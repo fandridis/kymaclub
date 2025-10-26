@@ -11,7 +11,7 @@ interface MinimalSectionProps {
 
 export function MinimalSection({ title, description, children, className, headerAction }: MinimalSectionProps) {
     return (
-        <div className={cn("flex flex-col rounded-lg border border-muted shadow-xl", className)}>
+        <div className={cn("flex flex-col rounded-lg border bg-card border-border shadow-sm", className)}>
             {(title || description || headerAction) && (
                 <div className="space-y-1 p-6 pb-4 flex-shrink-0">
                     <div className="flex items-start justify-between">

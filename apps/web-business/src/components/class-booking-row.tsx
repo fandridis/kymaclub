@@ -69,7 +69,7 @@ export function ClassBookingRow({
     return (
         <Card
             className={cn(
-                "p-4 shadow",
+                "p-4 rounded-lg border shadow-sm",
                 cardBackground,
                 cardBorder,
                 cardText,

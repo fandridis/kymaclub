@@ -35,6 +35,9 @@ i18n
             lookupLocalStorage: 'i18nextLng',
         },
 
+        // Normalize language codes to match available files
+        load: 'languageOnly',
+
         interpolation: {
             escapeValue: false,
         },
