@@ -5,6 +5,8 @@ import { coreService } from "../../services/coreService";
 import { businessesFields, venuesFields } from "../schema";
 import { getAuthenticatedUserOrThrow } from "../utils";
 import { omit } from "convex-helpers";
+import { ConvexError } from "convex/values";
+import { ERROR_CODES } from "../../utils/errorCodes";
 
 /***************************************************************
  * Create Business with Venue
@@ -182,5 +184,56 @@ export const removeAllSessions = mutation({
             await ctx.db.delete(session._id);
         }
         return { success: true };
+    }
+});
+
+/***************************************************************
+ * Authorize Business Email (Admin Only)
+ ***************************************************************/
+export const authorizeBusinessEmailArgs = v.object({
+    email: v.string(),
+    expiresAt: v.optional(v.number()), // Optional expiration timestamp
+    notes: v.optional(v.string()), // Optional notes about authorization
+});
+export type AuthorizeBusinessEmailArgs = Infer<typeof authorizeBusinessEmailArgs>;
+
+export const authorizeBusinessEmail = mutation({
+    args: authorizeBusinessEmailArgs,
+    handler: async (ctx, args) => {
+        const user = await getAuthenticatedUserOrThrow(ctx);
+
+        // Only admins can authorize emails
+        if (user.role !== "admin") {
+            throw new ConvexError({
+                message: "Only administrators can authorize business accounts",
+                code: ERROR_CODES.UNAUTHORIZED,
+            });
+        }
+
+        // Check if already authorized
+        const existing = await ctx.db
+            .query("authorizedBusinessEmails")
+            .withIndex("by_email", (q) => q.eq("email", args.email))
+            .filter((q) => q.neq(q.field("deleted"), true))
+            .first();
+
+        if (existing) {
+            throw new ConvexError({
+                message: "Email is already authorized",
+                code: ERROR_CODES.VALIDATION_ERROR,
+            });
+        }
+
+        // Create authorization record
+        const authorizedId = await ctx.db.insert("authorizedBusinessEmails", {
+            email: args.email,
+            authorizedBy: user._id,
+            expiresAt: args.expiresAt,
+            notes: args.notes,
+            createdAt: Date.now(),
+            createdBy: user._id,
+        });
+
+        return { authorizedId, message: `Email ${args.email} authorized for business account creation` };
     }
 });

@@ -157,25 +157,11 @@ export const businessesFields = {
   ...softDeleteFields,
 };
 
-export const businessInvitationsFields = {
-  businessId: v.id("businesses"),
+export const authorizedBusinessEmailsFields = {
   email: v.string(),
-  role: v.union(v.literal("owner"), v.literal("admin"), v.literal("user")),
-  token: v.string(), // Unique invitation token
-  invitedBy: v.id("users"),
-  status: v.union(
-    v.literal("pending"),
-    v.literal("accepted"),
-    v.literal("expired"),
-    v.literal("revoked")
-  ),
-  expiresAt: v.number(),
-  acceptedAt: v.optional(v.number()),
-  acceptedBy: v.optional(v.id("users")),
-  metadata: v.optional(v.object({
-    personalMessage: v.optional(v.string()),
-    permissions: v.optional(v.array(v.string())),
-  })),
+  authorizedBy: v.id("users"),
+  expiresAt: v.optional(v.number()), // Optional expiration date
+  notes: v.optional(v.string()), // Optional notes about why this email was authorized
   ...auditFields,
   ...softDeleteFields,
 };
@@ -991,13 +977,11 @@ export default defineSchema({
     .index("by_email", ["email"]),
 
   /**
-  * Business invitations for user onboarding
+  * Authorized business emails - whitelist for new business account creation
   */
-  businessInvitations: defineTable(businessInvitationsFields)
-    .index("by_business", ["businessId"])
+  authorizedBusinessEmails: defineTable(authorizedBusinessEmailsFields)
     .index("by_email", ["email"])
-    .index("by_token", ["token"])
-    .index("by_business_email", ["businessId", "email"]),
+    .index("by_deleted", ["deleted"]),
 
   /** 
    * System settings for global configuration

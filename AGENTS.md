@@ -298,6 +298,7 @@ src/
 - **GitHub OAuth** + **Email OTP** - Multiple sign-in options
 - **Business onboarding** - Step-by-step setup wizard
 - **Role management** - Owner/admin/staff permissions
+- **Account authorization** - Invitation-only sign-up for business accounts
 
 ### **Dashboard & Analytics**
 - **Business overview** - Key metrics and upcoming classes
@@ -981,6 +982,30 @@ Complete reference of all business rules, constraints, and operational logic wit
 - **Code**: Throughout frontend hook implementations
 - **Balance**: Real-time updates vs. network efficiency
 - **Best Practice**: Subscribe to specific business/user data, not global changes
+
+---
+
+---
+
+## Business Account Authorization System
+
+### AUTH-001: Invitation-Only Business Account Creation
+- **Rule**: New business account creation requires authorization in the `authorizedBusinessEmails` table
+- **Code**: `convex/auth.ts:37-82` (afterUserCreatedOrUpdated callback), `queries/core.ts:49-81` (isEmailAuthorizedForBusiness)
+- **Frontend**: `components/auth/sign-in-with-email-code.tsx` (submit-time authorization check)
+- **Tests**: `integrationTests/auth.integration.test.ts` (authorization tests)
+- **Rationale**: Business accounts are created manually by administrators with in-person onboarding
+- **Logic**: 
+  - Existing users (returning users) can always sign in
+  - New users must have their email in the `authorizedBusinessEmails` table
+  - Unauthorized account creation attempts are blocked and the user is soft-deleted
+- **Admin Tool**: `mutations/core.ts:authorizeBusinessEmail` - Admin-only mutation to add authorized emails
+
+### AUTH-002: Whitelist Implementation
+- **Storage**: Uses dedicated `authorizedBusinessEmails` table (no businessId required)
+- **Query**: `api.queries.core.isEmailAuthorizedForBusiness` checks user existence and whitelist
+- **Safety**: Backend callback in `afterUserCreatedOrUpdated` provides server-side enforcement
+- **UX**: Frontend shows alert if email not authorized and disables submit button
 
 ---
 
