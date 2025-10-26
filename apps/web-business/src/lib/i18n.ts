@@ -16,8 +16,9 @@ i18n
         // defaultNS: 'dashboard',
 
         backend: {
-            loadPath: '/src/locales/{{lng}}.json',
-            // loadPath: '/public/locales/{{lng}}/{{ns}}.json',
+            loadPath: import.meta.env.PROD
+                ? '/locales/{{lng}}.json'
+                : '/src/locales/{{lng}}.json',
         },
 
         detection: {

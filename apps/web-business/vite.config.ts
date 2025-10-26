@@ -4,6 +4,29 @@ import tailwindcss from '@tailwindcss/vite'
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import path from 'path'
+import { copyFileSync, existsSync, mkdirSync } from 'fs'
+import { glob } from 'glob'
+
+// Vite plugin to copy locale files to public directory
+const copyLocales = () => ({
+  name: 'copy-locales',
+  closeBundle() {
+    const srcDir = path.resolve(__dirname, 'src/locales')
+    const distDir = path.resolve(__dirname, 'dist/locales')
+
+    if (!existsSync(distDir)) {
+      mkdirSync(distDir, { recursive: true })
+    }
+
+    const localeFiles = glob.sync('**/*.json', { cwd: srcDir })
+    localeFiles.forEach(file => {
+      const src = path.join(srcDir, file)
+      const dest = path.join(distDir, file)
+      copyFileSync(src, dest)
+      console.log(`Copied locale: ${file}`)
+    })
+  }
+})
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -19,7 +42,8 @@ export default defineConfig({
     tailwindcss(),
     cloudflare({
       inspectorPort: 9240,
-    })
+    }),
+    copyLocales(),
   ],
   resolve: {
     alias: {
