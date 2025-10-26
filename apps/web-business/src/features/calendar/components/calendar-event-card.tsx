@@ -80,7 +80,7 @@ export const CalendarEventCard = ({ eventInfo, onEdit, onDelete, onViewBookings,
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <button
-                                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-white/20 rounded"
+                                className="opacity-60 hover:opacity-100 transition-opacity p-0.5 hover:bg-white/20 rounded"
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <MoreVertical className="h-3 w-3" />
@@ -91,10 +91,7 @@ export const CalendarEventCard = ({ eventInfo, onEdit, onDelete, onViewBookings,
                                 <Users className="h-4 w-4 mr-2" />
                                 View Bookings
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={handleEditClick} className="text-gray-700 focus:text-gray-700">
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                            </DropdownMenuItem>
+
                             <DropdownMenuItem onClick={handleToggleBookingsClick} className="text-gray-700 focus:text-gray-700">
                                 {classInstance.disableBookings ? (
                                     <>
@@ -107,6 +104,10 @@ export const CalendarEventCard = ({ eventInfo, onEdit, onDelete, onViewBookings,
                                         Close bookings
                                     </>
                                 )}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleEditClick} className="text-gray-700 focus:text-gray-700">
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={handleDeleteClick} className="text-red-600 focus:text-red-600">
                                 <Trash2 className="h-4 w-4 mr-2" />

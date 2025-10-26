@@ -147,42 +147,44 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
     };
 
     return (
-        <Card className="w-full max-w-md hover:shadow-lg transition-shadow duration-200">
-            <CardHeader className="pb-3 flex-1">
+        <Card className="w-full hover:shadow-lg transition-shadow duration-200">
+            <CardHeader className="pb-3 flex-1 relative">
+                {/* Action buttons - positioned absolutely in top right corner */}
+                {(onEdit || onDelete) && (
+                    <div className="absolute -top-3 right-3">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button size="sm" variant="outline" className="h-8 w-8 p-0">
+                                    <MoreVertical className="h-4 w-4" />
+                                    <span className="sr-only">Open menu</span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                {onEdit && (
+                                    <DropdownMenuItem onClick={handleEditTemplate}>
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        Edit
+                                    </DropdownMenuItem>
+                                )}
+                                {onDelete && (
+                                    <DropdownMenuItem onClick={handleDeleteTemplate} variant="destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete
+                                    </DropdownMenuItem>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                )}
+
                 <div>
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex items-start gap-2 pr-12">
                         <CardTitle className="text-xl font-semibold leading-tight">
                             {template.name}
                         </CardTitle>
-                        <div className="flex items-center gap-2 sm:ml-2 sm:shrink-0">
-                            <Badge variant={template.isActive ? "default" : "secondary"} className="shrink-0">
-                                {template.isActive ? "Active" : "Inactive"}
-                            </Badge>
-                            {(onEdit || onDelete) && (
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button size="sm" variant="outline" className="h-8 w-8 p-0">
-                                            <MoreVertical className="h-4 w-4" />
-                                            <span className="sr-only">Open menu</span>
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        {onEdit && (
-                                            <DropdownMenuItem onClick={handleEditTemplate}>
-                                                <Edit className="mr-2 h-4 w-4" />
-                                                Edit
-                                            </DropdownMenuItem>
-                                        )}
-                                        {onDelete && (
-                                            <DropdownMenuItem onClick={handleDeleteTemplate} variant="destructive">
-                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                Delete
-                                            </DropdownMenuItem>
-                                        )}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            )}
-                        </div>
+                        <Badge variant={template.isActive ? "default" : "secondary"} className="shrink-0 mt-0.5">
+                            {template.isActive ? "Active" : "Inactive"}
+                        </Badge>
                     </div>
 
                     {fullDescription && (

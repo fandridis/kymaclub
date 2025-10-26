@@ -114,7 +114,7 @@ export function CalendarPage({ startDate, classInstances, user, loading }: Calen
     return (
         <>
             <div className="mb-2 flex justify-end">
-                <Button size="sm" onClick={() => setCreateDialog({ open: true, selectedDateTime: '' })}>
+                <Button onClick={() => setCreateDialog({ open: true, selectedDateTime: '' })}>
                     <Plus className="h-4 w-4 mr-2" />
                     New class
                 </Button>
