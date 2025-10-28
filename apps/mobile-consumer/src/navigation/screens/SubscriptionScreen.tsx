@@ -23,11 +23,12 @@ type SubscriptionTier = {
 };
 
 // Generate subscription options using backend pricing logic
+// Only generate options for allowed tier amounts
 const generateSubscriptionOptions = (): SubscriptionTier[] => {
+    const allowedTiers = [20, 30, 50, 70, 100, 200];
     const options: SubscriptionTier[] = [];
 
-    // Generate options every 5 credits from 5 to 500
-    for (let credits = 5; credits <= 500; credits += 5) {
+    for (const credits of allowedTiers) {
         const pricing = calculateSubscriptionPricing(credits);
         options.push({
             credits: credits,
@@ -45,7 +46,7 @@ const subscriptionOptions: SubscriptionTier[] = generateSubscriptionOptions();
 export function SubscriptionScreen() {
     const navigation = useNavigation();
     const user = useAuthenticatedUser();
-    const [selectedCredits, setSelectedCredits] = useState<number>(25);
+    const [selectedCredits, setSelectedCredits] = useState<number>(20);
     const [isLoading, setIsLoading] = useState(false);
 
     // Get current subscription status
@@ -60,7 +61,7 @@ export function SubscriptionScreen() {
     useEffect(() => {
         if (subscription?.creditAmount) {
             // Check if the current subscription credit amount is in our card options
-            const cardOptions = [10, 25, 50, 100, 200, 500];
+            const cardOptions = [20, 30, 50, 70, 100, 200];
             if (cardOptions.includes(subscription.creditAmount)) {
                 setSelectedCredits(subscription.creditAmount);
             }
@@ -69,7 +70,7 @@ export function SubscriptionScreen() {
 
 
     const getCurrentOption = () => {
-        return subscriptionOptions.find(option => option.credits === selectedCredits) || subscriptionOptions[3]; // Default to 20 credits
+        return subscriptionOptions.find(option => option.credits === selectedCredits) || subscriptionOptions[0]; // Default to 10 credits
     };
 
     const isSubscriptionActive = (): boolean => {
@@ -308,7 +309,7 @@ export function SubscriptionScreen() {
                     {/* Credit Selection Cards */}
                     <View style={styles.cardsSection}>
                         <View style={styles.cardsGrid}>
-                            {[10, 25, 50, 100, 200, 500].map(credits => {
+                            {[20, 30, 50, 70, 100, 200].map(credits => {
                                 const option = subscriptionOptions.find(opt => opt.credits === credits);
                                 if (!option) return null;
 
@@ -414,7 +415,7 @@ export function SubscriptionScreen() {
                 <View style={styles.infoSection}>
                     <Text style={styles.infoTitle}>Why subscribe?</Text>
                     <Text style={styles.infoText}>
-                        • Save 3-12% compared to one-time purchases{'\n'}
+                        • Save 5-10% compared to one-time purchases{'\n'}
                         • Credits are added to your account each month{'\n'}
                         • Use credits to book classes at any partner studio{'\n'}
                         • Unused credits roll over for up to 3 months{'\n'}
@@ -503,7 +504,7 @@ const styles = StyleSheet.create({
 
     // Plan Card
     planCard: {
-        marginHorizontal: theme.spacing.lg,
+        marginHorizontal: theme.spacing.sm,
         marginBottom: theme.spacing.lg,
         borderRadius: 16,
         backgroundColor: '#fff',
@@ -618,7 +619,7 @@ const styles = StyleSheet.create({
     // Cards Section
     cardsSection: {
         paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.lg,
+        paddingBottom: theme.spacing.sm,
     },
     cardsGrid: {
         flexDirection: 'row',

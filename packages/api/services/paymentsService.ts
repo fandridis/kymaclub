@@ -120,7 +120,7 @@ export const paymentsService = {
     }
 
     if (!validateCreditAmount(creditAmount)) {
-      throw new Error("Invalid credit amount. Must be between 5-500 credits in increments of 5.");
+      throw new Error("Invalid credit amount. Must be one of: 20, 30, 50, 70, 100, 200 credits");
     }
 
     if (!process.env.STRIPE_SECRET_KEY) {
@@ -362,7 +362,7 @@ export const paymentsService = {
       throw new Error("User ID is required");
     }
     if (!newCreditAmount || !validateCreditAmount(newCreditAmount)) {
-      throw new Error("Valid credit amount is required (5-150 in increments of 5)");
+      throw new Error("Valid credit amount is required. Must be one of: 20, 30, 50, 70, 100, 200 credits");
     }
 
     const subscription = await ctx.runQuery(
@@ -596,7 +596,7 @@ export const paymentsService = {
     }
 
     if (!validateCreditAmount(newCreditAmount)) {
-      throw new Error("Credit amount must be between 5 and 500 credits in increments of 5");
+      throw new Error("Invalid credit amount. Must be one of: 20, 30, 50, 70, 100, 200 credits");
     }
 
     const subscription = await ctx.runQuery(

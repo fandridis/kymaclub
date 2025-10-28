@@ -89,7 +89,7 @@ describe('Payment System Integration Tests', () => {
       // Trying to update non-existent subscription should fail
       await expect(
         asUser.action(api.actions.payments.updateSubscription, {
-          newCreditAmount: 30
+          newCreditAmount: 50
         })
       ).rejects.toThrow("No active subscription found");
     });
@@ -121,7 +121,7 @@ describe('Payment System Integration Tests', () => {
 
       await expect(
         asUser.action(api.actions.payments.updateSubscription, {
-          newCreditAmount: 30
+          newCreditAmount: 50
         })
       ).rejects.toThrow("No active subscription found");
     });
@@ -130,7 +130,7 @@ describe('Payment System Integration Tests', () => {
   describe('Pricing Consistency Validation', () => {
     test('should maintain pricing consistency across operations and webhooks', async () => {
       // Verify pricing calculations match across all tiers
-      const testAmounts = [5, 25, 95, 100, 150, 195, 200, 250, 295, 300, 400, 445, 450, 500];
+      const testAmounts = [20, 30, 50, 70, 100, 200];
 
       for (const amount of testAmounts) {
         const pricing = calculateSubscriptionPricing(amount);
@@ -141,19 +141,16 @@ describe('Payment System Integration Tests', () => {
         expect(pricing.pricePerCredit).toBeGreaterThan(0);
         expect(pricing.discount).toBeGreaterThanOrEqual(0);
 
-        // Verify tier boundaries are correct (based on 0.60 euros per credit base price)
-        if (amount <= 50) {
-          expect(pricing.discount).toBe(10);
-          expect(pricing.pricePerCredit).toBe(0.54);
-        } else if (amount <= 100) {
-          expect(pricing.discount).toBe(15);
-          expect(pricing.pricePerCredit).toBe(0.51);
-        } else if (amount <= 300) {
-          expect(pricing.discount).toBe(15);
-          expect(pricing.pricePerCredit).toBe(0.51);
+        // Verify tier boundaries are correct (based on 1.1 euros per credit base price)
+        if (amount <= 30) {
+          expect(pricing.discount).toBe(5);
+          expect(pricing.pricePerCredit).toBe(1.045);
+        } else if (amount <= 70) {
+          expect(pricing.discount).toBe(7);
+          expect(pricing.pricePerCredit).toBe(1.023);
         } else {
-          expect(pricing.discount).toBe(20);
-          expect(pricing.pricePerCredit).toBe(0.48);
+          expect(pricing.discount).toBe(10);
+          expect(pricing.pricePerCredit).toBe(0.99);
         }
       }
     });

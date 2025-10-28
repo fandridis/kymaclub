@@ -14,12 +14,14 @@ import { calculateSubscriptionPricing, CREDIT_PACKS } from '@repo/api/operations
 import Slider from '@react-native-community/slider';
 
 // Generate subscription options using backend pricing logic
+// Only generate options for allowed tier amounts
 const generateSubscriptionOptions = () => {
+  const allowedTiers = [20, 30, 50, 70, 100, 200];
   const options = [];
-  for (let i = 5; i <= 100; i += 5) {
-    const pricing = calculateSubscriptionPricing(i);
+  for (const credits of allowedTiers) {
+    const pricing = calculateSubscriptionPricing(credits);
     options.push({
-      credits: i,
+      credits: credits,
       price: pricing.priceInCents / 100,
       pricePerCredit: pricing.pricePerCredit,
       discount: pricing.discount

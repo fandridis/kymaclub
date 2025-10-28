@@ -13,7 +13,7 @@ import { api } from '@repo/api/convex/_generated/api';
 import { CREDIT_PACKS } from '@repo/api/operations/payments';
 
 // Simple currency formatter - can be made configurable later
-const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
+const formatCurrency = (amount: number) => `${amount.toFixed(2)}€`;
 
 export function BuyCreditsScreen() {
     const navigation = useNavigation();

@@ -701,28 +701,30 @@ Complete reference of all business rules, constraints, and operational logic wit
 - **Webhook Dependency**: Uses Stripe `checkout.session.completed` event
 
 ### CR-005: Credit Conversion Ratio (ADR-009)
-- **Rule**: 1 credit = 50 cents spending value (CREDITS_TO_CENTS_RATIO = 50)
+- **Rule**: 1 credit = 1 euro spending value (CREDITS_TO_CENTS_RATIO = 100)
 - **Code**: `packages/utils/src/credits.ts:10` (CREDITS_TO_CENTS_RATIO constant)
 - **Tests**: All payment tests use this ratio for consistency
-- **Business Logic**: Spending value vs. purchase price are separate concepts
-- **Example**: Customer pays $0.65 to buy 1 credit worth 50 cents when booking
-- **Rationale**: Provides business markup while maintaining simple credit math
+- **Business Logic**: Businesses set prices in euros which directly map to credits (15 euro class = 15 credits)
+- **Example**: Customer pays €1.10 to buy 1 credit worth 1 euro when booking
+- **Rationale**: Simpler 1:1 euro-to-credit ratio for easier business and consumer understanding
 
 ### CR-006: Subscription Pricing Tiers (ADR-010)
-- **Rule**: 5-tier discount structure: 0% (5-99), 3% (100-199), 5% (200-299), 7% (300-449), 10% (450-500)
-- **Code**: `operations/payments.ts:99-127` (calculateSubscriptionPricing)
+- **Rule**: Tiered discount structure: 5% (20,30), 7% (50,70), 10% (100,200)
+- **Code**: `operations/payments.ts` and `packages/utils/src/credits.ts` (calculateSubscriptionPricing)
 - **Tests**: `operations/payments.test.ts` (subscription pricing tests)
-- **Base Price**: $0.50 per credit before discounts
-- **Business Logic**: Volume discounts incentivize larger subscriptions
-- **Maximum**: 500 credits per month (increased from 150 to support enterprise users)
+- **Base Price**: €1.10 per credit before discounts
+- **Business Logic**: All subscriptions get baseline 5% discount, scaling to 10% for larger plans
+- **Allowed amounts**: 20, 30, 50, 70, 100, 200 credits per month
+- **Minimum**: 20 credits (prevents administrative overhead)
+- **Maximum**: 200 credits per month (supports regular users)
 
 ### CR-007: One-Time Credit Packs (ADR-011)
-- **Rule**: 8 predefined packs: 10, 25, 50, 100, 150, 200, 300, 500 credits
-- **Code**: `operations/payments.ts:61-71` (CREDIT_PACKS constant)
+- **Rule**: 8 predefined packs: 10, 20, 40, 60, 80, 100, 150, 200 credits
+- **Code**: `operations/payments.ts` (CREDIT_PACKS constant)
 - **Tests**: `operations/payments.test.ts` (one-time pricing tests)
-- **Base Price**: $0.65 per credit with discount tiers (0%, 2.5%, 5%, 10%, 15%)
+- **Base Price**: €1.10 per credit with discount tiers (0%, 3%, 5%, 7%)
 - **Minimum**: 10 credits (prevents micro-transactions)
-- **Maximum**: 500 credits (reasonable one-time purchase limit)
+- **Maximum**: 200 credits (reasonable one-time purchase limit)
 
 ---
 

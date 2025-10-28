@@ -50,32 +50,20 @@ export type CreditPack = {
   discount?: number;
 };
 
-/**
- * Centralized credit pack definitions - single source of truth for all pricing
- * Used by both mobile app UI and backend pricing calculations
- * 
- * Base calculation: 1 credit costs 50 cents to provide (CREDITS_TO_CENTS_RATIO)
- * Purchase price includes business markup (typically 1.3x the base cost = $0.65 per credit)
- */
-const calculatePackPrice = (credits: number, discount: number = 0): number => {
-  const priceBeforeDiscount = credits * BASE_PURCHASE_PRICE_PER_CREDIT;
-  return Number((priceBeforeDiscount * (1 - discount / 100)).toFixed(2));
-};
-
 // ADR-011: One-Time Credit Pack Structure
-// Decision: 8 predefined packs with volume-based discounts (10-500 credits)
+// Decision: 9 predefined packs with volume-based discounts (10-500 credits)
 // Rationale: Covers casual users (10) to enterprise users (500) with clear savings
 // Alternative considered: Continuous pricing (rejected - too complex for UI)
 // Business logic: Minimum 10 credits prevents micro-transactions
 export const CREDIT_PACKS: CreditPack[] = [
-  { credits: 10, price: calculatePackPrice(10) },     // $0.60 per credit
-  { credits: 25, price: calculatePackPrice(25) },     // $0.60 per credit
-  { credits: 50, price: calculatePackPrice(50) },     // $0.60 per credit
-  { credits: 100, price: calculatePackPrice(100, 2.5), discount: 2.5 },   // $0.585 per credit with 2.5% discount
-  { credits: 150, price: calculatePackPrice(150, 5), discount: 5 },       // $0.57 per credit with 5% discount
-  { credits: 200, price: calculatePackPrice(200, 10), discount: 10 },     // $0.54 per credit with 10% discount
-  { credits: 300, price: calculatePackPrice(300, 10), discount: 10 },     // $0.54 per credit with 10% discount
-  { credits: 500, price: calculatePackPrice(500, 15), discount: 15 },     // $0.51 per credit with 15% discount
+  { credits: 10, price: 11.00 },                     // 1.1 euros per credit (no discount)
+  { credits: 20, price: 22.00 },                     // 1.1 euros per credit (no discount)
+  { credits: 40, price: 42.68, discount: 3 },         // 1.067 euros per credit (3% discount)
+  { credits: 60, price: 64.02, discount: 3 },         // 1.067 euros per credit (3% discount)
+  { credits: 80, price: 83.60, discount: 5 },         // 1.045 euros per credit (5% discount)
+  { credits: 100, price: 104.50, discount: 5 },       // 1.045 euros per credit (5% discount)
+  { credits: 150, price: 156.75, discount: 5 },       // 1.045 euros per credit (5% discount)
+  { credits: 200, price: 204.60, discount: 7 },     // 1.023 euros per credit (7% discount)
 
 ];
 
@@ -114,14 +102,12 @@ export function calculateSubscriptionPricing(credits: number): PricingTier {
   let discount = 0;
 
   // Determine discount tier based on credit amount
-  if (credits >= 301) {
-    discount = 20; // 301-500 credits: 20% discount
-  } else if (credits >= 101) {
-    discount = 15; // 101-300 credits: 15% discount
-  } else if (credits >= 51) {
-    discount = 15;  // 51-100 credits: 15% discount
+  if (credits >= 100) {
+    discount = 10;  // 100, 200 credits: 10% discount
+  } else if (credits >= 50) {
+    discount = 7;  // 50, 70 credits: 7% discount
   } else {
-    discount = 10;  // 1-50 credits: 10% discount (immediate savings for subscriptions)
+    discount = 5;  // 20, 30 credits: 5% discount
   }
 
   // Calculate discounted price per credit
@@ -140,26 +126,23 @@ export function calculateSubscriptionPricing(credits: number): PricingTier {
 /**
  * Validates subscription credit amount within business rules
  * 
- * @description Ensures credit amount meets subscription constraints:
- * - Minimum: 5 credits (prevents micro-subscriptions)
- * - Maximum: 500 credits (supports new discount tiers)
- * - Increment: Must be divisible by 5 (UI slider constraint)
+ * @description Ensures credit amount is one of the allowed subscription tiers:
+ * - Allowed amounts: 20, 30, 50, 70, 100, 200 credits
  * 
  * @param credits - Number of credits to validate
  * @returns boolean - true if valid, false otherwise
  * 
  * @example
- * validateCreditAmount(30); // Returns: true (valid)
- * validateCreditAmount(3);  // Returns: false (below minimum)
- * validateCreditAmount(33); // Returns: false (not divisible by 5)
- * validateCreditAmount(600); // Returns: false (above maximum)
+ * validateCreditAmount(20); // Returns: true (valid tier)
+ * validateCreditAmount(25);  // Returns: false (not a valid tier)
+ * validateCreditAmount(200); // Returns: true (valid tier)
+ * validateCreditAmount(300); // Returns: false (above maximum)
  * 
- * @business_rule Minimum 5 credits prevents administrative overhead
- * @business_rule Maximum 500 credits supports all discount tiers
- * @business_rule Increment of 5 matches mobile app slider UI
+ * @business_rule Only specific tier amounts allowed to match mobile app card UI
  */
 export function validateCreditAmount(credits: number): boolean {
-  return credits >= 5 && credits <= 500 && credits % 5 === 0;
+  const allowedTiers = [20, 30, 50, 70, 100, 200];
+  return allowedTiers.includes(credits);
 }
 
 /**
@@ -292,7 +275,8 @@ export function calculateOneTimePricing(credits: number): PricingTier {
  * @rationale One-time purchases need flexibility for specific credit needs
  */
 export function validateOneTimeCreditAmount(credits: number): boolean {
-  return credits >= 10 && credits <= 500; // More flexible for one-time purchases
+  const allowedTiers = [10, 20, 40, 60, 80, 100, 150, 200];
+  return allowedTiers.includes(credits);
 }
 
 /**
@@ -340,7 +324,7 @@ export function getOneTimeProductName(credits: number): string {
 export function getOneTimeProductDescription(credits: number): string {
   const pricing = calculateOneTimePricing(credits);
   if (pricing.discount > 0) {
-    return `${credits} credits at $${pricing.pricePerCredit.toFixed(2)} per credit (${pricing.discount}% discount)`;
+    return `${credits} credits at €${pricing.pricePerCredit.toFixed(2)} per credit (${pricing.discount}% discount)`;
   }
-  return `${credits} credits at $${pricing.pricePerCredit.toFixed(2)} per credit`;
+  return `${credits} credits at €${pricing.pricePerCredit.toFixed(2)} per credit`;
 }

@@ -158,14 +158,6 @@ export function SettingsScreen() {
     );
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(part => part.charAt(0).toUpperCase())
-      .join('')
-      .substring(0, 2);
-  };
-
   const subscriptionCopy = useMemo(() => {
     const defaultCopy = {
       isActive: false,
@@ -301,17 +293,12 @@ export function SettingsScreen() {
                   <Image source={{ uri: profileImageUrl }} style={styles.avatar} />
                 ) : (
                   <View style={styles.avatarPlaceholder}>
-                    <Text style={styles.avatarInitials}>
-                      {getInitials(user.name || 'User')}
-                    </Text>
+                    <CameraIcon
+                      size={24}
+                      color={theme.colors.zinc[400]}
+                    />
                   </View>
                 )}
-                <View style={[styles.avatarOverlay, status !== "idle" && styles.avatarOverlayLoading]}>
-                  <CameraIcon
-                    size={16}
-                    color={status !== "idle" ? theme.colors.zinc[400] : "#fff"}
-                  />
-                </View>
               </TouchableOpacity>
 
             </View>
@@ -517,38 +504,19 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 25,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
   },
   avatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 25,
-    backgroundColor: theme.colors.emerald[500],
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: theme.colors.zinc[200],
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  avatarInitials: {
-    fontSize: 18,
-    fontWeight: theme.fontWeight.semibold,
-    color: '#fff',
-  },
-  avatarOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  avatarOverlayLoading: {
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderWidth: 1,
+    borderColor: theme.colors.zinc[300],
   },
 
   // Statistics card
@@ -727,7 +695,6 @@ const styles = StyleSheet.create({
   avatarRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: theme.spacing.md,
   },
   pendingNotice: {
     marginHorizontal: theme.spacing.lg,

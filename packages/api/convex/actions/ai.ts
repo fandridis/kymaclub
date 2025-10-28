@@ -236,7 +236,7 @@ const validateImageWithAI = async (imageUrl: string): Promise<ValidationResult> 
     }
 };
 
-const IMAGE_MODERATION_SYSTEM_PROMPT = `You are a content moderator for a fitness platform. Analyze profile images for inappropriate content.
+const IMAGE_MODERATION_SYSTEM_PROMPT = `You are a safety reviewer for a platform that connects users with classes, studios, and wellness experiences. Evaluate profile images for inappropriate or unsafe content.
 
 Respond ONLY with JSON:
 {

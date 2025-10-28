@@ -29,7 +29,7 @@ interface DisplayPack {
   isDiscounted: boolean;
 }
 
-const formatCurrency = (amount: number) => `${amount.toFixed(2)} €`;
+const formatCurrency = (amount: number) => `${amount.toFixed(2)}€`;
 
 export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyCreditsSheetProps>(
   ({ snapPoints, onChange }, ref) => {
