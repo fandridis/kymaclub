@@ -4,6 +4,7 @@ import GitHub from "@auth/core/providers/github";
 import { ResendOTP } from "./resendOTP";
 import { ConvexError } from "convex/values";
 import { ERROR_CODES } from "../utils/errorCodes";
+import type { MutationCtx } from "./_generated/server";
 
 // Removed unused frontendBaseUrls - can be added back when needed for specific auth flows
 
@@ -37,42 +38,60 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
     async afterUserCreatedOrUpdated(ctx, args) {
       const email = args.profile?.email;
 
+      console.log("[auth] afterUserCreatedOrUpdated callback invoked", {
+        email,
+        userId: args.userId,
+        name: args.profile?.name,
+      });
+
       if (!email) {
+        console.log("[auth] No email found, skipping authorization check");
         return;
       }
 
-      // Get all users with this email
-      const users = await ctx.db
-        .query("users")
-        .withIndex("email", (q) => q.eq("email", email))
-        .collect();
+      // Type the context properly for our schema
+      const typedCtx = ctx as MutationCtx;
 
-      // Filter to non-deleted users excluding current one
-      const otherUsers = users.filter(u =>
-        u._id !== args.userId && !u.deleted
-      );
+      // Get the user to check if this is a new signup
+      const user = await typedCtx.db.get(args.userId);
+      if (!user) {
+        return;
+      }
 
-      // If this is a new email (no other valid users), check authorization
-      if (otherUsers.length === 0) {
+      // Check if user was just created (within last 10 seconds)
+      // This tells us if this is a new signup vs returning user
+      const isNewSignup = user._creationTime && (Date.now() - user._creationTime) < 10000;
+
+      if (isNewSignup) {
+        console.log("[auth] New signup detected - checking authorization");
+
         // Check whitelist via authorized business emails
-        const authorized = await ctx.db
+        const authorized = await typedCtx.db
           .query("authorizedBusinessEmails")
           .withIndex("by_email", (q) => q.eq("email", email))
           .filter((q) => q.neq(q.field("deleted"), true))
           .first();
 
+        const isAuthorized = authorized && (!authorized.expiresAt || authorized.expiresAt >= Date.now());
+
+        console.log("[auth] Authorization check result:", {
+          foundInWhitelist: !!authorized,
+          isExpired: authorized && authorized.expiresAt && authorized.expiresAt < Date.now(),
+          isAuthorized,
+        });
+
         if (!authorized || (authorized.expiresAt && authorized.expiresAt < Date.now())) {
-          // Soft delete unauthorized user
-          await ctx.db.patch(args.userId, {
-            deleted: true,
-            deletedAt: Date.now(),
-          });
+          console.log("[auth] User NOT authorized - throwing error", { userId: args.userId });
 
           throw new ConvexError({
             message: "Business account creation is by invitation only. Please contact support@orcavo.com to request access.",
             code: ERROR_CODES.ACCOUNT_NOT_AUTHORIZED,
           });
         }
+
+        console.log("[auth] User authorized - account creation allowed");
+      } else {
+        console.log("[auth] Returning user - no authorization check needed");
       }
     }
   },
