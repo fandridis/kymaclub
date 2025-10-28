@@ -69,6 +69,13 @@ export const usersFields = {
 
   role: v.optional(v.union(v.literal("admin"), v.literal("user"))),
 
+  // Signup source tracking (for business authorization)
+  signupSource: v.optional(v.union(
+    v.literal("mobile-consumer"),
+    v.literal("web-consumer"),
+    v.literal("web-business")
+  )),
+
   // Simple credit balance for booking classes
   credits: v.optional(v.number()),
 

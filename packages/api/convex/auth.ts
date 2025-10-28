@@ -72,24 +72,50 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           .filter((q) => q.neq(q.field("deleted"), true))
           .first();
 
-        const isAuthorized = authorized && (!authorized.expiresAt || authorized.expiresAt >= Date.now());
+        const isAuthorizedBusiness = authorized && (!authorized.expiresAt || authorized.expiresAt >= Date.now());
 
         console.log("[auth] Authorization check result:", {
           foundInWhitelist: !!authorized,
           isExpired: authorized && authorized.expiresAt && authorized.expiresAt < Date.now(),
-          isAuthorized,
+          isAuthorizedBusiness,
         });
 
-        if (!authorized || (authorized.expiresAt && authorized.expiresAt < Date.now())) {
-          console.log("[auth] User NOT authorized - throwing error", { userId: args.userId });
+        // Determine signup source based on authorization status
+        // If user is authorized for business, assume web-business signup
+        // Otherwise, assume consumer signup (mobile or web)
+        let signupSource: "mobile-consumer" | "web-consumer" | "web-business";
 
-          throw new ConvexError({
-            message: "Business account creation is by invitation only. Please contact support@orcavo.com to request access.",
-            code: ERROR_CODES.ACCOUNT_NOT_AUTHORIZED,
-          });
+        if (isAuthorizedBusiness) {
+          // Authorized = business signup attempt
+          signupSource = "web-business";
+          console.log("[auth] Business signup detected - authorization confirmed");
+        } else {
+          // Not authorized = consumer signup (mobile already has location gate)
+          signupSource = "mobile-consumer";
+          console.log("[auth] Consumer signup - no authorization required");
         }
 
-        console.log("[auth] User authorized - account creation allowed");
+        // Set signup source on user
+        await typedCtx.db.patch(args.userId, {
+          signupSource,
+        });
+
+        // Only throw error if attempting business signup without authorization
+        // Consumer signups should always be allowed (already has region gate in mobile app)
+        if (signupSource === "web-business") {
+          if (!authorized || (authorized.expiresAt && authorized.expiresAt < Date.now())) {
+            console.log("[auth] Business signup NOT authorized - throwing error", { userId: args.userId });
+
+            throw new ConvexError({
+              message: "Business account creation is by invitation only. Please contact support@orcavo.com to request access.",
+              code: ERROR_CODES.ACCOUNT_NOT_AUTHORIZED,
+            });
+          }
+
+          console.log("[auth] Business signup authorized - account creation allowed");
+        } else {
+          console.log("[auth] Consumer signup - account creation allowed");
+        }
       } else {
         console.log("[auth] Returning user - no authorization check needed");
       }

@@ -50,31 +50,37 @@ export const isEmailAuthorizedForBusiness = query({
     args: { email: v.string() },
     handler: async (ctx, { email }) => {
         // Check if user already exists (returning user)
-        // const existingUser = await ctx.db
-        //     .query("users")
-        //     .withIndex("email", (q) => q.eq("email", email))
-        //     .filter((q) => q.neq(q.field("deleted"), true))
-        //     .first();
+        const existingUser = await ctx.db
+            .query("users")
+            .withIndex("email", (q) => q.eq("email", email))
+            .filter((q) => q.neq(q.field("deleted"), true))
+            .first();
 
-        // if (existingUser) {
-        //     return true;
-        // }
+        if (existingUser) {
+            // Block mobile consumer users from signing in to business app
+            if (existingUser.signupSource === "mobile-consumer") {
+                return false;
+            }
+
+            // For all other existing users (web-consumer, web-business, or undefined), allow sign-in
+            return true;
+        }
 
         // Check if email is in the authorized list
-        // const authorized = await ctx.db
-        //     .query("authorizedBusinessEmails")
-        //     .withIndex("by_email", (q) => q.eq("email", email))
-        //     .filter((q) => q.neq(q.field("deleted"), true))
-        //     .first();
+        const authorized = await ctx.db
+            .query("authorizedBusinessEmails")
+            .withIndex("by_email", (q) => q.eq("email", email))
+            .filter((q) => q.neq(q.field("deleted"), true))
+            .first();
 
-        // if (!authorized) {
-        //     return false;
-        // }
+        if (!authorized) {
+            return false;
+        }
 
         // Check if authorization has expired
-        // if (authorized.expiresAt && authorized.expiresAt < Date.now()) {
-        //     return false;
-        // }
+        if (authorized.expiresAt && authorized.expiresAt < Date.now()) {
+            return false;
+        }
 
         return true;
     }
