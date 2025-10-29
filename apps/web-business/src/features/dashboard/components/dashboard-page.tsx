@@ -128,7 +128,7 @@ export default function DashboardPage() {
             <div className="grid gap-6 lg:grid-cols-2">
                 <MinimalSection
                     title="Classes overview"
-                    description="Monitor demand and occupancy for upcoming classes"
+                    // description="Monitor demand and occupancy for upcoming classes"
                     className="max-h-[70vh] overflow-y-auto"
                 >
                     <UpcomingClasses />
@@ -136,7 +136,7 @@ export default function DashboardPage() {
 
                 <MinimalSection
                     title="Member feedback"
-                    description="Celebrate wins and discover improvement opportunities"
+                    // description="Celebrate wins and discover improvement opportunities"
                     headerAction={
                         <div className="flex gap-2">
                             <Button variant="outline" size="sm" onClick={() => {/* TODO: Open reviews modal */ }}>

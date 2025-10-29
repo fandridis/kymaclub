@@ -164,9 +164,9 @@
   }
 }
 
+/* Increases the height of the time grid slots */
 .fc .fc-timegrid-slot {
-  height: 34px;
-  /* Increased from 28px to 40px for more vertical space */
+  height: 28px;
 }
 
 /* ===================================================
