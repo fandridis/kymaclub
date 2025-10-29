@@ -1,13 +1,15 @@
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
+    DialogOrDrawer,
+    DialogOrDrawerContent,
+    DialogOrDrawerHeader,
+    DialogOrDrawerTitle,
+    DialogOrDrawerTrigger,
+} from "@/components/ui/dialog-or-drawer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 import {
     Lightbulb,
     TrendingUp,
@@ -16,6 +18,7 @@ import {
     CheckCircle,
     AlertCircle,
 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface AISuggestion {
     id: string;
@@ -114,6 +117,7 @@ export function AISuggestionsModal({
     text = "AI Insights"
 }: AISuggestionsModalProps) {
     const data = mockAISuggestions;
+    const isMobile = useIsMobile();
 
     const getIcon = (type: string) => {
         switch (type) {
@@ -142,8 +146,8 @@ export function AISuggestionsModal({
     };
 
     return (
-        <Dialog>
-            <DialogTrigger asChild>
+        <DialogOrDrawer>
+            <DialogOrDrawerTrigger asChild>
                 <Button
                     variant="ghost"
                     size={size === "sm" ? "sm" : size === "lg" ? "lg" : "default"}
@@ -153,116 +157,224 @@ export function AISuggestionsModal({
                     {showIcon && <Sparkles className="h-3 w-3 mr-1" aria-hidden="true" />}
                     {text}
                 </Button>
-            </DialogTrigger>
+            </DialogOrDrawerTrigger>
 
-            <DialogContent className="w-full max-w-3xl md:max-w-3xl max-h-[85vh] overflow-y-auto">
-                <DialogHeader className="pb-6">
+            <DialogOrDrawerContent className={cn(
+                "w-full max-w-3xl flex flex-col p-0",
+                isMobile ? "h-[85vh]" : "max-h-[85vh]"
+            )}>
+                {/* Fixed Header */}
+                <DialogOrDrawerHeader className={cn(
+                    "shrink-0 border-b pb-4",
+                    isMobile ? "px-4 pt-6" : "px-6 pt-6"
+                )}>
                     <div className="flex items-center gap-2">
                         <Sparkles className="h-5 w-5 text-purple-600" />
-                        <DialogTitle className="text-xl font-semibold text-purple-950">
+                        <DialogOrDrawerTitle className="text-xl font-semibold text-purple-950">
                             AI Insights
-                        </DialogTitle>
+                        </DialogOrDrawerTitle>
                         <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200">
                             Beta
                         </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground mt-1">
                         Analysis of your latest {data.totalReviews} reviews • Updated {data.lastAnalyzed}
                     </p>
-                </DialogHeader>
+                </DialogOrDrawerHeader>
 
-                <div className="space-y-8 px-2" role="main" aria-label="AI insights content">
-                    {/* Positive Highlights */}
-                    <section className="space-y-4" aria-labelledby="positives-heading">
-                        <div className="flex items-center gap-2">
-                            <TrendingUp className="h-5 w-5 text-emerald-600" aria-hidden="true" />
-                            <h2 id="positives-heading" className="font-semibold text-emerald-950 text-lg">What's Working Well</h2>
-                        </div>
-                        <div className="grid gap-4">
-                            {data.positives.map((item) => (
-                                <div key={item.id} className="flex items-start gap-4 p-4 rounded-lg bg-emerald-50/50 border border-emerald-200/50">
-                                    {getIcon(item.type)}
-                                    <div className="flex-1 space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-medium text-base text-emerald-950">{item.title}</p>
-                                            {item.confidence && (
-                                                <Badge variant="outline" className={`text-xs ${getBadgeColor(item.type)}`}>
-                                                    {item.confidence}% confidence
-                                                </Badge>
-                                            )}
-                                        </div>
-                                        <p className="text-sm text-emerald-700 leading-relaxed">{item.description}</p>
+                {/* Scrollable Content Area */}
+                {isMobile ? (
+                    <div className="flex-1 overflow-hidden min-h-0">
+                        <ScrollArea className="h-full px-4">
+                            <div className="space-y-8 py-6" role="main" aria-label="AI insights content">
+                                {/* Positive Highlights */}
+                                <section className="space-y-4" aria-labelledby="positives-heading">
+                                    <div className="flex items-center gap-2">
+                                        <TrendingUp className="h-5 w-5 text-emerald-600" aria-hidden="true" />
+                                        <h2 id="positives-heading" className="font-semibold text-emerald-950 text-lg">What's Working Well</h2>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-
-                    <Separator />
-
-                    {/* Pain Points */}
-                    <section className="space-y-4" aria-labelledby="pain-points-heading">
-                        <div className="flex items-center gap-2">
-                            <AlertTriangle className="h-5 w-5 text-amber-600" aria-hidden="true" />
-                            <h2 id="pain-points-heading" className="font-semibold text-amber-950 text-lg">Areas for Improvement</h2>
-                        </div>
-                        <div className="grid gap-4">
-                            {data.painPoints.map((item) => (
-                                <div key={item.id} className="flex items-start gap-4 p-4 rounded-lg bg-amber-50/50 border border-amber-200/50">
-                                    {getIcon(item.type)}
-                                    <div className="flex-1 space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-medium text-base text-amber-950">{item.title}</p>
-                                            {item.confidence && (
-                                                <Badge variant="outline" className={`text-xs ${getBadgeColor(item.type)}`}>
-                                                    {item.confidence}% confidence
-                                                </Badge>
-                                            )}
-                                        </div>
-                                        <p className="text-sm text-amber-700 leading-relaxed">{item.description}</p>
+                                    <div className="grid gap-4">
+                                        {data.positives.map((item) => (
+                                            <div key={item.id} className="flex items-start gap-4 p-4 rounded-lg bg-emerald-50/50 border border-emerald-200/50">
+                                                {getIcon(item.type)}
+                                                <div className="flex-1 space-y-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="font-medium text-base text-emerald-950">{item.title}</p>
+                                                        {item.confidence && (
+                                                            <Badge variant="outline" className={`text-xs ${getBadgeColor(item.type)}`}>
+                                                                {item.confidence}% confidence
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-sm text-emerald-700 leading-relaxed">{item.description}</p>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
+                                </section>
 
-                    <Separator />
+                                <Separator />
 
-                    {/* Suggestions */}
-                    <section className="space-y-4" aria-labelledby="suggestions-heading">
-                        <div className="flex items-center gap-2">
-                            <Lightbulb className="h-5 w-5 text-blue-600" aria-hidden="true" />
-                            <h2 id="suggestions-heading" className="font-semibold text-blue-950 text-lg">Recommended Actions</h2>
-                        </div>
-                        <div className="grid gap-4">
-                            {data.suggestions.map((item) => (
-                                <div key={item.id} className="flex items-start gap-4 p-4 rounded-lg bg-blue-50/50 border border-blue-200/50">
-                                    {getIcon(item.type)}
-                                    <div className="flex-1 space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-medium text-base text-blue-950">{item.title}</p>
-                                            {item.confidence && (
-                                                <Badge variant="outline" className={`text-xs ${getBadgeColor(item.type)}`}>
-                                                    {item.confidence}% confidence
-                                                </Badge>
-                                            )}
-                                        </div>
-                                        <p className="text-sm text-blue-700 leading-relaxed">{item.description}</p>
+                                {/* Pain Points */}
+                                <section className="space-y-4" aria-labelledby="pain-points-heading">
+                                    <div className="flex items-center gap-2">
+                                        <AlertTriangle className="h-5 w-5 text-amber-600" aria-hidden="true" />
+                                        <h2 id="pain-points-heading" className="font-semibold text-amber-950 text-lg">Areas for Improvement</h2>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
+                                    <div className="grid gap-4">
+                                        {data.painPoints.map((item) => (
+                                            <div key={item.id} className="flex items-start gap-4 p-4 rounded-lg bg-amber-50/50 border border-amber-200/50">
+                                                {getIcon(item.type)}
+                                                <div className="flex-1 space-y-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="font-medium text-base text-amber-950">{item.title}</p>
+                                                        {item.confidence && (
+                                                            <Badge variant="outline" className={`text-xs ${getBadgeColor(item.type)}`}>
+                                                                {item.confidence}% confidence
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-sm text-amber-700 leading-relaxed">{item.description}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
 
-                    {/* Footer note */}
-                    <footer className="pt-6 border-t border-purple-200/50">
-                        <p className="text-sm text-muted-foreground text-center leading-relaxed">
-                            💡 These insights are generated by AI analysis of your recent reviews.
-                            <span className="font-medium"> Consider implementing suggested improvements to enhance member experience.</span>
-                        </p>
-                    </footer>
-                </div>
-            </DialogContent>
-        </Dialog>
+                                <Separator />
+
+                                {/* Suggestions */}
+                                <section className="space-y-4" aria-labelledby="suggestions-heading">
+                                    <div className="flex items-center gap-2">
+                                        <Lightbulb className="h-5 w-5 text-blue-600" aria-hidden="true" />
+                                        <h2 id="suggestions-heading" className="font-semibold text-blue-950 text-lg">Recommended Actions</h2>
+                                    </div>
+                                    <div className="grid gap-4">
+                                        {data.suggestions.map((item) => (
+                                            <div key={item.id} className="flex items-start gap-4 p-4 rounded-lg bg-blue-50/50 border border-blue-200/50">
+                                                {getIcon(item.type)}
+                                                <div className="flex-1 space-y-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="font-medium text-base text-blue-950">{item.title}</p>
+                                                        {item.confidence && (
+                                                            <Badge variant="outline" className={`text-xs ${getBadgeColor(item.type)}`}>
+                                                                {item.confidence}% confidence
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-sm text-blue-700 leading-relaxed">{item.description}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                {/* Footer note */}
+                                <footer className="pt-6 border-t border-purple-200/50 pb-4">
+                                    <p className="text-sm text-muted-foreground text-center leading-relaxed">
+                                        💡 These insights are generated by AI analysis of your recent reviews.
+                                        <span className="font-medium"> Consider implementing suggested improvements to enhance member experience.</span>
+                                    </p>
+                                </footer>
+                            </div>
+                        </ScrollArea>
+                    </div>
+                ) : (
+                    <div className="flex-1 overflow-y-auto min-h-0 px-6">
+                        <div className="space-y-8 py-6 pr-4" role="main" aria-label="AI insights content">
+                            {/* Positive Highlights */}
+                            <section className="space-y-4" aria-labelledby="positives-heading">
+                                <div className="flex items-center gap-2">
+                                    <TrendingUp className="h-5 w-5 text-emerald-600" aria-hidden="true" />
+                                    <h2 id="positives-heading" className="font-semibold text-emerald-950 text-lg">What's Working Well</h2>
+                                </div>
+                                <div className="grid gap-4">
+                                    {data.positives.map((item) => (
+                                        <div key={item.id} className="flex items-start gap-4 p-4 rounded-lg bg-emerald-50/50 border border-emerald-200/50">
+                                            {getIcon(item.type)}
+                                            <div className="flex-1 space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-medium text-base text-emerald-950">{item.title}</p>
+                                                    {item.confidence && (
+                                                        <Badge variant="outline" className={`text-xs ${getBadgeColor(item.type)}`}>
+                                                            {item.confidence}% confidence
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                                <p className="text-sm text-emerald-700 leading-relaxed">{item.description}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+
+                            <Separator />
+
+                            {/* Pain Points */}
+                            <section className="space-y-4" aria-labelledby="pain-points-heading">
+                                <div className="flex items-center gap-2">
+                                    <AlertTriangle className="h-5 w-5 text-amber-600" aria-hidden="true" />
+                                    <h2 id="pain-points-heading" className="font-semibold text-amber-950 text-lg">Areas for Improvement</h2>
+                                </div>
+                                <div className="grid gap-4">
+                                    {data.painPoints.map((item) => (
+                                        <div key={item.id} className="flex items-start gap-4 p-4 rounded-lg bg-amber-50/50 border border-amber-200/50">
+                                            {getIcon(item.type)}
+                                            <div className="flex-1 space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-medium text-base text-amber-950">{item.title}</p>
+                                                    {item.confidence && (
+                                                        <Badge variant="outline" className={`text-xs ${getBadgeColor(item.type)}`}>
+                                                            {item.confidence}% confidence
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                                <p className="text-sm text-amber-700 leading-relaxed">{item.description}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+
+                            <Separator />
+
+                            {/* Suggestions */}
+                            <section className="space-y-4" aria-labelledby="suggestions-heading">
+                                <div className="flex items-center gap-2">
+                                    <Lightbulb className="h-5 w-5 text-blue-600" aria-hidden="true" />
+                                    <h2 id="suggestions-heading" className="font-semibold text-blue-950 text-lg">Recommended Actions</h2>
+                                </div>
+                                <div className="grid gap-4">
+                                    {data.suggestions.map((item) => (
+                                        <div key={item.id} className="flex items-start gap-4 p-4 rounded-lg bg-blue-50/50 border border-blue-200/50">
+                                            {getIcon(item.type)}
+                                            <div className="flex-1 space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-medium text-base text-blue-950">{item.title}</p>
+                                                    {item.confidence && (
+                                                        <Badge variant="outline" className={`text-xs ${getBadgeColor(item.type)}`}>
+                                                            {item.confidence}% confidence
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                                <p className="text-sm text-blue-700 leading-relaxed">{item.description}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+
+                            {/* Footer note */}
+                            <footer className="pt-6 border-t border-purple-200/50 pb-4">
+                                <p className="text-sm text-muted-foreground text-center leading-relaxed">
+                                    💡 These insights are generated by AI analysis of your recent reviews.
+                                    <span className="font-medium"> Consider implementing suggested improvements to enhance member experience.</span>
+                                </p>
+                            </footer>
+                        </div>
+                    </div>
+                )}
+            </DialogOrDrawerContent>
+        </DialogOrDrawer>
     );
 }

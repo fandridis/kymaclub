@@ -5,34 +5,61 @@ import {
     CalendarCheck,
     CreditCard,
     LineChart,
-    Star,
-    Eye,
+    Calendar,
 } from "lucide-react";
 import { ClassBookingsDialog } from "@/features/bookings/components/class-bookings-dialog";
-import type { Doc } from "@repo/api/convex/_generated/dataModel";
-import { UpcomingClasses } from "./upcoming-classes";
+import type { Doc, Id } from "@repo/api/convex/_generated/dataModel";
 import { MinimalStatCard } from "./minimal-stat-card";
-import { MinimalSection } from "./minimal-section";
 import { AISuggestionsModal } from "@/components/ai-suggestions-modal";
 import { useDashboardMetrics } from "../hooks/use-dashboard-metrics";
 import { useBusinessReviews } from "@/hooks/use-business-reviews";
 import { useAuthStore } from "@/components/stores/auth";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
+import { useHappeningTodayClasses } from "../hooks/use-happening-today-classes";
+import { useClassImages } from "../hooks/use-class-images";
+import { ClassCarousel } from "@/components/class-carousel";
+import { FeedbackCarousel } from "@/components/feedback-carousel";
+import { useQuery } from "convex-helpers/react/cache/hooks";
+import { api } from "@repo/api/convex/_generated/api";
+import { Link } from "@tanstack/react-router";
+import EditClassInstanceDialog from "@/features/calendar/components/edit-class-instance-dialog";
 
 
 export default function DashboardPage() {
     const [bookingsDialog, setBookingsDialog] = useState<{
         open: boolean;
-        classInstance: Doc<"classInstances"> | null;
-        bookings: Doc<"bookings">[]
+        classInstanceId: Id<"classInstances"> | null;
     } | null>(null);
 
-    const { user } = useAuthStore();
+    const [editDialog, setEditDialog] = useState<{
+        open: boolean;
+        classInstanceId: Id<"classInstances"> | null;
+    } | null>(null);
+
+    const { user, business } = useAuthStore();
     const businessId = user?.businessId || null;
 
     const { metrics, isLoading } = useDashboardMetrics();
     const { reviews, isLoading: reviewsLoading } = useBusinessReviews(businessId, 10);
+
+    // Fetch today's classes and images
+    const { classes: happeningTodayClasses, isLoading: happeningTodayLoading } = useHappeningTodayClasses();
+    const { imageUrlMap } = useClassImages(happeningTodayClasses);
+
+    // Fetch full class instance when dialog opens
+    const fullClassInstance = useQuery(
+        api.queries.classInstances.getClassInstanceById,
+        bookingsDialog?.classInstanceId ? { instanceId: bookingsDialog.classInstanceId } : "skip"
+    );
+
+    const classInstanceForEdit = useQuery(
+        api.queries.classInstances.getClassInstanceById,
+        editDialog?.classInstanceId ? { instanceId: editDialog.classInstanceId } : "skip"
+    );
+
+    // Get business timezone from business data (available in auth store)
+    const businessTimezone = business?.timezone || "Europe/Athens";
 
     // Create stat cards from real metrics data
     const statCards = metrics ? [
@@ -43,6 +70,7 @@ export default function DashboardPage() {
             changeTone: metrics.checkInsToday.isPositive ? "positive" as const : "negative" as const,
             helper: "vs yesterday",
             icon: <CalendarCheck />,
+            iconColor: "emerald" as const,
         },
         {
             title: "Monthly visits",
@@ -51,6 +79,7 @@ export default function DashboardPage() {
             changeTone: metrics.monthlyVisits.isPositive ? "positive" as const : "negative" as const,
             helper: "vs last month",
             icon: <LineChart />,
+            iconColor: "sky" as const,
         },
         {
             title: "Monthly revenue",
@@ -59,6 +88,7 @@ export default function DashboardPage() {
             changeTone: metrics.monthlyRevenue.isPositive ? "positive" as const : "negative" as const,
             helper: "vs last month",
             icon: <CreditCard />,
+            iconColor: "amber" as const,
         },
         {
             title: "Attendance rate",
@@ -67,11 +97,12 @@ export default function DashboardPage() {
             changeTone: metrics.attendanceRate.isPositive ? "positive" as const : "negative" as const,
             helper: "last 100 classes",
             icon: <Activity />,
+            iconColor: "sky" as const,
         },
     ] : [];
 
     // Show loading skeleton when loading
-    if (isLoading || reviewsLoading) {
+    if (isLoading || reviewsLoading || happeningTodayLoading) {
         return (
             <div className="space-y-8 pb-8">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -111,7 +142,7 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
                 {statCards.map((stat) => (
                     <MinimalStatCard
                         key={stat.title}
@@ -121,78 +152,77 @@ export default function DashboardPage() {
                         changeTone={stat.changeTone}
                         helper={stat.helper}
                         icon={stat.icon}
+                        iconColor={stat.iconColor}
                     />
                 ))}
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-2">
-                <MinimalSection
-                    title="Classes overview"
-                    // description="Monitor demand and occupancy for upcoming classes"
-                    className="max-h-[70vh] overflow-y-auto"
-                >
-                    <UpcomingClasses />
-                </MinimalSection>
+            {/* Happening Today Section */}
+            <ClassCarousel
+                title="Today's Classes"
+                classes={happeningTodayClasses}
+                imageUrlMap={imageUrlMap}
+                onClassClick={(instance) => {
+                    setBookingsDialog({
+                        open: true,
+                        classInstanceId: instance._id,
+                    });
+                }}
+                onViewBookings={(instance) => {
+                    setBookingsDialog({
+                        open: true,
+                        classInstanceId: instance._id,
+                    });
+                }}
+                onEdit={(instance) => {
+                    setEditDialog({
+                        open: true,
+                        classInstanceId: instance._id,
+                    });
+                }}
+                emptyMessage="No classes scheduled for today"
+                emptyAction={
+                    <Link to="/calendar">
+                        <Button variant="outline" size="sm" className="mt-2">
+                            <Calendar className="h-4 w-4 mr-2" />
+                            View Calendar
+                        </Button>
+                    </Link>
+                }
+            />
 
-                <MinimalSection
-                    title="Member feedback"
-                    // description="Celebrate wins and discover improvement opportunities"
-                    headerAction={
-                        <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={() => {/* TODO: Open reviews modal */ }}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                View All
-                            </Button>
-                            <AISuggestionsModal size="sm" text="Insights" />
-                        </div>
-                    }
-                    className="max-h-[70vh] overflow-y-auto"
-                >
-                    <div className="space-y-4">
-                        {reviews.length === 0 ? (
-                            <div className="text-center py-8 text-muted-foreground">
-                                <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                                <p>No reviews yet</p>
-                                <p className="text-sm">Reviews will appear here once customers start rating your venues</p>
-                            </div>
-                        ) : (
-                            reviews.map((review) => (
-                                <div key={review._id} className="rounded-lg border bg-card border-border p-4 hover:opacity-80 transition-opacity">
-                                    <div className="flex items-center justify-between text-sm font-medium">
-                                        <span>{review.userSnapshot.name || 'Anonymous'}</span>
-                                        <span className="text-muted-foreground text-xs">
-                                            {formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}
-                                        </span>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground">{review.venueSnapshot.name}</p>
-                                    <div className="mt-2 flex items-center gap-1">
-                                        {Array.from({ length: 5 }).map((_, index) => (
-                                            <Star
-                                                key={index}
-                                                className={`h-3.5 w-3.5 ${index < review.rating ? "fill-amber-500 text-amber-500" : "text-muted-foreground"}`}
-                                                aria-hidden="true"
-                                            />
-                                        ))}
-                                    </div>
-                                    {review.comment && (
-                                        <p className="mt-2 text-sm">{review.comment}</p>
-                                    )}
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </MinimalSection>
-            </div>
+            {/* Latest Feedback Section */}
+            <FeedbackCarousel
+                title="User Feedback"
+                reviews={reviews}
+                emptyMessage="No reviews yet"
+                emptyAction={
+                    <p className="text-sm text-muted-foreground">
+                        Reviews will appear here once customers start rating your venues
+                    </p>
+                }
+                headerAction={<AISuggestionsModal size="sm" text="Insights" />}
+            />
 
             {/* Bookings Dialog */}
-            {bookingsDialog && (
+            {bookingsDialog && fullClassInstance && (
                 <ClassBookingsDialog
                     open={bookingsDialog.open}
                     onOpenChange={(open: boolean) => setBookingsDialog(open ? bookingsDialog : null)}
-                    classInstance={bookingsDialog.classInstance!}
+                    classInstance={fullClassInstance}
                 >
                     <div />
                 </ClassBookingsDialog>
+            )}
+
+            {/* Edit Class Dialog */}
+            {editDialog && classInstanceForEdit && (
+                <EditClassInstanceDialog
+                    open={editDialog.open}
+                    instance={classInstanceForEdit}
+                    onClose={() => setEditDialog(null)}
+                    businessTimezone={businessTimezone}
+                />
             )}
         </div>
     );

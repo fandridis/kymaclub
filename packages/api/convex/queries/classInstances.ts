@@ -418,6 +418,105 @@ export const getHappeningTodayClassInstances = query({
     }
 });
 
+/***************************************************************
+ * Get Business Happening Today Class Instances
+ * 
+ * Returns class instances happening today for a specific business,
+ * ordered by start time (earliest first). Returns minimal data
+ * needed for dashboard carousel card rendering. Includes booking
+ * counts for availability display.
+ ***************************************************************/
+
+export const getBusinessHappeningTodayClassInstancesArgs = v.object({
+    businessId: v.id("businesses"),
+    startDate: v.number(), // Current time
+    endDate: v.number(),   // End of today (midnight)
+    limit: v.optional(v.number()),
+});
+
+export const getBusinessHappeningTodayClassInstances = query({
+    args: getBusinessHappeningTodayClassInstancesArgs,
+    returns: v.array(v.object({
+        _id: v.id("classInstances"),
+        startTime: v.number(),
+        endTime: v.optional(v.number()),
+        name: v.string(),
+        instructor: v.optional(v.string()),
+        venueName: v.string(),
+        venueCity: v.string(),
+        templateImageId: v.optional(v.id("_storage")),
+        venueImageId: v.optional(v.id("_storage")),
+        capacity: v.number(),
+        bookedCount: v.number(),
+    })),
+    handler: async (ctx, args) => {
+        const user = await getAuthenticatedUserOrThrow(ctx);
+
+        // Verify business access
+        const business = await ctx.db.get(args.businessId);
+        if (!business || business.createdBy !== user._id) {
+            throw new ConvexError({
+                message: "Business not found or access denied",
+                field: "businessId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND,
+            });
+        }
+
+        const limit = args.limit || 50;
+
+        // Use optimized index to fetch scheduled classes in time window for this business
+        const instances = await ctx.db
+            .query("classInstances")
+            .withIndex("by_business_status_start_time", (q) =>
+                q.eq("businessId", args.businessId)
+                    .eq("status", "scheduled")
+                    .gte("startTime", args.startDate)
+            )
+            .filter(q =>
+                q.and(
+                    q.lte(q.field("startTime"), args.endDate),
+                    q.neq(q.field("deleted"), true)
+                )
+            )
+            .order("asc")
+            .take(limit);
+
+        // Get booking counts for all instances in parallel
+        const enrichedInstances = await Promise.all(
+            instances.map(async (instance) => {
+                // Count pending bookings for this instance
+                const bookings = await ctx.db
+                    .query("bookings")
+                    .withIndex("by_class_instance_status", (q) =>
+                        q.eq("classInstanceId", instance._id)
+                            .eq("status", "pending")
+                    )
+                    .filter(q => q.neq(q.field("deleted"), true))
+                    .collect();
+
+                const bookedCount = bookings.length;
+                const capacity = instance.capacity || 0;
+
+                return {
+                    _id: instance._id,
+                    startTime: instance.startTime,
+                    endTime: instance.endTime,
+                    name: instance.name || instance.templateSnapshot?.name || 'Class',
+                    instructor: instance.instructor,
+                    venueName: instance.venueSnapshot.name,
+                    venueCity: instance.venueSnapshot.address.city,
+                    templateImageId: instance.templateSnapshot?.imageStorageIds?.[0],
+                    venueImageId: instance.venueSnapshot?.imageStorageIds?.[0],
+                    capacity,
+                    bookedCount,
+                };
+            })
+        );
+
+        return enrichedInstances;
+    }
+});
+
 
 /***************************************************************
  * Get Consumer Class Instances with Booking Status
