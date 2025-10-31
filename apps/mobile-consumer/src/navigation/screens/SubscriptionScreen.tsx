@@ -105,17 +105,36 @@ export function SubscriptionScreen() {
                             setIsLoading(true);
                             try {
                                 if (isUpdate) {
+                                    console.log('[Subscription] Starting subscription update', {
+                                        userId: user?._id,
+                                        newCreditAmount: selectedCredits,
+                                        currentSubscription: subscription?.creditAmount,
+                                    });
                                     const result = await updateSubscription({ newCreditAmount: selectedCredits });
+                                    console.log('[Subscription] Update result:', result);
                                     Alert.alert('Subscription Updated!', result.message);
                                 } else {
                                     // For new subscriptions, go directly to checkout
+                                    console.log('[Subscription] Starting NEW subscription', {
+                                        userId: user?._id,
+                                        creditAmount: selectedCredits,
+                                        hasExistingSubscription: !!subscription,
+                                        existingSubscriptionStatus: subscription?.status,
+                                    });
                                     const result = await createDynamicCheckout({ creditAmount: selectedCredits });
+                                    console.log('[Subscription] Checkout created:', {
+                                        hasCheckoutUrl: !!result.checkoutUrl,
+                                        sessionId: result.sessionId,
+                                    });
                                     if (result.checkoutUrl) {
+                                        console.log('[Subscription] Opening Stripe checkout URL');
                                         await Linking.openURL(result.checkoutUrl);
+                                    } else {
+                                        console.warn('[Subscription] No checkout URL returned!');
                                     }
                                 }
                             } catch (error) {
-                                console.error('Error with subscription:', error);
+                                console.error('[Subscription] Error with subscription:', error);
                                 const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
                                 Alert.alert('Error', `Failed to ${isUpdate ? 'update' : 'start'} subscription. ${errorMessage}`);
                             } finally {

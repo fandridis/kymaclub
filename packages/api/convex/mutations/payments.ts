@@ -183,17 +183,70 @@ export const handlePaymentSucceededTransaction = internalMutation({
     }),
   }),
   handler: async (ctx, args) => {
+    // 🛡️ IDEMPOTENCY CHECK: Prevent duplicate processing of the same Stripe event
+    // This is critical for handling concurrent webhook calls
+    // Check 1: Look for existing subscription event with credits allocated
+    const existingEvent = await ctx.db
+      .query("subscriptionEvents")
+      .withIndex("by_stripe_event", (q) => q.eq("stripeEventId", args.stripeEventId))
+      .first();
+
+    if (existingEvent && existingEvent.creditsAllocated && existingEvent.creditsAllocated > 0) {
+      // Return the existing result without processing again
+      return {
+        success: true,
+        subscriptionId: existingEvent.subscriptionId || undefined,
+        creditTransactionId: existingEvent.creditTransactionId ? (existingEvent.creditTransactionId as Id<"creditTransactions">) : undefined,
+        creditsAllocated: existingEvent.creditsAllocated || 0,
+      };
+    }
+
+    // Check 2: If we're about to allocate credits, check for existing credit transaction
+    // This catches race conditions where two calls happen simultaneously
+    if (args.creditAllocation) {
+      const existingTransaction = await ctx.db
+        .query("creditTransactions")
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("userId"), args.creditAllocation!.userId),
+            q.eq(q.field("externalRef"), args.stripeEventId),
+            q.eq(q.field("status"), "completed")
+          )
+        )
+        .first();
+
+      if (existingTransaction) {
+        // Get subscription for return value
+        const subscription = await ctx.db
+          .query("subscriptions")
+          .withIndex("by_stripe_subscription", q =>
+            q.eq("stripeSubscriptionId", args.subscriptionUpdate.stripeSubscriptionId)
+          )
+          .first();
+
+        return {
+          success: true,
+          subscriptionId: subscription?._id,
+          creditTransactionId: existingTransaction._id,
+          creditsAllocated: existingTransaction.amount,
+        };
+      }
+    }
+
     let creditTransactionId: Id<"creditTransactions"> | undefined;
 
     // 1. Update subscription status
     const subscription = await ctx.db
       .query("subscriptions")
-      .withIndex("by_stripe_subscription", q => 
+      .withIndex("by_stripe_subscription", q =>
         q.eq("stripeSubscriptionId", args.subscriptionUpdate.stripeSubscriptionId)
       )
       .first();
 
     if (!subscription) {
+      console.error('[Subscription] Subscription not found in database', {
+        stripeSubscriptionId: args.subscriptionUpdate.stripeSubscriptionId,
+      });
       throw new Error(`Subscription not found: ${args.subscriptionUpdate.stripeSubscriptionId}`);
     }
 
@@ -221,8 +274,15 @@ export const handlePaymentSucceededTransaction = internalMutation({
       // Update user's credit balance
       const user = await ctx.db.get(args.creditAllocation.userId);
       if (user) {
+        const oldCredits = user.credits || 0;
+        const newCredits = oldCredits + args.creditAllocation.amount;
+
         await ctx.db.patch(args.creditAllocation.userId, {
-          credits: (user.credits || 0) + args.creditAllocation.amount,
+          credits: newCredits,
+        });
+      } else {
+        console.error('[Subscription] User not found when updating credits', {
+          userId: args.creditAllocation.userId,
         });
       }
     }
@@ -240,12 +300,14 @@ export const handlePaymentSucceededTransaction = internalMutation({
       createdBy: subscription.userId,
     });
 
-    return {
+    const result = {
       success: true,
       subscriptionId: subscription._id,
       creditTransactionId,
       creditsAllocated: args.creditAllocation?.amount || 0,
     };
+
+    return result;
   },
 });
 
@@ -337,7 +399,7 @@ export const updateSubscriptionWithEvent = internalMutation({
     // 1. Find and update subscription
     const subscription = await ctx.db
       .query("subscriptions")
-      .withIndex("by_stripe_subscription", q => 
+      .withIndex("by_stripe_subscription", q =>
         q.eq("stripeSubscriptionId", args.stripeSubscriptionId)
       )
       .first();

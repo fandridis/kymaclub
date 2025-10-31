@@ -116,14 +116,17 @@ export const paymentsService = {
 
     // Validate input parameters
     if (!creditAmount || !userId || !userEmail) {
+      console.error('[Subscription] Missing required parameters', { creditAmount, userId, userEmail });
       throw new Error("Missing required parameters: creditAmount, userId, and userEmail are required");
     }
 
     if (!validateCreditAmount(creditAmount)) {
+      console.error('[Subscription] Invalid credit amount', { creditAmount });
       throw new Error("Invalid credit amount. Must be one of: 20, 30, 50, 70, 100, 200 credits");
     }
 
     if (!process.env.STRIPE_SECRET_KEY) {
+      console.error('[Subscription] Stripe secret key not configured');
       throw new Error("Stripe secret key not configured");
     }
 
@@ -812,8 +815,11 @@ export const paymentsService = {
     const userId = subscription.metadata?.convexUserId;
     const isDynamicSubscription = subscription.metadata?.dynamicSubscription === "true";
 
-
     if (!userId) {
+      console.error('[Subscription] Missing userId in subscription created event', {
+        subscriptionId: subscription.id,
+        metadata: subscription.metadata,
+      });
       throw new Error("Missing userId in subscription created event metadata");
     }
 
@@ -828,14 +834,21 @@ export const paymentsService = {
       pricePerCycle = parseInt(subscription.metadata?.priceInCents || "0");
       planName = getSubscriptionProductName(creditAmount);
 
-
       if (!creditAmount || !pricePerCycle) {
+        console.error('[Subscription] Missing dynamic subscription metadata', {
+          creditAmount,
+          pricePerCycle,
+          metadata: subscription.metadata,
+        });
         throw new Error(`Missing dynamic subscription metadata: creditAmount=${creditAmount}, pricePerCycle=${pricePerCycle}`);
       }
     } else {
       // Handle predefined plan subscription
       const planId = subscription.metadata?.planId as SubscriptionPlan;
       if (!planId) {
+        console.error('[Subscription] Missing planId in predefined subscription', {
+          metadata: subscription.metadata,
+        });
         throw new Error("Missing planId in predefined subscription metadata");
       }
 
@@ -843,11 +856,11 @@ export const paymentsService = {
       creditAmount = plan.credits;
       pricePerCycle = plan.priceInCents;
       planName = plan.planName;
-
     }
 
 
     // 🆕 ATOMIC TRANSACTION: Create subscription and record event atomically
+
     let databaseSubscriptionId: Id<"subscriptions">;
     try {
       const result = await ctx.runMutation(internal.mutations.payments.createSubscriptionWithEvent, {
@@ -871,8 +884,12 @@ export const paymentsService = {
       });
 
       databaseSubscriptionId = result.subscriptionId;
-
     } catch (error) {
+      console.error('[Subscription] Failed to create subscription atomically', {
+        error: (error as Error).message,
+        subscriptionId: subscription.id,
+        userId,
+      });
       throw new Error(`Failed to create subscription atomically: ${(error as Error).message}`);
     }
 
@@ -966,9 +983,90 @@ export const paymentsService = {
         { stripeSubscriptionId: invoice.subscription as string }
       );
 
+      if (!subscription) {
+        console.error('[Subscription] Subscription not found in database', {
+          stripeSubscriptionId: invoice.subscription,
+        });
+        return;
+      }
 
-      if (subscription) {
-        // Check if this payment was already processed manually (to prevent double allocation)
+      // Check if this payment was already processed manually (to prevent double allocation)
+      const recentEvents = await ctx.runQuery(internal.queries.payments.getEventByStripeId, {
+        stripeEventId: event.id,
+      });
+
+      if (recentEvents) {
+        return;
+      }
+
+      // 🆕 ATOMIC TRANSACTION: Handle payment success in single operation
+      const shouldAllocateCredits = invoice.billing_reason === "subscription_cycle" ||
+        (invoice.billing_reason === "subscription_create" && subscription.status === "incomplete");
+
+      const isInitialPayment = invoice.billing_reason === "subscription_create";
+      const description = isInitialPayment
+        ? `Initial subscription payment - ${subscription.planName}`
+        : `Monthly subscription renewal - ${subscription.planName}`;
+
+      const result = await ctx.runMutation(
+        internal.mutations.payments.handlePaymentSucceededTransaction,
+        {
+          stripeEventId: event.id,
+          subscriptionUpdate: {
+            stripeSubscriptionId: subscription.stripeSubscriptionId,
+            status: subscription.status === "incomplete" ? "active" : subscription.status as any,
+          },
+          creditAllocation: shouldAllocateCredits ? {
+            userId: subscription.userId,
+            amount: subscription.creditAmount,
+            subscriptionId: subscription._id,
+            description,
+          } : undefined,
+          eventData: {
+            eventType: event.type,
+            subscriptionId: subscription._id,
+            creditsAllocated: shouldAllocateCredits ? subscription.creditAmount : undefined,
+          },
+        }
+      );
+    } else if (invoice.subscription && invoice.billing_reason === "subscription_update") {
+
+      const subscription = await ctx.runQuery(
+        internal.queries.payments.getSubscriptionByStripeId,
+        { stripeSubscriptionId: invoice.subscription as string }
+      );
+
+      if (!subscription) {
+        console.error('[Subscription] Subscription not found for subscription_update', {
+          stripeSubscriptionId: invoice.subscription,
+        });
+        return;
+      }
+
+      // Check if this is the first payment for a new subscription
+      // If subscription was just created (within last 2 minutes), this is likely the initial payment
+      // We check age instead of status because Stripe may update status to "active" before payment webhook
+      const subscriptionAge = Date.now() - subscription.createdAt;
+      const twoMinutes = 2 * 60 * 1000;
+      const isRecentlyCreated = subscriptionAge < twoMinutes;
+
+      // Check if credits have already been allocated by checking subscription events
+      // We'll query subscription events to see if any have creditsAllocated > 0
+      const allEvents = await ctx.runQuery(
+        internal.queries.payments.getSubscriptionEvents,
+        { subscriptionId: subscription._id }
+      );
+
+      const hasCreditsAllocated = allEvents?.some(
+        (event: any) => event.creditsAllocated && event.creditsAllocated > 0
+      ) || false;
+
+      const shouldAllocateCredits = isRecentlyCreated && !hasCreditsAllocated;
+
+      // If this is a recently created subscription and no credits allocated yet,
+      // treat it as an initial payment and allocate credits
+      if (shouldAllocateCredits) {
+        // Check if this payment was already processed
         const recentEvents = await ctx.runQuery(internal.queries.payments.getEventByStripeId, {
           stripeEventId: event.id,
         });
@@ -977,17 +1075,7 @@ export const paymentsService = {
           return;
         }
 
-        // Check for recent manual operations (reactivation/update) within last 5 minutes
-        const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
-
-        // 🆕 ATOMIC TRANSACTION: Handle payment success in single operation
-        const shouldAllocateCredits = invoice.billing_reason === "subscription_cycle" ||
-          (invoice.billing_reason === "subscription_create" && subscription.status === "incomplete");
-
-        const isInitialPayment = invoice.billing_reason === "subscription_create";
-        const description = isInitialPayment
-          ? `Initial subscription payment - ${subscription.planName}`
-          : `Monthly subscription renewal - ${subscription.planName}`;
+        const description = `Initial subscription payment - ${subscription.planName}`;
 
         const result = await ctx.runMutation(
           internal.mutations.payments.handlePaymentSucceededTransaction,
@@ -995,32 +1083,24 @@ export const paymentsService = {
             stripeEventId: event.id,
             subscriptionUpdate: {
               stripeSubscriptionId: subscription.stripeSubscriptionId,
-              status: subscription.status === "incomplete" ? "active" : subscription.status as any,
+              status: "active",
             },
-            creditAllocation: shouldAllocateCredits ? {
+            creditAllocation: {
               userId: subscription.userId,
               amount: subscription.creditAmount,
               subscriptionId: subscription._id,
               description,
-            } : undefined,
+            },
             eventData: {
               eventType: event.type,
               subscriptionId: subscription._id,
-              creditsAllocated: shouldAllocateCredits ? subscription.creditAmount : undefined,
+              creditsAllocated: subscription.creditAmount,
             },
           }
         );
-      }
-    } else if (invoice.subscription && invoice.billing_reason === "subscription_update") {
-      // This is a subscription update payment (proration) - DO NOT allocate credits
-      // Credits are already allocated by the update service logic
-
-      const subscription = await ctx.runQuery(
-        internal.queries.payments.getSubscriptionByStripeId,
-        { stripeSubscriptionId: invoice.subscription as string }
-      );
-
-      if (subscription) {
+      } else {
+        // This is a genuine subscription update (proration) - DO NOT allocate credits
+        // Credits are already allocated by the update service logic
         // Record the event for audit purposes but don't allocate credits
         await ctx.runMutation(internal.mutations.payments.recordSubscriptionEvent, {
           stripeEventId: event.id,
@@ -1031,7 +1111,6 @@ export const paymentsService = {
           // NO creditsAllocated field - this prevents double allocation
           eventData: event.data.object,
         });
-
       }
     }
   },

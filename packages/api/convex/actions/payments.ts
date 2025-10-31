@@ -33,11 +33,13 @@ export const createDynamicSubscriptionCheckout = action({
       throw new Error("User email is required for subscription. Please update your profile.");
     }
 
-    return await paymentsService.createDynamicSubscriptionCheckout(ctx, {
+    const result = await paymentsService.createDynamicSubscriptionCheckout(ctx, {
       creditAmount,
       userId,
       userEmail,
     });
+
+    return result;
   },
 });
 
