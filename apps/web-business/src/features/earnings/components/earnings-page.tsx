@@ -28,8 +28,9 @@ export default function EarningsPage() {
 
     // Generate month options for the dropdown (current month + 11 previous months)
     const monthOptions = Array.from({ length: 12 }, (_, i) => {
-        const date = new Date()
-        date.setMonth(date.getMonth() - i)
+        const now = new Date()
+        // Set to first day of the month to avoid month boundary issues
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
         const year = date.getFullYear()
         const month = String(date.getMonth() + 1).padStart(2, '0')
         const value = `${year}-${month}`
