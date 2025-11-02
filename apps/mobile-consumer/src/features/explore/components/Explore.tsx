@@ -126,8 +126,14 @@ export function Explore() {
         <SafeAreaView style={styles.container}>
             <TabScreenHeader 
                 title="Explore" 
-                titleBadge={creditBalance !== undefined ? <CreditsBadge creditBalance={creditBalance.balance} /> : undefined}
-                renderRightSide={() => <ProfileIconButton />}
+                renderRightSide={() => (
+                    <>
+                        {creditBalance !== undefined && (
+                            <CreditsBadge creditBalance={creditBalance.balance} />
+                        )}
+                        <ProfileIconButton />
+                    </>
+                )}
             />
             <FilterBar
                 leading={(

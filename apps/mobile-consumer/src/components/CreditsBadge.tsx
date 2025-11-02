@@ -25,7 +25,7 @@ export function CreditsBadge({ creditBalance }: CreditsBadgeProps) {
             activeOpacity={0.85}
             style={styles.creditsBadge}
         >
-            <DiamondIcon size={16} color={theme.colors.zinc[50]} />
+            <DiamondIcon size={16} color={theme.colors.emerald[950]} />
             <Text style={styles.creditsBadgeText}>{creditBalance || 0}</Text>
         </TouchableOpacity>
     );
@@ -35,16 +35,18 @@ const styles = StyleSheet.create({
     creditsBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: theme.colors.emerald[500],
-        borderRadius: 12,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
+        backgroundColor: theme.colors.emerald[100],
+        borderRadius: 8,
+        paddingVertical: 8,
+        paddingHorizontal: 10,
+        gap: 4,
+        borderWidth: 1,
+        borderColor: theme.colors.emerald[200],
     },
     creditsBadgeText: {
-        fontSize: theme.fontSize.base,
+        fontSize: theme.fontSize.lg,
         fontWeight: theme.fontWeight.semibold,
-        color: theme.colors.zinc[50],
-        marginLeft: 4,
+        color: theme.colors.emerald[950],
     },
 });
 

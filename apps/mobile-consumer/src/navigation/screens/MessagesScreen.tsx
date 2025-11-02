@@ -287,8 +287,14 @@ export function MessagesScreen() {
       <SafeAreaView style={styles.container}>
         <TabScreenHeader 
           title="Messages" 
-          titleBadge={creditBalance !== undefined ? <CreditsBadge creditBalance={creditBalance.balance} /> : undefined}
-          renderRightSide={() => <ProfileIconButton />}
+          renderRightSide={() => (
+            <>
+              {creditBalance !== undefined && (
+                <CreditsBadge creditBalance={creditBalance.balance} />
+              )}
+              <ProfileIconButton />
+            </>
+          )}
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.emerald[500]} />
@@ -304,8 +310,14 @@ export function MessagesScreen() {
     <SafeAreaView style={styles.container}>
       <TabScreenHeader 
         title="Messages" 
-        titleBadge={creditBalance !== undefined ? <CreditsBadge creditBalance={creditBalance.balance} /> : undefined}
-        renderRightSide={() => <ProfileIconButton />}
+        renderRightSide={() => (
+          <>
+            {creditBalance !== undefined && (
+              <CreditsBadge creditBalance={creditBalance.balance} />
+            )}
+            <ProfileIconButton />
+          </>
+        )}
       />
 
       <ScrollView

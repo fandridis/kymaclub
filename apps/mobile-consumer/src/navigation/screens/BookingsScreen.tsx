@@ -186,8 +186,14 @@ export function BookingsScreen() {
             <SafeAreaView style={styles.container}>
                 <TabScreenHeader 
                     title="Bookings" 
-                    titleBadge={creditBalance !== undefined ? <CreditsBadge creditBalance={creditBalance.balance} /> : undefined}
-                    renderRightSide={() => <ProfileIconButton />}
+                    renderRightSide={() => (
+                        <>
+                            {creditBalance !== undefined && (
+                                <CreditsBadge creditBalance={creditBalance.balance} />
+                            )}
+                            <ProfileIconButton />
+                        </>
+                    )}
                 />
                 <Text style={styles.emptyText}>Please sign in to view your bookings</Text>
             </SafeAreaView>
@@ -198,8 +204,14 @@ export function BookingsScreen() {
         <SafeAreaView style={styles.container}>
             <TabScreenHeader 
                 title="My Bookings" 
-                titleBadge={creditBalance !== undefined ? <CreditsBadge creditBalance={creditBalance.balance} /> : undefined}
-                renderRightSide={() => <ProfileIconButton />}
+                renderRightSide={() => (
+                    <>
+                        {creditBalance !== undefined && (
+                            <CreditsBadge creditBalance={creditBalance.balance} />
+                        )}
+                        <ProfileIconButton />
+                    </>
+                )}
             />
             <AppTabs
                 items={tabItems}

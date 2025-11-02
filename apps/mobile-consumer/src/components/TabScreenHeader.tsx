@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: 12,
     paddingTop: 16,
     paddingBottom: 12,
     backgroundColor: theme.colors.zinc[50],
@@ -83,6 +83,6 @@ const styles = StyleSheet.create({
   rightSide: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 6,
   },
 });

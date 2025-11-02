@@ -23,12 +23,14 @@ export function ProfileIconButton() {
 
 const styles = StyleSheet.create({
   profileButton: {
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: 8,
     backgroundColor: theme.colors.zinc[100],
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.zinc[200],
   },
 });
 

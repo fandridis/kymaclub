@@ -17,6 +17,7 @@ import { centsToCredits } from '@repo/utils/credits';
 import { NewsClassCard } from '../../components/news/NewsCard';
 import { XIcon } from 'lucide-react-native';
 import { CreditsBadge } from '../../components/CreditsBadge';
+import { ProfileIconButton } from '../../components/ProfileIconButton';
 
 const now = new Date();
 
@@ -419,14 +420,13 @@ export function NewsScreen() {
                 <TabScreenHeader
                     title={t('welcome.title')}
                     //subtitle="Discover amazing fitness classes"
-                    titleBadge={creditBalance !== undefined ? <CreditsBadge creditBalance={creditBalance.balance} /> : undefined}
                     renderRightSide={() => (
-                        <TouchableOpacity
-                            onPress={() => navigation.navigate('Settings')}
-                            style={styles.profileButton}
-                        >
-                            <UserIcon size={24} color={theme.colors.zinc[700]} />
-                        </TouchableOpacity>
+                        <>
+                            {creditBalance !== undefined && (
+                                <CreditsBadge creditBalance={creditBalance.balance} />
+                            )}
+                            <ProfileIconButton />
+                        </>
                     )}
                 />
                 <View style={styles.loadingContainer}>
@@ -442,14 +442,13 @@ export function NewsScreen() {
             <TabScreenHeader
                 title={t('welcome.title')}
                 // subtitle="Discover amazing fitness classes"
-                titleBadge={creditBalance !== undefined ? <CreditsBadge creditBalance={creditBalance.balance} /> : undefined}
                 renderRightSide={() => (
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('Settings')}
-                        style={styles.profileButton}
-                    >
-                        <UserIcon size={24} color={theme.colors.zinc[700]} />
-                    </TouchableOpacity>
+                    <>
+                        {creditBalance !== undefined && (
+                            <CreditsBadge creditBalance={creditBalance.balance} />
+                        )}
+                        <ProfileIconButton />
+                    </>
                 )}
             />
             <ScrollView
