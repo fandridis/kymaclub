@@ -4,6 +4,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { cn } from '@/lib/utils';
 import { eurosToCredits } from '@repo/utils/credits';
+import { useTypedTranslation } from '@/lib/typed';
 
 interface EuroPriceInputProps {
     value?: string;
@@ -28,6 +29,7 @@ export const EuroPriceInput: React.FC<EuroPriceInputProps> = ({
     className,
     showCreditEquivalent = false,
 }) => {
+    const { t } = useTypedTranslation();
     // Convert cents value back to euros for display
     const displayValue = value ? (parseInt(value) / 100).toString() : '';
 
@@ -67,7 +69,7 @@ export const EuroPriceInput: React.FC<EuroPriceInputProps> = ({
         <div className={cn("space-y-2", className)}>
             <Label className="flex items-center gap-2">
                 <Euro className="h-4 w-4" />
-                Price in Euros {required && <span className="text-red-500">*</span>}
+                {t('common.priceInEuros')} {required && <span className="text-red-500">*</span>}
             </Label>
 
             <div className="relative">
@@ -91,7 +93,7 @@ export const EuroPriceInput: React.FC<EuroPriceInputProps> = ({
                 />
                 {showCreditEquivalent && isValidPrice && (
                     <div className="absolute right-3 top-[18.5px] transform -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
-                        {creditEquivalent} credits
+                        {creditEquivalent} {t('common.credits')}
                     </div>
                 )}
             </div>

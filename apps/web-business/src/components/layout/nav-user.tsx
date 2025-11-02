@@ -22,8 +22,10 @@ import {
 } from '@/components/ui/sidebar'
 import { useAuthActions } from '@convex-dev/auth/react'
 import { useAuthStore, useCurrentUser } from '@/components/stores/auth'
+import { useTypedTranslation } from '@/lib/typed'
 
 export function NavUser() {
+    const { t } = useTypedTranslation();
     const { user } = useCurrentUser()
     const { signOut } = useAuthActions();
     const { logout } = useAuthStore();
@@ -69,7 +71,7 @@ export function NavUser() {
                             <DropdownMenuItem asChild>
                                 <Link to='/settings'>
                                     <BadgeCheck />
-                                    Settings
+                                    {t('routes.settings.title')}
                                 </Link>
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
@@ -79,7 +81,7 @@ export function NavUser() {
                             signOut();
                         }}>
                             <LogOut className='text-red-500' />
-                            Log out
+                            {t('common.signOut')}
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>

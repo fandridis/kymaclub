@@ -27,6 +27,7 @@ export const Route = createFileRoute('/sign-in')({
 
 function RouteComponent() {
     const { t } = useTypedTranslation();
+
     return (
         <div className="flex-1 w-full lg:grid lg:grid-cols-2">
             <div className="hidden bg-muted lg:block">

@@ -6,6 +6,7 @@ import { useBusinessSettings } from '../hooks/use-business-settings';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import type { NotificationType } from '@repo/api/types/notification';
+import { useTypedTranslation } from '@/lib/typed';
 
 type NotificationPreferences = {
     booking_created: { email: boolean; web: boolean; };
@@ -41,41 +42,43 @@ const applyNotificationMode = (mode: NotificationMode): { email: boolean; web: b
     }
 };
 
-const notificationTypes = [
+const getNotificationTypes = (t: (key: string) => string) => [
     {
         key: 'booking_created' as const,
         icon: Bell,
-        title: 'New Booking',
-        description: 'When a customer books a class',
+        title: t('routes.settings.notifications.newBooking'),
+        description: t('routes.settings.notifications.whenCustomerBooks'),
     },
     {
         key: 'booking_cancelled_by_consumer' as const,
         icon: UserX,
-        title: 'Customer Cancellation',
-        description: 'When a customer cancels their booking',
+        title: t('routes.settings.notifications.customerCancellation'),
+        description: t('routes.settings.notifications.whenCustomerCancels'),
     },
     {
         key: 'booking_cancelled_by_business' as const,
         icon: CalendarX,
-        title: 'Business Cancellation',
-        description: 'When you cancel a class',
+        title: t('routes.settings.notifications.businessCancellation'),
+        description: t('routes.settings.notifications.whenYouCancel'),
     },
     {
         key: 'payment_received' as const,
         icon: CreditCard,
-        title: 'Payment Received',
-        description: 'When a payment is received',
+        title: t('routes.settings.notifications.paymentReceived'),
+        description: t('routes.settings.notifications.whenPaymentReceived'),
     },
     {
         key: 'review_received' as const,
         icon: Star,
-        title: 'New Review',
-        description: 'When a user review is approved',
+        title: t('routes.settings.notifications.newReview'),
+        description: t('routes.settings.notifications.whenReviewApproved'),
     },
 ];
 
 export function NotificationsTab() {
+    const { t } = useTypedTranslation();
     const { settings, loading, updateSettings } = useBusinessSettings();
+    const notificationTypes = getNotificationTypes(t);
     const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
     const [hasChanges, setHasChanges] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -109,10 +112,10 @@ export function NotificationsTab() {
                 }
             });
             setHasChanges(false);
-            toast.success('Notification preferences saved successfully');
+            toast.success(t('routes.settings.notifications.preferencesSavedSuccess'));
         } catch (error) {
             console.error('Failed to save notification preferences:', error);
-            toast.error('Failed to save notification preferences');
+            toast.error(t('routes.settings.notifications.failedToSavePreferences'));
         } finally {
             setSaving(false);
         }
@@ -122,9 +125,9 @@ export function NotificationsTab() {
         return (
             <div className="space-y-6">
                 <div>
-                    <h3 className="text-lg font-semibold">Notification Settings</h3>
+                    <h3 className="text-lg font-semibold">{t('routes.settings.notifications.notificationSettings')}</h3>
                     <p className="text-sm text-muted-foreground">
-                        Loading notification preferences...
+                        {t('routes.settings.notifications.loadingPreferences')}
                     </p>
                 </div>
             </div>
@@ -134,25 +137,25 @@ export function NotificationsTab() {
     return (
         <div className="max-w-3xl space-y-6">
             <div>
-                <h3 className="text-lg font-semibold">Notification Settings</h3>
+                <h3 className="text-lg font-semibold">{t('routes.settings.notifications.notificationSettings')}</h3>
                 <p className="text-sm text-muted-foreground">
-                    Configure how you want to receive notifications about your business.
+                    {t('routes.settings.notifications.configureNotifications')}
                 </p>
             </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">Business Notifications</CardTitle>
+                    <CardTitle className="text-base">{t('routes.settings.notifications.businessNotifications')}</CardTitle>
                     <CardDescription>
-                        Choose how you want to receive notifications for each event type.
+                        {t('routes.settings.notifications.chooseChannels')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
                         {/* Header row */}
                         <div className="flex justify-between items-center pb-2 border-b">
-                            <div className="font-medium text-sm">Event Type</div>
-                            <div className="font-medium text-sm">Channel</div>
+                            <div className="font-medium text-sm">{t('routes.settings.notifications.eventType')}</div>
+                            <div className="font-medium text-sm">{t('routes.settings.notifications.channel')}</div>
                         </div>
 
                         {/* Notification rows */}
@@ -183,10 +186,10 @@ export function NotificationsTab() {
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="none">None</SelectItem>
-                                                <SelectItem value="email">Email only</SelectItem>
-                                                <SelectItem value="web">Web only</SelectItem>
-                                                <SelectItem value="both">Web & Email</SelectItem>
+                                                <SelectItem value="none">{t('routes.settings.notifications.none')}</SelectItem>
+                                                <SelectItem value="email">{t('routes.settings.notifications.emailOnly')}</SelectItem>
+                                                <SelectItem value="web">{t('routes.settings.notifications.webOnly')}</SelectItem>
+                                                <SelectItem value="both">{t('routes.settings.notifications.webAndEmail')}</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -202,7 +205,7 @@ export function NotificationsTab() {
                                     disabled={saving}
                                     className="w-full sm:w-auto"
                                 >
-                                    {saving ? 'Saving...' : 'Save Changes'}
+                                    {saving ? t('routes.settings.notifications.saving') : t('routes.settings.notifications.saveChanges')}
                                 </Button>
                             </div>
                         )}

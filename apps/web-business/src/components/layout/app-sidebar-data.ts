@@ -7,8 +7,11 @@ import {
 } from 'lucide-react'
 import { AudioWaveform, Command, GalleryVerticalEnd } from 'lucide-react'
 import { type SidebarData } from './types'
+import type { TranslationKeys } from '@/lib/typed'
 
-export const getSidebarData = (unreadMessagesCount?: number): SidebarData => ({
+type TypedTFunction = (key: TranslationKeys, options?: any) => string;
+
+export const getSidebarData = (t: TypedTFunction, unreadMessagesCount?: number): SidebarData => ({
     user: {
         name: 'Gefa',
         email: 'gefa@gmail.com',
@@ -33,38 +36,38 @@ export const getSidebarData = (unreadMessagesCount?: number): SidebarData => ({
     ],
     navGroups: [
         {
-            title: 'General',
+            title: t('common.general'),
             items: [
                 {
-                    title: 'Dashboard',
+                    title: t('routes.dashboard.title'),
                     url: '/dashboard',
                     icon: LayoutDashboard,
                 },
                 {
-                    title: 'Schedule',
+                    title: t('routes.calendar.title'),
                     url: '/calendar',
                     icon: CalendarHeartIcon,
                 },
                 {
-                    title: 'Lessons',
+                    title: t('routes.templates.title'),
                     url: '/templates',
                     icon: BookTemplateIcon,
                 },
                 {
-                    title: 'Earnings',
+                    title: t('routes.earnings.title'),
                     url: '/earnings',
                     icon: DollarSign,
                 },
                 {
-                    title: 'Messages',
+                    title: t('routes.messages.title'),
                     url: '/messages',
                     icon: MessageCircle,
-                    badge: unreadMessagesCount && unreadMessagesCount > 0 ? 
-                        (unreadMessagesCount > 99 ? '99+' : unreadMessagesCount.toString()) : 
+                    badge: unreadMessagesCount && unreadMessagesCount > 0 ?
+                        (unreadMessagesCount > 99 ? '99+' : unreadMessagesCount.toString()) :
                         undefined,
                 },
                 // {
-                //     title: 'Bookings',
+                //     title: t('routes.bookings.title'),
                 //     url: '/bookings',
                 //     icon: BookmarkMinusIcon,
                 // },

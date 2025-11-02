@@ -21,8 +21,10 @@ import { useMutation } from "convex/react"
 import { api } from "@repo/api/convex/_generated/api"
 import { toast } from "sonner"
 import type { Doc } from "@repo/api/convex/_generated/dataModel"
+import { useTypedTranslation } from "@/lib/typed"
 
 export default function TemplatesPage() {
+    const { t } = useTypedTranslation();
     const [editingTemplate, setEditingTemplate] = useState<Doc<"classTemplates"> | null>(null)
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
     const [deletingTemplate, setDeletingTemplate] = useState<Doc<"classTemplates"> | null>(null)
@@ -62,10 +64,10 @@ export default function TemplatesPage() {
             await deleteTemplate({ templateId: deletingTemplate._id })
             setIsDeleteDialogOpen(false)
             setDeletingTemplate(null)
-            toast.success("Template deleted successfully!")
+            toast.success(t('routes.templates.templateDeletedSuccess'))
         } catch (error) {
             console.error("Failed to delete template:", error)
-            toast.error("Failed to delete template. Please try again.")
+            toast.error(t('routes.templates.failedToDeleteTemplate'))
         }
     }
 
@@ -78,9 +80,9 @@ export default function TemplatesPage() {
         <Card className="text-center py-12">
             <CardContent>
                 <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No templates yet</h3>
+                <h3 className="text-lg font-semibold mb-2">{t('routes.templates.noTemplatesYet')}</h3>
                 <p className="text-muted-foreground mb-4">
-                    Create your first class template to get started with scheduling
+                    {t('routes.templates.noTemplatesDescription')}
                 </p>
                 <CreateTemplateDialog />
             </CardContent>
@@ -94,9 +96,9 @@ export default function TemplatesPage() {
         <>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-2">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Class Templates</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('routes.templates.title')}</h1>
                     <p className="text-muted-foreground mt-1 text-sm sm:text-base">
-                        Create and manage your class templates for easy scheduling
+                        {t('routes.templates.subtitle')}
                     </p>
                 </div>
 
@@ -140,12 +142,12 @@ export default function TemplatesPage() {
                                 {status === "LoadingMore" ? (
                                     <>
                                         <Loader2 className="h-4 w-4 animate-spin" />
-                                        Loading...
+                                        {t('routes.templates.loadingMore')}
                                     </>
                                 ) : (
                                     <>
                                         <Plus className="h-4 w-4" />
-                                        Load More Templates
+                                        {t('routes.templates.loadMore')}
                                     </>
                                 )}
                             </Button>
@@ -169,18 +171,18 @@ export default function TemplatesPage() {
                 <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Template</AlertDialogTitle>
+                            <AlertDialogTitle>{t('routes.templates.deleteTemplate')}</AlertDialogTitle>
                             <AlertDialogDescription>
-                                Are you sure you want to delete "{deletingTemplate.name}"? This action cannot be undone.
+                                {t('routes.templates.deleteTemplateConfirm')}
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel onClick={handleCloseDeleteDialog}>Cancel</AlertDialogCancel>
+                            <AlertDialogCancel onClick={handleCloseDeleteDialog}>{t('common.cancel')}</AlertDialogCancel>
                             <AlertDialogAction
                                 onClick={handleConfirmDelete}
                                 className="bg-destructive hover:bg-destructive/80"
                             >
-                                Delete
+                                {t('common.delete')}
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>

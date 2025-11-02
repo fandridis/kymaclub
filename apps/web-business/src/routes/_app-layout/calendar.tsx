@@ -7,6 +7,7 @@ import { Header } from '@/components/layout/header';
 import { Main } from '@/components/layout/main';
 import { useEffect } from 'react';
 import { format } from 'date-fns';
+import { useTypedTranslation } from '@/lib/typed';
 
 const currentDate = new Date();
 
@@ -37,9 +38,11 @@ function RouteComponent() {
         }
     }, [date, navigate]);
 
+    const { t } = useTypedTranslation();
+
     return (
         <>
-            <Header fixed title="My Calendar" />
+            <Header fixed title={t('routes.calendar.title')} />
             <Main className="-pr-4">
                 <CalendarPage
                     startDate={startDate}

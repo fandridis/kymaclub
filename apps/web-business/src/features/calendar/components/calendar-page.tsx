@@ -30,6 +30,7 @@ import type { TemplateColorType } from '@repo/utils/colors';
 import { ClassBookingsDialog } from '../../bookings/components/class-bookings-dialog';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import { useTypedTranslation } from '@/lib/typed';
 
 interface CalendarPageProps {
     startDate: Date;
@@ -39,6 +40,7 @@ interface CalendarPageProps {
 }
 
 export function CalendarPage({ startDate, classInstances, user, loading }: CalendarPageProps) {
+    const { t } = useTypedTranslation();
     const navigate = useNavigate({ from: '/calendar' });
     const isMobile = useIsMobile();
     const { state: sidebarState } = useSidebar();
@@ -100,10 +102,10 @@ export function CalendarPage({ startDate, classInstances, user, loading }: Calen
                     disableBookings: !classInstance.disableBookings
                 }
             });
-            toast.success(`Bookings ${classInstance.disableBookings ? 'opened' : 'closed'} successfully`);
+            toast.success(classInstance.disableBookings ? t('routes.calendar.bookingsOpened') : t('routes.calendar.bookingsClosed'));
         } catch (error) {
             console.error('Failed to toggle bookings:', error);
-            toast.error('Failed to update booking status');
+            toast.error(t('routes.calendar.failedToUpdateBookingStatus'));
         }
     };
 
@@ -116,7 +118,7 @@ export function CalendarPage({ startDate, classInstances, user, loading }: Calen
             <div className="mb-2 flex justify-end">
                 <Button onClick={() => setCreateDialog({ open: true, selectedDateTime: '' })}>
                     <Plus className="h-4 w-4 mr-2" />
-                    New class
+                    {t('routes.calendar.newClass')}
                 </Button>
             </div>
             <div className='w-full h-full relative'>

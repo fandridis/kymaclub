@@ -11,8 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { Download, TrendingUp, TrendingDown, Users, DollarSign } from 'lucide-react'
 import { useEarnings } from '../hooks/use-earnings'
+import { useTypedTranslation } from '@/lib/typed'
 
 export default function EarningsPage() {
+    const { t } = useTypedTranslation();
     const [selectedMonth, setSelectedMonth] = useState(() => {
         const now = new Date()
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -42,7 +44,7 @@ export default function EarningsPage() {
         if (!earningsData?.bookings) return
 
         const csvContent = [
-            ['Date', 'Class Name', 'Consumer', 'Gross Price', 'System Cut (20%)', 'Your Earnings', 'Status'],
+            [t('routes.earnings.tableDate'), t('routes.earnings.tableClassName'), t('routes.earnings.tableConsumer'), t('routes.earnings.tableGrossPrice'), t('routes.earnings.tableSystemCut'), t('routes.earnings.tableYourEarnings'), t('routes.earnings.tableStatus')],
             ...earningsData.bookings.map((booking) => {
                 const grossPrice = booking.finalPrice / 100
                 const systemCut = grossPrice * systemCutRate
@@ -89,7 +91,7 @@ export default function EarningsPage() {
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-96">
-                <div className="text-muted-foreground">Loading earnings data...</div>
+                <div className="text-muted-foreground">{t('common.loading')}</div>
             </div>
         )
     }
@@ -97,7 +99,7 @@ export default function EarningsPage() {
     if (!hasData || !earningsData) {
         return (
             <div className="flex items-center justify-center h-96">
-                <div className="text-muted-foreground">No earnings data available for this month</div>
+                <div className="text-muted-foreground">{t('routes.earnings.noEarnings')}</div>
             </div>
         )
     }
@@ -134,13 +136,13 @@ export default function EarningsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card className="bg-card border-border">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-card-foreground">Monthly Bookings</CardTitle>
+                        <CardTitle className="text-sm font-medium text-card-foreground">{t('routes.earnings.monthlyBookings')}</CardTitle>
                         <Users className="h-4 w-4 text-primary" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-foreground">{earningsData.totalBookings || 0}</div>
                         <div className="flex items-center justify-between mt-2">
-                            <p className="text-xs text-muted-foreground">Classes completed</p>
+                            <p className="text-xs text-muted-foreground">{t('routes.earnings.classesCompleted')}</p>
                             {formatChangeIndicator(comparisonData.bookings.change, comparisonData.bookings.isPositive)}
                         </div>
                     </CardContent>
@@ -148,7 +150,7 @@ export default function EarningsPage() {
 
                 <Card className="bg-card border-border">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-semibold text-primary">Monthly Earnings</CardTitle>
+                        <CardTitle className="text-sm font-semibold text-primary">{t('routes.earnings.monthlyEarnings')}</CardTitle>
                         <DollarSign className="h-4 w-4 text-primary" />
                     </CardHeader>
                     <CardContent>
@@ -157,7 +159,7 @@ export default function EarningsPage() {
                         </div>
                         <div className="flex items-center justify-between mt-2">
                             <p className="text-xs text-primary/80 font-medium">
-                                Your revenue this month
+                                {t('routes.earnings.yourRevenueThisMonth')}
                             </p>
                             {formatChangeIndicator(comparisonData.earnings.change, comparisonData.earnings.isPositive)}
                         </div>
@@ -166,7 +168,7 @@ export default function EarningsPage() {
 
                 <Card className="bg-card border-border">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-card-foreground">Avg Booking Price</CardTitle>
+                        <CardTitle className="text-sm font-medium text-card-foreground">{t('routes.earnings.avgBookingPrice')}</CardTitle>
                         <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -177,7 +179,7 @@ export default function EarningsPage() {
                             }
                         </div>
                         <div className="flex items-center justify-between mt-2">
-                            <p className="text-xs text-muted-foreground">Average per booking</p>
+                            <p className="text-xs text-muted-foreground">{t('routes.earnings.averagePerBooking')}</p>
                             {formatChangeIndicator(comparisonData.avgPrice.change, comparisonData.avgPrice.isPositive)}
                         </div>
                     </CardContent>
@@ -185,7 +187,7 @@ export default function EarningsPage() {
 
                 <Card className="bg-card border-border">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-card-foreground">All-time Earnings</CardTitle>
+                        <CardTitle className="text-sm font-medium text-card-foreground">{t('routes.earnings.allTimeEarnings')}</CardTitle>
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -193,7 +195,7 @@ export default function EarningsPage() {
                             €{((earningsData.allTimeNetEarnings || 0) / 100).toFixed(2)}
                         </div>
                         <div className="flex items-center justify-between mt-2">
-                            <p className="text-xs text-muted-foreground">Total lifetime revenue</p>
+                            <p className="text-xs text-muted-foreground">{t('routes.earnings.totalLifetimeRevenue')}</p>
                             {formatChangeIndicator(comparisonData.allTime.change, comparisonData.allTime.isPositive)}
                         </div>
                     </CardContent>
@@ -206,18 +208,18 @@ export default function EarningsPage() {
                     <div className="flex flex-col gap-4">
                         <div>
                             <CardTitle className="text-xl font-semibold text-card-foreground">
-                                Booking Details - {selectedMonthLabel}
+                                {t('routes.earnings.bookingDetails')} - {selectedMonthLabel}
                             </CardTitle>
-                            <p className="text-sm text-muted-foreground">Detailed breakdown of all class bookings and earnings. Records appear after the class has been completed.</p>
+                            <p className="text-sm text-muted-foreground">{t('routes.earnings.bookingDetailsDescription')}</p>
                         </div>
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                             <Button onClick={handleExport} variant="outline" className="w-full sm:w-auto">
                                 <Download className="w-4 h-4 mr-2" />
-                                Export Data
+                                {t('routes.earnings.exportData')}
                             </Button>
                             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
                                 <SelectTrigger className="w-full sm:w-48">
-                                    <SelectValue />
+                                    <SelectValue placeholder={t('routes.earnings.selectMonth')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {monthOptions.map((option) => (
@@ -236,12 +238,12 @@ export default function EarningsPage() {
                             <table className="w-full">
                                 <thead>
                                     <tr className="border-b border-border">
-                                        <th className="text-left py-3 px-4 font-medium text-foreground">Date</th>
-                                        <th className="text-left py-3 px-4 font-medium text-foreground">Class Name</th>
-                                        <th className="text-left py-3 px-4 font-medium text-foreground">Consumer</th>
-                                        <th className="text-right py-3 px-4 font-medium text-muted-foreground">Gross</th>
-                                        <th className="text-right py-3 px-4 font-medium text-primary">Your Earnings</th>
-                                        <th className="text-center py-3 px-4 font-medium text-foreground">Status</th>
+                                        <th className="text-left py-3 px-4 font-medium text-foreground">{t('routes.earnings.tableDate')}</th>
+                                        <th className="text-left py-3 px-4 font-medium text-foreground">{t('routes.earnings.tableClassName')}</th>
+                                        <th className="text-left py-3 px-4 font-medium text-foreground">{t('routes.earnings.tableConsumer')}</th>
+                                        <th className="text-right py-3 px-4 font-medium text-muted-foreground">{t('routes.earnings.tableGrossPrice')}</th>
+                                        <th className="text-right py-3 px-4 font-medium text-primary">{t('routes.earnings.tableYourEarnings')}</th>
+                                        <th className="text-center py-3 px-4 font-medium text-foreground">{t('routes.earnings.tableStatus')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -289,7 +291,7 @@ export default function EarningsPage() {
                                 <tfoot>
                                     <tr className="border-t-2 border-primary bg-primary/5">
                                         <td colSpan={3} className="py-4 px-4 text-sm font-semibold text-foreground">
-                                            Total Monthly Earnings
+                                            {t('routes.earnings.totalMonthlyEarnings')}
                                         </td>
                                         <td className="py-4 px-4 text-sm font-medium text-muted-foreground text-right">
                                             €{((earningsData.totalGrossEarnings || 0) / 100).toFixed(2)}
@@ -304,7 +306,7 @@ export default function EarningsPage() {
                         </div>
                     ) : (
                         <div className="text-center py-8">
-                            <div className="text-muted-foreground">No bookings found for {selectedMonthLabel}</div>
+                            <div className="text-muted-foreground">{t('routes.earnings.noBookingsFound')} {selectedMonthLabel}</div>
                         </div>
                     )}
                 </CardContent>

@@ -5,33 +5,48 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCurrentUser } from '@/components/stores/auth';
 import { useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { toast } from 'sonner';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import i18n, { AVAILABLE_LANGUAGES } from '@/lib/i18n';
+import { useTypedTranslation } from '@/lib/typed';
 
-const businessSchema = z.object({
-    name: z.string().min(1, 'Business name is required'),
-    phone: z.string().optional(),
-});
+type BusinessForm = {
+    name: string;
+    phone?: string;
+};
 
-type BusinessForm = z.infer<typeof businessSchema>;
-
-const profileSchema = z.object({
-    name: z.string().min(1, 'Name is required'),
-});
-
-type ProfileForm = z.infer<typeof profileSchema>;
+type ProfileForm = {
+    name: string;
+};
 
 export function AccountTab() {
     const { user, business } = useCurrentUser();
+    const { t } = useTypedTranslation();
 
     const [savingBusiness, setSavingBusiness] = useState(false);
     const [savingProfile, setSavingProfile] = useState(false);
+    const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
+
+    useEffect(() => {
+        const handleLanguageChange = (lng: string) => {
+            setCurrentLanguage(lng);
+        };
+
+        i18n.on('languageChanged', handleLanguageChange);
+        return () => {
+            i18n.off('languageChanged', handleLanguageChange);
+        };
+    }, []);
 
     const formBusiness = useForm<BusinessForm>({
-        resolver: zodResolver(businessSchema),
+        resolver: zodResolver(z.object({
+            name: z.string().min(1, t('routes.settings.account.nameRequired')),
+            phone: z.string().optional(),
+        })),
         defaultValues: {
             name: business.name ?? '',
             phone: business.phone ?? '',
@@ -39,7 +54,9 @@ export function AccountTab() {
     });
 
     const formProfile = useForm<ProfileForm>({
-        resolver: zodResolver(profileSchema),
+        resolver: zodResolver(z.object({
+            name: z.string().min(1, t('routes.settings.account.nameRequired')),
+        })),
         defaultValues: {
             name: user.name ?? '',
         },
@@ -52,10 +69,10 @@ export function AccountTab() {
         setSavingBusiness(true);
         try {
             await updateBusinessDetails({ name: values.name.trim(), phone: values.phone?.trim() || undefined });
-            toast.success('Business details updated');
+            toast.success(t('routes.settings.account.businessDetailsUpdated'));
         } catch (e) {
             console.error(e);
-            toast.error('Failed to update business details');
+            toast.error(t('routes.settings.account.failedToUpdateBusiness'));
         } finally {
             setSavingBusiness(false);
         }
@@ -65,10 +82,10 @@ export function AccountTab() {
         setSavingProfile(true);
         try {
             await updateCurrentUserProfile({ name: values.name.trim() });
-            toast.success('Profile updated');
+            toast.success(t('routes.settings.account.profileUpdated'));
         } catch (e) {
             console.error(e);
-            toast.error('Failed to update profile');
+            toast.error(t('routes.settings.account.failedToUpdateProfile'));
         } finally {
             setSavingProfile(false);
         }
@@ -77,15 +94,15 @@ export function AccountTab() {
     return (
         <div className="max-w-2xl space-y-6">
             <div>
-                <h3 className="text-lg font-semibold">Account</h3>
-                <p className="text-sm text-muted-foreground">Manage your business and personal profile.</p>
+                <h3 className="text-lg font-semibold">{t('routes.settings.account.title')}</h3>
+                <p className="text-sm text-muted-foreground">{t('routes.settings.account.manageProfile')}</p>
             </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">Company Details</CardTitle>
+                    <CardTitle className="text-base">{t('routes.settings.account.companyDetails')}</CardTitle>
                     <CardDescription>
-                        Here you change your company information. This information is not customer-facing. You don't need to change it unless your actual company name, contact details or address are different from the ones you used during onboarding.
+                        {t('routes.settings.account.companyDescription')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -96,9 +113,9 @@ export function AccountTab() {
                                 name="name"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Business name</FormLabel>
+                                        <FormLabel>{t('routes.settings.account.businessName')}</FormLabel>
                                         <FormControl>
-                                            <Input {...field} placeholder="Your company name" />
+                                            <Input {...field} placeholder={t('routes.settings.account.companyNamePlaceholder')} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -110,9 +127,9 @@ export function AccountTab() {
                                 name="phone"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Phone number</FormLabel>
+                                        <FormLabel>{t('routes.settings.account.phoneNumber')}</FormLabel>
                                         <FormControl>
-                                            <Input {...field} placeholder="e.g. +30 69XXXXXXXX" />
+                                            <Input {...field} placeholder={t('routes.settings.account.phonePlaceholder')} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -121,7 +138,7 @@ export function AccountTab() {
 
                             <div className="pt-2">
                                 <Button type="submit" disabled={savingBusiness}>
-                                    {savingBusiness ? 'Saving…' : 'Save changes'}
+                                    {savingBusiness ? t('routes.settings.account.saving') : t('routes.settings.account.saveChanges')}
                                 </Button>
                             </div>
                         </form>
@@ -131,8 +148,8 @@ export function AccountTab() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">Profile</CardTitle>
-                    <CardDescription>Update your personal information.</CardDescription>
+                    <CardTitle className="text-base">{t('routes.settings.account.profile')}</CardTitle>
+                    <CardDescription>{t('routes.settings.account.updatePersonalInfo')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Form {...formProfile}>
@@ -142,9 +159,9 @@ export function AccountTab() {
                                 name="name"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Name</FormLabel>
+                                        <FormLabel>{t('routes.settings.account.name')}</FormLabel>
                                         <FormControl>
-                                            <Input {...field} placeholder="Your name" />
+                                            <Input {...field} placeholder={t('routes.settings.account.yourNamePlaceholder')} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -153,11 +170,47 @@ export function AccountTab() {
 
                             <div className="pt-2">
                                 <Button type="submit" disabled={savingProfile}>
-                                    {savingProfile ? 'Saving…' : 'Save changes'}
+                                    {savingProfile ? t('routes.settings.account.saving') : t('routes.settings.account.saveChanges')}
                                 </Button>
                             </div>
                         </form>
                     </Form>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-base">{t('routes.settings.account.language')}</CardTitle>
+                    <CardDescription>
+                        {t('routes.settings.account.languageDescription')}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">
+                                {t('routes.settings.account.selectLanguage')}
+                            </label>
+                            <Select
+                                value={currentLanguage}
+                                onValueChange={(value) => {
+                                    i18n.changeLanguage(value);
+                                    setCurrentLanguage(value);
+                                }}
+                            >
+                                <SelectTrigger className="w-full sm:w-[300px]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {AVAILABLE_LANGUAGES.map((lang) => (
+                                        <SelectItem key={lang} value={lang}>
+                                            {t(`common.languages.${lang}` as any)}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
         </div>

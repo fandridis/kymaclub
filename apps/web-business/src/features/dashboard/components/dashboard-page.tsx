@@ -24,9 +24,11 @@ import { useQuery } from "convex-helpers/react/cache/hooks";
 import { api } from "@repo/api/convex/_generated/api";
 import { Link } from "@tanstack/react-router";
 import EditClassInstanceDialog from "@/features/calendar/components/edit-class-instance-dialog";
+import { useTypedTranslation } from "@/lib/typed";
 
 
 export default function DashboardPage() {
+    const { t } = useTypedTranslation();
     const [bookingsDialog, setBookingsDialog] = useState<{
         open: boolean;
         classInstanceId: Id<"classInstances"> | null;
@@ -64,38 +66,38 @@ export default function DashboardPage() {
     // Create stat cards from real metrics data
     const statCards = metrics ? [
         {
-            title: "Check-ins today",
+            title: t('routes.dashboard.checkInsToday'),
             value: metrics.checkInsToday.count.toString(),
             change: `${metrics.checkInsToday.isPositive ? '+' : ''}${metrics.checkInsToday.change}%`,
             changeTone: metrics.checkInsToday.isPositive ? "positive" as const : "negative" as const,
-            helper: "vs yesterday",
+            helper: t('routes.dashboard.vsYesterday'),
             icon: <CalendarCheck />,
             iconColor: "emerald" as const,
         },
         {
-            title: "Monthly visits",
+            title: t('routes.dashboard.monthlyVisits'),
             value: metrics.monthlyVisits.count.toString(),
             change: `${metrics.monthlyVisits.isPositive ? '+' : ''}${metrics.monthlyVisits.change}%`,
             changeTone: metrics.monthlyVisits.isPositive ? "positive" as const : "negative" as const,
-            helper: "vs last month",
+            helper: t('routes.dashboard.vsLastMonth'),
             icon: <LineChart />,
             iconColor: "sky" as const,
         },
         {
-            title: "Monthly revenue",
+            title: t('routes.dashboard.monthlyRevenue'),
             value: `€${(metrics.monthlyRevenue.net / 100).toFixed(2)}`,
             change: `${metrics.monthlyRevenue.isPositive ? '+' : ''}${metrics.monthlyRevenue.change}%`,
             changeTone: metrics.monthlyRevenue.isPositive ? "positive" as const : "negative" as const,
-            helper: "vs last month",
+            helper: t('routes.dashboard.vsLastMonth'),
             icon: <CreditCard />,
             iconColor: "amber" as const,
         },
         {
-            title: "Attendance rate",
+            title: t('routes.dashboard.attendanceRate'),
             value: `${metrics.attendanceRate.percentage}%`,
             change: `${metrics.attendanceRate.isPositive ? '+' : ''}${metrics.attendanceRate.change}%`,
             changeTone: metrics.attendanceRate.isPositive ? "positive" as const : "negative" as const,
-            helper: "last 100 classes",
+            helper: t('routes.dashboard.last100Classes'),
             icon: <Activity />,
             iconColor: "sky" as const,
         },
@@ -133,15 +135,6 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-8 pb-8">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                    <h1 className="text-3xl font-semibold tracking-tight">Welcome back</h1>
-                    <p className="text-muted-foreground mt-2">
-                        Track your studio performance, act on today's priorities, and spot opportunities at a glance.
-                    </p>
-                </div>
-            </div>
-
             <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
                 {statCards.map((stat) => (
                     <MinimalStatCard
@@ -159,7 +152,7 @@ export default function DashboardPage() {
 
             {/* Happening Today Section */}
             <ClassCarousel
-                title="Today's Classes"
+                title={t('routes.dashboard.happeningToday')}
                 classes={happeningTodayClasses}
                 imageUrlMap={imageUrlMap}
                 onClassClick={(instance) => {
@@ -180,12 +173,12 @@ export default function DashboardPage() {
                         classInstanceId: instance._id,
                     });
                 }}
-                emptyMessage="No classes scheduled for today"
+                emptyMessage={t('routes.dashboard.noClassesToday')}
                 emptyAction={
                     <Link to="/calendar">
                         <Button variant="outline" size="sm" className="mt-2">
                             <Calendar className="h-4 w-4 mr-2" />
-                            View Calendar
+                            {t('routes.calendar.title')}
                         </Button>
                     </Link>
                 }
@@ -193,15 +186,15 @@ export default function DashboardPage() {
 
             {/* Latest Feedback Section */}
             <FeedbackCarousel
-                title="User Feedback"
+                title={t('routes.dashboard.recentFeedback')}
                 reviews={reviews}
-                emptyMessage="No reviews yet"
+                emptyMessage={t('routes.dashboard.noFeedback')}
                 emptyAction={
                     <p className="text-sm text-muted-foreground">
-                        Reviews will appear here once customers start rating your venues
+                        {t('routes.dashboard.noFeedback')}
                     </p>
                 }
-                headerAction={<AISuggestionsModal size="sm" text="Insights" />}
+                headerAction={<AISuggestionsModal size="sm" text={t('routes.dashboard.aiInsights')} />}
             />
 
             {/* Bookings Dialog */}

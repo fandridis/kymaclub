@@ -118,13 +118,13 @@ export function SignInForm() {
                         <SignInWithEmailCode handleCodeSent={(email) => setStep({ email })} />
                     </div>
                     <p className="px-8 text-center text-sm text-muted-foreground">
-                        {t('common.terms.agreementText')}{" "}
+                        {t('common.agreementText')}{" "}
                         <a href="/terms" className="underline underline-offset-4 hover:text-primary">
-                            {t('common.terms.termsOfService')}
+                            {t('common.termsOfService')}
                         </a>{" "}
-                        {t('common.terms.and')}{" "}
+                        {t('common.and')}{" "}
                         <a href="/privacy" className="underline underline-offset-4 hover:text-primary">
-                            {t('common.terms.privacyPolicy')}
+                            {t('common.privacyPolicy')}
                         </a>
                         .
                     </p>
@@ -156,14 +156,14 @@ export function SignInForm() {
                         </div>
                         <input name="email" value={step.email} type="hidden" />
                         <Button type="submit" className="w-full" disabled={submitting}>
-                            {t('common.buttons.signIn')}
+                            {t('common.signIn')}
                         </Button>
                         <Button
                             type="button"
                             variant="outline"
                             onClick={() => setStep("signIn")}
                         >
-                            {t('common.buttons.backToSignIn')}
+                            {t('common.backToSignIn')}
                         </Button>
                     </form>
                 </>

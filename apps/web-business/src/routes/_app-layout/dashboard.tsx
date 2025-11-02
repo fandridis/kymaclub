@@ -4,6 +4,7 @@ import { Header } from '@/components/layout/header';
 import { Main } from '@/components/layout/main';
 import { SpinningCircles } from '@/components/spinning-circles';
 import DashboardPage from '@/features/dashboard/components/dashboard-page';
+import { useTypedTranslation } from '@/lib/typed';
 
 export const Route = createFileRoute('/_app-layout/dashboard')({
     component: Dashboard,
@@ -24,6 +25,7 @@ export const Route = createFileRoute('/_app-layout/dashboard')({
 
 function Dashboard() {
     const { user, business } = useAuth();
+    const { t } = useTypedTranslation();
 
 
     /**
@@ -37,7 +39,7 @@ function Dashboard() {
 
     return (
         <>
-            <Header fixed title="My Dashboard" />
+            <Header fixed title={t('routes.dashboard.title')} />
             <Main>
                 <DashboardPage />
             </Main>

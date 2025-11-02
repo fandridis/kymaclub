@@ -1,6 +1,8 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
+import { createTypedT } from '@/lib/typed';
+import i18n from '@/lib/i18n';
 
 interface Props {
   children: ReactNode;
@@ -65,13 +67,15 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
+      const t = createTypedT(i18n.t.bind(i18n));
+
       return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
           <Card className="w-full max-w-md">
             <CardHeader>
-              <CardTitle className="text-red-600">Something went wrong</CardTitle>
+              <CardTitle className="text-red-600">{t('errors.somethingWentWrong')}</CardTitle>
               <CardDescription>
-                An unexpected error occurred. We apologize for the inconvenience.
+                {t('errors.unexpectedError')}
               </CardDescription>
             </CardHeader>
 
@@ -79,7 +83,7 @@ export class ErrorBoundary extends Component<Props, State> {
               {import.meta.env.DEV && this.state.error && (
                 <details className="mt-4 p-3 bg-gray-100 rounded text-sm">
                   <summary className="cursor-pointer font-medium">
-                    Error Details (Dev Mode)
+                    {t('errors.errorDetails')}
                   </summary>
                   <div className="mt-2 space-y-2">
                     <div>
@@ -100,10 +104,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
             <CardFooter className="flex gap-2">
               <Button onClick={this.handleReset} variant="outline">
-                Try Again
+                {t('errors.tryAgain')}
               </Button>
               <Button onClick={this.handleReload}>
-                Reload Page
+                {t('errors.reloadPage')}
               </Button>
             </CardFooter>
           </Card>

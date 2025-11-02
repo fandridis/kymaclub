@@ -14,16 +14,18 @@ import logoSrc from '@/assets/kymaclub-square-logo.png'
 import { cn } from '@/lib/utils'
 import { useQuery } from 'convex/react'
 import { api } from '@repo/api/convex/_generated/api'
+import { useTypedTranslation } from '@/lib/typed'
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const { state } = useSidebar()
+    const { t } = useTypedTranslation()
 
     // Get unread message count for business
     const unreadCountQuery = useQuery(api.queries.chat.getBusinessUnreadMessageCount, {})
     const unreadMessagesCount = unreadCountQuery || 0
 
     const isCollapsed = state === 'collapsed'
-    const sidebarData = getSidebarData(unreadMessagesCount)
+    const sidebarData = getSidebarData(t, unreadMessagesCount)
 
     return (
         <Sidebar collapsible='icon' variant='floating' {...props}>
