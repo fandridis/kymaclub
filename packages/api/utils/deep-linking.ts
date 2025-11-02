@@ -399,6 +399,3 @@ export function isValidDeepLink(url: string): boolean {
 export function getBaseScheme(): string {
   return SCHEME;
 }
-
-// Re-export the database-generated NotificationType for convenience
-export type { NotificationType } from '../types/notification';

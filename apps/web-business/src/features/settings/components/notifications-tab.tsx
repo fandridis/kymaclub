@@ -5,6 +5,7 @@ import { Bell, UserX, CalendarX, CreditCard, Star } from 'lucide-react';
 import { useBusinessSettings } from '../hooks/use-business-settings';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import type { NotificationType } from '@repo/api/types/notification';
 
 type NotificationPreferences = {
     booking_created: { email: boolean; web: boolean; };
