@@ -13,6 +13,9 @@ import type { RootStackParamList } from '../index';
 import { theme } from '../../theme';
 import { api } from '@repo/api/convex/_generated/api';
 import type { Doc } from '@repo/api/convex/_generated/dataModel';
+import { CreditsBadge } from '../../components/CreditsBadge';
+import { useQuery } from 'convex/react';
+import { ProfileIconButton } from '../../components/ProfileIconButton';
 
 const INITIAL_BOOKINGS_COUNT = 100;
 const LOAD_MORE_COUNT = 50;
@@ -129,6 +132,9 @@ export function BookingsScreen() {
         { initialNumItems: INITIAL_BOOKINGS_COUNT }
     );
 
+    // Get user credit balance
+    const creditBalance = useQuery(api.queries.credits.getUserBalance, user ? { userId: user._id } : "skip");
+
     const sections = useMemo(() => {
         if (!allBookings?.length) {
             return [];
@@ -178,7 +184,11 @@ export function BookingsScreen() {
     if (!user) {
         return (
             <SafeAreaView style={styles.container}>
-                <TabScreenHeader title="Bookings" />
+                <TabScreenHeader 
+                    title="Bookings" 
+                    titleBadge={creditBalance !== undefined ? <CreditsBadge creditBalance={creditBalance.balance} /> : undefined}
+                    renderRightSide={() => <ProfileIconButton />}
+                />
                 <Text style={styles.emptyText}>Please sign in to view your bookings</Text>
             </SafeAreaView>
         );
@@ -186,7 +196,11 @@ export function BookingsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <TabScreenHeader title="My Bookings" />
+            <TabScreenHeader 
+                title="My Bookings" 
+                titleBadge={creditBalance !== undefined ? <CreditsBadge creditBalance={creditBalance.balance} /> : undefined}
+                renderRightSide={() => <ProfileIconButton />}
+            />
             <AppTabs
                 items={tabItems}
                 activeKey={activeTab}

@@ -26,19 +26,23 @@ export function LandingScreen() {
   const navigation = useNavigation<NavigationProp>();
   // const isAuthenticated = secureStorage.getIsAuthenticated();
   const { user } = useAuth();
-  const isReallyAuthenticated = user; //  && isAuthenticated;
 
   useEffect(() => {
-    if (isReallyAuthenticated) {
-      // Reset the entire navigation stack and navigate to Home without history
+    console.log('[landing-screen.tsx] user', user);
+    console.log('[landing-screen.tsx] hasConsumerOnboarded', user?.hasConsumerOnboarded);
+
+
+    if (user) {
+      const redirectTo = user.hasConsumerOnboarded ? 'Home' : 'Onboarding';
+      // Reset the entire navigation stack and navigate to the next screen without history
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: 'Home' }],
+          routes: [{ name: redirectTo }],
         })
       );
     }
-  }, [user, navigation, isReallyAuthenticated])
+  }, [user, navigation, user])
 
 
   const handleSignIn = () => {

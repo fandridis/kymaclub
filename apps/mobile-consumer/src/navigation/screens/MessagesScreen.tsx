@@ -10,6 +10,9 @@ import { TabScreenHeader } from '../../components/TabScreenHeader';
 import { theme } from '../../theme';
 import type { RootStackParamList } from '../index';
 import type { Doc } from '@repo/api/convex/_generated/dataModel';
+import { CreditsBadge } from '../../components/CreditsBadge';
+import { useAuthenticatedUser } from '../../stores/auth-store';
+import { ProfileIconButton } from '../../components/ProfileIconButton';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import ReAnimated, {
   useSharedValue,
@@ -225,6 +228,7 @@ function MessageThreadItem({
 export function MessagesScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [deletingThreadId, setDeletingThreadId] = useState<string | null>(null);
+  const user = useAuthenticatedUser();
 
   // Fetch message threads
   const messageThreads = useQuery(api.queries.chat.getUserMessageThreads, {
@@ -234,6 +238,9 @@ export function MessagesScreen() {
   // Get total unread count
   const unreadCountQuery = useQuery(api.queries.chat.getUnreadMessageCount, {});
   const totalUnreadCount = unreadCountQuery || 0;
+
+  // Get user credit balance
+  const creditBalance = useQuery(api.queries.credits.getUserBalance, user ? { userId: user._id } : "skip");
 
   // Delete thread mutation
   const deleteThreadMutation = useMutation(api.mutations.chat.deleteThread);
@@ -278,7 +285,11 @@ export function MessagesScreen() {
   if (messageThreads === undefined) {
     return (
       <SafeAreaView style={styles.container}>
-        <TabScreenHeader title="Messages" />
+        <TabScreenHeader 
+          title="Messages" 
+          titleBadge={creditBalance !== undefined ? <CreditsBadge creditBalance={creditBalance.balance} /> : undefined}
+          renderRightSide={() => <ProfileIconButton />}
+        />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.emerald[500]} />
           <Text style={styles.loadingText}>Loading messages...</Text>
@@ -291,7 +302,11 @@ export function MessagesScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TabScreenHeader title="Messages" />
+      <TabScreenHeader 
+        title="Messages" 
+        titleBadge={creditBalance !== undefined ? <CreditsBadge creditBalance={creditBalance.balance} /> : undefined}
+        renderRightSide={() => <ProfileIconButton />}
+      />
 
       <ScrollView
         style={styles.scrollView}

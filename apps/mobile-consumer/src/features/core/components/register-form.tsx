@@ -116,14 +116,21 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
             const deviceId = getDeviceId();
             clearRateLimit('register', email.trim(), deviceId);
 
-            // // Registration successful!
-            // // The auth state will update automatically, which will trigger
-            // // the navigation structure to switch from auth stack to authenticated stack.
-            // // No manual navigation needed!
-            // secureStorage.setIsAuthenticated(true);
-
-            // Close the modal (since CreateAccountModal is presented as a modal)
-            navigation.goBack();
+            /**
+             * Not used cause the landing-screen has a useEffect that will navigate to the next screen.
+             */
+            // Keep loading state for 3 seconds to show success, then navigate to Landing
+            // This ensures users always land on Landing screen, regardless of navigation stack
+            // setTimeout(() => {
+            //     // Reset navigation stack to Landing to clear any modal stack
+            //     navigation.dispatch(
+            //         CommonActions.reset({
+            //             index: 0,
+            //             routes: [{ name: 'Landing' }],
+            //         })
+            //     );
+            //     setSubmitting(false);
+            // }, 3000);
 
         } catch (error) {
             console.error(error);

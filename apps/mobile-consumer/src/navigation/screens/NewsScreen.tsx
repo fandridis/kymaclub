@@ -16,6 +16,7 @@ import type { RootStackParamListWithNestedTabs } from '../index';
 import { centsToCredits } from '@repo/utils/credits';
 import { NewsClassCard } from '../../components/news/NewsCard';
 import { XIcon } from 'lucide-react-native';
+import { CreditsBadge } from '../../components/CreditsBadge';
 
 const now = new Date();
 
@@ -104,6 +105,9 @@ export function NewsScreen() {
         api.queries.bookings.getCurrentUserUpcomingBookings,
         user ? { daysAhead: 7 } : "skip"
     );
+
+    // Get user credit balance
+    const creditBalance = useQuery(api.queries.credits.getUserBalance, { userId: user._id });
 
     // Query for happening today classes (until midnight)
     const happeningTodayInstances = useQuery(
@@ -415,6 +419,7 @@ export function NewsScreen() {
                 <TabScreenHeader
                     title={t('welcome.title')}
                     //subtitle="Discover amazing fitness classes"
+                    titleBadge={creditBalance !== undefined ? <CreditsBadge creditBalance={creditBalance.balance} /> : undefined}
                     renderRightSide={() => (
                         <TouchableOpacity
                             onPress={() => navigation.navigate('Settings')}
@@ -437,6 +442,7 @@ export function NewsScreen() {
             <TabScreenHeader
                 title={t('welcome.title')}
                 // subtitle="Discover amazing fitness classes"
+                titleBadge={creditBalance !== undefined ? <CreditsBadge creditBalance={creditBalance.balance} /> : undefined}
                 renderRightSide={() => (
                     <TouchableOpacity
                         onPress={() => navigation.navigate('Settings')}

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, ActivityIndicator, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import * as Location from 'expo-location';
@@ -14,11 +14,12 @@ import { TabScreenHeader } from '../../../components/TabScreenHeader';
 import { useAuthenticatedUser } from '../../../stores/auth-store';
 import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
-import { DiamondIcon } from 'lucide-react-native';
 import { theme } from '../../../theme';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../../navigation';
 import { countActiveFilters, useExploreFiltersStore } from '../../../stores/explore-filters-store';
+import { CreditsBadge } from '../../../components/CreditsBadge';
+import { ProfileIconButton } from '../../../components/ProfileIconButton';
 
 export function Explore() {
     const { t } = useTypedTranslation();
@@ -102,10 +103,6 @@ export function Explore() {
         navigation.navigate('ExploreFiltersModal');
     }, [navigation]);
 
-    const handleCreditsPress = useCallback(() => {
-        navigation.navigate('Settings');
-    }, [navigation]);
-
     const isLoading = loadingLocation || venuesLoading;
 
     if (isLoading) {
@@ -125,22 +122,13 @@ export function Explore() {
         );
     }
 
-    const renderCreditsBadge = () => (
-        <TouchableOpacity
-            accessibilityLabel="Open settings"
-            accessibilityRole="button"
-            onPress={handleCreditsPress}
-            activeOpacity={0.85}
-            style={styles.creditsBadge}
-        >
-            <DiamondIcon size={16} color={theme.colors.zinc[50]} />
-            <Text style={styles.creditsBadgeText}>{creditBalance?.balance || 0}</Text>
-        </TouchableOpacity>
-    );
-
     return (
         <SafeAreaView style={styles.container}>
-            <TabScreenHeader title="Explore" renderRightSide={renderCreditsBadge} />
+            <TabScreenHeader 
+                title="Explore" 
+                titleBadge={creditBalance !== undefined ? <CreditsBadge creditBalance={creditBalance.balance} /> : undefined}
+                renderRightSide={() => <ProfileIconButton />}
+            />
             <FilterBar
                 leading={(
                     <AppTabs
@@ -205,19 +193,5 @@ const styles = StyleSheet.create({
     },
     tabsRow: {
         gap: 16,
-    },
-    creditsBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: theme.colors.emerald[500],
-        borderRadius: 12,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-    },
-    creditsBadgeText: {
-        fontSize: theme.fontSize.base,
-        fontWeight: theme.fontWeight.semibold,
-        color: theme.colors.zinc[50],
-        marginLeft: 4,
     },
 });
