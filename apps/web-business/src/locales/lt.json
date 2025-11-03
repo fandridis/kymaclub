@@ -97,7 +97,64 @@
       "newClass": "Nauja pamoka",
       "bookingsOpened": "Rezervacijos sėkmingai atidarytos",
       "bookingsClosed": "Rezervacijos sėkmingai uždarytos",
-      "failedToUpdateBookingStatus": "Nepavyko atnaujinti rezervacijos būsenos"
+      "failedToUpdateBookingStatus": "Nepavyko atnaujinti rezervacijos būsenos",
+      "scheduleClass": {
+        "title": "Suplanuoti Pamoką",
+        "description": "Sukurkite naują pamoką iš vieno iš savo šablonų",
+        "dateTime": "Data ir Laikas",
+        "selectDateTime": "Pasirinkite datą ir laiką",
+        "dateTimeInPast": "Pasirinkta data ir laikas yra praeityje.",
+        "classTemplate": "Pamokos Šablonas",
+        "loadingTemplates": "Kraunami šablonai...",
+        "selectTemplate": "Pasirinkite šabloną",
+        "noTemplatesFound": "Šablonų nerasta",
+        "noTemplatesDescription": "Prieš suplanuodami pamokas turite sukurti pamokų šablonus",
+        "createTemplates": "Sukurti Šablonus",
+        "makeRecurring": "Padaryti pasikartojančiu",
+        "frequency": "Dažnis",
+        "daily": "Kasdien",
+        "weekly": "Kas savaitę",
+        "duration": "Trukmė",
+        "weeks": "savaitės",
+        "daysOfWeek": "Savaitės dienos",
+        "selectAtLeastOneDay": "Prašome pasirinkti bent vieną savaitės dieną.",
+        "scheduling": "Planuojama...",
+        "scheduleSeries": "Suplanuoti Seriją",
+        "scheduleClassButton": "Suplanuoti Pamoką",
+        "createdInstancesSuccess": "Sukurta {{count}} {{name}} atvejų",
+        "scheduledSuccess": "{{name}} sėkmingai suplanuota!",
+        "failedToSchedule": "Nepavyko suplanuoti pamokos. Bandykite dar kartą."
+      },
+      "eventMenu": {
+        "viewBookings": "Peržiūrėti Rezervacijas",
+        "openBookings": "Atidaryti rezervacijas",
+        "closeBookings": "Uždaryti rezervacijas",
+        "edit": "Redaguoti",
+        "delete": "Ištrinti"
+      },
+      "editClass": {
+        "title": "Redaguoti Pamoką",
+        "startTime": "Pradžios Laikas",
+        "startTimeRequired": "Pradžios laikas yra privalomas",
+        "className": "Pamokos Pavadinimas",
+        "applyToAllFuture": "Taikyti visiems būsimiems įvykiams",
+        "updating": "Atnaujinama...",
+        "updateClass": "Atnaujinti pamoką",
+        "updateClasses": "Atnaujinti {{count}} pamokas",
+        "classUpdatedSuccess": "Pamoka sėkmingai atnaujinta!",
+        "classesUpdatedSuccess": "Sėkmingai atnaujinta {{count}} panašių pamokų!",
+        "failedToUpdateClass": "Nepavyko atnaujinti pamokos.",
+        "failedToUpdateClasses": "Nepavyko atnaujinti panašių pamokų."
+      },
+      "daysOfWeek": {
+        "monday": "Pirmadienis",
+        "tuesday": "Antradienis",
+        "wednesday": "Trečiadienis",
+        "thursday": "Ketvirtadienis",
+        "friday": "Penktadienis",
+        "saturday": "Šeštadienis",
+        "sunday": "Sekmadienis"
+      }
     },
     "templates": {
       "title": "Pamokų Šablonai",
@@ -118,6 +175,21 @@
       "bookingWindow": "Rezervacijos Langas",
       "refundPolicy": "Grąžinimo Politika",
       "discountRules": "Nuolaidų Taisyklės",
+      "discountRulesForm": {
+        "title": "Nuolaidų Taisyklės",
+        "addRule": "Pridėti Taisyklę",
+        "noRulesConfigured": "Nuolaidų taisyklės nesukonfigūruotos",
+        "noRulesDescription": "Pridėkite taisykles, kad siūlytumėte ankstyvųjų ar paskutinės minutės nuolaidas",
+        "type": "Tipas",
+        "amount": "Suma ({{currency}})",
+        "earlyBookingApplies": "Ankstyvos rezervacijos nuolaida taikoma:",
+        "lastMinuteApplies": "Paskutinės minutės nuolaida taikoma:",
+        "hoursOrMoreBefore": "val. ar daugiau prieš pamokos pradžią",
+        "hoursOrLessBefore": "val. ar mažiau prieš pamokos pradžią",
+        "allClassesDiscount": "Visos pamokos gauna {{currency}} {{amount}} nuolaidą.",
+        "earlyBookingDiscount": "Pamokos, užsisakytos {{hours}}+ val. anksčiau, gauna {{currency}} {{amount}} nuolaidą.",
+        "lastMinuteDiscount": "Pamokos, prasidedančios per artimiausias {{hours}} val., gauna {{currency}} {{amount}} nuolaidą."
+      },
       "classNamePlaceholder": "pvz., Pradedančiųjų Joga",
       "instructorPlaceholder": "Instruktoriaus vardas",
       "descriptionPlaceholder": "Aprašykite pamoką...",
@@ -144,7 +216,28 @@
       "alwaysOn": "Visada Įjungta",
       "earlyBooking": "Ankstyva Rezervacija",
       "lastMinute": "Paskutinė Minutė",
-      "discount": "Nuolaida"
+      "discount": "Nuolaida",
+      "dialog": {
+        "createTitle": "Sukurti Šabloną",
+        "editTitle": "Redaguoti Šabloną",
+        "className": "Pamokos Pavadinimas",
+        "classCategory": "Pamokos Kategorija",
+        "tags": "Žymės",
+        "colorTheme": "Spalvų Tema",
+        "openBookings": "Atidaryti rezervacijas",
+        "closeBookings": "Uždaryti rezervacijas",
+        "hoursBeforeClass": "val. prieš pamoką",
+        "startWithBookingsDisabled": "Pradėti su išjungtomis rezervacijomis",
+        "creating": "Kuriama...",
+        "updating": "Atnaujinama...",
+        "createThisTemplate": "Sukurti šį šabloną",
+        "updateTemplate": "Atnaujinti Šabloną",
+        "templateCreatedSuccess": "Pamokos šablonas sėkmingai sukurtas",
+        "templateUpdatedSuccess": "Pamokos šablonas sėkmingai atnaujintas",
+        "failedToCreateTemplate": "Nepavyko sukurti pamokos šablono.",
+        "failedToUpdateTemplate": "Nepavyko atnaujinti pamokos šablono.",
+        "maxBookingHoursMustBeGreater": "Maksimalus rezervacijos valandų skaičius turi būti didesnis nei minimalus"
+      }
     },
     "earnings": {
       "title": "Pajamos",
@@ -288,7 +381,13 @@
       "available": "Prieinama:",
       "waitlist": "Laukimo sąrašas:",
       "noBookings": "Dar nėra rezervacijų",
-      "noBookingsDescription": "Ši pamoka dar neturi rezervacijų."
+      "noBookingsDescription": "Ši pamoka dar neturi rezervacijų.",
+      "viewDialog": {
+        "title": "{{className}} Rezervacijos",
+        "currentBookings": "Dabartinės Rezervacijos",
+        "noBookingsYet": "Dar nėra rezervacijų",
+        "noBookingsDescription": "Klientai dar neužsisakė šios pamokos"
+      }
     },
     "messages": {
       "title": "Žinutės",

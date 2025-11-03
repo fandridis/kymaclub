@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { DateTimePicker } from "@/components/ui/datetime-picker";
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTypedTranslation } from '@/lib/typed';
 
 export interface CreateInstanceFromTemplateDialogProps {
     /** Whether the drawer is open */
@@ -39,14 +40,15 @@ export interface CreateInstanceFromTemplateDialogProps {
 }
 
 // Days of the week with their indexes (0 = Sunday)
+// Note: Labels are translated in the component using useTypedTranslation
 const DAYS_OF_WEEK = [
-    { label: 'Monday', value: 1 },
-    { label: 'Tuesday', value: 2 },
-    { label: 'Wednesday', value: 3 },
-    { label: 'Thursday', value: 4 },
-    { label: 'Friday', value: 5 },
-    { label: 'Saturday', value: 6 },
-    { label: 'Sunday', value: 0 },
+    { labelKey: 'routes.calendar.daysOfWeek.monday', value: 1 },
+    { labelKey: 'routes.calendar.daysOfWeek.tuesday', value: 2 },
+    { labelKey: 'routes.calendar.daysOfWeek.wednesday', value: 3 },
+    { labelKey: 'routes.calendar.daysOfWeek.thursday', value: 4 },
+    { labelKey: 'routes.calendar.daysOfWeek.friday', value: 5 },
+    { labelKey: 'routes.calendar.daysOfWeek.saturday', value: 6 },
+    { labelKey: 'routes.calendar.daysOfWeek.sunday', value: 0 },
 ];
 
 /**
@@ -57,6 +59,7 @@ export function CreateInstanceFromTemplateDialog({
     selectedDateTime,
     onClose,
 }: CreateInstanceFromTemplateDialogProps) {
+    const { t } = useTypedTranslation();
     const isMobile = useIsMobile();
     const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
     const [scheduledDateTime, setScheduledDateTime] = useState(selectedDateTime);
@@ -123,11 +126,11 @@ export function CreateInstanceFromTemplateDialog({
                         selectedDaysOfWeek: frequency === 'daily' ? selectedDaysOfWeek : undefined,
                     });
 
-                    toast.success(`Created ${count} instances of ${selectedTemplate.name}`);
+                    toast.success(t('routes.calendar.scheduleClass.createdInstancesSuccess', { count, name: selectedTemplate.name }));
                     onClose();
                 } catch (error) {
                     console.error('Failed to create class instance:', error);
-                    toast.error('Failed to schedule class. Please try again.');
+                    toast.error(t('routes.calendar.scheduleClass.failedToSchedule'));
                 }
             } else {
                 // Create single instance
@@ -137,16 +140,16 @@ export function CreateInstanceFromTemplateDialog({
                         startTime,
                     });
 
-                    toast.success(`${selectedTemplate.name} scheduled successfully!`);
+                    toast.success(t('routes.calendar.scheduleClass.scheduledSuccess', { name: selectedTemplate.name }));
                     onClose();
                 } catch (error) {
                     console.error('Failed to create class instance:', error);
-                    toast.error('Failed to schedule class. Please try again.');
+                    toast.error(t('routes.calendar.scheduleClass.failedToSchedule'));
                 }
             }
         } catch (error) {
             console.error('Failed to create class instance:', error);
-            toast.error('Failed to schedule class. Please try again.');
+            toast.error(t('routes.calendar.scheduleClass.failedToSchedule'));
         } finally {
             setIsCreating(false);
         }
@@ -156,13 +159,13 @@ export function CreateInstanceFromTemplateDialog({
         <Card className="text-center py-8">
             <CardContent>
                 <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No templates found</h3>
+                <h3 className="text-lg font-semibold mb-2">{t('routes.calendar.scheduleClass.noTemplatesFound')}</h3>
                 <p className="text-muted-foreground mb-4">
-                    You need to create class templates before you can schedule classes
+                    {t('routes.calendar.scheduleClass.noTemplatesDescription')}
                 </p>
                 <Button asChild variant="outline">
                     <Link to="/templates" className="inline-flex items-center gap-2">
-                        Create Templates
+                        {t('routes.calendar.scheduleClass.createTemplates')}
                         <ExternalLink className="h-4 w-4" />
                     </Link>
                 </Button>
@@ -179,10 +182,10 @@ export function CreateInstanceFromTemplateDialog({
                 <DrawerHeader className="text-left shrink-0">
                     <DrawerTitle className="flex items-center gap-2">
                         <Calendar className="h-5 w-5" />
-                        Schedule Class
+                        {t('routes.calendar.scheduleClass.title')}
                     </DrawerTitle>
                     <DrawerDescription>
-                        Create a new class from one of your templates
+                        {t('routes.calendar.scheduleClass.description')}
                     </DrawerDescription>
                 </DrawerHeader>
 
@@ -191,33 +194,33 @@ export function CreateInstanceFromTemplateDialog({
 
                         {/* Date and Time Selection */}
                         <div className="space-y-2">
-                            <Label htmlFor="datetime">Date & Time</Label>
+                            <Label htmlFor="datetime">{t('routes.calendar.scheduleClass.dateTime')}</Label>
                             <DateTimePicker
                                 value={scheduledDateTime ? new Date(scheduledDateTime) : undefined}
                                 onChange={(date) => setScheduledDateTime(date ? format(date, "yyyy-MM-dd'T'HH:mm") : "")}
-                                placeholder="Select date and time"
+                                placeholder={t('routes.calendar.scheduleClass.selectDateTime')}
                                 className={isDateInPast ? "border-destructive" : ""}
                             />
                             {isDateInPast && (
                                 <p className="text-sm text-destructive">
-                                    The selected date and time is in the past.
+                                    {t('routes.calendar.scheduleClass.dateTimeInPast')}
                                 </p>
                             )}
                         </div>
 
                         {/* Template Selection */}
                         <div className="space-y-2">
-                            <Label htmlFor="template">Class Template</Label>
+                            <Label htmlFor="template">{t('routes.calendar.scheduleClass.classTemplate')}</Label>
                             {isLoadingTemplates ? (
                                 <div className="flex items-center justify-center py-8">
-                                    <div className="text-sm text-muted-foreground">Loading templates...</div>
+                                    <div className="text-sm text-muted-foreground">{t('routes.calendar.scheduleClass.loadingTemplates')}</div>
                                 </div>
                             ) : classTemplates.length === 0 ? (
                                 renderEmptyState()
                             ) : (
                                 <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
                                     <SelectTrigger id="template" className={`w-full ${selectedTemplateId ? 'h-14!' : ''}`}>
-                                        <SelectValue placeholder="Select a template" />
+                                        <SelectValue placeholder={t('routes.calendar.scheduleClass.selectTemplate')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {classTemplates.map((template: Doc<"classTemplates">) => (
@@ -244,7 +247,7 @@ export function CreateInstanceFromTemplateDialog({
                             />
                             <Label htmlFor="recurring" className="flex items-center gap-2">
                                 <RotateCcw className="h-4 w-4" />
-                                Make this recurring
+                                {t('routes.calendar.scheduleClass.makeRecurring')}
                             </Label>
                         </div>
 
@@ -253,19 +256,19 @@ export function CreateInstanceFromTemplateDialog({
                             <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
                                 <div className="flex gap-4">
                                     <div className="space-y-2 flex-1">
-                                        <Label htmlFor="frequency-select">Frequency</Label>
+                                        <Label htmlFor="frequency-select">{t('routes.calendar.scheduleClass.frequency')}</Label>
                                         <Select value={frequency} onValueChange={(value: 'daily' | 'weekly') => setFrequency(value)}>
                                             <SelectTrigger id="frequency-select" className="w-full">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="daily">Daily</SelectItem>
-                                                <SelectItem value="weekly">Weekly</SelectItem>
+                                                <SelectItem value="daily">{t('routes.calendar.scheduleClass.daily')}</SelectItem>
+                                                <SelectItem value="weekly">{t('routes.calendar.scheduleClass.weekly')}</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
                                     <div className="space-y-2 flex-1">
-                                        <Label htmlFor="weeks-select">Duration</Label>
+                                        <Label htmlFor="weeks-select">{t('routes.calendar.scheduleClass.duration')}</Label>
                                         <Select value={weeks.toString()} onValueChange={(value) => setWeeks(parseInt(value))}>
                                             <SelectTrigger id="weeks-select" className="w-full">
                                                 <SelectValue />
@@ -273,7 +276,7 @@ export function CreateInstanceFromTemplateDialog({
                                             <SelectContent>
                                                 {weeksOptions.map((week) => (
                                                     <SelectItem key={week} value={week.toString()}>
-                                                        {week} weeks
+                                                        {week} {t('routes.calendar.scheduleClass.weeks')}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -284,7 +287,7 @@ export function CreateInstanceFromTemplateDialog({
                                 {/* Days of Week Selection (only for daily frequency) */}
                                 {frequency === 'daily' && (
                                     <div className="space-y-2">
-                                        <Label>Days of the week</Label>
+                                        <Label>{t('routes.calendar.scheduleClass.daysOfWeek')}</Label>
                                         <div className="grid grid-cols-2 gap-2">
                                             {DAYS_OF_WEEK.map((day) => (
                                                 <div key={day.value} className="flex items-center space-x-2">
@@ -297,14 +300,14 @@ export function CreateInstanceFromTemplateDialog({
                                                         htmlFor={`day-${day.value}`}
                                                         className="text-sm font-normal cursor-pointer"
                                                     >
-                                                        {day.label}
+                                                        {t(day.labelKey as any)}
                                                     </Label>
                                                 </div>
                                             ))}
                                         </div>
                                         {selectedDaysOfWeek.length === 0 && (
                                             <p className="text-sm text-destructive">
-                                                Please select at least one day of the week.
+                                                {t('routes.calendar.scheduleClass.selectAtLeastOneDay')}
                                             </p>
                                         )}
                                     </div>
@@ -317,7 +320,7 @@ export function CreateInstanceFromTemplateDialog({
                 {/* Actions */}
                 <div className="p-4 border-t bg-background flex gap-2 shrink-0">
                     <Button variant="outline" onClick={onClose} className="flex-1">
-                        Cancel
+                        {t('common.cancel')}
                     </Button>
                     <Button
                         onClick={handleScheduleClass}
@@ -331,7 +334,7 @@ export function CreateInstanceFromTemplateDialog({
                         }
                         className="flex-1"
                     >
-                        {isCreating ? 'Scheduling...' : (isRecurring ? 'Schedule Series' : 'Schedule Class')}
+                        {isCreating ? t('routes.calendar.scheduleClass.scheduling') : (isRecurring ? t('routes.calendar.scheduleClass.scheduleSeries') : t('routes.calendar.scheduleClass.scheduleClassButton'))}
                     </Button>
                 </div>
             </DrawerContent>

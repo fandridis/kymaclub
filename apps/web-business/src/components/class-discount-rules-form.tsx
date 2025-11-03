@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Trash2, Plus, Clock, Euro, Zap } from "lucide-react"
+import { useTypedTranslation } from "@/lib/typed"
 
 interface DiscountRule {
     id: string
@@ -37,25 +38,26 @@ export function ClassDiscountRulesForm({
     currency = "EUR",
     price,
 }: ClassDiscountRulesFormProps) {
+    const { t } = useTypedTranslation();
     const [rules, setRules] = useState<DiscountRule[]>(discountRules)
 
     const getDiscountTypeName = (type: string) => {
         switch (type) {
             case "always":
-                return "Always On"
+                return t('routes.templates.alwaysOn')
             case "hours_before_min":
-                return "Early Booking"
+                return t('routes.templates.earlyBooking')
             case "hours_before_max":
-                return "Last Minute"
+                return t('routes.templates.lastMinute')
             default:
-                return "Discount"
+                return t('routes.templates.discount')
         }
     }
 
     const addRule = () => {
         const newRule: DiscountRule = {
             id: `rule_${Date.now()}`,
-            name: "Always On", // Default to always on type
+            name: t('routes.templates.alwaysOn'), // Default to always on type
             condition: {
                 type: "always",
             },
@@ -106,18 +108,18 @@ export function ClassDiscountRulesForm({
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Euro className="h-4 w-4" />
-                    <Label className="text-sm font-medium">Discount Rules</Label>
+                    <Label className="text-sm font-medium">{t('routes.templates.discountRulesForm.title')}</Label>
                 </div>
                 <Button onClick={addRule} variant="outline" size="sm">
                     <Plus className="h-4 w-4 mr-1" />
-                    Add Rule
+                    {t('routes.templates.discountRulesForm.addRule')}
                 </Button>
             </div>
 
             {rules.length === 0 ? (
                 <div className="text-center py-6 text-muted-foreground border border-dashed rounded-lg">
-                    <p className="text-sm">No discount rules configured</p>
-                    <p className="text-xs mt-1">Add rules to offer early-bird or last-minute discounts</p>
+                    <p className="text-sm">{t('routes.templates.discountRulesForm.noRulesConfigured')}</p>
+                    <p className="text-xs mt-1">{t('routes.templates.discountRulesForm.noRulesDescription')}</p>
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -138,7 +140,7 @@ export function ClassDiscountRulesForm({
                                 <div className="flex flex-row gap-2">
                                     {/* Discount Type Selection - Takes 2 columns (2/3 of space) */}
                                     <div className="space-y-1 w-full">
-                                        <Label htmlFor={`discount-type-${index}`} className="text-xs">Type</Label>
+                                        <Label htmlFor={`discount-type-${index}`} className="text-xs">{t('routes.templates.discountRulesForm.type')}</Label>
                                         <Select
                                             value={rule.condition.type}
                                             onValueChange={(value: "always" | "hours_before_min" | "hours_before_max") => {
@@ -154,19 +156,19 @@ export function ClassDiscountRulesForm({
                                                 <SelectItem value="always">
                                                     <div className="flex items-center gap-2">
                                                         <Zap className="h-3 w-3" />
-                                                        Always On
+                                                        {t('routes.templates.alwaysOn')}
                                                     </div>
                                                 </SelectItem>
                                                 <SelectItem value="hours_before_min">
                                                     <div className="flex items-center gap-2">
                                                         <Clock className="h-3 w-3" />
-                                                        Early Booking
+                                                        {t('routes.templates.earlyBooking')}
                                                     </div>
                                                 </SelectItem>
                                                 <SelectItem value="hours_before_max">
                                                     <div className="flex items-center gap-2">
                                                         <Clock className="h-3 w-3" />
-                                                        Last Minute
+                                                        {t('routes.templates.lastMinute')}
                                                     </div>
                                                 </SelectItem>
                                             </SelectContent>
@@ -175,7 +177,7 @@ export function ClassDiscountRulesForm({
 
                                     {/* Discount Amount - Takes 1 column (1/3 of space) */}
                                     <div className="space-y-1 w-38">
-                                        <Label htmlFor={`discount-amount-${index}`} className="text-xs">Amount ({currency})</Label>
+                                        <Label htmlFor={`discount-amount-${index}`} className="text-xs">{t('routes.templates.discountRulesForm.amount', { currency })}</Label>
                                         <div className="relative">
                                             <Input
                                                 id={`discount-amount-${index}`}
@@ -206,8 +208,8 @@ export function ClassDiscountRulesForm({
                                     <div className="mt-4 w-full">
                                         <Label htmlFor={`discount-hours-${index}`} className="text-xs">
                                             {rule.condition.type === "hours_before_min"
-                                                ? "Early booking discount applies:"
-                                                : "Last minute discount applies:"}
+                                                ? t('routes.templates.discountRulesForm.earlyBookingApplies')
+                                                : t('routes.templates.discountRulesForm.lastMinuteApplies')}
                                         </Label>
                                         <div className="flex items-center gap-2 mt-1">
                                             <Input
@@ -227,8 +229,8 @@ export function ClassDiscountRulesForm({
                                             />
                                             <span className="text-xs text-muted-foreground">
                                                 {rule.condition.type === "hours_before_min"
-                                                    ? "hours or more before class starts"
-                                                    : "hours or less before class starts"}
+                                                    ? t('routes.templates.discountRulesForm.hoursOrMoreBefore')
+                                                    : t('routes.templates.discountRulesForm.hoursOrLessBefore')}
                                             </span>
                                         </div>
                                     </div>
@@ -241,13 +243,24 @@ export function ClassDiscountRulesForm({
                                             {getConditionIcon(rule.condition.type)}
                                             <span className="font-medium">
                                                 {rule.condition.type === "always" && (
-                                                    `All classes get a ${currency} ${Math.floor(rule.discount.value / 100)} discount.`
+                                                    t('routes.templates.discountRulesForm.allClassesDiscount', { 
+                                                        currency, 
+                                                        amount: Math.floor(rule.discount.value / 100) 
+                                                    })
                                                 )}
                                                 {rule.condition.type === "hours_before_min" && rule.condition.hours && (
-                                                    `Classes booked ${rule.condition.hours}+ hours in advance get a ${currency} ${Math.floor(rule.discount.value / 100)} discount.`
+                                                    t('routes.templates.discountRulesForm.earlyBookingDiscount', { 
+                                                        hours: rule.condition.hours,
+                                                        currency, 
+                                                        amount: Math.floor(rule.discount.value / 100) 
+                                                    })
                                                 )}
                                                 {rule.condition.type === "hours_before_max" && rule.condition.hours && (
-                                                    `Classes that start in the next ${rule.condition.hours}h get a ${currency} ${Math.floor(rule.discount.value / 100)} discount.`
+                                                    t('routes.templates.discountRulesForm.lastMinuteDiscount', { 
+                                                        hours: rule.condition.hours,
+                                                        currency, 
+                                                        amount: Math.floor(rule.discount.value / 100) 
+                                                    })
                                                 )}
                                             </span>
                                         </div>

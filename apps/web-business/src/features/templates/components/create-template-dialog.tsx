@@ -40,8 +40,7 @@ import { cn } from '@/lib/utils';
 import { TEMPLATE_COLORS_MAP } from '@/utils/colors';
 import { ClassDiscountRulesForm } from '@/components/class-discount-rules-form';
 import { VENUE_CATEGORIES, VENUE_CATEGORY_DISPLAY_NAMES, type VenueCategory } from '@repo/utils/constants';
-
-
+import { useTypedTranslation } from '@/lib/typed';
 
 // Define the discount rule schema for form validation
 const discountRuleSchema = z.object({
@@ -119,6 +118,7 @@ interface CreateTemplateDialogProps {
 }
 
 export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigger, onClose }: CreateTemplateDialogProps) {
+    const { t } = useTypedTranslation();
     const { venues } = useVenues();
     const isMobile = useIsMobile();
     const [open, setOpen] = useState(isOpen ?? false);
@@ -131,7 +131,40 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
     const isEditMode = !!classTemplate;
 
     const form = useForm<FormData>({
-        resolver: zodResolver(createTemplateSchema),
+        resolver: zodResolver(z.object({
+            name: z.string().min(1, t('routes.templates.classNameRequired')),
+            instructor: z.string().min(1, t('routes.templates.instructorRequired')),
+            description: z.string().optional(),
+            tags: z.array(z.string()),
+            color: z.string().optional(),
+            venueId: z.string().min(1, t('routes.templates.venueRequired')),
+            primaryCategory: z.string().min(1, t('routes.templates.categoryRequired')),
+            duration: z.string().min(1, t('routes.templates.durationRequired')),
+            capacity: z.string().min(1, t('routes.templates.capacityGreaterThanZero')).refine((val) => parseInt(val) > 0, t('routes.templates.capacityGreaterThanZero')),
+            price: z.string().min(1, t('routes.templates.priceRequired')).refine((val) => {
+                const priceInCents = parseInt(val);
+                return priceInCents >= 100 && priceInCents <= 10000;
+            }, t('routes.templates.priceBetween')),
+            allowWaitlist: z.boolean(),
+            waitlistCapacity: z.string().optional(),
+            enableBookingWindow: z.boolean(),
+            bookingWindowMinHours: z.string().optional(),
+            bookingWindowMaxHours: z.string().optional(),
+            enableRefundPolicy: z.boolean(),
+            cancellationWindowHours: z.string().optional(),
+            disableBookings: z.boolean().optional(),
+            discountRules: z.array(discountRuleSchema).optional(),
+        }).refine((data) => {
+            if (data.enableBookingWindow) {
+                const minHours = parseInt(data.bookingWindowMinHours || "0");
+                const maxHours = parseInt(data.bookingWindowMaxHours || "0");
+                return maxHours > minHours;
+            }
+            return true;
+        }, {
+            message: t('routes.templates.dialog.maxBookingHoursMustBeGreater'),
+            path: ["bookingWindowMaxHours"],
+        })),
         defaultValues: {
             name: "",
             instructor: "",
@@ -270,10 +303,10 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                         ...templateData
                     }
                 });
-                toast.success("Class template updated successfully");
+                toast.success(t('routes.templates.dialog.templateUpdatedSuccess'));
             } else {
                 await createClassTemplate({ template: templateData });
-                toast.success("Class template created successfully");
+                toast.success(t('routes.templates.dialog.templateCreatedSuccess'));
             }
 
             setOpen(false);
@@ -283,7 +316,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                 toast.error(error.data.message);
             } else {
                 console.error(`Error ${isEditMode ? 'updating' : 'creating'} class template:`, error);
-                toast.error(`Failed to ${isEditMode ? 'update' : 'create'} class template.`);
+                toast.error(isEditMode ? t('routes.templates.dialog.failedToUpdateTemplate') : t('routes.templates.dialog.failedToCreateTemplate'));
             }
         } finally {
             setLoading(false);
@@ -305,7 +338,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
             {!hideTrigger && (
                 <Button onClick={() => setOpen(true)} className="w-full sm:w-auto mb-4">
                     <Plus className="w-4 h-4 mr-2" />
-                    Create Template
+                    {t('routes.templates.createTemplate')}
                 </Button>
             )}
 
@@ -318,7 +351,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                 <DrawerContent className={`flex flex-col h-screen ${!isMobile ? 'data-[vaul-drawer-direction=right]:sm:max-w-md' : ''}`}>
                     <DrawerHeader className="h-[64px] border-b">
                         <DrawerTitle className="text-xl">
-                            {isEditMode ? 'Edit Template' : 'Create Template'}
+                            {isEditMode ? t('routes.templates.dialog.editTitle') : t('routes.templates.dialog.createTitle')}
                         </DrawerTitle>
                     </DrawerHeader>
 
@@ -331,10 +364,10 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                             <FormItem>
                                                 <FormLabel className="flex items-center gap-2">
                                                     <BookOpen className="h-4 w-4" />
-                                                    Class Name <span className="text-red-500">*</span>
+                                                    {t('routes.templates.dialog.className')} <span className="text-red-500">*</span>
                                                 </FormLabel>
                                                 <FormControl>
-                                                    <Input autoFocus placeholder="e.g., Beginner Yoga" {...field} />
+                                                    <Input autoFocus placeholder={t('routes.templates.classNamePlaceholder')} {...field} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -345,13 +378,13 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                                 <FormItem>
                                                     <FormLabel className="flex items-center gap-2">
                                                         <Shapes className="h-4 w-4" />
-                                                        Class Category <span className="text-red-500">*</span>
+                                                        {t('routes.templates.dialog.classCategory')} <span className="text-red-500">*</span>
                                                     </FormLabel>
                                                     <FormControl>
                                                         <Select onValueChange={field.onChange} value={field.value || ''}>
                                                             <FormControl>
                                                                 <SelectTrigger className="w-full">
-                                                                    <SelectValue placeholder="Select category" />
+                                                                    <SelectValue placeholder={t('routes.templates.selectCategory')} />
                                                                 </SelectTrigger>
                                                             </FormControl>
                                                             <SelectContent>
@@ -371,10 +404,10 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                                 <FormItem>
                                                     <FormLabel className="flex items-center gap-2">
                                                         <User className="h-4 w-4" />
-                                                        Instructor <span className="text-red-500">*</span>
+                                                        {t('common.instructor')} <span className="text-red-500">*</span>
                                                     </FormLabel>
                                                     <FormControl>
-                                                        <Input placeholder="Instructor name" {...field} />
+                                                        <Input placeholder={t('routes.templates.instructorPlaceholder')} {...field} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -386,13 +419,13 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                                 <FormItem>
                                                     <FormLabel className="flex items-center gap-2">
                                                         <BookOpen className="h-4 w-4" />
-                                                        Venue <span className="text-red-500">*</span>
+                                                        {t('common.venue')} <span className="text-red-500">*</span>
                                                     </FormLabel>
                                                     <FormControl>
                                                         <Select onValueChange={field.onChange} value={field.value || ''}>
                                                             <FormControl>
                                                                 <SelectTrigger className="w-full">
-                                                                    <SelectValue placeholder="Select venue" />
+                                                                    <SelectValue placeholder={t('routes.templates.selectVenue')} />
                                                                 </SelectTrigger>
                                                             </FormControl>
                                                             <SelectContent>
@@ -412,13 +445,13 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                                 <FormItem>
                                                     <FormLabel className="flex items-center gap-2">
                                                         <Clock className="h-4 w-4" />
-                                                        Duration <span className="text-red-500">*</span>
+                                                        {t('common.duration')} <span className="text-red-500">*</span>
                                                     </FormLabel>
                                                     <FormControl>
                                                         <Select onValueChange={field.onChange} value={field.value || ''}>
                                                             <FormControl>
                                                                 <SelectTrigger className="w-full">
-                                                                    <SelectValue placeholder="Select duration" />
+                                                                    <SelectValue placeholder={t('routes.templates.selectDuration')} />
                                                                 </SelectTrigger>
                                                             </FormControl>
                                                             <SelectContent>
@@ -439,9 +472,9 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
 
                                         <FormField control={form.control} name="description" render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Description</FormLabel>
+                                                <FormLabel>{t('common.description')}</FormLabel>
                                                 <FormControl>
-                                                    <Textarea placeholder="Describe the class..." rows={3} {...field} />
+                                                    <Textarea placeholder={t('routes.templates.descriptionPlaceholder')} rows={3} {...field} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -450,13 +483,13 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                         <div className="space-y-2">
                                             <Label className="flex items-center gap-2">
                                                 <Tag className="h-4 w-4" />
-                                                Tags
+                                                {t('routes.templates.dialog.tags')}
                                             </Label>
                                             <Input
                                                 value={currentTag}
                                                 onChange={(e) => setCurrentTag(e.target.value)}
                                                 onKeyPress={handleTagKeyPress}
-                                                placeholder="Type a tag and press Enter"
+                                                placeholder={t('routes.templates.tagsPlaceholder')}
                                             />
                                             {formData.tags.length > 0 && (
                                                 <div className="flex flex-wrap gap-2 pt-2">
@@ -478,10 +511,10 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                                 <FormItem>
                                                     <FormLabel className="flex items-center gap-2">
                                                         <Users className="h-4 w-4" />
-                                                        Capacity <span className="text-red-500">*</span>
+                                                        {t('common.capacity')} <span className="text-red-500">*</span>
                                                     </FormLabel>
                                                     <FormControl>
-                                                        <Input type="number" min="1" placeholder="Max participants" {...field} />
+                                                        <Input type="number" min="1" placeholder={t('common.maxParticipants')} {...field} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -513,7 +546,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                                     </FormControl>
                                                     <FormLabel className="flex items-center gap-2">
                                                         <Settings className="h-4 w-4" />
-                                                        Booking Window
+                                                        {t('routes.templates.bookingWindow')}
                                                     </FormLabel>
                                                 </FormItem>
                                             )} />
@@ -524,9 +557,9 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                                         <FormItem>
                                                             <FormControl>
                                                                 <div className="flex items-center gap-2">
-                                                                    <span className="text-sm font-medium min-w-[120px]">Open bookings</span>
+                                                                    <span className="text-sm font-medium min-w-[120px]">{t('routes.templates.dialog.openBookings')}</span>
                                                                     <Input type="number" min="1" className="w-20" {...field} />
-                                                                    <span className="text-sm text-muted-foreground">hours before class</span>
+                                                                    <span className="text-sm text-muted-foreground">{t('routes.templates.dialog.hoursBeforeClass')}</span>
                                                                 </div>
                                                             </FormControl>
                                                             <FormMessage />
@@ -537,9 +570,9 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                                         <FormItem>
                                                             <FormControl>
                                                                 <div className="flex items-center gap-2">
-                                                                    <span className="text-sm font-medium min-w-[120px]">Close bookings</span>
+                                                                    <span className="text-sm font-medium min-w-[120px]">{t('routes.templates.dialog.closeBookings')}</span>
                                                                     <Input type="number" min="0" className="w-20" {...field} />
-                                                                    <span className="text-sm text-muted-foreground">hours before class</span>
+                                                                    <span className="text-sm text-muted-foreground">{t('routes.templates.dialog.hoursBeforeClass')}</span>
                                                                 </div>
                                                             </FormControl>
                                                             <FormMessage />
@@ -554,7 +587,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                                 <FormControl>
                                                     <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                                                 </FormControl>
-                                                <FormLabel>Start with bookings disabled</FormLabel>
+                                                <FormLabel>{t('routes.templates.dialog.startWithBookingsDisabled')}</FormLabel>
                                             </FormItem>
                                         )} />
 
@@ -563,7 +596,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                                 <FormItem>
                                                     <FormLabel className="flex items-center gap-2">
                                                         <Palette className="h-4 w-4" />
-                                                        Color Theme
+                                                        {t('routes.templates.dialog.colorTheme')}
                                                     </FormLabel>
                                                     <div className="pl-1 flex flex-wrap gap-2">
                                                         {TEMPLATE_COLORS_ARRAY.map((color) => (
@@ -606,7 +639,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                             disabled={loading}
                             className="w-full"
                         >
-                            {loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Template' : 'Create this template')}
+                            {loading ? (isEditMode ? t('routes.templates.dialog.updating') : t('routes.templates.dialog.creating')) : (isEditMode ? t('routes.templates.dialog.updateTemplate') : t('routes.templates.dialog.createThisTemplate'))}
                         </Button>
 
                         <Button
@@ -618,7 +651,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                             disabled={loading}
                             className="w-full"
                         >
-                            Cancel
+                            {t('common.cancel')}
                         </Button>
                     </DrawerFooter>
                 </DrawerContent>

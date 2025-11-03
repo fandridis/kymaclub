@@ -11,6 +11,7 @@ import type { ClassInstance } from "../hooks/use-class-instances";
 import { cn } from "@/lib/utils";
 import type { TemplateColorType } from "@repo/utils/colors";
 import { TEMPLATE_COLORS_MAP } from "@/utils/colors";
+import { useTypedTranslation } from "@/lib/typed";
 
 interface CalendarEventProps {
     eventInfo: EventContentArg;
@@ -21,6 +22,7 @@ interface CalendarEventProps {
 }
 
 export const CalendarEventCard = ({ eventInfo, onEdit, onDelete, onViewBookings, onToggleBookings }: CalendarEventProps) => {
+    const { t } = useTypedTranslation();
     const classInstance = eventInfo.event.extendedProps.classInstance as ClassInstance;
 
     const handleViewBookingsClick = (e: React.MouseEvent) => {
@@ -89,29 +91,29 @@ export const CalendarEventCard = ({ eventInfo, onEdit, onDelete, onViewBookings,
                         <DropdownMenuContent align="end" sideOffset={4}>
                             <DropdownMenuItem onClick={handleViewBookingsClick} className="text-gray-700 focus:text-gray-700">
                                 <Users className="h-4 w-4 mr-2" />
-                                View Bookings
+                                {t('routes.calendar.eventMenu.viewBookings')}
                             </DropdownMenuItem>
 
                             <DropdownMenuItem onClick={handleToggleBookingsClick} className="text-gray-700 focus:text-gray-700">
                                 {classInstance.disableBookings ? (
                                     <>
                                         <Unlock className="h-4 w-4 mr-2" />
-                                        Open bookings
+                                        {t('routes.calendar.eventMenu.openBookings')}
                                     </>
                                 ) : (
                                     <>
                                         <Lock className="h-4 w-4 mr-2" />
-                                        Close bookings
+                                        {t('routes.calendar.eventMenu.closeBookings')}
                                     </>
                                 )}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={handleEditClick} className="text-gray-700 focus:text-gray-700">
                                 <Edit className="h-4 w-4 mr-2" />
-                                Edit
+                                {t('routes.calendar.eventMenu.edit')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={handleDeleteClick} className="text-red-600 focus:text-red-600">
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
+                                {t('routes.calendar.eventMenu.delete')}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

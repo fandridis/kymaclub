@@ -44,6 +44,7 @@ import { TEMPLATE_COLORS, TEMPLATE_COLORS_ARRAY } from '@repo/utils/colors';
 import { cn } from '@/lib/utils';
 import { TEMPLATE_COLORS_MAP } from '@/utils/colors';
 import { ClassDiscountRulesForm } from '@/components/class-discount-rules-form';
+import { useTypedTranslation } from '@/lib/typed';
 
 // Define the discount rule schema for form validation
 const discountRuleSchema = z.object({
@@ -121,6 +122,7 @@ interface EditClassInstanceDialogProps {
 }
 
 export default function EditClassInstanceDialog({ open, instance, onClose, businessTimezone }: EditClassInstanceDialogProps) {
+    const { t } = useTypedTranslation();
     const [isSubmittingSingle, setIsSubmittingSingle] = useState(false);
     const [isSubmittingMultiple, setIsSubmittingMultiple] = useState(false);
     const [currentTag, setCurrentTag] = useState("");
@@ -145,11 +147,46 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
 
     // Calculate button text and handler based on toggle state
     const totalClasses = similarInstancesCount + 1;
-    const buttonText = applyToAll ? `Update ${totalClasses} classes` : "Update class";
+    const buttonText = applyToAll ? t('routes.calendar.editClass.updateClasses', { count: totalClasses }) : t('routes.calendar.editClass.updateClass');
     const isSubmitting = isSubmittingSingle || isSubmittingMultiple;
 
     const form = useForm<FormData>({
-        resolver: zodResolver(editInstanceSchema),
+        resolver: zodResolver(z.object({
+            name: z.string().min(1, t('routes.templates.classNameRequired')),
+            instructor: z.string().min(1, t('routes.templates.instructorRequired')),
+            description: z.string().optional(),
+            tags: z.array(z.string()),
+            color: z.string().optional(),
+            startTime: z.string().min(1, t('routes.calendar.editClass.startTimeRequired')),
+            duration: z.string().min(1, t('routes.templates.durationRequired')),
+            capacity: z.string().min(1, t('routes.templates.capacityGreaterThanZero')).refine((val) => parseInt(val) > 0, t('routes.templates.capacityGreaterThanZero')),
+            price: z.string().min(1, t('routes.templates.priceRequired')).refine((val) => {
+                const priceInCents = parseInt(val);
+                return priceInCents >= 100 && priceInCents <= 10000;
+            }, t('routes.templates.priceBetween')),
+            enableBookingWindow: z.boolean(),
+            bookingWindowMinHours: z.string().optional(),
+            bookingWindowMaxHours: z.string().optional(),
+            enableRefundPolicy: z.boolean(),
+            cancellationWindowHours: z.string().optional(),
+            discountRules: z.array(discountRuleSchema).optional(),
+        }).refine((data) => {
+            if (data.enableBookingWindow) {
+                const minHours = parseInt(data.bookingWindowMinHours || "0");
+                const maxHours = parseInt(data.bookingWindowMaxHours || "0");
+                return maxHours > minHours;
+            }
+            return true;
+        }, {
+            message: t('routes.templates.dialog.maxBookingHoursMustBeGreater'),
+            path: ["bookingWindowMaxHours"],
+        }).refine((data) => {
+            const duration = parseInt(data.duration);
+            return duration > 0;
+        }, {
+            message: "Duration must be greater than 0 minutes",
+            path: ["duration"],
+        })),
         defaultValues: {
             name: "",
             instructor: "",
@@ -271,11 +308,11 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                 }
             });
 
-            toast.success("Class updated successfully!");
+            toast.success(t('routes.calendar.editClass.classUpdatedSuccess'));
             onClose();
         } catch (error) {
             console.error('Error updating class:', error);
-            toast.error("Failed to update class.");
+            toast.error(t('routes.calendar.editClass.failedToUpdateClass'));
         } finally {
             setIsSubmittingSingle(false);
         }
@@ -319,12 +356,12 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                     })) : [],
                 }
             });
-            toast.success(`Updated ${result.totalUpdated} similar classes successfully!`);
+            toast.success(t('routes.calendar.editClass.classesUpdatedSuccess', { count: result.totalUpdated }));
 
             onClose();
         } catch (error) {
             console.error('Error updating multiple classes:', error);
-            toast.error("Failed to update similar classes.");
+            toast.error(t('routes.calendar.editClass.failedToUpdateClasses'));
         } finally {
             setIsSubmittingMultiple(false);
         }
@@ -364,7 +401,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
             }}>
                 <DrawerContent className="flex flex-col h-screen data-[vaul-drawer-direction=right]:sm:max-w-md">
                     <DrawerHeader className="h-[64px] border-b">
-                        <DrawerTitle className="text-xl">Edit Class</DrawerTitle>
+                        <DrawerTitle className="text-xl">{t('routes.calendar.editClass.title')}</DrawerTitle>
                     </DrawerHeader>
 
                     <div className="flex-1 overflow-y-auto">
@@ -377,13 +414,13 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                             <FormItem>
                                                 <FormLabel className="flex items-center gap-2">
                                                     <Calendar className="h-4 w-4" />
-                                                    Start Time <span className="text-red-500">*</span>
+                                                    {t('routes.calendar.editClass.startTime')} <span className="text-red-500">*</span>
                                                 </FormLabel>
                                                 <FormControl>
                                                     <DateTimePicker
                                                         value={field.value ? new Date(field.value) : undefined}
                                                         onChange={(date) => field.onChange(date ? format(date, "yyyy-MM-dd'T'HH:mm") : "")}
-                                                        placeholder="Select date and time"
+                                                        placeholder={t('routes.calendar.scheduleClass.selectDateTime')}
                                                     />
                                                 </FormControl>
                                                 <FormMessage />
@@ -394,12 +431,12 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                             <FormItem>
                                                 <FormLabel className="flex items-center gap-2">
                                                     <Clock className="h-4 w-4" />
-                                                    Duration <span className="text-red-500">*</span>
+                                                    {t('common.duration')} <span className="text-red-500">*</span>
                                                 </FormLabel>
                                                 <FormControl>
                                                     <Select onValueChange={field.onChange} value={field.value}>
                                                         <SelectTrigger className="w-full">
-                                                            <SelectValue placeholder="Select duration" />
+                                                            <SelectValue placeholder={t('routes.templates.selectDuration')} />
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             {getDurationOptions().map((option) => (
@@ -420,10 +457,10 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                                     <FormItem>
                                                         <FormLabel className="flex items-center gap-2">
                                                             <BookOpen className="h-4 w-4" />
-                                                            Class Name <span className="text-red-500">*</span>
+                                                            {t('routes.calendar.editClass.className')} <span className="text-red-500">*</span>
                                                         </FormLabel>
                                                         <FormControl>
-                                                            <Input placeholder="e.g., Beginner Yoga" {...field} />
+                                                            <Input placeholder={t('routes.templates.classNamePlaceholder')} {...field} />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
@@ -433,10 +470,10 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                                     <FormItem>
                                                         <FormLabel className="flex items-center gap-2">
                                                             <User className="h-4 w-4" />
-                                                            Instructor <span className="text-red-500">*</span>
+                                                            {t('common.instructor')} <span className="text-red-500">*</span>
                                                         </FormLabel>
                                                         <FormControl>
-                                                            <Input placeholder="Instructor name" {...field} />
+                                                            <Input placeholder={t('routes.templates.instructorPlaceholder')} {...field} />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
@@ -445,9 +482,9 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
 
                                             <FormField control={form.control} name="description" render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>Description</FormLabel>
+                                                    <FormLabel>{t('common.description')}</FormLabel>
                                                     <FormControl>
-                                                        <Textarea placeholder="Describe the class..." rows={3} {...field} />
+                                                        <Textarea placeholder={t('routes.templates.descriptionPlaceholder')} rows={3} {...field} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -456,13 +493,13 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                             <div className="space-y-2">
                                                 <Label className="flex items-center gap-2">
                                                     <Tag className="h-4 w-4" />
-                                                    Tags
+                                                    {t('routes.templates.dialog.tags')}
                                                 </Label>
                                                 <Input
                                                     value={currentTag}
                                                     onChange={(e) => setCurrentTag(e.target.value)}
                                                     onKeyDown={handleTagKeyPress}
-                                                    placeholder="Type a tag and press Enter"
+                                                    placeholder={t('routes.templates.tagsPlaceholder')}
                                                 />
                                                 {formData.tags.length > 0 && (
                                                     <div className="flex flex-wrap gap-2 pt-2">
@@ -487,10 +524,10 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                                 <FormItem>
                                                     <FormLabel className="flex items-center gap-2">
                                                         <Users className="h-4 w-4" />
-                                                        Capacity <span className="text-red-500">*</span>
+                                                        {t('common.capacity')} <span className="text-red-500">*</span>
                                                     </FormLabel>
                                                     <FormControl>
-                                                        <Input type="number" min="1" placeholder="Max participants" {...field} />
+                                                        <Input type="number" min="1" placeholder={t('common.maxParticipants')} {...field} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -520,7 +557,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                                     </FormControl>
                                                     <FormLabel className="flex items-center gap-2">
                                                         <Settings className="h-4 w-4" />
-                                                        Booking Window
+                                                        {t('routes.templates.bookingWindow')}
                                                     </FormLabel>
                                                 </FormItem>
                                             )} />
@@ -531,9 +568,9 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                                         <FormItem>
                                                             <FormControl>
                                                                 <div className="flex items-center gap-2">
-                                                                    <span className="text-sm font-medium min-w-[120px]">Open bookings</span>
+                                                                    <span className="text-sm font-medium min-w-[120px]">{t('routes.templates.dialog.openBookings')}</span>
                                                                     <Input type="number" min="1" className="w-20" {...field} />
-                                                                    <span className="text-sm text-muted-foreground">hours before class</span>
+                                                                    <span className="text-sm text-muted-foreground">{t('routes.templates.dialog.hoursBeforeClass')}</span>
                                                                 </div>
                                                             </FormControl>
                                                             <FormMessage />
@@ -544,9 +581,9 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                                         <FormItem>
                                                             <FormControl>
                                                                 <div className="flex items-center gap-2">
-                                                                    <span className="text-sm font-medium min-w-[120px]">Close bookings</span>
+                                                                    <span className="text-sm font-medium min-w-[120px]">{t('routes.templates.dialog.closeBookings')}</span>
                                                                     <Input type="number" min="0" className="w-20" {...field} />
-                                                                    <span className="text-sm text-muted-foreground">hours before class</span>
+                                                                    <span className="text-sm text-muted-foreground">{t('routes.templates.dialog.hoursBeforeClass')}</span>
                                                                 </div>
                                                             </FormControl>
                                                             <FormMessage />
@@ -563,7 +600,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                             <FormItem>
                                                 <FormLabel className="flex items-center gap-2">
                                                     <Palette className="h-4 w-4" />
-                                                    Color Theme
+                                                    {t('routes.templates.dialog.colorTheme')}
                                                 </FormLabel>
                                                 <div className="pl-1 flex flex-wrap gap-2">
                                                     {TEMPLATE_COLORS_ARRAY.map((color) => (
@@ -610,7 +647,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                     disabled={isSubmitting}
                                 />
                                 <Label htmlFor="apply-to-all-edit" className="text-sm font-medium">
-                                    Apply to all future events
+                                    {t('routes.calendar.editClass.applyToAllFuture')}
                                 </Label>
                             </div>
                         )}
@@ -621,7 +658,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                             className="w-full"
                             variant="default"
                         >
-                            {isSubmitting ? 'Updating...' : buttonText}
+                            {isSubmitting ? t('routes.calendar.editClass.updating') : buttonText}
                         </Button>
 
                         <Button
@@ -630,7 +667,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                             disabled={isSubmitting}
                             className="w-full"
                         >
-                            Cancel
+                            {t('common.cancel')}
                         </Button>
                     </DrawerFooter>
                 </DrawerContent>

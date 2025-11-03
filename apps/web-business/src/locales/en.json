@@ -97,7 +97,64 @@
             "newClass": "New class",
             "bookingsOpened": "Bookings opened successfully",
             "bookingsClosed": "Bookings closed successfully",
-            "failedToUpdateBookingStatus": "Failed to update booking status"
+            "failedToUpdateBookingStatus": "Failed to update booking status",
+            "scheduleClass": {
+                "title": "Schedule Class",
+                "description": "Create a new class from one of your templates",
+                "dateTime": "Date & Time",
+                "selectDateTime": "Select date and time",
+                "dateTimeInPast": "The selected date and time is in the past.",
+                "classTemplate": "Class Template",
+                "loadingTemplates": "Loading templates...",
+                "selectTemplate": "Select a template",
+                "noTemplatesFound": "No templates found",
+                "noTemplatesDescription": "You need to create class templates before you can schedule classes",
+                "createTemplates": "Create Templates",
+                "makeRecurring": "Make this recurring",
+                "frequency": "Frequency",
+                "daily": "Daily",
+                "weekly": "Weekly",
+                "duration": "Duration",
+                "weeks": "weeks",
+                "daysOfWeek": "Days of the week",
+                "selectAtLeastOneDay": "Please select at least one day of the week.",
+                "scheduling": "Scheduling...",
+                "scheduleSeries": "Schedule Series",
+                "scheduleClassButton": "Schedule Class",
+                "createdInstancesSuccess": "Created {{count}} instances of {{name}}",
+                "scheduledSuccess": "{{name}} scheduled successfully!",
+                "failedToSchedule": "Failed to schedule class. Please try again."
+            },
+            "eventMenu": {
+                "viewBookings": "View Bookings",
+                "openBookings": "Open bookings",
+                "closeBookings": "Close bookings",
+                "edit": "Edit",
+                "delete": "Delete"
+            },
+            "editClass": {
+                "title": "Edit Class",
+                "startTime": "Start Time",
+                "startTimeRequired": "Start time is required",
+                "className": "Class Name",
+                "applyToAllFuture": "Apply to all future events",
+                "updating": "Updating...",
+                "updateClass": "Update class",
+                "updateClasses": "Update {{count}} classes",
+                "classUpdatedSuccess": "Class updated successfully!",
+                "classesUpdatedSuccess": "Updated {{count}} similar classes successfully!",
+                "failedToUpdateClass": "Failed to update class.",
+                "failedToUpdateClasses": "Failed to update similar classes."
+            },
+            "daysOfWeek": {
+                "monday": "Monday",
+                "tuesday": "Tuesday",
+                "wednesday": "Wednesday",
+                "thursday": "Thursday",
+                "friday": "Friday",
+                "saturday": "Saturday",
+                "sunday": "Sunday"
+            }
         },
         "templates": {
             "title": "Class Templates",
@@ -118,6 +175,21 @@
             "bookingWindow": "Booking Window",
             "refundPolicy": "Refund Policy",
             "discountRules": "Discount Rules",
+            "discountRulesForm": {
+                "title": "Discount Rules",
+                "addRule": "Add Rule",
+                "noRulesConfigured": "No discount rules configured",
+                "noRulesDescription": "Add rules to offer early-bird or last-minute discounts",
+                "type": "Type",
+                "amount": "Amount ({{currency}})",
+                "earlyBookingApplies": "Early booking discount applies:",
+                "lastMinuteApplies": "Last minute discount applies:",
+                "hoursOrMoreBefore": "hours or more before class starts",
+                "hoursOrLessBefore": "hours or less before class starts",
+                "allClassesDiscount": "All classes get a {{currency}} {{amount}} discount.",
+                "earlyBookingDiscount": "Classes booked {{hours}}+ hours in advance get a {{currency}} {{amount}} discount.",
+                "lastMinuteDiscount": "Classes that start in the next {{hours}}h get a {{currency}} {{amount}} discount."
+            },
             "classNamePlaceholder": "e.g., Beginner Yoga",
             "instructorPlaceholder": "Instructor name",
             "descriptionPlaceholder": "Describe the class...",
@@ -144,7 +216,28 @@
             "alwaysOn": "Always On",
             "earlyBooking": "Early Booking",
             "lastMinute": "Last Minute",
-            "discount": "Discount"
+            "discount": "Discount",
+            "dialog": {
+                "createTitle": "Create Template",
+                "editTitle": "Edit Template",
+                "className": "Class Name",
+                "classCategory": "Class Category",
+                "tags": "Tags",
+                "colorTheme": "Color Theme",
+                "openBookings": "Open bookings",
+                "closeBookings": "Close bookings",
+                "hoursBeforeClass": "hours before class",
+                "startWithBookingsDisabled": "Start with bookings disabled",
+                "creating": "Creating...",
+                "updating": "Updating...",
+                "createThisTemplate": "Create this template",
+                "updateTemplate": "Update Template",
+                "templateCreatedSuccess": "Class template created successfully",
+                "templateUpdatedSuccess": "Class template updated successfully",
+                "failedToCreateTemplate": "Failed to create class template.",
+                "failedToUpdateTemplate": "Failed to update class template.",
+                "maxBookingHoursMustBeGreater": "Maximum booking hours must be greater than minimum"
+            }
         },
         "earnings": {
             "title": "Earnings",
@@ -263,7 +356,13 @@
             "available": "Available:",
             "waitlist": "Waitlist:",
             "noBookings": "No bookings yet",
-            "noBookingsDescription": "This class doesn't have any bookings yet."
+            "noBookingsDescription": "This class doesn't have any bookings yet.",
+            "viewDialog": {
+                "title": "{{className}} Bookings",
+                "currentBookings": "Current Bookings",
+                "noBookingsYet": "No bookings yet",
+                "noBookingsDescription": "Customers haven't booked this class yet"
+            }
         },
         "messages": {
             "title": "Messages",

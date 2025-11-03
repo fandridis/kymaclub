@@ -18,6 +18,7 @@ import { useMutation } from "convex/react"
 import { api } from "@repo/api/convex/_generated/api"
 import { ClassBookingsItem } from "@/features/bookings/components/class-bookings-item"
 import { useClassBookings } from "../hooks/use-class-bookings"
+import { useTypedTranslation } from "@/lib/typed"
 
 interface ClassBookingsDialogProps {
     classInstance: Doc<"classInstances">
@@ -32,6 +33,7 @@ export function ClassBookingsDialog({
     onOpenChange,
     children,
 }: ClassBookingsDialogProps) {
+    const { t } = useTypedTranslation();
     const { bookings, isLoading } = useClassBookings(classInstance._id)
 
     const deleteBooking = useMutation(api.mutations.bookings.deleteBooking)
@@ -87,7 +89,7 @@ export function ClassBookingsDialog({
                     <DialogOrDrawerHeader>
                         <DialogOrDrawerTitle className="flex items-center gap-2">
                             <Users className="h-5 w-5" />
-                            {className} Bookings
+                            {t('routes.bookings.viewDialog.title', { className })}
                         </DialogOrDrawerTitle>
                     </DialogOrDrawerHeader>
                     <div className="h-full grid gap-4 py-4 overflow-y-auto">
@@ -95,12 +97,12 @@ export function ClassBookingsDialog({
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="flex items-center gap-2 text-sm">
                                 <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-medium">Date:</span>
+                                <span className="font-medium">{t('routes.bookings.date')}</span>
                                 <span className="text-muted-foreground">{date}</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
                                 <Clock className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-medium">Time:</span>
+                                <span className="font-medium">{t('routes.bookings.time')}</span>
                                 <span className="text-muted-foreground">{time}</span>
                             </div>
                         </div>
@@ -112,12 +114,12 @@ export function ClassBookingsDialog({
                             <h3 className="text-lg font-semibold">
                                 {isLoading ? (
                                     <div className="flex items-center gap-2">
-                                        <span>Current Bookings - </span>
+                                        <span>{t('routes.bookings.viewDialog.currentBookings')} - </span>
                                         <Skeleton className="h-5 w-12 inline-block" />
                                         <span> / {capacity}</span>
                                     </div>
                                 ) : (
-                                    `Current Bookings - ${pendingBookings.length} / ${capacity}`
+                                    `${t('routes.bookings.viewDialog.currentBookings')} - ${pendingBookings.length} / ${capacity}`
                                 )}
                             </h3>
 
@@ -154,10 +156,10 @@ export function ClassBookingsDialog({
                                     <div className="flex flex-col items-center justify-center py-8 text-center">
                                         <Users className="h-12 w-12 text-muted-foreground mb-3" />
                                         <p className="text-sm text-muted-foreground mb-1">
-                                            No bookings yet
+                                            {t('routes.bookings.viewDialog.noBookingsYet')}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                            Customers haven't booked this class yet
+                                            {t('routes.bookings.viewDialog.noBookingsDescription')}
                                         </p>
                                     </div>
                                 )}
@@ -166,7 +168,7 @@ export function ClassBookingsDialog({
                     </div>
                     <DialogOrDrawerFooter className="flex flex-col sm:flex-row sm:justify-end sm:space-x-2 pt-4">
                         <Button variant="outline" onClick={() => onOpenChange(false)}>
-                            Close
+                            {t('common.close')}
                         </Button>
                     </DialogOrDrawerFooter>
                 </div>
