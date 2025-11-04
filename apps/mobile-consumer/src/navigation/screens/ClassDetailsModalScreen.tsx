@@ -16,6 +16,7 @@ import { theme } from '../../theme';
 import { BlurView } from 'expo-blur';
 import { getCancellationInfo, getCancellationMessage } from '../../utils/cancellationUtils';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
+import { useTypedTranslation } from '../../i18n/typed';
 
 type ClassDetailsRoute = RouteProp<RootStackParamList, 'ClassDetailsModal'>;
 
@@ -72,7 +73,12 @@ function findBestDiscountRule(rules: ClassDiscountRule[], hoursUntilClass: numbe
     return bestRule ? { rule: bestRule, ruleName: bestRule.name } : null;
 }
 
-function formatTimeRemaining(hoursUntilClass: number): string {
+function formatTimeRemaining(
+    hoursUntilClass: number,
+    timeUnitDays: string,
+    timeUnitHours: string,
+    timeUnitMinutes: string
+): string {
     const totalMinutes = Math.max(0, Math.round(hoursUntilClass * 60));
     const minutesInDay = 60 * 24;
 
@@ -84,27 +90,33 @@ function formatTimeRemaining(hoursUntilClass: number): string {
     const parts: string[] = [];
 
     if (days > 0) {
-        parts.push(`${days}d`);
+        parts.push(`${days}${timeUnitDays}`);
     }
 
     if (hours > 0 || days > 0) {
-        parts.push(`${hours}h`);
+        parts.push(`${hours}${timeUnitHours}`);
     }
 
     if (minutes > 0 || parts.length === 0) {
-        parts.push(`${minutes}m`);
+        parts.push(`${minutes}${timeUnitMinutes}`);
     }
 
     return parts.join(' ');
 }
 
-function getDiscountTimingText(discountResult: DiscountCalculationResult, classInstance: any): string {
+function getDiscountTimingText(
+    discountResult: DiscountCalculationResult,
+    classInstance: any,
+    timeUnitDays: string,
+    timeUnitHours: string,
+    timeUnitMinutes: string
+): string {
     if (!discountResult.appliedDiscount) return '';
 
     const now = Date.now();
     const hoursUntilClass = Math.max(0, (classInstance.startTime - now) / (1000 * 60 * 60));
     const ruleName = discountResult.appliedDiscount.ruleName;
-    const formattedTime = formatTimeRemaining(hoursUntilClass);
+    const formattedTime = formatTimeRemaining(hoursUntilClass, timeUnitDays, timeUnitHours, timeUnitMinutes);
 
     if (ruleName.toLowerCase().includes('early')) {
         return `Early bird discount: ${formattedTime}`;
@@ -115,7 +127,13 @@ function getDiscountTimingText(discountResult: DiscountCalculationResult, classI
     }
 }
 
-function getBookingWindowText(classInstance: any): string | null {
+function getBookingWindowText(
+    classInstance: any,
+    closesInTemplate: string,
+    timeUnitDays: string,
+    timeUnitHours: string,
+    timeUnitMinutes: string
+): string | null {
     if (!classInstance) return null;
 
     const bookingWindow = classInstance.bookingWindow ?? classInstance.templateSnapshot?.bookingWindow;
@@ -129,9 +147,10 @@ function getBookingWindowText(classInstance: any): string | null {
     }
 
     const hoursUntilBookingCloses = hoursUntilClass - bookingWindow.minHours;
-    const formattedTime = formatTimeRemaining(hoursUntilBookingCloses);
+    const formattedTime = formatTimeRemaining(hoursUntilBookingCloses, timeUnitDays, timeUnitHours, timeUnitMinutes);
 
-    return `Bookings close in ${formattedTime}`;
+    // Replace {{time}} placeholder with the formatted time
+    return closesInTemplate.replace('{{time}}', formattedTime);
 }
 
 function calculateClassDiscount(classInstance: any, templateData: any): DiscountCalculationResult {
@@ -194,6 +213,7 @@ export function ClassDetailsModalScreen() {
     // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL LOGIC
     const navigation = useNavigation();
     const route = useRoute<ClassDetailsRoute>();
+    const { t } = useTypedTranslation();
     const { classInstance, classInstanceId } = route.params;
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const { showActionSheetWithOptions } = useActionSheet();
@@ -271,6 +291,15 @@ export function ClassDetailsModalScreen() {
         () => calculateClassDiscount(finalClassInstance, templateSnapshot),
         [finalClassInstance, templateSnapshot]
     );
+
+    // Memoize translated time units and booking window template
+    const timeUnitDays = t('explore.timeUnitDays');
+    const timeUnitHours = t('explore.timeUnitHours');
+    const timeUnitMinutes = t('explore.timeUnitMinutes');
+    const closesInTemplate = useMemo(() => {
+        const templateMarker = '__TIME_PLACEHOLDER__';
+        return t('explore.closesIn', { time: templateMarker }).replace(templateMarker, '{{time}}');
+    }, [t]);
 
     // Event handlers
     const onPress = () => {
@@ -624,19 +653,37 @@ export function ClassDetailsModalScreen() {
                             {discountResult.appliedDiscount && (
                                 <View style={styles.discountBanner}>
                                     <Text style={styles.discountBannerText}>
-                                        {getDiscountTimingText(discountResult, finalClassInstance)}
+                                        {getDiscountTimingText(
+                                            discountResult,
+                                            finalClassInstance,
+                                            timeUnitDays,
+                                            timeUnitHours,
+                                            timeUnitMinutes
+                                        )}
                                     </Text>
                                 </View>
                             )}
 
                             {/* Booking Window Banner */}
-                            {getBookingWindowText(finalClassInstance) && (
-                                <View style={styles.bookingWindowBanner}>
-                                    <Text style={styles.bookingWindowBannerText}>
-                                        {getBookingWindowText(finalClassInstance)}
-                                    </Text>
-                                </View>
-                            )}
+                            {getBookingWindowText(
+                                finalClassInstance,
+                                closesInTemplate,
+                                timeUnitDays,
+                                timeUnitHours,
+                                timeUnitMinutes
+                            ) && (
+                                    <View style={styles.bookingWindowBanner}>
+                                        <Text style={styles.bookingWindowBannerText}>
+                                            {getBookingWindowText(
+                                                finalClassInstance,
+                                                closesInTemplate,
+                                                timeUnitDays,
+                                                timeUnitHours,
+                                                timeUnitMinutes
+                                            )}
+                                        </Text>
+                                    </View>
+                                )}
 
                             {/* Key details */}
                             <View style={styles.detailsList}>

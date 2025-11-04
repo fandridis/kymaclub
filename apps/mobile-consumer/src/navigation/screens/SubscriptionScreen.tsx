@@ -11,6 +11,7 @@ import { useAuthenticatedUser } from '../../stores/auth-store';
 import { useQuery, useAction } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { calculateSubscriptionPricing } from '@repo/utils/credits';
+import { useTypedTranslation } from '../../i18n/typed';
 
 // Simple currency formatter - can be made configurable later
 const formatCurrency = (amount: number) => `€${amount.toFixed(2)}`;
@@ -44,6 +45,7 @@ const generateSubscriptionOptions = (): SubscriptionTier[] => {
 const subscriptionOptions: SubscriptionTier[] = generateSubscriptionOptions();
 
 export function SubscriptionScreen() {
+    const { t } = useTypedTranslation();
     const navigation = useNavigation();
     const user = useAuthenticatedUser();
     const [selectedCredits, setSelectedCredits] = useState<number>(20);
@@ -93,14 +95,21 @@ export function SubscriptionScreen() {
             const nextBillingDate = subscription ? new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null;
 
             Alert.alert(
-                isUpdate ? 'Update Subscription' : 'Start Subscription',
+                isUpdate ? t('subscription.updateSubscription') : t('subscription.startSubscription'),
                 isUpdate
-                    ? `Update to ${selectedCredits} credits/month for ${formatCurrency(getCurrentOption().price)}/month?\n\nChanges will take effect on ${nextBillingDate}. No charge now.`
-                    : `Start subscription with ${selectedCredits} credits/month for ${formatCurrency(getCurrentOption().price)}/month?\n\nYou'll be charged now and receive ${selectedCredits} credits immediately.`,
+                    ? t('subscription.updateConfirm', {
+                        credits: selectedCredits,
+                        price: formatCurrency(getCurrentOption().price),
+                        date: nextBillingDate
+                    })
+                    : t('subscription.startConfirm', {
+                        credits: selectedCredits,
+                        price: formatCurrency(getCurrentOption().price)
+                    }),
                 [
-                    { text: 'Cancel', style: 'cancel' },
+                    { text: t('common.cancel'), style: 'cancel' },
                     {
-                        text: isUpdate ? 'Update' : 'Start & Pay',
+                        text: isUpdate ? t('subscription.update') : t('subscription.startAndPay'),
                         onPress: async () => {
                             setIsLoading(true);
                             try {
@@ -112,7 +121,7 @@ export function SubscriptionScreen() {
                                     });
                                     const result = await updateSubscription({ newCreditAmount: selectedCredits });
                                     console.log('[Subscription] Update result:', result);
-                                    Alert.alert('Subscription Updated!', result.message);
+                                    Alert.alert(t('subscription.subscriptionUpdated'), result.message);
                                 } else {
                                     // For new subscriptions, go directly to checkout
                                     console.log('[Subscription] Starting NEW subscription', {
@@ -136,7 +145,7 @@ export function SubscriptionScreen() {
                             } catch (error) {
                                 console.error('[Subscription] Error with subscription:', error);
                                 const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-                                Alert.alert('Error', `Failed to ${isUpdate ? 'update' : 'start'} subscription. ${errorMessage}`);
+                                Alert.alert(t('errors.error'), isUpdate ? t('subscription.errorUpdate', { message: errorMessage }) : t('subscription.errorStart', { message: errorMessage }));
                             } finally {
                                 setIsLoading(false);
                             }
@@ -151,12 +160,12 @@ export function SubscriptionScreen() {
         if (isLoading) return;
 
         Alert.alert(
-            'Cancel Subscription',
-            'Are you sure you want to cancel your subscription? You\'ll continue to have access until the end of your current billing period.',
+            t('subscription.cancelSubscription'),
+            t('subscription.cancelConfirm'),
             [
-                { text: 'Keep Subscription', style: 'cancel' },
+                { text: t('subscription.keepSubscription'), style: 'cancel' },
                 {
-                    text: 'Cancel Subscription',
+                    text: t('subscription.cancelSubscription'),
                     style: 'destructive',
                     onPress: async () => {
                         setIsLoading(true);
@@ -164,10 +173,10 @@ export function SubscriptionScreen() {
                             console.log('Cancelling subscription...');
                             await cancelSubscription({});
                             console.log('Subscription cancelled!!!');
-                            Alert.alert('Subscription Cancelled', 'Your subscription will end at the end of your current billing period.');
+                            Alert.alert(t('subscription.subscriptionCancelled'), t('subscription.cancelSuccess'));
                         } catch (error) {
                             console.error('Error canceling subscription:', error);
-                            Alert.alert('Error', 'Failed to cancel subscription. Please try again.');
+                            Alert.alert(t('errors.error'), t('subscription.errorCancel'));
                         } finally {
                             setIsLoading(false);
                         }
@@ -192,21 +201,28 @@ export function SubscriptionScreen() {
 
         if (subscriptionExpired) {
             // Expired - start new subscription with full charge
-            message = `Start new subscription with ${selectedCredits} credits/month for ${formatCurrency(currentOption.price)}/month?`;
-            chargeInfo = `\n\nYou'll be charged ${formatCurrency(currentOption.price)} now and receive ${selectedCredits} credits immediately.`;
-            buttonText = 'Start & Pay';
+            message = t('subscription.reactivateExpiredConfirm', {
+                credits: selectedCredits,
+                price: formatCurrency(currentOption.price)
+            });
+            chargeInfo = '';
+            buttonText = t('subscription.startAndPay');
         } else {
             // Not expired - just re-enable, no charge
-            message = `Re-enable subscription with ${selectedCredits} credits/month?`;
-            chargeInfo = `\n\nNo charge now. Your subscription will continue and charge ${formatCurrency(currentOption.price)} on ${nextBillingDate}.`;
-            buttonText = 'Re-enable';
+            message = t('subscription.reactivateActiveConfirm', {
+                credits: selectedCredits,
+                price: formatCurrency(currentOption.price),
+                date: nextBillingDate
+            });
+            chargeInfo = '';
+            buttonText = t('subscription.reenable');
         }
 
         Alert.alert(
-            'Reactivate Subscription',
+            t('subscription.reactivateSubscription'),
             `${message}${chargeInfo}`,
             [
-                { text: 'Cancel', style: 'cancel' },
+                { text: t('common.cancel'), style: 'cancel' },
                 {
                     text: buttonText,
                     onPress: async () => {
@@ -214,11 +230,11 @@ export function SubscriptionScreen() {
                         try {
                             // Pass the selected credit amount to the reactivation
                             const result = await reactivateSubscription({ newCreditAmount: selectedCredits });
-                            Alert.alert('Subscription Reactivated!', result.message);
+                            Alert.alert(t('subscription.subscriptionReactivated'), result.message);
                         } catch (error) {
                             console.error('Error reactivating subscription:', error);
                             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-                            Alert.alert('Error', `Failed to reactivate subscription. ${errorMessage}`);
+                            Alert.alert(t('errors.error'), t('subscription.errorReactivate', { message: errorMessage }));
                         } finally {
                             setIsLoading(false);
                         }
@@ -230,7 +246,7 @@ export function SubscriptionScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StackScreenHeader title="Monthly Subscription" />
+            <StackScreenHeader title={t('subscription.monthlySubscription')} />
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
@@ -284,10 +300,10 @@ export function SubscriptionScreen() {
                                 <View style={styles.planContentRow}>
                                     <View style={styles.planTextColumn}>
                                         <Text style={styles.planTitle}>
-                                            {`${subscription?.creditAmount} credits/month`}
+                                            {t('subscription.creditsPerMonth', { credits: subscription?.creditAmount })}
                                         </Text>
                                         <Text style={styles.planSubtitle}>
-                                            {`Next billing: ${getNextBillingDate()}`}
+                                            {t('subscription.nextBilling', { date: getNextBillingDate() })}
                                         </Text>
                                     </View>
                                     <TouchableOpacity
@@ -302,12 +318,12 @@ export function SubscriptionScreen() {
                                             <View style={styles.buttonContent}>
                                                 <ActivityIndicator size="small" color={theme.colors.rose[600]} />
                                                 <Text style={[styles.cancelButtonText, styles.buttonTextWithSpinner]}>
-                                                    Canceling...
+                                                    {t('subscription.canceling')}
                                                 </Text>
                                             </View>
                                         ) : (
                                             <Text style={styles.cancelButtonText}>
-                                                Cancel
+                                                {t('common.cancel')}
                                             </Text>
                                         )}
                                     </TouchableOpacity>
@@ -315,10 +331,10 @@ export function SubscriptionScreen() {
                             </>
                             : <>
                                 <Text style={styles.planTitle}>
-                                    {`No active plan`}
+                                    {t('subscription.noPlan')}
                                 </Text>
                                 <Text style={styles.planSubtitle}>
-                                    {`Choose one of the following plans to start your subscription.`}
+                                    {t('subscription.chooseYourPlan')}
                                 </Text>
                             </>
 
@@ -351,7 +367,7 @@ export function SubscriptionScreen() {
                                         </View>
 
                                         <Text style={styles.cardCredits}>{credits}</Text>
-                                        <Text style={styles.cardCreditsSubtext}>credits/month</Text>
+                                        <Text style={styles.cardCreditsSubtext}>{t('subscription.creditsPerMonth', { credits })}</Text>
                                         <Text style={styles.cardPrice}>{formatCurrency(option.price)}</Text>
 
                                         <View
@@ -366,7 +382,7 @@ export function SubscriptionScreen() {
                                                     option.discount > 0 ? styles.badgeTextDiscount : styles.badgeTextNeutral,
                                                 ]}
                                             >
-                                                {option.discount > 0 ? `Save ${option.discount}%` : 'Standard rate'}
+                                                {option.discount > 0 ? t('subscription.savePercent', { discount: option.discount }) : t('subscription.standardRate')}
                                             </Text>
                                         </View>
                                     </TouchableOpacity>
@@ -390,12 +406,12 @@ export function SubscriptionScreen() {
                                     <View style={styles.buttonContent}>
                                         <ActivityIndicator size="small" color="#fff" />
                                         <Text style={[styles.primaryButtonText, styles.buttonTextWithSpinner]}>
-                                            Reactivating...
+                                            {t('subscription.starting')}
                                         </Text>
                                     </View>
                                 ) : (
                                     <Text style={styles.primaryButtonText}>
-                                        Reactivate Subscription
+                                        {t('subscription.reactivateSubscription')}
                                     </Text>
                                 )}
                             </TouchableOpacity>
@@ -413,7 +429,7 @@ export function SubscriptionScreen() {
                                         <View style={styles.buttonContent}>
                                             <ActivityIndicator size="small" color="#fff" />
                                             <Text style={[styles.primaryButtonText, styles.buttonTextWithSpinner]}>
-                                                {isSubscriptionActive() ? 'Updating...' : 'Starting...'}
+                                                {isSubscriptionActive() ? t('subscription.updating') : t('subscription.starting')}
                                             </Text>
                                         </View>
                                     ) : (
@@ -421,7 +437,7 @@ export function SubscriptionScreen() {
                                             styles.primaryButtonText,
                                             isSubscriptionActive() && selectedCredits === (subscription?.creditAmount ?? 0) && styles.primaryButtonTextDisabled
                                         ]}>
-                                            {isSubscriptionActive() ? 'Update Plan' : 'Start Subscription'}
+                                            {isSubscriptionActive() ? t('subscription.updatePlan') : t('subscription.startSubscription')}
                                         </Text>
                                     )}
                                 </TouchableOpacity>
@@ -432,13 +448,9 @@ export function SubscriptionScreen() {
 
                 {/* Info Section */}
                 <View style={styles.infoSection}>
-                    <Text style={styles.infoTitle}>Why subscribe?</Text>
+                    <Text style={styles.infoTitle}>{t('subscription.whySubscribe')}</Text>
                     <Text style={styles.infoText}>
-                        • Save 5-10% compared to one-time purchases{'\n'}
-                        • Credits are added to your account each month{'\n'}
-                        • Use credits to book classes at any partner studio{'\n'}
-                        • Unused credits roll over for up to 3 months{'\n'}
-                        • Cancel anytime - no commitment required
+                        {t('subscription.benefits')}
                     </Text>
                 </View>
             </ScrollView>

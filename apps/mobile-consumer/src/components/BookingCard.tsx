@@ -6,6 +6,7 @@ import { tz } from '@date-fns/tz';
 import type { Doc } from '@repo/api/convex/_generated/dataModel';
 import { theme } from '../theme';
 import { MapPinIcon, TicketIcon } from 'lucide-react-native';
+import { useTypedTranslation } from '../i18n/typed';
 
 interface BookingCardProps {
   booking: Doc<'bookings'>;
@@ -15,25 +16,6 @@ interface BookingCardProps {
 }
 
 const ATHENS_TZ = 'Europe/Athens';
-
-const STATUS_LABELS: Record<string, string> = {
-  pending: 'Confirmed',
-  completed: 'Checked In',
-  attended: 'Attended',
-  waitlist: 'Waitlisted',
-  cancelled_by_consumer: 'Cancelled by you',
-  cancelled_by_business: 'Cancelled by studio',
-  cancelled_by_business_rebookable: 'Cancelled by studio',
-  no_show: 'No Show',
-};
-
-const getStatusLabel = (status?: string): string | null => {
-  if (!status) {
-    return null;
-  }
-
-  return STATUS_LABELS[status] ?? status.replace(/_/g, ' ');
-};
 
 const getStatusVariant = (status?: string): 'success' | 'warning' | 'danger' | 'info' => {
   switch (status) {
@@ -59,6 +41,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
   onViewTicket,
   showFooterIcons = true,
 }) => {
+  const { t } = useTypedTranslation();
   const startTimeValue = booking.classInstanceSnapshot?.startTime;
   const startTime = startTimeValue ? new Date(startTimeValue) : null;
 
@@ -76,6 +59,25 @@ export const BookingCard: React.FC<BookingCardProps> = ({
 
     return venueName || instructor || '';
   }, [venueName, instructor]);
+
+  const getStatusLabel = (status?: string): string | null => {
+    if (!status) {
+      return null;
+    }
+
+    const statusMap: Record<string, string> = {
+      pending: t('bookings.status.confirmed'),
+      completed: t('bookings.status.checkedIn'),
+      attended: t('bookings.status.attended'),
+      waitlist: t('bookings.status.waitlisted'),
+      cancelled_by_consumer: t('bookings.status.cancelledByYou'),
+      cancelled_by_business: t('bookings.status.cancelledByStudio'),
+      cancelled_by_business_rebookable: t('bookings.status.cancelledByStudio'),
+      no_show: t('bookings.status.noShow'),
+    };
+
+    return statusMap[status] ?? status.replace(/_/g, ' ');
+  };
 
   const statusLabel = getStatusLabel(booking.status);
   const statusVariant = getStatusVariant(booking.status);

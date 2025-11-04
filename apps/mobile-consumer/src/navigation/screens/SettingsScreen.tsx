@@ -21,11 +21,13 @@ import { BottomSheetModal, BottomSheetModalProvider } from '@gorhom/bottom-sheet
 import type { RootStackParamList } from '../index';
 import { CommonActions } from "@react-navigation/native";
 import { useLogout } from '../../hooks/useLogout';
+import { useTypedTranslation } from '../../i18n/typed';
 
 export function SettingsScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const logout = useLogout();
   const user = useAuthenticatedUser();
+  const { t } = useTypedTranslation();
 
   const creditBalance = useQuery(api.queries.credits.getUserBalance, { userId: user._id });
   const expiringCredits = useQuery(api.queries.credits.getUserExpiringCredits, { userId: user._id });
@@ -61,12 +63,12 @@ export function SettingsScreen() {
     // Show rejection message if image was rejected
     if (isRejected && statusMessage) {
       Alert.alert(
-        'Image Not Approved',
-        statusMessage + '\n\nWould you like to upload a new image?',
+        t('errors.imageNotApproved'),
+        statusMessage + '\n\n' + t('errors.uploadNewImage') + '?',
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Upload New Image',
+            text: t('errors.uploadNewImage'),
             onPress: () => showUploadOptions()
           }
         ]
@@ -79,68 +81,68 @@ export function SettingsScreen() {
 
   const showUploadOptions = () => {
     Alert.alert(
-      'Profile Photo',
-      'Choose an option',
+      t('settings.profile.profilePhoto'),
+      t('settings.profile.chooseOption'),
       [
         {
-          text: 'Take Photo',
+          text: t('settings.profile.takePhoto'),
           onPress: async () => {
             try {
               await takeAndUploadPhoto(async (storageId: string) => {
                 if (!storageId) {
-                  throw new Error('No storage ID returned from photo capture');
+                  throw new Error(t('errors.noStorageId'));
                 }
                 await updateProfileImage({ storageId: storageId as any });
                 return storageId;
               });
             } catch (error) {
               console.error('Error taking photo:', error);
-              Alert.alert('Upload Failed', 'Failed to upload photo. Please try again.');
+              Alert.alert(t('errors.uploadFailed'), t('errors.failedToUploadPhoto'));
             }
           }
         },
         {
-          text: 'Choose from Library',
+          text: t('settings.profile.chooseFromLibrary'),
           onPress: async () => {
             try {
               await pickAndUploadImage(async (storageId: string) => {
                 if (!storageId) {
-                  throw new Error('No storage ID returned from image picker');
+                  throw new Error(t('errors.noStorageId'));
                 }
                 await updateProfileImage({ storageId: storageId as any });
                 return storageId;
               });
             } catch (error) {
               console.error('Error picking image:', error);
-              Alert.alert('Upload Failed', 'Failed to upload image. Please try again.');
+              Alert.alert(t('errors.uploadFailed'), t('errors.failedToUploadImage'));
             }
           }
         },
         ...(profileImageUrl ? [{
-          text: 'Remove Photo',
+          text: t('settings.profile.removePhoto'),
           style: 'destructive' as const,
           onPress: async () => {
             try {
               await removeProfileImage({});
             } catch (error) {
               console.error('Error removing profile image:', error);
-              Alert.alert('Error', 'Failed to remove profile image');
+              Alert.alert(t('common.error'), t('errors.failedToRemoveImage'));
             }
           }
         }] : []),
-        { text: 'Cancel', style: 'cancel' }
+        { text: t('common.cancel'), style: 'cancel' }
       ]
     );
   };
 
   const handleLogout = () => {
     Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
+      t('auth.signOut'),
+      t('auth.signOutConfirm'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Sign Out',
+          text: t('auth.signOut'),
           style: 'destructive',
           onPress: () => {
             logout(() => {
@@ -188,7 +190,7 @@ export function SettingsScreen() {
     const cycleEndLabel = safeDateLabel(subscription.currentPeriodEnd);
     const planLabel = subscription.planName ?? `${subscription.creditAmount} credits monthly`;
     const commonCopy = {
-      buyCardSubtitle: `${subscription.creditAmount} credits/month`,
+      buyCardSubtitle: t('subscription.creditsPerMonth', { credits: subscription.creditAmount }),
     } as const;
 
     switch (subscription.status) {
@@ -257,7 +259,7 @@ export function SettingsScreen() {
       default:
         return defaultCopy;
     }
-  }, [subscription]);
+  }, [subscription, t]);
 
   const creditsSheetRef = useRef<BottomSheetModal>(null);
   const creditsSnapPoints = useMemo(() => ['70%'], []);
@@ -273,7 +275,7 @@ export function SettingsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <BottomSheetModalProvider>
-        <StackScreenHeader title="Settings" />
+        <StackScreenHeader title={t('settings.title')} />
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -340,10 +342,10 @@ export function SettingsScreen() {
           />
 
           {/* Manage Credits Section */}
-          <SettingsHeader title="Manage Credits" />
+          <SettingsHeader title={t('credits.manageCredits')} />
           <SettingsGroup>
             <SettingsRow
-              title="Subscription"
+              title={t('subscription.title')}
               renderSubtitle={() => {
                 const isActive = subscription?.status === 'active';
                 const isCanceling = Boolean(subscription?.cancelAtPeriodEnd);
@@ -354,7 +356,7 @@ export function SettingsScreen() {
                     <View style={styles.subtitleRow}>
                       <View style={[styles.statusDot, styles.statusDotActive]} />
                       <Text style={styles.subtitleText}>
-                        {subscription.creditAmount} credits/month
+                        {t('subscription.creditsPerMonth', { credits: subscription.creditAmount })}
                       </Text>
                     </View>
                   );
@@ -362,14 +364,14 @@ export function SettingsScreen() {
                   return (
                     <View style={styles.subtitleRow}>
                       <View style={[styles.statusDot, styles.statusDotInactive]} />
-                      <Text style={styles.subtitleText}>Paused</Text>
+                      <Text style={styles.subtitleText}>{t('subscription.paused')}</Text>
                     </View>
                   );
                 } else {
                   return (
                     <View style={styles.subtitleRow}>
                       <View style={[styles.statusDot, styles.statusDotInactive]} />
-                      <Text style={styles.subtitleText}>Inactive</Text>
+                      <Text style={styles.subtitleText}>{t('subscription.inactive')}</Text>
                     </View>
                   );
                 }
@@ -379,11 +381,11 @@ export function SettingsScreen() {
                 const isCanceling = Boolean(subscription?.cancelAtPeriodEnd);
                 const isPaused = subscription?.status === 'unpaid' || subscription?.status === 'past_due';
 
-                let buttonText = 'Start a subscription';
+                let buttonText = t('settings.subscription.startSubscription');
                 if (isActive && !isCanceling) {
-                  buttonText = 'Update';
+                  buttonText = t('common.update');
                 } else if (isPaused || isCanceling) {
-                  buttonText = 'Resume';
+                  buttonText = t('subscription.resume');
                 }
 
                 return (
@@ -398,15 +400,15 @@ export function SettingsScreen() {
               }}
             />
             <SettingsRow
-              title="Quick buy"
-              subtitle="Instantly get an amount of credits"
+              title={t('credits.quickBuy')}
+              subtitle={t('credits.quickBuySubtitle')}
               renderRightSide={() => (
                 <TouchableOpacity
                   style={styles.actionButton}
                   onPress={handleOpenCreditsSheet}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.actionButtonText}>Buy credits</Text>
+                  <Text style={styles.actionButtonText}>{t('credits.buyCreditsButton')}</Text>
                 </TouchableOpacity>
               )}
             />
@@ -428,24 +430,24 @@ export function SettingsScreen() {
           </View> */}
 
           {/* Settings Navigation */}
-          <SettingsHeader title="Settings" />
+          <SettingsHeader title={t('settings.title')} />
           <SettingsGroup>
             <SettingsRow
-              title="Notifications"
-              subtitle="Push notifications, email preferences"
+              title={t('settings.notifications.title')}
+              subtitle={t('settings.notifications.notificationsSubtitle')}
               onPress={() => navigation.navigate('SettingsNotifications')}
               icon={BellIcon}
             />
             <SettingsRow
-              title="Account Settings"
-              subtitle="Privacy, security, data"
+              title={t('settings.account.accountSettings')}
+              subtitle={t('settings.account.accountSettingsSubtitle')}
               onPress={() => navigation.navigate('SettingsAccount')}
               icon={ShieldIcon}
             />
           </SettingsGroup>
 
           {/* Account Actions */}
-          <SettingsHeader title="Account" />
+          <SettingsHeader title={t('settings.account.title')} />
           <SettingsGroup>
             <TouchableOpacity
               style={styles.logoutRow}

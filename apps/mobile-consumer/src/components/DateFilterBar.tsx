@@ -6,7 +6,12 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
+import { format } from 'date-fns';
+import { enUS } from 'date-fns/locale/en-US';
+import { el } from 'date-fns/locale/el';
+import { lt } from 'date-fns/locale/lt';
 import { useTypedTranslation } from '../i18n/typed';
+import i18n from '../i18n';
 
 export interface DateFilterOptions {
   selectedDate: string; // Format: YYYY-MM-DD
@@ -19,11 +24,28 @@ interface DateFilterBarProps {
 
 const DAYS_AHEAD = 14; // Show today + 14 days ahead
 
+// Map i18next language codes to date-fns locales
+const getDateFnsLocale = (language: string) => {
+  switch (language) {
+    case 'el':
+      return el;
+    case 'lt':
+      return lt;
+    case 'en':
+    default:
+      return enUS;
+  }
+};
+
 export const DateFilterBar = memo<DateFilterBarProps>(({ selectedDate, onDateChange }) => {
   const { t } = useTypedTranslation();
 
   // Generate dates for today + 14 days forward
+  // Note: i18n.language is read inside useMemo to ensure it uses current value
+  // Component will re-render when language changes due to react-i18next subscription
   const dates = useMemo(() => {
+    const currentLanguage = i18n.language || 'en';
+    const dateFnsLocale = getDateFnsLocale(currentLanguage);
     const today = new Date();
     const dateList = [];
 
@@ -32,7 +54,9 @@ export const DateFilterBar = memo<DateFilterBarProps>(({ selectedDate, onDateCha
       date.setDate(today.getDate() + i);
 
       const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD format
-      const dayName = i === 0 ? 'Today' : date.toLocaleDateString('en-US', { weekday: 'short' });
+      const dayName = i === 0
+        ? t('common.today')
+        : format(date, 'EEE', { locale: dateFnsLocale });
       const dayNumber = date.getDate();
 
       dateList.push({
@@ -44,7 +68,7 @@ export const DateFilterBar = memo<DateFilterBarProps>(({ selectedDate, onDateCha
     }
 
     return dateList;
-  }, []);
+  }, [t]); // t triggers re-render when language changes via react-i18next
 
   const handleDatePress = useCallback((dateStr: string) => {
     onDateChange(dateStr);
@@ -72,7 +96,7 @@ export const DateFilterBar = memo<DateFilterBarProps>(({ selectedDate, onDateCha
                 selectedDate === date.dateStr && styles.dayNameActive,
               ]}
             >
-              {date.isToday ? 'Today' : date.dayName}
+              {date.dayName}
             </Text>
             <Text
               style={[

@@ -34,10 +34,16 @@ const CAROUSEL_ITEM_WIDTH = (screenWidth - (SECTION_PADDING * 2)) / 1.40;
 
 const WelcomeBanner = ({
     onDismiss,
-    onExplore
+    onExplore,
+    titleText,
+    subtitleText,
+    exploreButtonText
 }: {
     onDismiss: () => void;
     onExplore: () => void;
+    titleText: string;
+    subtitleText: string;
+    exploreButtonText: string;
 }) => (
     <View style={styles.welcomeBanner}>
         <TouchableOpacity
@@ -49,9 +55,9 @@ const WelcomeBanner = ({
         </TouchableOpacity>
 
         <View style={styles.bannerContent}>
-            <Text style={styles.bannerTitle}>Welcome aboard! 🎉</Text>
+            <Text style={styles.bannerTitle}>{titleText}</Text>
             <Text style={styles.bannerSubtitle}>
-                We are excited to have you! We've added 10 credits to your account to get you started. Look around, browse the different businesses and book any class you like!
+                {subtitleText}
             </Text>
         </View>
 
@@ -60,19 +66,27 @@ const WelcomeBanner = ({
             style={styles.bannerAction}
             activeOpacity={0.8}
         >
-            <Text style={styles.bannerActionText}>Explore</Text>
+            <Text style={styles.bannerActionText}>{exploreButtonText}</Text>
         </TouchableOpacity>
     </View>
 );
 
-const NoUpcomingClassesMessage = ({ onExplorePress }: { onExplorePress: () => void }) => (
+const NoUpcomingClassesMessage = ({
+    onExplorePress,
+    titleText,
+    exploreButtonText
+}: {
+    onExplorePress: () => void;
+    titleText: string;
+    exploreButtonText: string;
+}) => (
     <View style={styles.noClassesContainer}>
         <View style={styles.noClassesIcon}>
             <Text style={styles.noClassesIconText}>📅</Text>
         </View>
-        <Text style={styles.noClassesTitle}>You have no upcoming classes</Text>
+        <Text style={styles.noClassesTitle}>{titleText}</Text>
         <TouchableOpacity onPress={onExplorePress} style={styles.exploreButton}>
-            <Text style={styles.exploreButtonText}>explore here</Text>
+            <Text style={styles.exploreButtonText}>{exploreButtonText}</Text>
         </TouchableOpacity>
     </View>
 );
@@ -246,9 +260,9 @@ export function NewsScreen() {
                     const isTomorrow = startDate.toDateString() === tomorrow.toDateString();
 
                     if (isToday) {
-                        dateDisplay = 'Today';
+                        dateDisplay = t('common.today');
                     } else if (isTomorrow) {
-                        dateDisplay = 'Tomorrow';
+                        dateDisplay = t('news.tomorrow');
                     } else {
                         dateDisplay = startDate.toLocaleDateString('en-US', {
                             weekday: 'short',
@@ -270,21 +284,21 @@ export function NewsScreen() {
 
                 return {
                     id: booking._id,
-                    title: booking.classInstanceSnapshot?.name || 'Class',
+                    title: booking.classInstanceSnapshot?.name || t('news.class'),
                     disableBookings: classInstance?.disableBookings,
                     time: timeDisplay,
                     date: dateDisplay,
-                    instructor: booking.classInstanceSnapshot?.instructor || 'Instructor',
-                    venue: booking.venueSnapshot?.name || 'Venue',
+                    instructor: booking.classInstanceSnapshot?.instructor || t('news.instructor'),
+                    venue: booking.venueSnapshot?.name || t('news.venue'),
                     venueAddress: addressText,
-                    price: booking.finalPrice ? `${centsToCredits(booking.finalPrice)} credits` : 'Free',
+                    price: booking.finalPrice ? `${centsToCredits(booking.finalPrice)} credits` : t('news.free'),
                     imageUrl,
                     startTime: booking.classInstanceSnapshot?.startTime,
                     classInstanceId: booking.classInstanceId
                 };
             })
             .sort((a, b) => (a.startTime || 0) - (b.startTime || 0));
-    }, [userBookings, upcomingClassInstances, combinedStorageIdToUrl, now]);
+    }, [userBookings, upcomingClassInstances, combinedStorageIdToUrl, now, t]);
 
     // Process happening today classes
     const happeningTodayClasses = useMemo(() => {
@@ -306,18 +320,29 @@ export function NewsScreen() {
                         : null;
 
                 let timeDisplay = '';
+                let timeUntilStartHoursRaw: number | null = null;
+                let timeUntilStartMinutesRaw: number | null = null;
+                let isStartingSoon = false;
+
                 if (timeUntilStartHours > 0) {
-                    timeDisplay = `In ${timeUntilStartHours}h ${timeUntilStartMinutes}m`;
+                    timeDisplay = t('news.inHours', { hours: timeUntilStartHours, minutes: timeUntilStartMinutes });
+                    timeUntilStartHoursRaw = timeUntilStartHours;
+                    timeUntilStartMinutesRaw = timeUntilStartMinutes;
                 } else if (timeUntilStartMinutes > 0) {
-                    timeDisplay = `In ${timeUntilStartMinutes}m`;
+                    timeDisplay = t('news.inMinutes', { minutes: timeUntilStartMinutes });
+                    timeUntilStartMinutesRaw = timeUntilStartMinutes;
                 } else {
-                    timeDisplay = 'Starting soon';
+                    timeDisplay = t('news.startingSoon');
+                    isStartingSoon = true;
                 }
 
                 return {
                     id: instance._id,
-                    title: instance.name || 'Class',
+                    title: instance.name || t('news.class'),
                     subtitle: timeDisplay,
+                    timeUntilStartHours: timeUntilStartHoursRaw,
+                    timeUntilStartMinutes: timeUntilStartMinutesRaw,
+                    isStartingSoon,
                     originalPrice: `${centsToCredits(instance.pricing.originalPrice)}`,
                     discountedPrice: `${centsToCredits(instance.pricing.finalPrice)}`,
                     discountPercentage: instance.pricing.discountPercentage > 0 ? `${Math.round(instance.pricing.discountPercentage * 100)}%` : null,
@@ -329,7 +354,7 @@ export function NewsScreen() {
                     classInstanceId: instance._id,
                 };
             });
-    }, [happeningTodayInstances, now, combinedStorageIdToUrl]);
+    }, [happeningTodayInstances, now, combinedStorageIdToUrl, t]);
 
     // Process best offers
     const bestOffersClasses = useMemo(() => {
@@ -346,7 +371,7 @@ export function NewsScreen() {
 
                 return {
                     id: instance._id,
-                    title: instance.name || 'Class',
+                    title: instance.name || t('news.class'),
                     originalPrice: `${centsToCredits(instance.pricing.originalPrice)}`,
                     discountedPrice: `${centsToCredits(instance.pricing.finalPrice)}`,
                     discountPercentage: `${instance.discountPercentage}%`,
@@ -358,7 +383,7 @@ export function NewsScreen() {
                     classInstanceId: instance._id,
                 };
             });
-    }, [bestOffersInstances, now, combinedStorageIdToUrl]);
+    }, [bestOffersInstances, now, combinedStorageIdToUrl, t]);
 
     // Get new venues for VenueCard
     const newVenuesForCards = useMemo(() => {
@@ -431,7 +456,7 @@ export function NewsScreen() {
                 />
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#ff4747" />
-                    <Text style={styles.loadingText}>Loading news...</Text>
+                    <Text style={styles.loadingText}>{t('news.loading')}</Text>
                 </View>
             </SafeAreaView>
         );
@@ -461,13 +486,16 @@ export function NewsScreen() {
                     <WelcomeBanner
                         onDismiss={handleDismissBanner}
                         onExplore={handleExplorePressWithDismiss}
+                        titleText={t('news.welcomeBanner.title')}
+                        subtitleText={t('news.welcomeBanner.subtitle')}
+                        exploreButtonText={t('news.welcomeBanner.exploreButton')}
                     />
                 )}
 
                 {/* Your Schedule Section */}
                 {upcomingClasses.length > 0 ? (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Your Schedule</Text>
+                        <Text style={styles.sectionTitle}>{t('news.yourSchedule')}</Text>
                         <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}
@@ -498,7 +526,7 @@ export function NewsScreen() {
                                                     {item.title}
                                                 </Text>
                                                 <Text style={styles.scheduleInstructor} numberOfLines={1}>
-                                                    with {item.instructor}
+                                                    {t('news.withInstructor', { instructor: item.instructor })}
                                                 </Text>
                                                 <View style={styles.locationContainer}>
                                                     <MapPinIcon size={12} color="#9ca3af" />
@@ -515,15 +543,19 @@ export function NewsScreen() {
                     </View>
                 ) : (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Your Schedule</Text>
-                        <NoUpcomingClassesMessage onExplorePress={handleExplorePress} />
+                        <Text style={styles.sectionTitle}>{t('news.yourSchedule')}</Text>
+                        <NoUpcomingClassesMessage
+                            onExplorePress={handleExplorePress}
+                            titleText={t('news.noUpcomingClasses.title')}
+                            exploreButtonText={t('news.noUpcomingClasses.exploreButton')}
+                        />
                     </View>
                 )}
 
                 {/* Happening Today Section */}
                 {happeningTodayClasses.length > 0 && (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Happening Today</Text>
+                        <Text style={styles.sectionTitle}>{t('news.happeningToday')}</Text>
                         <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}
@@ -533,7 +565,7 @@ export function NewsScreen() {
                                 const discountBadge = item.discountPercentage ? `-${item.discountPercentage}` : null;
 
                                 const subtitleText = item.instructor
-                                    ? `with ${item.instructor}`
+                                    ? t('news.withInstructor', { instructor: item.instructor })
                                     : item.venueName || undefined;
 
                                 const startTime = new Date(item.startTime).toLocaleTimeString('en-US', {
@@ -543,14 +575,14 @@ export function NewsScreen() {
                                 });
 
                                 let startsInText: string | null = null;
-                                if (item.subtitle) {
-                                    const trimmed = item.subtitle.trim();
-                                    if (/^in\s/i.test(trimmed)) {
-                                        const suffix = trimmed.slice(3).trim().toLowerCase();
-                                        startsInText = suffix ? `starts in ${suffix}` : 'starts soon';
-                                    } else {
-                                        startsInText = trimmed.toLowerCase();
-                                    }
+                                if (item.timeUntilStartHours !== null && item.timeUntilStartHours !== undefined) {
+                                    const timeStr = t('news.inHours', { hours: item.timeUntilStartHours, minutes: item.timeUntilStartMinutes || 0 });
+                                    startsInText = t('news.startsIn', { time: timeStr });
+                                } else if (item.timeUntilStartMinutes !== null && item.timeUntilStartMinutes !== undefined) {
+                                    const timeStr = t('news.inMinutes', { minutes: item.timeUntilStartMinutes });
+                                    startsInText = t('news.startsIn', { time: timeStr });
+                                } else if (item.isStartingSoon) {
+                                    startsInText = t('news.startsSoon');
                                 }
 
                                 return (
@@ -649,7 +681,7 @@ export function NewsScreen() {
                 {/* Best Offers Section */}
                 {bestOffersClasses.length > 0 && (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Best Offers</Text>
+                        <Text style={styles.sectionTitle}>{t('news.bestOffers')}</Text>
                         <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}
@@ -659,7 +691,7 @@ export function NewsScreen() {
                                 const discountBadge = item.discountPercentage ? `-${item.discountPercentage}` : null;
 
                                 const subtitleText = item.instructor
-                                    ? `with ${item.instructor}`
+                                    ? t('news.withInstructor', { instructor: item.instructor })
                                     : item.venueName || undefined;
 
                                 const startTime = new Date(item.startTime).toLocaleTimeString('en-US', {
@@ -754,7 +786,7 @@ export function NewsScreen() {
                 {/* New Studios Section */}
                 {newVenuesForCards.length > 0 && (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>New studios</Text>
+                        <Text style={styles.sectionTitle}>{t('news.newStudios')}</Text>
                         <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}

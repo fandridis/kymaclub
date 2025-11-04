@@ -24,6 +24,7 @@ import { convexAuthStorage } from './utils/storage';
 import { RootNavigator } from './navigation';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useTypedTranslation } from './i18n/typed';
 
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
@@ -126,6 +127,7 @@ interface InnerAppProps {
 
 export function InnerApp({ theme, onReady }: InnerAppProps) {
   const { user } = useAuth();
+  const { t } = useTypedTranslation();
   const data = useQuery(api.queries.core.getCurrentUserQuery);
   const recordPushNotificationToken = useMutation(api.mutations.pushNotifications.recordPushNotificationToken);
   const [appReady, setAppReady] = useState(false);
@@ -264,10 +266,9 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
   if (loadingTimeout) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.errorTitle}>⚠️ Connection Failed</Text>
+        <Text style={styles.errorTitle}>⚠️ {t('app.connectionFailed')}</Text>
         <Text style={styles.errorText}>
-          Unable to connect to KymaClub servers.{'\n\n'}
-          Please check your internet connection and try again.
+          {t('app.connectionFailedMessage')}
         </Text>
         <TouchableOpacity
           style={styles.retryButton}
@@ -276,7 +277,7 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
             setAppReady(false);
           }}
         >
-          <Text style={styles.retryButtonText}>Retry</Text>
+          <Text style={styles.retryButtonText}>{t('app.retry')}</Text>
         </TouchableOpacity>
       </View>
     );

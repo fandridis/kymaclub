@@ -10,7 +10,7 @@ import { theme } from '../../theme';
 
 export function SettingsAccountScreen() {
     const navigation = useNavigation();
-    const { i18n } = useTypedTranslation();
+    const { t, i18n } = useTypedTranslation();
 
     const getLanguageDisplay = (languageCode: string) => {
         const languages = {
@@ -28,43 +28,43 @@ export function SettingsAccountScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StackScreenHeader title="Account" />
+            <StackScreenHeader title={t('settings.account.title')} />
             <View style={styles.content}>
-                <SettingsHeader title="App Settings" />
+                <SettingsHeader title={t('settings.account.appSettings')} />
                 <SettingsGroup>
                     <SettingsRow
-                        title="App Language"
+                        title={t('settings.account.appLanguage')}
                         subtitle={getLanguageDisplay(i18n.language)}
                         renderRightSide={() => (
                             <TouchableOpacity
                                 style={styles.changeButton}
                                 onPress={handleLanguagePress}
                             >
-                                <Text style={styles.changeButtonText}>Change</Text>
+                                <Text style={styles.changeButtonText}>{t('settings.account.change')}</Text>
                             </TouchableOpacity>
                         )}
                     />
                 </SettingsGroup>
 
-                <SettingsHeader title="Account Settings" />
+                <SettingsHeader title={t('settings.account.accountSettings')} />
                 <SettingsGroup>
                     <SettingsRow
-                        title="Privacy Settings"
-                        subtitle="Manage your privacy preferences"
+                        title={t('settings.account.privacySettings')}
+                        subtitle={t('settings.account.privacyDescription')}
                         onPress={() => {
                             // TODO: Navigate to privacy screen
                         }}
                     />
                     <SettingsRow
-                        title="Data & Storage"
-                        subtitle="Manage your data and storage"
+                        title={t('settings.account.dataStorage')}
+                        subtitle={t('settings.account.dataDescription')}
                         onPress={() => {
                             // TODO: Navigate to data screen
                         }}
                     />
                     <SettingsRow
-                        title="Delete Account"
-                        subtitle="Permanently delete your account"
+                        title={t('settings.account.deleteAccount')}
+                        subtitle={t('settings.account.deleteDescription')}
                         onPress={() => {
                             // TODO: Navigate to delete account screen
                         }}
@@ -72,7 +72,7 @@ export function SettingsAccountScreen() {
                 </SettingsGroup>
 
                 <Text style={styles.comingSoon}>
-                    Account management coming soon
+                    {t('settings.account.comingSoon')}
                 </Text>
             </View>
         </SafeAreaView>

@@ -16,6 +16,7 @@ import { DiamondIcon } from 'lucide-react-native';
 import { theme } from '../theme';
 import { CREDIT_PACKS } from '@repo/api/operations/payments';
 import { api } from '@repo/api/convex/_generated/api';
+import { useTypedTranslation } from '../i18n/typed';
 
 interface QuickBuyCreditsSheetProps {
   snapPoints?: Array<string | number>;
@@ -33,6 +34,7 @@ const formatCurrency = (amount: number) => `${amount.toFixed(2)}€`;
 
 export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyCreditsSheetProps>(
   ({ snapPoints, onChange }, ref) => {
+    const { t } = useTypedTranslation();
     const resolvedSnapPoints = useMemo(() => snapPoints ?? ['70%'], [snapPoints]);
 
     const [selectedCredits, setSelectedCredits] = useState<number>(CREDIT_PACKS[0]?.credits ?? 10);
@@ -45,7 +47,7 @@ export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyC
         // Keep original one-time pricing
         const price = Number(pack.price.toFixed(2));
         const discount = pack.discount ?? 0;
-        const badgeLabel = discount ? `Save ${discount}%` : 'Standard rate';
+        const badgeLabel = discount ? t('credits.savePercent', { discount }) : t('credits.standardRate');
 
         return {
           credits: pack.credits,
@@ -54,7 +56,7 @@ export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyC
           isDiscounted: Boolean(discount),
         };
       });
-    }, []);
+    }, [t]);
 
     const selectedPack = packsForDisplay.find(pack => pack.credits === selectedCredits);
 
@@ -74,15 +76,15 @@ export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyC
         if (result.checkoutUrl) {
           await Linking.openURL(result.checkoutUrl);
         } else {
-          Alert.alert('Error', 'Unable to start checkout. Please try again later.');
+          Alert.alert(t('errors.error'), t('errors.unableToStartCheckout'));
         }
       } catch (error) {
         console.error('purchase error', error);
-        Alert.alert('Error', 'Something went wrong. Please try again.');
+        Alert.alert(t('errors.error'), t('errors.somethingWentWrong'));
       } finally {
         setIsProcessing(false);
       }
-    }, [createOneTimeCheckout, selectedPack]);
+    }, [createOneTimeCheckout, selectedPack, t]);
 
     return (
       <BottomSheetModal
@@ -99,9 +101,9 @@ export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyC
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.sheetTitle}>Buy Credits</Text>
+            <Text style={styles.sheetTitle}>{t('credits.buyCredits')}</Text>
             <Text style={styles.sheetSubtitle}>
-              Top-up your credits balance instantly
+              {t('credits.topUpCredits')}
             </Text>
 
             <ScrollView
@@ -152,7 +154,7 @@ export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyC
             </ScrollView>
 
             <Text style={styles.finePrint}>
-              Credits are valid for 3 months after issuing. Best for occasional bookings.
+              {t('credits.creditsValid')}
             </Text>
           </ScrollView>
 
@@ -166,12 +168,12 @@ export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyC
               <View style={styles.buttonContent}>
                 <ActivityIndicator size="small" color="#fff" />
                 <Text style={[styles.buyButtonText, styles.buttonTextWithSpinner]}>
-                  Processing...
+                  {t('credits.processing')}
                 </Text>
               </View>
             ) : (
               <Text style={styles.buyButtonText}>
-                Buy now
+                {t('credits.buyNow')}
               </Text>
             )}
           </TouchableOpacity>

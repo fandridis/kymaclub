@@ -80,7 +80,30 @@ interface BookingWindowStatus {
   iconColor: string;
 }
 
-function getBookingWindowStatus(classInstance: ClassInstance): BookingWindowStatus {
+function formatTimeUnits(
+  days: number,
+  hours: number,
+  minutes: number,
+  timeUnitDays: string,
+  timeUnitHours: string,
+  timeUnitMinutes: string
+): string {
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days}${timeUnitDays}`);
+  if (hours > 0 || days > 0) parts.push(`${hours}${timeUnitHours}`);
+  if (minutes > 0 || parts.length === 0) parts.push(`${minutes}${timeUnitMinutes}`);
+  return parts.join(' ');
+}
+
+function getBookingWindowStatus(
+  classInstance: ClassInstance,
+  bookingsClosed: string,
+  opensInTemplate: string,
+  closesInTemplate: string,
+  timeUnitDays: string,
+  timeUnitHours: string,
+  timeUnitMinutes: string
+): BookingWindowStatus {
   if (!classInstance.bookingWindow?.minHours) {
     return {
       status: 'open',
@@ -101,7 +124,7 @@ function getBookingWindowStatus(classInstance: ClassInstance): BookingWindowStat
   if (timeUntilBookingEnds <= 0) {
     return {
       status: 'closed',
-      message: 'Bookings closed',
+      message: bookingsClosed,
       isDisabled: true,
       showClockIcon: false,
       showLockIcon: true,
@@ -122,14 +145,10 @@ function getBookingWindowStatus(classInstance: ClassInstance): BookingWindowStat
       const hours = Math.floor(remainingMinutesAfterDays / 60);
       const minutes = remainingMinutesAfterDays % 60;
 
-      const parts: string[] = [];
-      if (days > 0) parts.push(`${days}d`);
-      if (hours > 0 || days > 0) parts.push(`${hours}h`);
-      if (minutes > 0 || parts.length === 0) parts.push(`${minutes}m`);
-
+      const timeString = formatTimeUnits(days, hours, minutes, timeUnitDays, timeUnitHours, timeUnitMinutes);
       return {
         status: 'not_yet_open',
-        message: `Opens in ${parts.join(' ')}`,
+        message: opensInTemplate.replace('{{time}}', timeString),
         isDisabled: true,
         showClockIcon: true,
         showLockIcon: false,
@@ -157,24 +176,15 @@ function getBookingWindowStatus(classInstance: ClassInstance): BookingWindowStat
   const hours = Math.floor(remainingMinutesAfterDays / 60);
   const minutes = remainingMinutesAfterDays % 60;
 
-  const parts: string[] = [];
-  if (days > 0) parts.push(`${days}d`);
-  if (hours > 0 || days > 0) parts.push(`${hours}h`);
-  if (minutes > 0 || parts.length === 0) parts.push(`${minutes}m`);
-
+  const timeString = formatTimeUnits(days, hours, minutes, timeUnitDays, timeUnitHours, timeUnitMinutes);
   return {
     status: 'open',
-    message: `Closes in ${parts.join(' ')}`,
+    message: closesInTemplate.replace('{{time}}', timeString),
     isDisabled: false,
     showClockIcon: true,
     showLockIcon: false,
     iconColor: theme.colors.rose[600]
   };
-}
-
-function getBookingWindowText(classInstance: ClassInstance): string {
-  const status = getBookingWindowStatus(classInstance);
-  return status.message;
 }
 
 function calculateClassDiscount(classInstance: ClassInstance): DiscountCalculationResult {
@@ -239,8 +249,33 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
   const isBookingsDisabled = Boolean(classInstance.disableBookings);
   const isBookedByUser = 'isBookedByUser' in classInstance ? Boolean(classInstance.isBookedByUser) : false;
 
+  // Memoize translated strings
+  const timeUnitDays = t('explore.timeUnitDays');
+  const timeUnitHours = t('explore.timeUnitHours');
+  const timeUnitMinutes = t('explore.timeUnitMinutes');
+  const bookingsClosed = t('explore.bookingsClosed');
+  const opensInTemplate = useMemo(() => {
+    const templateMarker = '__TIME_PLACEHOLDER__';
+    return t('explore.opensIn', { time: templateMarker }).replace(templateMarker, '{{time}}');
+  }, [t]);
+  const closesInTemplate = useMemo(() => {
+    const templateMarker = '__TIME_PLACEHOLDER__';
+    return t('explore.closesIn', { time: templateMarker }).replace(templateMarker, '{{time}}');
+  }, [t]);
+
   const discountResult = useMemo(() => calculateClassDiscount(classInstance), [classInstance]);
-  const bookingWindowStatus = useMemo(() => getBookingWindowStatus(classInstance), [classInstance]);
+  const bookingWindowStatus = useMemo(
+    () => getBookingWindowStatus(
+      classInstance,
+      bookingsClosed,
+      opensInTemplate,
+      closesInTemplate,
+      timeUnitDays,
+      timeUnitHours,
+      timeUnitMinutes
+    ),
+    [classInstance, bookingsClosed, opensInTemplate, closesInTemplate, timeUnitDays, timeUnitHours, timeUnitMinutes]
+  );
   const bookingWindowText = bookingWindowStatus.message;
 
   // Determine if card should be disabled
@@ -315,7 +350,7 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
 
         <View style={styles.infoRow}>
           <View style={styles.infoItem}>
-            <UserIcon size={14} color={isCardDisabled ? theme.colors.rose[700] : theme.colors.emerald[700]} />
+            <UserIcon size={14} color={isSoldOut ? theme.colors.rose[700] : theme.colors.emerald[700]} />
             <Text style={[styles.infoText, styles.spotsInfoText]}>
               {isSoldOut ? t('explore.soldOut') : t('explore.spotsLeft', { count: spotsLeft })}
             </Text>

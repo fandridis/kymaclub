@@ -17,6 +17,7 @@ import { BlurView } from 'expo-blur';
 import { RootStackParamList } from '../../../navigation';
 import { useAuth } from '../../../stores/auth-store';
 import { secureStorage } from '../../../utils/storage';
+import { useTypedTranslation } from '../../../i18n/typed';
 
 const { width, height } = Dimensions.get('window');
 
@@ -24,6 +25,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Landing'>;
 
 export function LandingScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTypedTranslation();
   // const isAuthenticated = secureStorage.getIsAuthenticated();
   const { user } = useAuth();
 
@@ -71,24 +73,24 @@ export function LandingScreen() {
         <View style={styles.content}>
           <View style={styles.headerSection}>
             <Text style={styles.logo}>🌊</Text>
-            <Text style={styles.title}>KymaClub</Text>
-            <Text style={styles.subtitle}>Your premium beach experience</Text>
+            <Text style={styles.title}>{t('auth.landing.title')}</Text>
+            <Text style={styles.subtitle}>{t('auth.landing.subtitle')}</Text>
           </View>
 
           <View style={styles.featuresSection}>
             <BlurView intensity={20} tint="light" style={styles.featureCard}>
               <Text style={styles.featureEmoji}>🏖️</Text>
-              <Text style={styles.featureTitle}>1. Select your credits.</Text>
+              <Text style={styles.featureTitle}>{t('auth.landing.feature1')}</Text>
             </BlurView>
 
             <BlurView intensity={20} tint="light" style={styles.featureCard}>
               <Text style={styles.featureEmoji}>📱</Text>
-              <Text style={styles.featureTitle}>2. Choose your superpowers!</Text>
+              <Text style={styles.featureTitle}>{t('auth.landing.feature2')}</Text>
             </BlurView>
 
             <BlurView intensity={20} tint="light" style={styles.featureCard}>
               <Text style={styles.featureEmoji}>🍹</Text>
-              <Text style={styles.featureTitle}>3. Browser & Book your spot!</Text>
+              <Text style={styles.featureTitle}>{t('auth.landing.feature3')}</Text>
             </BlurView>
           </View>
 
@@ -98,7 +100,7 @@ export function LandingScreen() {
               onPress={handleCreateAccount}
               activeOpacity={0.8}
             >
-              <Text style={styles.primaryButtonText}>Create Account</Text>
+              <Text style={styles.primaryButtonText}>{t('auth.landing.createAccount')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -106,13 +108,13 @@ export function LandingScreen() {
               onPress={handleSignIn}
               activeOpacity={0.8}
             >
-              <Text style={styles.secondaryButtonText}>Sign In</Text>
+              <Text style={styles.secondaryButtonText}>{t('auth.landing.signIn')}</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Currently serving Athens and surrounding areas
+              {t('auth.landing.footer')}
             </Text>
           </View>
         </View>

@@ -17,24 +17,24 @@ const LANGUAGES = [
 
 export function LanguageSelectionScreen() {
     const navigation = useNavigation();
-    const { i18n } = useTypedTranslation();
+    const { t, i18n } = useTypedTranslation();
 
     const handleLanguageChange = async (languageCode: string) => {
         try {
             await i18n.changeLanguage(languageCode);
         } catch (error) {
             console.error('Error changing language:', error);
-            Alert.alert('Error', 'Failed to change language. Please try again.');
+            Alert.alert(t('settings.language.error'), t('settings.language.failedToChange'));
         }
     };
 
     return (
         <SafeAreaView style={styles.container}>
-            <StackScreenHeader title="App Language" />
+            <StackScreenHeader title={t('settings.language.title')} />
             <View style={styles.content}>
                 <View style={styles.headerSection}>
                     <Text style={styles.subtitle}>
-                        Choose your preferred language for the app interface
+                        {t('settings.language.description')}
                     </Text>
                 </View>
 
@@ -82,7 +82,7 @@ export function LanguageSelectionScreen() {
 
                 <View style={styles.infoSection}>
                     <Text style={styles.infoText}>
-                        Language changes will take effect immediately
+                        {t('settings.language.changesImmediate', { defaultValue: 'Language changes will take effect immediately' })}
                     </Text>
                 </View>
             </View>

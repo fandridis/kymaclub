@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
+import i18n from '../i18n';
 
 interface Props {
   children: ReactNode;
@@ -101,9 +102,9 @@ export class ErrorBoundary extends Component<Props, State> {
               <CircleOffIcon size={32} color="#ef4444" />
             </View>
 
-            <Text style={styles.title}>Something went wrong</Text>
+            <Text style={styles.title}>{i18n.t('errors.somethingWentWrong')}</Text>
             <Text style={styles.description}>
-              An unexpected error occurred. We apologize for the inconvenience.
+              {i18n.t('errors.unexpectedError')}
             </Text>
 
             <View style={styles.buttonContainer}>
@@ -111,14 +112,14 @@ export class ErrorBoundary extends Component<Props, State> {
                 style={[styles.button, styles.primaryButton]}
                 onPress={this.handleReset}
               >
-                <Text style={styles.primaryButtonText}>Try Again</Text>
+                <Text style={styles.primaryButtonText}>{i18n.t('errors.tryAgain')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.button, styles.secondaryButton]}
                 onPress={this.handleRestart}
               >
-                <Text style={styles.secondaryButtonText}>Restart App</Text>
+                <Text style={styles.secondaryButtonText}>{i18n.t('errors.restartApp')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -128,7 +129,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 onPress={this.showErrorDetails}
               >
                 <Text style={styles.debugButtonText}>
-                  Show Error Details (Dev Mode)
+                  {i18n.t('errors.showErrorDetails')}
                 </Text>
               </TouchableOpacity>
             )}

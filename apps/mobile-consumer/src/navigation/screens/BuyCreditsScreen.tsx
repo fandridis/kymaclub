@@ -11,11 +11,13 @@ import { useAuthenticatedUser } from '../../stores/auth-store';
 import { useQuery, useAction } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { CREDIT_PACKS } from '@repo/api/operations/payments';
+import { useTypedTranslation } from '../../i18n/typed';
 
 // Simple currency formatter - can be made configurable later
 const formatCurrency = (amount: number) => `${amount.toFixed(2)}€`;
 
 export function BuyCreditsScreen() {
+    const { t } = useTypedTranslation();
     const navigation = useNavigation();
     const user = useAuthenticatedUser();
 
@@ -30,12 +32,12 @@ export function BuyCreditsScreen() {
         if (!pack) return;
 
         Alert.alert(
-            'Purchase Credits',
-            `Purchase ${credits} credits for ${formatCurrency(pack.price)}?`,
+            t('purchaseCredits'),
+            t('purchaseConfirm', { credits, price: formatCurrency(pack.price) }),
             [
-                { text: 'Cancel', style: 'cancel' },
+                { text: t('common.cancel'), style: 'cancel' },
                 {
-                    text: 'Purchase',
+                    text: t('purchase'),
                     onPress: async () => {
                         try {
                             const result = await createOneTimeCheckout({
@@ -47,7 +49,7 @@ export function BuyCreditsScreen() {
                             }
                         } catch (error) {
                             console.error('Error creating checkout:', error);
-                            Alert.alert('Error', 'Failed to start purchase. Please try again.');
+                            Alert.alert(t('errors.error'), t('errorPurchase'));
                         }
                     }
                 }
@@ -57,7 +59,7 @@ export function BuyCreditsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StackScreenHeader title="Buy Credits" />
+            <StackScreenHeader title={t('credits.buyCredits')} />
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
@@ -66,8 +68,7 @@ export function BuyCreditsScreen() {
                 {/* Header Section */}
                 <View style={styles.headerSection}>
                     <Text style={styles.screenSubtitle}>
-                        Purchase credits if you're running low or don't want to start a subscription.
-                        Credits will expire 90 days after purchase.
+                        {t('purchaseDescription')}
                     </Text>
                 </View>
 
@@ -75,18 +76,18 @@ export function BuyCreditsScreen() {
                 <View style={styles.balanceCard}>
                     <View style={styles.balanceHeader}>
                         <DiamondIcon size={20} color={theme.colors.emerald[600]} />
-                        <Text style={styles.balanceTitle}>Current Balance</Text>
+                        <Text style={styles.balanceTitle}>{t('currentBalance')}</Text>
                     </View>
                     <View style={styles.balanceDisplay}>
                         <Text style={styles.balanceCredits}>{creditBalance?.balance || 0}</Text>
-                        <Text style={styles.balanceLabel}>credits available</Text>
+                        <Text style={styles.balanceLabel}>{t('creditsAvailable')}</Text>
                     </View>
                 </View>
 
                 {/* Credit Packs Section */}
                 <View style={styles.packsSection}>
-                    <Text style={styles.packsTitle}>Available Credit Packs</Text>
-                    <Text style={styles.packsSubtitle}>Choose the pack that fits your needs</Text>
+                    <Text style={styles.packsTitle}>{t('availableCreditPacks')}</Text>
+                    <Text style={styles.packsSubtitle}>{t('choosePackMessage')}</Text>
 
                     <View style={styles.creditPacksGrid}>
                         {CREDIT_PACKS.map((pack) => {
@@ -99,19 +100,19 @@ export function BuyCreditsScreen() {
                                 >
                                     {pack.discount && (
                                         <View style={styles.discountBadge}>
-                                            <Text style={styles.discountText}>{pack.discount}% off</Text>
+                                            <Text style={styles.discountText}>{t('credits.savePercent', { discount: pack.discount })}</Text>
                                         </View>
                                     )}
 
                                     <Text style={styles.creditPackCredits}>
                                         {pack.credits}
                                     </Text>
-                                    <Text style={styles.creditPackCreditsLabel}>credits</Text>
+                                    <Text style={styles.creditPackCreditsLabel}>{t('credits.title')}</Text>
                                     <Text style={styles.creditPackPrice}>
                                         {formatCurrency(pack.price)}
                                     </Text>
                                     <Text style={styles.pricePerCredit}>
-                                        {formatCurrency(pricePerCredit)} per credit
+                                        {formatCurrency(pricePerCredit)} {t('perCredit')}
                                     </Text>
                                 </TouchableOpacity>
                             );
