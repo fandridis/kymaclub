@@ -372,6 +372,27 @@
             "typeYourMessage": "Type your message...",
             "send": "Send"
         },
+        "notificationsPopover": {
+            "title": "Notifications",
+            "unreadCount": "You have {{count}} unread notification",
+            "unreadCountPlural": "You have {{count}} unread notifications",
+            "noNotifications": "No notifications.",
+            "loadingNotifications": "Loading notifications...",
+            "loadMore": "Load more",
+            "justNow": "Just now",
+            "minAgo": "{{count}} min ago",
+            "hourAgo": "{{count}} hour ago",
+            "hoursAgo": "{{count}} hours ago",
+            "dayAgo": "{{count}} day ago",
+            "daysAgo": "{{count}} days ago",
+            "customer": "Customer",
+            "class": "Class",
+            "timeTbd": "Time TBD",
+            "actionBooked": "booked",
+            "actionCancelled": "cancelled",
+            "actionPaidFor": "paid for",
+            "actionUpdated": "updated"
+        },
         "onboarding": {
             "title": "Complete Your Business Profile",
             "subtitle": "Let's set up your business to get started",

@@ -121,7 +121,7 @@ export function CalendarPage({ startDate, classInstances, user, loading }: Calen
                     {t('routes.calendar.newClass')}
                 </Button>
             </div>
-            <div className='w-full h-full relative'>
+            <div className='w-full relative'>
                 {loading && (
                     <div className='absolute inset-0 backdrop-blur-xs z-10 flex items-center justify-center' />
                 )}
@@ -133,7 +133,7 @@ export function CalendarPage({ startDate, classInstances, user, loading }: Calen
                     plugins={[timeGridPlugin, interactionPlugin]}
                     locales={[elLocale, enGbLocale, ltLocale]}
                     locale={getLocale(i18n.language)}
-                    height="100%"
+                    contentHeight="auto"
                     expandRows={true}
                     allDaySlot={false}
                     initialDate={startDate}

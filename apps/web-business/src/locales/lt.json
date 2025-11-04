@@ -397,6 +397,27 @@
       "typeYourMessage": "Įveskite savo žinutę...",
       "send": "Siųsti"
     },
+    "notificationsPopover": {
+      "title": "Pranešimai",
+      "unreadCount": "Turite {{count}} neperskaitytą pranešimą",
+      "unreadCountPlural": "Turite {{count}} neperskaitytus pranešimus",
+      "noNotifications": "Nėra pranešimų.",
+      "loadingNotifications": "Kraunami pranešimai...",
+      "loadMore": "Įkelti daugiau",
+      "justNow": "Ką tik",
+      "minAgo": "Prieš {{count}} min.",
+      "hourAgo": "Prieš {{count}} val.",
+      "hoursAgo": "Prieš {{count}} val.",
+      "dayAgo": "Prieš {{count}} dieną",
+      "daysAgo": "Prieš {{count}} dienas",
+      "customer": "Klientas",
+      "class": "Pamoka",
+      "timeTbd": "Laikas nustatytinas",
+      "actionBooked": "užsisakė",
+      "actionCancelled": "atšaukė",
+      "actionPaidFor": "sumokėjo už",
+      "actionUpdated": "atnaujinta"
+    },
     "onboarding": {
       "title": "Užbaikite Savo Verslo Profilį",
       "subtitle": "Nustatykime jūsų verslą, kad galėtumėte pradėti",

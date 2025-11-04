@@ -7,8 +7,10 @@ import { useBusinessNotifications, useUnreadBusinessNotifications } from "@/feat
 import { api } from "@repo/api/convex/_generated/api"
 import { useMutation } from "convex/react"
 import { useState } from "react"
+import { useTypedTranslation } from "@/lib/typed"
 
 export function NotificationsPopover() {
+    const { t } = useTypedTranslation();
     const [isOpen, setIsOpen] = useState(false)
 
     // Get unread notifications for the bell badge count
@@ -34,15 +36,15 @@ export function NotificationsPopover() {
         const getActionFromType = (type: string) => {
             switch (type) {
                 case "booking_created":
-                    return "booked"
+                    return t('routes.notificationsPopover.actionBooked')
                 case "booking_cancelled_by_consumer":
-                    return "cancelled"
+                    return t('routes.notificationsPopover.actionCancelled')
                 case "booking_cancelled_by_business":
-                    return "cancelled"
+                    return t('routes.notificationsPopover.actionCancelled')
                 case "payment_received":
-                    return "paid for"
+                    return t('routes.notificationsPopover.actionPaidFor')
                 default:
-                    return "updated"
+                    return t('routes.notificationsPopover.actionUpdated')
             }
         }
 
@@ -53,18 +55,24 @@ export function NotificationsPopover() {
             const hours = Math.floor(diff / (1000 * 60 * 60))
             const days = Math.floor(diff / (1000 * 60 * 60 * 24))
 
-            if (minutes < 1) return "Just now"
-            if (minutes < 60) return `${minutes} min ago`
-            if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`
-            return `${days} day${days > 1 ? 's' : ''} ago`
+            if (minutes < 1) return t('routes.notificationsPopover.justNow')
+            if (minutes < 60) return t('routes.notificationsPopover.minAgo', { count: minutes })
+            if (hours < 24) {
+                return hours === 1
+                    ? t('routes.notificationsPopover.hourAgo', { count: hours })
+                    : t('routes.notificationsPopover.hoursAgo', { count: hours })
+            }
+            return days === 1
+                ? t('routes.notificationsPopover.dayAgo', { count: days })
+                : t('routes.notificationsPopover.daysAgo', { count: days })
         }
 
         return {
             id: notification._id,
-            customerName: notification.metadata?.userName || "Customer",
+            customerName: notification.metadata?.userName || t('routes.notificationsPopover.customer'),
             action: getActionFromType(notification.type),
-            className: notification.metadata?.className || "Class",
-            classTime: "Time TBD", // Could be enhanced with class instance data
+            className: notification.metadata?.className || t('routes.notificationsPopover.class'),
+            classTime: t('routes.notificationsPopover.timeTbd'), // Could be enhanced with class instance data
             timestamp: getTimestamp(notification.createdAt),
             isSeen: notification.seen,
             isNotification: true,
@@ -72,6 +80,11 @@ export function NotificationsPopover() {
     }
 
     const displayActivities = notifications?.map(formatNotification) || []
+
+    // Helper to check if notification type is positive (green) or negative (red)
+    const isPositiveNotification = (notificationType: string) => {
+        return notificationType === "booking_created" || notificationType === "payment_received"
+    }
 
     return (
         <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -87,55 +100,63 @@ export function NotificationsPopover() {
             </PopoverTrigger>
             <PopoverContent className="w-80 p-0" align="end" sideOffset={8}>
                 <div className="p-4 border-b">
-                    <h3 className="font-semibold text-sm">Notifications</h3>
+                    <h3 className="font-semibold text-sm">{t('routes.notificationsPopover.title')}</h3>
                     {unreadCount > 0 && (
                         <p className="text-xs text-muted-foreground">
-                            You have {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+                            {unreadCount === 1
+                                ? t('routes.notificationsPopover.unreadCount', { count: unreadCount })
+                                : t('routes.notificationsPopover.unreadCountPlural', { count: unreadCount })
+                            }
                         </p>
                     )}
                 </div>
                 <ScrollArea className="h-80">
                     <div className="p-0">
                         {displayActivities.length > 0 ? (
-                            displayActivities.map((activity) => (
-                                <div
-                                    key={activity.id}
-                                    className={cn(
-                                        "p-3 flex items-start gap-3 border-b border-muted cursor-pointer transition-colors hover:bg-muted/50",
-                                        !activity.isSeen && "bg-blue-50/50"
-                                    )}
-                                    onClick={() => {
-                                        if ('isNotification' in activity && activity.isNotification) {
-                                            markAsSeen(activity.id)
-                                        }
-                                    }}
-                                >
+                            displayActivities.map((activity, index) => {
+                                const originalNotification = notifications?.[index]
+                                const isPositive = originalNotification ? isPositiveNotification(originalNotification.type) : false
+
+                                return (
                                     <div
+                                        key={activity.id}
                                         className={cn(
-                                            "flex-shrink-0 w-2 h-2 rounded-full mt-1.5",
-                                            activity.action === "booked" || activity.action === "paid for"
-                                                ? "bg-green-500"
-                                                : "bg-red-500"
+                                            "p-3 flex items-start gap-3 border-b border-muted cursor-pointer transition-colors hover:bg-muted/50",
+                                            !activity.isSeen && "bg-blue-50/50"
                                         )}
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium leading-tight">
-                                            <span className="font-bold">{activity.customerName}</span> {activity.action}{" "}
-                                            <span className="font-semibold">{activity.className}</span>
-                                            {activity.classTime !== "Time TBD" && ` - ${activity.classTime}`}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground mt-1">{activity.timestamp}</p>
+                                        onClick={() => {
+                                            if ('isNotification' in activity && activity.isNotification) {
+                                                markAsSeen(activity.id)
+                                            }
+                                        }}
+                                    >
+                                        <div
+                                            className={cn(
+                                                "flex-shrink-0 w-2 h-2 rounded-full mt-1.5",
+                                                isPositive
+                                                    ? "bg-green-500"
+                                                    : "bg-red-500"
+                                            )}
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium leading-tight">
+                                                <span className="font-bold">{activity.customerName}</span> {activity.action}{" "}
+                                                <span className="font-semibold">{activity.className}</span>
+                                                {activity.classTime !== t('routes.notificationsPopover.timeTbd') && ` - ${activity.classTime}`}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground mt-1">{activity.timestamp}</p>
+                                        </div>
+                                        {!activity.isSeen && (
+                                            <div className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-1.5" />
+                                        )}
                                     </div>
-                                    {!activity.isSeen && (
-                                        <div className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-1.5" />
-                                    )}
-                                </div>
-                            ))
+                                )
+                            })
                         ) : (
                             <div className="text-center py-8">
-                                <p className="text-muted-foreground italic text-sm">No notifications.</p>
+                                <p className="text-muted-foreground italic text-sm">{t('routes.notificationsPopover.noNotifications')}</p>
                                 {status === "LoadingFirstPage" && (
-                                    <p className="text-xs text-muted-foreground mt-2">Loading notifications...</p>
+                                    <p className="text-xs text-muted-foreground mt-2">{t('routes.notificationsPopover.loadingNotifications')}</p>
                                 )}
                             </div>
                         )}
@@ -147,7 +168,7 @@ export function NotificationsPopover() {
                                     onClick={() => loadMore(10)}
                                     disabled={status !== 'CanLoadMore'}
                                 >
-                                    Load more
+                                    {t('routes.notificationsPopover.loadMore')}
                                 </Button>
                             </div>
                         )}

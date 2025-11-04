@@ -556,7 +556,6 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                                         <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                                                     </FormControl>
                                                     <FormLabel className="flex items-center gap-2">
-                                                        <Settings className="h-4 w-4" />
                                                         {t('routes.templates.bookingWindow')}
                                                     </FormLabel>
                                                 </FormItem>
