@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { StyleSheet, Text, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,6 +9,7 @@ import { SettingsGroup, SettingsRow } from '../../components/Settings';
 import { Clock, Calendar, CreditCard } from 'lucide-react-native';
 import { StackScreenHeader } from '../../components/StackScreenHeader';
 import { LucideIcon } from 'lucide-react-native';
+import { useTypedTranslation } from '../../i18n/typed';
 
 type ConsumerNotificationType = 'booking_confirmation' | 'booking_reminder' | 'class_cancelled' | 'booking_cancelled_by_business' | 'payment_receipt' | 'class_rebookable' | 'credits_received_subscription';
 
@@ -32,35 +33,36 @@ const defaultPreferences: Record<ConsumerNotificationType, NotificationChannels>
     credits_received_subscription: { email: true, web: true, push: true },
 };
 
-// Grouped notification types with their underlying notification keys
-const notificationGroups: NotificationGroup[] = [
-    {
-        id: 'class_reminders',
-        title: 'Class Reminders',
-        description: 'Get a notification 1 hour before your class starts.',
-        icon: Clock,
-        notificationKeys: ['booking_reminder'] as const
-    },
-    {
-        id: 'bookings_changes',
-        title: 'Bookings & Changes',
-        description: 'Notifications about booking cancellations, changes and rebookable classes.',
-        icon: Calendar,
-        notificationKeys: ['class_cancelled', 'booking_cancelled_by_business', 'class_rebookable'] as const
-    },
-    {
-        id: 'subscriptions',
-        title: 'Subscriptions & Credits',
-        description: 'Payment receipts, subscription updates, and credit notifications.',
-        icon: CreditCard,
-        notificationKeys: ['payment_receipt', 'credits_received_subscription'] as const
-    }
-];
-
 export function SettingsNotificationsScreen() {
     const navigation = useNavigation();
     const { settings, loading } = useUserSettings();
+    const { t } = useTypedTranslation();
     const [preferences, setPreferences] = useState<Record<ConsumerNotificationType, NotificationChannels>>(defaultPreferences);
+
+    // Grouped notification types with their underlying notification keys
+    const notificationGroups = useMemo<NotificationGroup[]>(() => [
+        {
+            id: 'class_reminders',
+            title: t('settings.notifications.groups.classReminders.title'),
+            description: t('settings.notifications.groups.classReminders.description'),
+            icon: Clock,
+            notificationKeys: ['booking_reminder'] as const
+        },
+        {
+            id: 'bookings_changes',
+            title: t('settings.notifications.groups.bookingsChanges.title'),
+            description: t('settings.notifications.groups.bookingsChanges.description'),
+            icon: Calendar,
+            notificationKeys: ['class_cancelled', 'booking_cancelled_by_business', 'class_rebookable'] as const
+        },
+        {
+            id: 'subscriptions',
+            title: t('settings.notifications.groups.subscriptions.title'),
+            description: t('settings.notifications.groups.subscriptions.description'),
+            icon: CreditCard,
+            notificationKeys: ['payment_receipt', 'credits_received_subscription'] as const
+        }
+    ], [t]);
 
     // Update local state when settings are loaded
     useEffect(() => {
@@ -89,19 +91,21 @@ export function SettingsNotificationsScreen() {
     const getGroupDescription = (group: typeof notificationGroups[0]) => {
         const status = getGroupStatus(group);
 
-        if (status === 'none') return 'Disabled';
-        if (status === 'all') return 'Enabled for all channels';
+        if (status === 'none') return t('settings.notifications.status.disabled');
+        if (status === 'all') return t('settings.notifications.status.enabledAllChannels');
 
         // For mixed status, show which channels are enabled across all notifications in the group
         const enabledChannels = new Set<string>();
         group.notificationKeys.forEach(key => {
             const pref = preferences[key];
-            if (pref.push) enabledChannels.add('Push');
-            if (pref.email) enabledChannels.add('Email');
-            if (pref.web) enabledChannels.add('In-app');
+            if (pref.push) enabledChannels.add(t('settings.notifications.channels.push'));
+            if (pref.email) enabledChannels.add(t('settings.notifications.channels.email'));
+            if (pref.web) enabledChannels.add(t('settings.notifications.channels.inApp'));
         });
 
-        return enabledChannels.size > 0 ? `via ${Array.from(enabledChannels).join(', ')}` : 'Disabled';
+        return enabledChannels.size > 0
+            ? `${t('settings.notifications.status.via')} ${Array.from(enabledChannels).join(', ')}`
+            : t('settings.notifications.status.disabled');
     };
 
     // Handle navigation to preference screen for the group
@@ -123,14 +127,14 @@ export function SettingsNotificationsScreen() {
         return (
             <SafeAreaView style={styles.container}>
                 <StackScreenHeader />
-                <Text style={styles.loadingText}>Loading notification preferences...</Text>
+                <Text style={styles.loadingText}>{t('settings.notifications.loadingPreferences')}</Text>
             </SafeAreaView>
         );
     }
 
     return (
         <SafeAreaView style={styles.container}>
-            <StackScreenHeader title="Notifications" />
+            <StackScreenHeader title={t('settings.notifications.title')} />
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
@@ -139,7 +143,7 @@ export function SettingsNotificationsScreen() {
                 {/* Header Section */}
                 <View style={styles.headerSection}>
                     <Text style={styles.screenSubtitle}>
-                        Choose what notifications you'd like to receive
+                        {t('settings.notifications.chooseNotifications')}
                     </Text>
                 </View>
 

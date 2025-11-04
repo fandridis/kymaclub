@@ -149,7 +149,49 @@
             "notificationsSubtitle": "Push notifications, email preferences",
             "pushNotifications": "Push Notifications",
             "emailNotifications": "Email Notifications",
-            "smsNotifications": "SMS Notifications"
+            "smsNotifications": "SMS Notifications",
+            "chooseNotifications": "Choose what notifications you'd like to receive",
+            "loadingPreferences": "Loading notification preferences...",
+            "groups": {
+                "classReminders": {
+                    "title": "Class Reminders",
+                    "description": "Get a notification 1 hour before your class starts."
+                },
+                "bookingsChanges": {
+                    "title": "Bookings & Changes",
+                    "description": "Notifications about booking cancellations, changes and rebookable classes."
+                },
+                "subscriptions": {
+                    "title": "Subscriptions & Credits",
+                    "description": "Payment receipts, subscription updates, and credit notifications."
+                }
+            },
+            "status": {
+                "disabled": "Disabled",
+                "enabledAllChannels": "Enabled for all channels",
+                "via": "via"
+            },
+            "channels": {
+                "push": "Push",
+                "email": "Email",
+                "inApp": "In-app"
+            },
+            "channelLabels": {
+                "push": {
+                    "label": "Push Notifications",
+                    "description": "Notifications on your device"
+                },
+                "inApp": {
+                    "label": "In-App Notifications",
+                    "description": "Notifications within the app"
+                },
+                "email": {
+                    "label": "Email Notifications",
+                    "description": "Email notifications"
+                }
+            },
+            "globalOptOut": "All notifications are currently disabled in your global settings.",
+            "saveError": "Failed to save notification preferences"
         },
         "credits": {
             "title": "Credits",

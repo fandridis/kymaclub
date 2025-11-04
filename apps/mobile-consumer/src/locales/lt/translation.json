@@ -149,7 +149,49 @@
             "notificationsSubtitle": "Push pranešimai, el. pašto nustatymai",
             "pushNotifications": "Push Pranešimai",
             "emailNotifications": "El. pašto Pranešimai",
-            "smsNotifications": "SMS Pranešimai"
+            "smsNotifications": "SMS Pranešimai",
+            "chooseNotifications": "Pasirinkite, kokius pranešimus norite gauti",
+            "loadingPreferences": "Įkeliamos pranešimų nuostatos...",
+            "groups": {
+                "classReminders": {
+                    "title": "Pamokų Priminimai",
+                    "description": "Gaukite pranešimą 1 valandą prieš pamokos pradžią."
+                },
+                "bookingsChanges": {
+                    "title": "Rezervacijos ir Pakeitimai",
+                    "description": "Pranešimai apie rezervacijų atšaukimus, pakeitimus ir pakartotines rezervacijas."
+                },
+                "subscriptions": {
+                    "title": "Prenumeratos ir Kreditai",
+                    "description": "Mokėjimo kvitai, prenumeratų atnaujinimai ir kreditų pranešimai."
+                }
+            },
+            "status": {
+                "disabled": "Išjungta",
+                "enabledAllChannels": "Įjungta visiems kanalams",
+                "via": "per"
+            },
+            "channels": {
+                "push": "Push",
+                "email": "El. paštas",
+                "inApp": "Programėlėje"
+            },
+            "channelLabels": {
+                "push": {
+                    "label": "Push Pranešimai",
+                    "description": "Pranešimai jūsų įrenginyje"
+                },
+                "inApp": {
+                    "label": "Pranešimai Programėlėje",
+                    "description": "Pranešimai programėlėje"
+                },
+                "email": {
+                    "label": "El. pašto Pranešimai",
+                    "description": "El. pašto pranešimai"
+                }
+            },
+            "globalOptOut": "Visi pranešimai šiuo metu išjungti jūsų bendruose nustatymuose.",
+            "saveError": "Nepavyko išsaugoti pranešimų nuostatų"
         },
         "credits": {
             "title": "Kreditai",

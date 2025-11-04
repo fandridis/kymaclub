@@ -149,7 +149,49 @@
             "notificationsSubtitle": "Push ειδοποιήσεις, προτιμήσεις email",
             "pushNotifications": "Ειδοποιήσεις Push",
             "emailNotifications": "Ειδοποιήσεις Email",
-            "smsNotifications": "Ειδοποιήσεις SMS"
+            "smsNotifications": "Ειδοποιήσεις SMS",
+            "chooseNotifications": "Επιλέξτε ποιες ειδοποιήσεις θέλετε να λαμβάνετε",
+            "loadingPreferences": "Φόρτωση προτιμήσεων ειδοποιήσεων...",
+            "groups": {
+                "classReminders": {
+                    "title": "Υπενθυμίσεις Μαθημάτων",
+                    "description": "Λάβετε μια ειδοποίηση 1 ώρα πριν ξεκινήσει το μάθημά σας."
+                },
+                "bookingsChanges": {
+                    "title": "Κρατήσεις & Αλλαγές",
+                    "description": "Ειδοποιήσεις σχετικά με ακυρώσεις κρατήσεων, αλλαγές και επανακράτηση μαθημάτων."
+                },
+                "subscriptions": {
+                    "title": "Συνδρομές & Credits",
+                    "description": "Αποδείξεις πληρωμών, ενημερώσεις συνδρομών και ειδοποιήσεις credits."
+                }
+            },
+            "status": {
+                "disabled": "Απενεργοποιημένο",
+                "enabledAllChannels": "Ενεργοποιημένο για όλα τα κανάλια",
+                "via": "μέσω"
+            },
+            "channels": {
+                "push": "Push",
+                "email": "Email",
+                "inApp": "Εντός εφαρμογής"
+            },
+            "channelLabels": {
+                "push": {
+                    "label": "Ειδοποιήσεις Push",
+                    "description": "Ειδοποιήσεις στη συσκευή σας"
+                },
+                "inApp": {
+                    "label": "Ειδοποιήσεις Εντός Εφαρμογής",
+                    "description": "Ειδοποιήσεις εντός της εφαρμογής"
+                },
+                "email": {
+                    "label": "Ειδοποιήσεις Email",
+                    "description": "Ειδοποιήσεις email"
+                }
+            },
+            "globalOptOut": "Όλες οι ειδοποιήσεις είναι προς το παρόν απενεργοποιημένες στις γενικές ρυθμίσεις σας.",
+            "saveError": "Αποτυχία αποθήκευσης προτιμήσεων ειδοποιήσεων"
         },
         "credits": {
             "title": "Credits",

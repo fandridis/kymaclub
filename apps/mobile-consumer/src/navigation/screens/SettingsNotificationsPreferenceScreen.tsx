@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Alert, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -7,6 +7,7 @@ import { useRoute, RouteProp } from '@react-navigation/native';
 import { SettingsGroup, SettingsRow } from '../../components/Settings';
 import { StackScreenHeader } from '../../components/StackScreenHeader';
 import { theme } from '../../theme';
+import { useTypedTranslation } from '../../i18n/typed';
 
 const defaultPreferences = {
     booking_confirmation: { email: false, web: false, push: false },
@@ -36,6 +37,7 @@ export function SettingsNotificationsPreferenceScreen() {
     const route = useRoute<SettingsNotificationsPreferenceScreenRouteProp>();
     const { notificationType } = route.params;
     const { settings, updateSettings } = useUserSettings();
+    const { t } = useTypedTranslation();
     const [channels, setChannels] = useState<NotificationChannels>({ email: false, web: false, push: false });
     const [globalOptOut, setGlobalOptOut] = useState(false);
 
@@ -73,18 +75,29 @@ export function SettingsNotificationsPreferenceScreen() {
             });
         } catch (error) {
             console.error('Failed to save notification preferences:', error);
-            Alert.alert('Error', 'Failed to save notification preferences');
+            Alert.alert(t('common.error'), t('settings.notifications.saveError'));
             // Revert the change on error
             setChannels(channels);
         }
     };
 
-
-    const channelLabels = [
-        { key: 'push' as const, label: 'Push Notifications', description: 'Notifications on your device' },
-        { key: 'web' as const, label: 'In-App Notifications', description: 'Notifications within the app' },
-        { key: 'email' as const, label: 'Email Notifications', description: 'Email notifications' }
-    ];
+    const channelLabels = useMemo(() => [
+        {
+            key: 'push' as const,
+            label: t('settings.notifications.channelLabels.push.label'),
+            description: t('settings.notifications.channelLabels.push.description')
+        },
+        {
+            key: 'web' as const,
+            label: t('settings.notifications.channelLabels.inApp.label'),
+            description: t('settings.notifications.channelLabels.inApp.description')
+        },
+        {
+            key: 'email' as const,
+            label: t('settings.notifications.channelLabels.email.label'),
+            description: t('settings.notifications.channelLabels.email.description')
+        }
+    ], [t]);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -112,7 +125,7 @@ export function SettingsNotificationsPreferenceScreen() {
 
                 {globalOptOut && (
                     <Text style={styles.disabledNote}>
-                        All notifications are currently disabled in your global settings.
+                        {t('settings.notifications.globalOptOut')}
                     </Text>
                 )}
             </View>
