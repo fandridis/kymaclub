@@ -16,6 +16,7 @@ import type { Doc } from '@repo/api/convex/_generated/dataModel';
 import { CreditsBadge } from '../../components/CreditsBadge';
 import { useQuery } from 'convex/react';
 import { ProfileIconButton } from '../../components/ProfileIconButton';
+import { useTypedTranslation } from '../../i18n/typed';
 
 const INITIAL_BOOKINGS_COUNT = 100;
 const LOAD_MORE_COUNT = 50;
@@ -108,15 +109,16 @@ const buildSections = (bookings: Doc<'bookings'>[], tabType: BookingTabType): Bo
 export function BookingsScreen() {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const user = useAuthenticatedUser();
+    const { t } = useTypedTranslation();
 
     const [activeTab, setActiveTab] = useState<BookingTabType>('upcoming');
 
     const tabItems = useMemo<AppTabItem<BookingTabType>[]>(
         () => [
-            { key: 'upcoming', label: 'Upcoming' },
-            { key: 'history', label: 'History' },
+            { key: 'upcoming', label: t('bookings.upcoming') },
+            { key: 'history', label: t('bookings.history') },
         ],
-        []
+        [t]
     );
 
     const {
@@ -184,8 +186,8 @@ export function BookingsScreen() {
     if (!user) {
         return (
             <SafeAreaView style={styles.container}>
-                <TabScreenHeader 
-                    title="Bookings" 
+                <TabScreenHeader
+                    title="Bookings"
                     renderRightSide={() => (
                         <>
                             {creditBalance !== undefined && (
@@ -195,15 +197,15 @@ export function BookingsScreen() {
                         </>
                     )}
                 />
-                <Text style={styles.emptyText}>Please sign in to view your bookings</Text>
+                <Text style={styles.emptyText}>{t('bookings.signInToView')}</Text>
             </SafeAreaView>
         );
     }
 
     return (
         <SafeAreaView style={styles.container}>
-            <TabScreenHeader 
-                title="My Bookings" 
+            <TabScreenHeader
+                title={t('bookings.myBookings')}
                 renderRightSide={() => (
                     <>
                         {creditBalance !== undefined && (
@@ -223,17 +225,17 @@ export function BookingsScreen() {
             {isInitialLoading ? (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={theme.colors.emerald[500]} />
-                    <Text style={styles.loadingText}>Loading your bookings…</Text>
+                    <Text style={styles.loadingText}>{t('bookings.loadingBookings')}</Text>
                 </View>
             ) : !hasBookingsForCurrentTab ? (
                 <View style={styles.emptyContainer}>
                     <Text style={styles.emptyTitle}>
-                        {activeTab === 'upcoming' && 'No upcoming bookings'}
-                        {activeTab === 'history' && 'No booking history'}
+                        {activeTab === 'upcoming' && t('bookings.noUpcomingBookings')}
+                        {activeTab === 'history' && t('bookings.noBookingHistory')}
                     </Text>
                     <Text style={styles.emptyText}>
-                        {activeTab === 'upcoming' && "When you book classes, they'll appear here. Explore classes to get started!"}
-                        {activeTab === 'history' && 'Your past bookings will appear here once you attend classes.'}
+                        {activeTab === 'upcoming' && t('bookings.whenYouBookClasses')}
+                        {activeTab === 'history' && t('bookings.pastBookingsWillAppear')}
                     </Text>
                 </View>
             ) : (
@@ -255,7 +257,7 @@ export function BookingsScreen() {
                             {isLoading ? (
                                 <ActivityIndicator size="small" color={theme.colors.emerald[500]} />
                             ) : (
-                                <Text style={styles.loadMoreText}>Load more bookings</Text>
+                                <Text style={styles.loadMoreText}>{t('bookings.loadMore')}</Text>
                             )}
                         </TouchableOpacity>
                     )}

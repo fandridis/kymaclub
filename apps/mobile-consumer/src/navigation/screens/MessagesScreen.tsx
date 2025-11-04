@@ -20,6 +20,7 @@ import ReAnimated, {
   withSpring
 } from 'react-native-reanimated';
 import { runOnJS } from 'react-native-worklets';
+import { useTypedTranslation } from '../../i18n/typed';
 
 // Utility function to format timestamp
 function formatMessageTime(timestamp: number): string {
@@ -229,6 +230,7 @@ export function MessagesScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [deletingThreadId, setDeletingThreadId] = useState<string | null>(null);
   const user = useAuthenticatedUser();
+  const { t } = useTypedTranslation();
 
   // Fetch message threads
   const messageThreads = useQuery(api.queries.chat.getUserMessageThreads, {
@@ -255,15 +257,15 @@ export function MessagesScreen() {
 
   const handleDeleteThread = (thread: Doc<"chatMessageThreads">) => {
     Alert.alert(
-      'Delete Conversation',
-      `Are you sure you want to delete your conversation with ${thread.venueSnapshot.name}? This action cannot be undone.`,
+      t('messages.deleteConversation'),
+      t('messages.deleteConversationConfirm', { venueName: thread.venueSnapshot.name }),
       [
         {
-          text: 'Cancel',
+          text: t('common.cancel'),
           style: 'cancel',
         },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -271,7 +273,7 @@ export function MessagesScreen() {
               await deleteThreadMutation({ threadId: thread._id });
             } catch (error) {
               console.error('Failed to delete thread:', error);
-              Alert.alert('Error', 'Failed to delete conversation. Please try again.');
+              Alert.alert(t('common.error'), t('messages.deleteFailed'));
             } finally {
               setDeletingThreadId(null);
             }
@@ -298,7 +300,7 @@ export function MessagesScreen() {
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.emerald[500]} />
-          <Text style={styles.loadingText}>Loading messages...</Text>
+          <Text style={styles.loadingText}>{t('messages.loadingMessages')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -341,9 +343,9 @@ export function MessagesScreen() {
               <View style={styles.emptyIcon}>
                 <MessageCircleIcon size={48} color={theme.colors.zinc[400]} />
               </View>
-              <Text style={styles.emptyTitle}>No messages yet</Text>
+              <Text style={styles.emptyTitle}>{t('messages.noMessagesYet')}</Text>
               <Text style={styles.emptySubtitle}>
-                Messages from venues will appear here
+                {t('messages.messagesFromVenues')}
               </Text>
             </View>
           )}

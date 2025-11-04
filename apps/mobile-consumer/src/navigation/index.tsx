@@ -102,7 +102,7 @@ function HomeTabs() {
           component={NewsScreen}
           options={{
             title: t('navigation.home'),
-            tabBarLabel: 'Home',
+            tabBarLabel: t('navigation.home'),
             tabBarIcon: ({ color }) => (
               <NewspaperIcon color={color} size={26} />
             ),
@@ -113,7 +113,7 @@ function HomeTabs() {
           component={ExploreScreen}
           options={{
             title: t('navigation.explore'),
-            tabBarLabel: 'Explore',
+            tabBarLabel: t('navigation.explore'),
             tabBarIcon: ({ color }) => (
               <SearchIcon color={color} size={26} />
             ),
@@ -124,7 +124,7 @@ function HomeTabs() {
           component={BookingsScreen}
           options={{
             title: t('navigation.bookings'),
-            tabBarLabel: 'Bookings',
+            tabBarLabel: t('navigation.bookings'),
             tabBarIcon: ({ color }) => (
               <TicketIcon color={color} size={26} />
             ),
@@ -135,8 +135,8 @@ function HomeTabs() {
           name="Messages"
           component={MessagesScreen}
           options={{
-            title: 'Messages',
-            tabBarLabel: 'Messages',
+            title: t('navigation.messages'),
+            tabBarLabel: t('navigation.messages'),
             tabBarIcon: ({ color }) => (
               <MessageCircleIcon color={color} size={26} />
             ),

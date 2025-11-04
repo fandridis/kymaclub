@@ -306,7 +306,7 @@ export function ClassDetailsModalScreen() {
         if (!finalClassInstance) return;
 
         const finalPrice = discountResult.appliedDiscount ? discountResult.finalPrice : priceCredits;
-        const options = [`Spend ${finalPrice} credits`, 'Cancel'];
+        const options = [t('classes.spendCredits', { credits: finalPrice }), t('common.cancel')];
         const cancelButtonIndex = 1;
 
         showActionSheetWithOptions({
@@ -318,9 +318,9 @@ export function ClassDetailsModalScreen() {
             switch (selectedIndex) {
                 case 0: {
                     if (!user) {
-                        Alert.alert('Sign In Required', 'Please sign in to book classes.', [
-                            { text: 'Cancel', style: 'cancel' },
-                            { text: 'Sign In', onPress: () => navigation.navigate('SignInModal') }
+                        Alert.alert(t('classes.signInRequired'), t('classes.signInRequiredMessage'), [
+                            { text: t('common.cancel'), style: 'cancel' },
+                            { text: t('classes.signIn'), onPress: () => navigation.navigate('SignInModal') }
                         ]);
                         return;
                     }
@@ -331,13 +331,13 @@ export function ClassDetailsModalScreen() {
                             classInstanceId: finalClassInstance._id,
                             description: `Booking for ${className}`,
                         });
-                        Alert.alert('Booked', 'Your class has been booked successfully.');
+                        Alert.alert(t('classes.booked'), t('classes.bookedSuccess'));
                     } catch (err: any) {
                         const message =
                             (err?.data && (err.data.message || err.data.code)) ||
                             err?.message ||
-                            'Failed to book class. Please try again.';
-                        Alert.alert('Booking failed', String(message));
+                            t('classes.bookingFailedMessage');
+                        Alert.alert(t('classes.bookingFailed'), String(message));
                     } finally {
                         setIsBooking(false);
                     }
@@ -362,7 +362,7 @@ export function ClassDetailsModalScreen() {
 
         const classLabel = existingBooking.classInstanceSnapshot?.name ?? 'this class';
 
-        let message = 'This action cannot be undone. You may not get a full refund depending on the cancellation policy.';
+        let message = t('classes.cancelBookingMessage');
 
         if (
             existingBooking.classInstanceSnapshot?.startTime &&
@@ -378,13 +378,13 @@ export function ClassDetailsModalScreen() {
             message = getCancellationMessage(classLabel, cancellationInfo);
         }
 
-        const options = ['Cancel booking', 'Keep booking'];
+        const options = [t('classes.cancelBooking'), t('classes.keepBooking')];
         const destructiveButtonIndex = 0;
         const cancelButtonIndex = 1;
 
         showActionSheetWithOptions(
             {
-                title: `Cancel "${classLabel}"?`,
+                title: t('classes.cancelBookingTitle', { className: classLabel }),
                 message,
                 options,
                 destructiveButtonIndex,
@@ -404,16 +404,16 @@ export function ClassDetailsModalScreen() {
                     });
 
                     Alert.alert(
-                        'Booking cancelled',
-                        'Your booking has been cancelled. Any applicable refund will follow the cancellation policy.'
+                        t('classes.bookingCancelled'),
+                        t('classes.bookingCancelledMessage')
                     );
                 } catch (error: any) {
                     const errorMessage =
                         error?.data?.message ||
                         error?.message ||
-                        'Failed to cancel booking. Please try again later.';
+                        t('classes.cancellationFailedMessage');
 
-                    Alert.alert('Cancellation failed', errorMessage);
+                    Alert.alert(t('classes.cancellationFailed'), errorMessage);
                 } finally {
                     setIsCancelling(false);
                 }
@@ -464,7 +464,7 @@ export function ClassDetailsModalScreen() {
                 </View>
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#ff4747" />
-                    <Text style={styles.loadingText}>No class information provided</Text>
+                    <Text style={styles.loadingText}>{t('classes.noClassInfo')}</Text>
                 </View>
             </View>
         );
@@ -486,7 +486,7 @@ export function ClassDetailsModalScreen() {
                 </View>
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#ff4747" />
-                    <Text style={styles.loadingText}>Loading class details...</Text>
+                    <Text style={styles.loadingText}>{t('classes.loadingClassDetails')}</Text>
                 </View>
             </View>
         );
@@ -548,7 +548,7 @@ export function ClassDetailsModalScreen() {
             {isLoading ? (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#ff4747" />
-                    <Text style={styles.loadingText}>Loading class details...</Text>
+                    <Text style={styles.loadingText}>{t('classes.loadingClassDetails')}</Text>
                 </View>
             ) : (
                 <>
@@ -607,7 +607,7 @@ export function ClassDetailsModalScreen() {
                         <View style={styles.classInfoSection}>
                             <View style={styles.priceInfoSection}>
                                 <View style={styles.priceContainer}>
-                                    <Text style={styles.priceLabel}>Price</Text>
+                                    <Text style={styles.priceLabel}>{t('classes.price')}</Text>
                                     {discountResult.appliedDiscount ? (
                                         <View style={styles.priceComparisonRow}>
                                             <Text style={styles.originalPriceModal}>
@@ -616,16 +616,16 @@ export function ClassDetailsModalScreen() {
                                             <Text style={styles.discountedPriceModal}>
                                                 {discountResult.finalPrice}
                                             </Text>
-                                            <Text style={styles.creditsText}>credits</Text>
+                                            <Text style={styles.creditsText}>{t('classes.credits')}</Text>
                                         </View>
                                     ) : (
-                                        <Text style={styles.priceValue}>{priceCredits} credits</Text>
+                                        <Text style={styles.priceValue}>{priceCredits} {t('classes.credits')}</Text>
                                     )}
                                 </View>
                                 <View style={styles.spotsContainer}>
-                                    <Text style={styles.spotsLabel}>Available spots</Text>
+                                    <Text style={styles.spotsLabel}>{t('classes.availableSpots')}</Text>
                                     <Text style={styles.spotsValue}>
-                                        {spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left
+                                        {t('classes.spotsLeft', { count: spotsLeft })}
                                     </Text>
                                 </View>
                             </View>
@@ -637,7 +637,7 @@ export function ClassDetailsModalScreen() {
 
                             {/* Class Description - Centered, Three Lines */}
                             <Text style={styles.classDescription} numberOfLines={3}>
-                                {description || `Join ${instructor} for an amazing class at ${businessName}`}
+                                {description || t('classes.joinClassDescription', { instructor, businessName })}
                             </Text>
                         </View>
 
@@ -689,18 +689,18 @@ export function ClassDetailsModalScreen() {
                             <View style={styles.detailsList}>
                                 <View style={styles.detailItem}>
                                     <Calendar1Icon style={styles.calendarIcon} size={26} />
-                                    <Text style={styles.detailText}>Date: {whenStr}</Text>
+                                    <Text style={styles.detailText}>{t('classes.date')}: {whenStr}</Text>
                                 </View>
 
                                 <View style={styles.detailItem}>
                                     <ClockIcon style={styles.clockIcon} size={26} />
-                                    <Text style={styles.detailText}>Duration: {duration} minutes</Text>
+                                    <Text style={styles.detailText}>{t('classes.durationMinutes', { minutes: duration })}</Text>
                                 </View>
 
                                 {cancelUntilStr && (
                                     <View style={styles.detailItem}>
                                         <CalendarOffIcon style={styles.calendarOffIcon} size={26} />
-                                        <Text style={styles.detailText}>Cancel until: {cancelUntilStr}</Text>
+                                        <Text style={styles.detailText}>{t('classes.cancelUntil', { time: cancelUntilStr })}</Text>
                                     </View>
                                 )}
                             </View>
@@ -715,7 +715,7 @@ export function ClassDetailsModalScreen() {
                             <View style={styles.detailsSection}>
                                 {description && (
                                     <View style={styles.descriptionContainer}>
-                                        <Text style={styles.sectionTitle}>About this class</Text>
+                                        <Text style={styles.sectionTitle}>{t('classes.about')}</Text>
                                         <Text style={styles.descriptionText}>{description}</Text>
                                     </View>
                                 )}
@@ -723,7 +723,7 @@ export function ClassDetailsModalScreen() {
                                 {/* Amenities */}
                                 {venue?.amenities && Object.entries(venue.amenities).some(([_, enabled]) => enabled) && (
                                     <View style={styles.amenitiesContainer}>
-                                        <Text style={styles.sectionTitle}>Amenities</Text>
+                                        <Text style={styles.sectionTitle}>{t('classes.amenities')}</Text>
                                         <View style={styles.tagContainer}>
                                             {Object.entries(venue.amenities)
                                                 .filter(([_, enabled]) => enabled)
@@ -742,18 +742,18 @@ export function ClassDetailsModalScreen() {
                             {/* Booking History Section */}
                             {bookingHistory && bookingHistory.length > 1 && (
                                 <View style={styles.bookingHistorySection}>
-                                    <Text style={styles.sectionTitle}>Booking History</Text>
+                                    <Text style={styles.sectionTitle}>{t('classes.bookingHistory')}</Text>
                                     <View style={styles.bookingHistoryList}>
                                         {bookingHistory.map((booking, index) => (
                                             <View key={booking._id} style={styles.bookingHistoryItem}>
                                                 <View style={styles.bookingHistoryLeft}>
                                                     <Text style={styles.bookingHistoryStatus}>
-                                                        {booking.status === "pending" && "✓ Current Booking"}
-                                                        {booking.status === "completed" && "✓ Completed"}
-                                                        {booking.status === "cancelled_by_consumer" && "✗ You cancelled"}
-                                                        {booking.status === "cancelled_by_business" && "✗ Cancelled by studio"}
-                                                        {booking.status === "cancelled_by_business_rebookable" && "✗ Cancelled by studio"}
-                                                        {booking.status === "no_show" && "⚠ No show"}
+                                                        {booking.status === "pending" && t('classes.currentBooking')}
+                                                        {booking.status === "completed" && t('classes.completed')}
+                                                        {booking.status === "cancelled_by_consumer" && t('classes.youCancelled')}
+                                                        {booking.status === "cancelled_by_business" && t('classes.cancelledByStudio')}
+                                                        {booking.status === "cancelled_by_business_rebookable" && t('classes.cancelledByStudio')}
+                                                        {booking.status === "no_show" && t('classes.noShow')}
                                                     </Text>
                                                     <Text style={styles.bookingHistoryDate}>
                                                         {format(new Date(booking.createdAt), 'MMM d, yyyy \'at\' h:mm a', {
@@ -790,7 +790,7 @@ export function ClassDetailsModalScreen() {
                                     <View style={styles.attendingTitleContainer}>
                                         <CheckCircleIcon size={22} color={theme.colors.emerald[600]} />
                                         <Text style={styles.alreadyAttendingTitle}>
-                                            {existingBooking.status === "completed" ? "Checked In" : "You're Attending"}
+                                            {existingBooking.status === "completed" ? t('classes.checkedIn') : t('classes.youreAttending')}
                                         </Text>
                                     </View>
                                     <View style={styles.attendingActionsRow}>
@@ -799,7 +799,7 @@ export function ClassDetailsModalScreen() {
                                             onPress={handleViewTicket}
                                             activeOpacity={0.85}
                                         >
-                                            <Text style={styles.attendingPrimaryText}>Ticket</Text>
+                                            <Text style={styles.attendingPrimaryText}>{t('classes.ticket')}</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity
                                             style={[styles.attendingSecondaryButton, isCancelling && styles.attendingSecondaryButtonDisabled]}
@@ -808,7 +808,7 @@ export function ClassDetailsModalScreen() {
                                             disabled={isCancelling}
                                         >
                                             <Text style={styles.attendingSecondaryText}>
-                                                {isCancelling ? 'Cancelling…' : 'Cancel booking'}
+                                                {isCancelling ? t('classes.cancelling') : t('classes.cancelBooking')}
                                             </Text>
                                         </TouchableOpacity>
                                     </View>
@@ -824,11 +824,11 @@ export function ClassDetailsModalScreen() {
                                     >
                                         <BlurView intensity={20} style={[StyleSheet.absoluteFill, styles.blurContainer]} />
                                         <Text style={styles.rebookTitle}>
-                                            {existingBooking.status === "cancelled_by_consumer" && "✗ You cancelled"}
-                                            {existingBooking.status === "cancelled_by_business_rebookable" && "✗ Cancelled by studio"}
+                                            {existingBooking.status === "cancelled_by_consumer" && t('classes.youCancelled')}
+                                            {existingBooking.status === "cancelled_by_business_rebookable" && t('classes.cancelledByStudio')}
                                         </Text>
                                         <Text style={styles.rebookSubtext}>
-                                            {isBooking ? 'Rebooking...' : 'Tap to rebook this class'}
+                                            {isBooking ? t('classes.rebooking') : t('classes.tapToRebook')}
                                         </Text>
                                     </TouchableOpacity>
                                 ) : (
@@ -836,13 +836,13 @@ export function ClassDetailsModalScreen() {
                                     <View style={styles.statusContainer}>
                                         <BlurView intensity={20} style={[StyleSheet.absoluteFill, styles.blurContainer]} />
                                         <View style={styles.statusTitleContainer}>
-                                            {existingBooking.status === "cancelled_by_business" && <Text style={styles.statusTitle}>✗ Cancelled by studio</Text>}
-                                            {existingBooking.status === "no_show" && <Text style={styles.statusTitle}>⚠ No show</Text>}
+                                            {existingBooking.status === "cancelled_by_business" && <Text style={styles.statusTitle}>{t('classes.cancelledByStudio')}</Text>}
+                                            {existingBooking.status === "no_show" && <Text style={styles.statusTitle}>{t('classes.noShow')}</Text>}
                                         </View>
                                         <Text style={styles.statusSubtext}>
                                             {existingBooking.status === "no_show"
-                                                ? "You didn't show up for this class"
-                                                : "You cannot book this class again"
+                                                ? t('classes.didntShowUp')
+                                                : t('classes.cannotBookAgain')
                                             }
                                         </Text>
                                     </View>
@@ -857,7 +857,7 @@ export function ClassDetailsModalScreen() {
                             >
                                 <View style={styles.bookButtonLeft}>
                                     <Text style={[styles.bookButtonText, spotsLeft === 0 && styles.bookButtonTextDisabled]}>
-                                        {spotsLeft === 0 ? 'Fully Booked' : isBooking ? 'Booking…' : 'Book Class'}
+                                        {spotsLeft === 0 ? t('classes.fullyBooked') : isBooking ? t('classes.booking') : t('classes.bookClass')}
                                     </Text>
                                 </View>
                                 {spotsLeft > 0 && (
