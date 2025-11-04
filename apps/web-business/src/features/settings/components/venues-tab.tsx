@@ -6,9 +6,11 @@ import { DeleteVenueDialog } from '@/features/venues/components/delete-venue-dia
 import { useState } from 'react';
 import { MapPin, Plus } from 'lucide-react';
 import { VenueCard } from '@/features/venues/components/venue-card';
+import { useTypedTranslation } from '@/lib/typed';
 
 export function VenuesTab() {
     const { venues, loading } = useVenues();
+    const { t } = useTypedTranslation();
     const [editingVenue, setEditingVenue] = useState<any>(null);
     const [deletingVenue, setDeletingVenue] = useState<any>(null);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -25,9 +27,9 @@ export function VenuesTab() {
         return (
             <div className="text-center py-16">
                 <MapPin className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No locations yet</h3>
+                <h3 className="text-lg font-semibold mb-2">{t('routes.settings.noLocationsYet')}</h3>
                 <p className="text-muted-foreground mb-6">
-                    Add your first location to start managing your business venues.
+                    {t('routes.settings.addFirstLocation')}
                 </p>
                 <CreateVenueDialog />
             </div>
@@ -38,9 +40,9 @@ export function VenuesTab() {
         <div className="space-y-6">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h3 className="text-lg font-semibold">Your Venues</h3>
+                    <h3 className="text-lg font-semibold">{t('routes.settings.yourVenues')}</h3>
                     <p className="text-sm text-muted-foreground">
-                        These are the places where you teach your classes. If all your classes are at the same location, you don't need to add any more venues. You can update your existing venue with new details, services provided, etc.
+                        {t('routes.settings.yourVenuesDescription')}
                     </p>
                 </div>
             </div>
@@ -60,10 +62,10 @@ export function VenuesTab() {
                     variant="outline"
                     onClick={() => setIsCreateOpen(true)}
                     className="h-full min-h-[120px] border-2 border-dashed shadow-none transition-colors hover:bg-muted/30"
-                    aria-label="Add another venue"
+                    aria-label={t('routes.settings.addAnotherVenue')}
                 >
                     <Plus className="h-4 w-4" />
-                    Add another venue
+                    {t('routes.settings.addAnotherVenue')}
                 </Button>
             </div>
 

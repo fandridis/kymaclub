@@ -41,6 +41,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@repo/api/convex/_generated/api";
 import { useCompressedImageUpload } from "@/hooks/useCompressedImageUpload";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTypedTranslation } from "@/lib/typed";
 
 interface VenueCardProps {
     venue: Doc<"venues">;
@@ -49,6 +50,7 @@ interface VenueCardProps {
 }
 
 export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
+    const { t } = useTypedTranslation();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [imageStorageIds, setImageStorageIds] = useState<Id<"_storage">[]>(venue.imageStorageIds || []);
@@ -83,7 +85,7 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
         return (
             <Card className="w-full max-w-md">
                 <CardContent className="p-6 text-center text-muted-foreground">
-                    No venue data available
+                    {t('routes.settings.venueCard.noVenueDataAvailable')}
                 </CardContent>
             </Card>
         );
@@ -95,7 +97,7 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
     const isLongDescription = fullDescription.length > MAX_DESCRIPTION_LENGTH;
 
     const formatAddress = () => {
-        if (!venue.address) return "Address not available";
+        if (!venue.address) return t('routes.settings.venueCard.addressNotAvailable');
         const { street, city, state, zipCode, country } = venue.address as any;
         return `${street || ""}${street && city ? ", " : ""}${city || ""}${state ? `, ${state}` : ""} ${zipCode || ""}${country ? `, ${country}` : ""}`;
     };
@@ -113,6 +115,25 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
         }
     };
 
+    const getAmenityLabel = (amenity: string): string => {
+        const amenityMap: Record<string, string> = {
+            showers: t('routes.settings.venueCard.amenityShowers'),
+            accessible: t('routes.settings.venueCard.amenityAccessible'),
+            mats: t('routes.settings.venueCard.amenityMats'),
+        };
+        return amenityMap[amenity] || amenity.charAt(0).toUpperCase() + amenity.slice(1);
+    };
+
+    const getServiceLabel = (service: string): string => {
+        // Keep "yoga" as-is, translate all other services
+        if (service === 'yoga') {
+            return 'Yoga';
+        }
+        // Services are translated in onboarding section
+        const serviceKey = `routes.onboarding.${service}` as any;
+        return t(serviceKey) || service.charAt(0).toUpperCase() + service.slice(1);
+    };
+
     const availableAmenities = venue.amenities
         ? Object.entries(venue.amenities)
             .filter(([_, value]) => value === true)
@@ -126,7 +147,7 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
         if (!file) return;
 
         if (imageStorageIds.length >= MAX_IMAGES) {
-            toast.error(`You can upload a maximum of ${MAX_IMAGES} images per venue.`);
+            toast.error(t('routes.settings.venueCard.maxImagesError', { max: MAX_IMAGES }));
             return;
         }
 
@@ -155,9 +176,9 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
             try {
                 await removeVenueImage({ venueId: venue._id, storageId: imageToDelete });
                 setImageStorageIds((prevImages) => prevImages.filter((id) => id !== imageToDelete));
-                toast.success("The image has been removed from the venue.");
+                toast.success(t('routes.settings.venueCard.imageRemovedSuccess'));
             } catch (e: any) {
-                toast.error(e?.message ?? "Failed to remove image.");
+                toast.error(e?.message ?? t('routes.settings.venueCard.failedToRemoveImage'));
             }
         }
         setImageToDelete(null);
@@ -177,20 +198,20 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
                                 <DropdownMenuTrigger asChild>
                                     <Button size="sm" variant="outline" className="h-8 w-8 p-0">
                                         <MoreVertical className="h-4 w-4" />
-                                        <span className="sr-only">Open menu</span>
+                                        <span className="sr-only">{t('routes.settings.venueCard.openMenu')}</span>
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     {onEdit && (
                                         <DropdownMenuItem onClick={onEdit}>
                                             <Edit className="mr-2 h-4 w-4" />
-                                            Edit
+                                            {t('routes.settings.venueCard.edit')}
                                         </DropdownMenuItem>
                                     )}
                                     {onDelete && (
                                         <DropdownMenuItem onClick={onDelete} variant="destructive">
                                             <Trash2 className="mr-2 h-4 w-4" />
-                                            Delete
+                                            {t('routes.settings.venueCard.delete')}
                                         </DropdownMenuItem>
                                     )}
                                 </DropdownMenuContent>
@@ -208,7 +229,7 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
                             {isLongDescription && (
                                 <CollapsibleTrigger asChild>
                                     <Button variant="link" size="sm" className="px-0 h-auto mt-1 transition-colors group-data-[state=open]/collapsible:text-primary">
-                                        {isDescriptionExpanded ? "Read less" : "Read more"}
+                                        {isDescriptionExpanded ? t('routes.settings.venueCard.readLess') : t('routes.settings.venueCard.readMore')}
                                     </Button>
                                 </CollapsibleTrigger>
                             )}
@@ -221,31 +242,31 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
             <CardContent className="flex flex-col flex-1 gap-4">
                 {/* Amenities */}
                 <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Amenities</h4>
+                    <h4 className="text-sm font-medium">{t('routes.settings.venueCard.amenities')}</h4>
                     {availableAmenities.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                             {availableAmenities.map((amenity) => (
                                 <Badge key={amenity} variant="outline" className="flex items-center gap-1">
                                     {getAmenityIcon(amenity)}
-                                    <span className="capitalize">{amenity}</span>
+                                    <span>{getAmenityLabel(amenity)}</span>
                                 </Badge>
                             ))}
                         </div>
                     ) : (
-                        <p className="text-sm text-muted-foreground">No amenities found</p>
+                        <p className="text-sm text-muted-foreground">{t('routes.settings.venueCard.noAmenitiesFound')}</p>
                     )}
                 </div>
 
                 {/* Services */}
                 {venue.services && Object.entries(venue.services).some(([_, value]) => value) && (
                     <div className="space-y-2">
-                        <h4 className="text-sm font-medium">Services</h4>
+                        <h4 className="text-sm font-medium">{t('routes.settings.venueCard.services')}</h4>
                         <div className="flex flex-wrap gap-1">
                             {Object.entries(venue.services)
                                 .filter(([_, value]) => value)
                                 .map(([item]) => (
                                     <Badge key={item} variant="secondary" className="text-xs">
-                                        {item}
+                                        {getServiceLabel(item)}
                                     </Badge>
                                 ))}
                         </div>
@@ -255,7 +276,7 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
                 {/* Images Section - Takes available space */}
                 <div className="flex-1 flex flex-col">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-2">
-                        <h4 className="text-sm font-medium">Venue Images ({imageStorageIds.length}/{MAX_IMAGES})</h4>
+                        <h4 className="text-sm font-medium">{t('routes.settings.venueCard.venueImages')} ({imageStorageIds.length}/{MAX_IMAGES})</h4>
                         <input
                             type="file"
                             ref={fileInputRef}
@@ -274,12 +295,12 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
                             {status !== "idle" ? (
                                 <>
                                     <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                                    {status === "uploading" ? "Uploading..." : "Preparing..."}
+                                    {status === "uploading" ? t('routes.settings.venueCard.uploading') : t('routes.settings.venueCard.preparing')}
                                 </>
                             ) : (
                                 <>
                                     <UploadCloud className="mr-1 h-3 w-3" />
-                                    Add Image
+                                    {t('routes.settings.venueCard.addImage')}
                                 </>
                             )}
                         </Button>
@@ -295,16 +316,16 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
                                                 <DialogTrigger asChild>
                                                     <img
                                                         src={url}
-                                                        alt={`Venue image`}
+                                                        alt={t('routes.settings.venueCard.venueImage')}
                                                         className="w-full h-full object-cover cursor-pointer transition-transform group-hover:scale-105"
                                                     />
                                                 </DialogTrigger>
                                                 <DialogContent className="max-w-3xl p-0">
-                                                    <DialogTitle className="sr-only">Venue image</DialogTitle>
-                                                    <DialogDescription className="sr-only">Enlarged preview of venue image</DialogDescription>
+                                                    <DialogTitle className="sr-only">{t('routes.settings.venueCard.venueImage')}</DialogTitle>
+                                                    <DialogDescription className="sr-only">{t('routes.settings.venueCard.enlargedPreview')}</DialogDescription>
                                                     <img
                                                         src={url}
-                                                        alt={`Venue image`}
+                                                        alt={t('routes.settings.venueCard.venueImage')}
                                                         className="w-full h-auto max-h-[80vh] object-contain"
                                                     />
                                                 </DialogContent>
@@ -317,7 +338,7 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
                                             size="icon"
                                             className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                                             onClick={() => handleDeleteImage(sid)}
-                                            aria-label="Delete image"
+                                            aria-label={t('routes.settings.venueCard.deleteImage')}
                                         >
                                             <XCircle className="h-4 w-4" />
                                         </Button>
@@ -327,7 +348,7 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
                         ) : (
                             <div className="col-span-full flex items-center justify-center min-h-[120px] border-2 border-dashed border-muted-foreground/20 rounded-lg">
                                 <p className="text-sm text-muted-foreground">
-                                    No images uploaded yet.
+                                    {t('routes.settings.venueCard.noImagesUploaded')}
                                 </p>
                             </div>
                         )}
@@ -349,16 +370,15 @@ export function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('routes.settings.venueCard.deleteImageConfirmTitle')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently remove the image
-                            from your venue.
+                            {t('routes.settings.venueCard.deleteImageConfirmDescription')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>{t('routes.settings.venueCard.cancel')}</AlertDialogCancel>
                         <AlertDialogAction onClick={confirmDeleteImage}>
-                            Continue
+                            {t('routes.settings.venueCard.continue')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
