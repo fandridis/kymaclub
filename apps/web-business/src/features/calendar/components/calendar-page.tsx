@@ -4,7 +4,6 @@ import { useMutation } from "convex/react";
 import { api } from "@repo/api/convex/_generated/api";
 import elLocale from '@fullcalendar/core/locales/el';
 import enGbLocale from '@fullcalendar/core/locales/en-gb';
-import ltLocale from '@fullcalendar/core/locales/lt';
 import i18n from '@/lib/i18n';
 import type { UserWithBusiness } from '@/components/stores/auth';
 import type { EventContentArg } from '@fullcalendar/core/index.js';
@@ -131,7 +130,7 @@ export function CalendarPage({ startDate, classInstances, user, loading }: Calen
                     dateAlignment={isMobile ? 'day' : 'week'}
                     duration={{ days: isMobile ? 2 : 7 }}
                     plugins={[timeGridPlugin, interactionPlugin]}
-                    locales={[elLocale, enGbLocale, ltLocale]}
+                    locales={[elLocale, enGbLocale]}
                     locale={getLocale(i18n.language)}
                     contentHeight="auto"
                     expandRows={true}
@@ -289,7 +288,6 @@ const getLocale = (language: string) => {
     switch (language) {
         case 'el': return elLocale;
         case 'en': return enGbLocale;
-        case 'lt': return ltLocale;
         default: return elLocale;
     }
 }

@@ -160,7 +160,7 @@ maestro test maestro-tests/logged-out-flow.yaml
 - **Credit System**: Purchase credits and manage subscription
 - **QR Scanner**: Quick check-in to classes
 - **Push Notifications**: Booking confirmations, class reminders, credit expiration
-- **Multi-language**: English, Greek, Lithuanian support
+- **Multi-language**: English, Greek support
 
 ## 📚 Tech Stack
 

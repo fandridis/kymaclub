@@ -3,7 +3,7 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import Backend from 'i18next-http-backend';
 
-export const AVAILABLE_LANGUAGES = ['en', 'el', 'lt'];
+export const AVAILABLE_LANGUAGES = ['en', 'el'];
 
 const DEFAULT_LANGUAGE = 'en';
 

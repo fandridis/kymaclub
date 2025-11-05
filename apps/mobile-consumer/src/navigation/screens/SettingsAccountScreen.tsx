@@ -15,8 +15,7 @@ export function SettingsAccountScreen() {
     const getLanguageDisplay = (languageCode: string) => {
         const languages = {
             'en': { name: 'English', flag: '🇺🇸' },
-            'el': { name: 'Ελληνικά', flag: '🇬🇷' },
-            'lt': { name: 'Lietuvių', flag: '🇱🇹' }
+            'el': { name: 'Ελληνικά', flag: '🇬🇷' }
         };
         const lang = languages[languageCode as keyof typeof languages] || languages['en'];
         return `${lang.flag} ${lang.name}`;

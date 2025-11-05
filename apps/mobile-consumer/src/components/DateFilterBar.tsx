@@ -9,7 +9,6 @@ import {
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale/en-US';
 import { el } from 'date-fns/locale/el';
-import { lt } from 'date-fns/locale/lt';
 import { useTypedTranslation } from '../i18n/typed';
 import i18n from '../i18n';
 
@@ -29,8 +28,6 @@ const getDateFnsLocale = (language: string) => {
   switch (language) {
     case 'el':
       return el;
-    case 'lt':
-      return lt;
     case 'en':
     default:
       return enUS;

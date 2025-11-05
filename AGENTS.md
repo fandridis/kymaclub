@@ -53,7 +53,7 @@ This is the **React Native consumer app** where customers discover classes, make
 - **react-native-mmkv** - High-performance key-value storage
 
 ### **Internationalization**
-- **i18next** + **react-i18next** - Multi-language support (EN, EL, LT)
+- **i18next** + **react-i18next** - Multi-language support (EN, EL)
 - **expo-localization** - Device locale detection
 
 ## 📁 Folder Structure

@@ -64,8 +64,7 @@
         "hoursAgo": "{{count}}h ago",
         "languages": {
             "en": "English",
-            "el": "Greek",
-            "lt": "Lithuanian"
+            "el": "Greek"
         }
     },
     "routes": {

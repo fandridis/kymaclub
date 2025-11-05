@@ -11,8 +11,7 @@ import { theme } from '../../theme';
 
 const LANGUAGES = [
     { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸' },
-    { code: 'el', name: 'Greek', nativeName: 'Ελληνικά', flag: '🇬🇷' },
-    { code: 'lt', name: 'Lithuanian', nativeName: 'Lietuvių', flag: '🇱🇹' }
+    { code: 'el', name: 'Greek', nativeName: 'Ελληνικά', flag: '🇬🇷' }
 ];
 
 export function LanguageSelectionScreen() {

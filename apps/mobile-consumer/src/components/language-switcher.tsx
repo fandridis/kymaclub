@@ -7,8 +7,7 @@ const LanguageSwitcher = () => {
 
     const languages = [
         { code: 'en', name: 'English' },
-        { code: 'el', name: 'Ελληνικά' },
-        { code: 'lt', name: 'Lietuvių' }
+        { code: 'el', name: 'Ελληνικά' }
     ];
 
     const changeLanguage = async (languageCode: string) => {

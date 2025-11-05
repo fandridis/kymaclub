@@ -4,12 +4,10 @@ import * as Localization from 'expo-localization';
 import { appStorage } from '../utils/storage';
 import en from '../locales/en/translation.json';
 import el from '../locales/el/translation.json';
-import lt from '../locales/lt/translation.json';
 
 const resources = {
     en: { translation: en },
-    el: { translation: el },
-    lt: { translation: lt }
+    el: { translation: el }
 };
 
 // Language detector using expo-localization

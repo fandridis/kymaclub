@@ -3,8 +3,7 @@
         "language": "Γλώσσα",
         "languages": {
             "en": "Αγγλικά (English)",
-            "el": "Ελληνικά (Greek)",
-            "lt": "Λιθουανικά (Lithuanian)"
+            "el": "Ελληνικά (Greek)"
         },
         "buttons": {
             "yes": "Ναι",

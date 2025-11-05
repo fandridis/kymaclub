@@ -625,7 +625,7 @@ export function ClassDetailsModalScreen() {
                                 <View style={styles.spotsContainer}>
                                     <Text style={styles.spotsLabel}>{t('classes.availableSpots')}</Text>
                                     <Text style={styles.spotsValue}>
-                                        {t('classes.spotsLeft', { count: spotsLeft })}
+                                        {t('classes.spotsLeft', { count: 1 })}
                                     </Text>
                                 </View>
                             </View>
