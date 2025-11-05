@@ -307,15 +307,10 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
               Landing: 'welcome',
               SignInModal: 'signin',
               CreateAccountModal: 'signup',
-              Home: {
-                path: 'home',
-                screens: {
                   News: 'news',
                   Explore: 'explore',
                   Bookings: 'bookings',
                   Messages: 'messages',
-                },
-              },
               Conversation: {
                 path: 'chat/:threadId',
                 parse: {

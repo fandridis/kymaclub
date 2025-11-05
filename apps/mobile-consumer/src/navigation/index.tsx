@@ -1,6 +1,4 @@
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import type { NavigatorScreenParams } from '@react-navigation/native';
 import { NewsScreen } from './screens/NewsScreen';
 import { ExploreScreen } from './screens/ExploreScreen';
 import { BookingsScreen } from './screens/BookingsScreen';
@@ -24,130 +22,15 @@ import { SuperpowersScreen } from './screens/SuperpowersScreen';
 import { BuyCreditsScreen } from './screens/BuyCreditsScreen';
 import { LandingScreen } from '../features/core/screens/landing-screen';
 import { CreateAccountModalScreen } from '../features/core/screens/create-account-modal-screen';
-import { SearchIcon, NewspaperIcon, TicketIcon, MessageCircleIcon } from 'lucide-react-native';
-import { StyleSheet } from 'react-native';
-import { useTypedTranslation } from '../i18n/typed';
 import { useAuth } from '../stores/auth-store';
 import { LocationObject } from 'expo-location';
 import { SignInModalScreen } from '../features/core/screens/sign-in-modal-screen';
 import { PaymentSuccessScreen } from './screens/PaymentSuccessScreen';
 import { PaymentCancelScreen } from './screens/PaymentCancelScreen';
 import { ConversationScreen } from './screens/ConversationScreen';
-import { theme } from '../theme';
-import { useQuery } from 'convex/react';
-import { api } from '@repo/api/convex/_generated/api';
-import { BlurView } from 'expo-blur';
 import OnboardingWizard from '../components/OnboardingWizard';
-import { useEffect } from 'react';
-import { secureStorage } from '../utils/storage';
 
-const Tab = createBottomTabNavigator<TabParamList>();
 const RootStack = createNativeStackNavigator<RootStackParamList>();
-
-// Your existing HomeTabs component stays the same...
-function HomeTabs() {
-  const { t } = useTypedTranslation();
-  const { user } = useAuth();
-
-  // Get unread message count for the current user
-  const unreadCount = useQuery(
-    api.queries.chat.getUnreadMessageCount,
-    user ? {} : "skip"
-  );
-
-
-  return (
-    <>
-      <Tab.Navigator
-        screenOptions={{
-          headerShown: false,
-          tabBarShowLabel: true,
-          tabBarIconStyle: {
-            marginTop: 6,
-          },
-          tabBarStyle: {
-            position: 'absolute',
-            marginHorizontal: 20,
-            bottom: 24,
-            left: 20,
-            right: 20,
-            borderRadius: 40,
-            height: 62,
-            backgroundColor: 'transparent',
-
-            borderTopWidth: 0,
-            elevation: 10,
-            shadowColor: '#000',
-            shadowOffset: {
-              width: 0,
-              height: 4,
-            },
-            shadowOpacity: 0.15,
-            shadowRadius: 8,
-          },
-          tabBarBadgeStyle: {
-            backgroundColor: theme.colors.rose[600],
-            color: 'white',
-          },
-          tabBarActiveTintColor: theme.colors.emerald[600],
-          tabBarInactiveTintColor: theme.colors.zinc[600],
-          tabBarBackground: () => (
-            <BlurView intensity={20} style={styles.blurContainer} />
-          ),
-          animation: 'shift',
-        }}
-      >
-        <Tab.Screen
-          name="News"
-          component={NewsScreen}
-          options={{
-            title: t('navigation.home'),
-            tabBarLabel: t('navigation.home'),
-            tabBarIcon: ({ color }) => (
-              <NewspaperIcon color={color} size={26} />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="Explore"
-          component={ExploreScreen}
-          options={{
-            title: t('navigation.explore'),
-            tabBarLabel: t('navigation.explore'),
-            tabBarIcon: ({ color }) => (
-              <SearchIcon color={color} size={26} />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="Bookings"
-          component={BookingsScreen}
-          options={{
-            title: t('navigation.bookings'),
-            tabBarLabel: t('navigation.bookings'),
-            tabBarIcon: ({ color }) => (
-              <TicketIcon color={color} size={26} />
-            ),
-            // tabBarBadge: 3, // Removed hardcoded badge
-          }}
-        />
-        <Tab.Screen
-          name="Messages"
-          component={MessagesScreen}
-          options={{
-            title: t('navigation.messages'),
-            tabBarLabel: t('navigation.messages'),
-            tabBarIcon: ({ color }) => (
-              <MessageCircleIcon color={color} size={26} />
-            ),
-            tabBarBadge: unreadCount && unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : undefined,
-          }}
-        />
-      </Tab.Navigator>
-
-    </>
-  );
-}
 
 // Root navigator with modal presentation - all screens always available
 export function RootNavigator() {
@@ -165,7 +48,7 @@ export function RootNavigator() {
       return 'Onboarding';
     }
 
-    return 'Home';
+    return 'News';
   }
 
   return (
@@ -186,7 +69,37 @@ export function RootNavigator() {
       <RootStack.Screen name="Onboarding" component={OnboardingWizard} />
 
       {/* Main app screens */}
-      <RootStack.Screen name="Home" component={HomeTabs} />
+      <RootStack.Screen
+        name="News"
+        component={NewsScreen}
+        options={{
+          animation: 'fade',
+        }}
+      />
+      <RootStack.Screen
+        name="Explore"
+        component={ExploreScreen}
+        options={{
+          animation: 'slide_from_right',
+          headerShown: false,
+        }}
+      />
+      <RootStack.Screen
+        name="Bookings"
+        component={BookingsScreen}
+        options={{
+          animation: 'slide_from_right',
+          headerShown: false,
+        }}
+      />
+      <RootStack.Screen
+        name="Messages"
+        component={MessagesScreen}
+        options={{
+          animation: 'slide_from_right',
+          headerShown: false,
+        }}
+      />
       <RootStack.Screen
         name="Settings"
         component={SettingsScreen}
@@ -378,7 +291,10 @@ export function RootNavigator() {
 // Type definitions
 export type RootStackParamList = {
   // Main app screens
-  Home: NavigatorScreenParams<TabParamList> | undefined;
+  News: undefined;
+  Explore: undefined;
+  Bookings: undefined;
+  Messages: undefined;
   Settings: undefined;
   Profile: { user: string };
   VenueDetailsScreen: { venueId: string };
@@ -434,15 +350,11 @@ export type RootStackParamList = {
   };
 };
 
-export type TabParamList = {
+export type RootStackParamListWithNestedTabs = {
   News: undefined;
   Explore: undefined;
   Bookings: undefined;
   Messages: undefined;
-};
-
-export type RootStackParamListWithNestedTabs = {
-  Home: NavigatorScreenParams<TabParamList> | undefined;
   Settings: undefined;
   Profile: { user: string };
   VenueDetailsScreen: { venueId: string };
@@ -496,15 +408,3 @@ declare global {
   }
 }
 
-const styles = StyleSheet.create({
-  blurContainer: {
-    flex: 1,
-    borderRadius: 40,
-    textAlign: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    //  borderWidth: 1,
-    //  borderColor: 'rgba(255, 255, 255, 1)',
-  },
-});

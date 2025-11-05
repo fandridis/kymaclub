@@ -21,6 +21,7 @@ import ReAnimated, {
 } from 'react-native-reanimated';
 import { runOnJS } from 'react-native-worklets';
 import { useTypedTranslation } from '../../i18n/typed';
+import { ChevronLeftIcon } from 'lucide-react-native';
 
 // Utility function to format timestamp
 function formatMessageTime(timestamp: number): string {
@@ -65,7 +66,7 @@ function SwipeableThreadItem({
     .onUpdate((event) => {
       // Only allow swiping left (negative values) or right when delete is revealed
       const newValue = event.translationX;
-      
+
       // If delete is currently revealed (translateX is at DELETE_THRESHOLD)
       if (translateX.value <= DELETE_THRESHOLD + 5) {
         // Allow swiping right to close, but cap at 0
@@ -78,14 +79,14 @@ function SwipeableThreadItem({
     .onEnd(() => {
       const REVEAL_THRESHOLD = DELETE_THRESHOLD * 0.5; // -40px to reveal
       const HIDE_THRESHOLD = DELETE_THRESHOLD * 0.25;  // -20px to hide when revealed
-      
+
       // Check if delete is currently revealed
       const isCurrentlyRevealed = translateX.value <= DELETE_THRESHOLD + 5;
-      
+
       if (isCurrentlyRevealed) {
         // Delete is revealed: need significant swipe right to hide it
         const shouldHide = translateX.value > HIDE_THRESHOLD;
-        
+
         if (shouldHide) {
           // Hide the delete button
           translateX.value = withSpring(0);
@@ -96,7 +97,7 @@ function SwipeableThreadItem({
       } else {
         // Delete is not revealed: normal reveal behavior
         const shouldReveal = translateX.value < REVEAL_THRESHOLD;
-        
+
         if (shouldReveal) {
           // Reveal the delete button
           translateX.value = withSpring(DELETE_THRESHOLD);
@@ -255,6 +256,10 @@ export function MessagesScreen() {
     });
   };
 
+  const handleBackPress = () => {
+    navigation.goBack();
+  };
+
   const handleDeleteThread = (thread: Doc<"chatMessageThreads">) => {
     Alert.alert(
       t('messages.deleteConversation'),
@@ -287,8 +292,19 @@ export function MessagesScreen() {
   if (messageThreads === undefined) {
     return (
       <SafeAreaView style={styles.container}>
-        <TabScreenHeader 
-          title="Messages" 
+        <TabScreenHeader
+          renderLeftSide={() => (
+            <TouchableOpacity
+              onPress={handleBackPress}
+              style={styles.backButton}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityLabel={t('common.back')}
+              accessibilityRole="button"
+            >
+              <ChevronLeftIcon size={24} color="#111827" />
+            </TouchableOpacity>
+          )}
           renderRightSide={() => (
             <>
               {creditBalance !== undefined && (
@@ -310,8 +326,19 @@ export function MessagesScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TabScreenHeader 
-        title="Messages" 
+      <TabScreenHeader
+        renderLeftSide={() => (
+          <TouchableOpacity
+            onPress={handleBackPress}
+            style={styles.backButton}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityLabel={t('common.back')}
+            accessibilityRole="button"
+          >
+            <ChevronLeftIcon size={24} color="#111827" />
+          </TouchableOpacity>
+        )}
         renderRightSide={() => (
           <>
             {creditBalance !== undefined && (
@@ -534,5 +561,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     marginTop: 4,
+  },
+  backButton: {
+    padding: 8,
+    marginLeft: -8,
+    borderRadius: 20,
   },
 });

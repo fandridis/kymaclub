@@ -20,6 +20,8 @@ import { RootStackParamList } from '../../../navigation';
 import { countActiveFilters, useExploreFiltersStore } from '../../../stores/explore-filters-store';
 import { CreditsBadge } from '../../../components/CreditsBadge';
 import { ProfileIconButton } from '../../../components/ProfileIconButton';
+import { ChevronLeftIcon } from 'lucide-react-native';
+import { TouchableOpacity } from 'react-native';
 
 export function Explore() {
     const { t } = useTypedTranslation();
@@ -122,10 +124,25 @@ export function Explore() {
         );
     }
 
+    const handleBackPress = () => {
+        navigation.goBack();
+    };
+
     return (
         <SafeAreaView style={styles.container}>
-            <TabScreenHeader 
-                title="Explore" 
+            <TabScreenHeader
+                renderLeftSide={() => (
+                    <TouchableOpacity
+                        onPress={handleBackPress}
+                        style={styles.backButton}
+                        activeOpacity={0.7}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        accessibilityLabel={t('common.back')}
+                        accessibilityRole="button"
+                    >
+                        <ChevronLeftIcon size={24} color="#111827" />
+                    </TouchableOpacity>
+                )}
                 renderRightSide={() => (
                     <>
                         {creditBalance !== undefined && (
@@ -199,5 +216,10 @@ const styles = StyleSheet.create({
     },
     tabsRow: {
         gap: 16,
+    },
+    backButton: {
+        padding: 8,
+        marginLeft: -8,
+        borderRadius: 20,
     },
 });

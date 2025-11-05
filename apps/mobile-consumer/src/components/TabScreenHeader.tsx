@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { theme } from '../theme';
 
 interface TabScreenHeaderProps {
-  title: string;
+  title?: string;
   subtitle?: string;
   renderLeftSide?: () => React.ReactNode;
   renderRightSide?: () => React.ReactNode;
@@ -18,19 +18,21 @@ export function TabScreenHeader({ title, subtitle, renderLeftSide, renderRightSi
           {renderLeftSide()}
         </View>
       )}
-      <View style={styles.titleContainer}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title}>{title}</Text>
-          {titleBadge && (
-            <View style={styles.badgeContainer}>
-              {titleBadge}
-            </View>
+      {title && (
+        <View style={styles.titleContainer}>
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>{title}</Text>
+            {titleBadge && (
+              <View style={styles.badgeContainer}>
+                {titleBadge}
+              </View>
+            )}
+          </View>
+          {subtitle && (
+            <Text style={styles.subtitle}>{subtitle}</Text>
           )}
         </View>
-        {subtitle && (
-          <Text style={styles.subtitle}>{subtitle}</Text>
-        )}
-      </View>
+      )}
       {renderRightSide && (
         <View style={styles.rightSide}>
           {renderRightSide()}

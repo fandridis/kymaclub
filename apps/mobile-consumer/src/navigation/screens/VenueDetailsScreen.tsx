@@ -696,11 +696,11 @@ export function VenueDetailsScreen() {
                             if (navigation.canGoBack()) {
                                 navigation.goBack();
                             } else {
-                                navigation.navigate('Home', { screen: 'Explore' });
+                                navigation.navigate('Explore');
                             }
                         } catch (error) {
                             console.error('Navigation error:', error);
-                            navigation.navigate('Home', { screen: 'Explore' });
+                            navigation.navigate('Explore');
                         }
                     }}
                 >

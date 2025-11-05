@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import { Image } from 'expo-image';
-import { Calendar1Icon, ClockIcon, CalendarOffIcon, DiamondIcon, ArrowLeftIcon, CheckCircleIcon } from 'lucide-react-native';
+import { Calendar1Icon, ClockIcon, CalendarOffIcon, DiamondIcon, ChevronLeftIcon, CheckCircleIcon, ArrowLeftIcon } from 'lucide-react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import Carousel from 'react-native-reanimated-carousel';
 import { useQuery, useMutation } from 'convex/react';
@@ -109,7 +109,8 @@ function getDiscountTimingText(
     classInstance: any,
     timeUnitDays: string,
     timeUnitHours: string,
-    timeUnitMinutes: string
+    timeUnitMinutes: string,
+    t: ReturnType<typeof useTypedTranslation>['t']
 ): string {
     if (!discountResult.appliedDiscount) return '';
 
@@ -119,11 +120,11 @@ function getDiscountTimingText(
     const formattedTime = formatTimeRemaining(hoursUntilClass, timeUnitDays, timeUnitHours, timeUnitMinutes);
 
     if (ruleName.toLowerCase().includes('early')) {
-        return `Early bird discount: ${formattedTime}`;
+        return t('classes.earlyBirdDiscount', { time: formattedTime });
     } else if (ruleName.toLowerCase().includes('last') || ruleName.toLowerCase().includes('minute')) {
-        return `Last minute discount: ${formattedTime}`;
+        return t('classes.lastMinuteDiscount', { time: formattedTime });
     } else {
-        return `Discount active: ${formattedTime}`;
+        return t('classes.discountActive', { time: formattedTime });
     }
 }
 
@@ -456,9 +457,9 @@ export function ClassDetailsModalScreen() {
                         style={styles.headerBackButton}
                         onPress={() => navigation.goBack()}
                     >
-                        <ArrowLeftIcon
-                            size={26}
-                            color={theme.colors.zinc[950]}
+                        <ChevronLeftIcon
+                            size={24}
+                            color="#111827"
                         />
                     </TouchableOpacity>
                 </View>
@@ -478,9 +479,9 @@ export function ClassDetailsModalScreen() {
                         style={styles.headerBackButton}
                         onPress={() => navigation.goBack()}
                     >
-                        <ArrowLeftIcon
-                            size={26}
-                            color={theme.colors.zinc[950]}
+                        <ChevronLeftIcon
+                            size={24}
+                            color="#111827"
                         />
                     </TouchableOpacity>
                 </View>
@@ -538,7 +539,7 @@ export function ClassDetailsModalScreen() {
                     ]}
                     onPress={() => navigation.goBack()}
                 >
-                    <ArrowLeftIcon
+                    <ChevronLeftIcon
                         size={26}
                         color={theme.colors.zinc[950]}
                     />
@@ -658,7 +659,8 @@ export function ClassDetailsModalScreen() {
                                             finalClassInstance,
                                             timeUnitDays,
                                             timeUnitHours,
-                                            timeUnitMinutes
+                                            timeUnitMinutes,
+                                            t
                                         )}
                                     </Text>
                                 </View>

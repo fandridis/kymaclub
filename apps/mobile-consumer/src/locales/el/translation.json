@@ -13,8 +13,7 @@
         "map": "Χάρτης",
         "explore": "Αναζήτηση",
         "news": "Νέα",
-        "scan": "Σάρωση",
-        "messages": "Μηνύματα"
+        "scan": "Σάρωση"
     },
     "common": {
         "save": "Αποθήκευση",
@@ -363,7 +362,10 @@
         "cancellationFailedMessage": "Αποτυχία ακύρωσης κράτησης. Παρακαλώ δοκιμάστε ξανά αργότερα.",
         "noClassInfo": "Δεν παρέχονται πληροφορίες μαθήματος",
         "loadingClassDetails": "Φόρτωση λεπτομερειών μαθήματος...",
-        "joinClassDescription": "Ελάτε μαζί με τον {{instructor}} για ένα υπέροχο μάθημα στο {{businessName}}"
+        "joinClassDescription": "Ελάτε μαζί με τον {{instructor}} για ένα υπέροχο μάθημα στο {{businessName}}",
+        "earlyBirdDiscount": "Έκπτωση πρώιμης κράτησης: {{time}}",
+        "lastMinuteDiscount": "Έκπτωση τελευταίας στιγμής: {{time}}",
+        "discountActive": "Ενεργή έκπτωση: {{time}}"
     },
     "venues": {
         "title": "Χώροι",
@@ -492,8 +494,8 @@
         "free": "Δωρεάν",
         "startsIn": "Έναρξη σε {{time}}",
         "startsSoon": "ξεκινά σύντομα",
-        "inHours": "Σε {{hours}}ω {{minutes}}λ",
-        "inMinutes": "Σε {{minutes}}λ",
+        "inHours": "{{hours}}ω {{minutes}}λ",
+        "inMinutes": "{{minutes}}λ",
         "startingSoon": "Ξεκινά σύντομα"
     },
     "messages": {

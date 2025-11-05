@@ -16,16 +16,16 @@ export function ProfileIconButton() {
       accessibilityLabel="Open settings"
       accessibilityRole="button"
     >
-      <UserIcon size={24} color={theme.colors.zinc[700]} />
+      <UserIcon size={20} color={theme.colors.zinc[700]} />
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   profileButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 6,
     backgroundColor: theme.colors.zinc[100],
     alignItems: 'center',
     justifyContent: 'center',

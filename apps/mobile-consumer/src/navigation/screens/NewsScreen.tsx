@@ -18,6 +18,8 @@ import { NewsClassCard } from '../../components/news/NewsCard';
 import { XIcon } from 'lucide-react-native';
 import { CreditsBadge } from '../../components/CreditsBadge';
 import { ProfileIconButton } from '../../components/ProfileIconButton';
+import { MessagesIconButton } from '../../components/MessagesIconButton';
+import { FloatingNavButtons } from '../../components/FloatingNavButtons';
 
 const now = new Date();
 
@@ -403,7 +405,7 @@ export function NewsScreen() {
 
     // Handle navigation
     const handleExplorePress = () => {
-        navigation.navigate('Home', { screen: 'Explore' });
+        navigation.navigate('Explore');
     };
 
     // Handle banner dismissal
@@ -443,7 +445,7 @@ export function NewsScreen() {
         return (
             <SafeAreaView style={styles.container}>
                 <TabScreenHeader
-                    title={t('welcome.title')}
+                    title="KymaClub"
                     //subtitle="Discover amazing fitness classes"
                     renderRightSide={() => (
                         <>
@@ -465,13 +467,14 @@ export function NewsScreen() {
     return (
         <SafeAreaView style={styles.container}>
             <TabScreenHeader
-                title={t('welcome.title')}
+                title="KymaClub"
                 // subtitle="Discover amazing fitness classes"
                 renderRightSide={() => (
                     <>
                         {creditBalance !== undefined && (
                             <CreditsBadge creditBalance={creditBalance.balance} />
                         )}
+                        <MessagesIconButton />
                         <ProfileIconButton />
                     </>
                 )}
@@ -824,6 +827,7 @@ export function NewsScreen() {
                     </View>
                 )}
             </ScrollView>
+            <FloatingNavButtons />
         </SafeAreaView>
     );
 }
@@ -837,7 +841,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        paddingBottom: 60,
+        paddingBottom: 100, // Extra padding for floating buttons
     },
 
     // Section styles

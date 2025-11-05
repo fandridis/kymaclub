@@ -17,6 +17,7 @@ import { CreditsBadge } from '../../components/CreditsBadge';
 import { useQuery } from 'convex/react';
 import { ProfileIconButton } from '../../components/ProfileIconButton';
 import { useTypedTranslation } from '../../i18n/typed';
+import { ChevronLeftIcon } from 'lucide-react-native';
 
 const INITIAL_BOOKINGS_COUNT = 100;
 const LOAD_MORE_COUNT = 50;
@@ -187,7 +188,6 @@ export function BookingsScreen() {
         return (
             <SafeAreaView style={styles.container}>
                 <TabScreenHeader
-                    title="Bookings"
                     renderRightSide={() => (
                         <>
                             {creditBalance !== undefined && (
@@ -202,10 +202,25 @@ export function BookingsScreen() {
         );
     }
 
+    const handleBackPress = () => {
+        navigation.goBack();
+    };
+
     return (
         <SafeAreaView style={styles.container}>
             <TabScreenHeader
-                title={t('bookings.myBookings')}
+                renderLeftSide={() => (
+                    <TouchableOpacity
+                        onPress={handleBackPress}
+                        style={styles.backButton}
+                        activeOpacity={0.7}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        accessibilityLabel={t('common.back')}
+                        accessibilityRole="button"
+                    >
+                        <ChevronLeftIcon size={24} color="#111827" />
+                    </TouchableOpacity>
+                )}
                 renderRightSide={() => (
                     <>
                         {creditBalance !== undefined && (
@@ -334,5 +349,10 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '600',
         color: theme.colors.emerald[600],
+    },
+    backButton: {
+        padding: 8,
+        marginLeft: -8,
+        borderRadius: 20,
     },
 });

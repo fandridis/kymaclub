@@ -13,8 +13,7 @@
         "map": "Map",
         "explore": "Explore",
         "news": "News",
-        "scan": "Scan",
-        "messages": "Messages"
+        "scan": "Scan"
     },
     "common": {
         "save": "Save",
@@ -363,7 +362,10 @@
         "cancellationFailedMessage": "Failed to cancel booking. Please try again later.",
         "noClassInfo": "No class information provided",
         "loadingClassDetails": "Loading class details...",
-        "joinClassDescription": "Join {{instructor}} for an amazing class at {{businessName}}"
+        "joinClassDescription": "Join {{instructor}} for an amazing class at {{businessName}}",
+        "earlyBirdDiscount": "Early bird discount: {{time}}",
+        "lastMinuteDiscount": "Last minute discount: {{time}}",
+        "discountActive": "Discount active: {{time}}"
     },
     "venues": {
         "title": "Venues",
