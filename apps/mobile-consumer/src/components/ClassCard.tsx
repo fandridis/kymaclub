@@ -189,7 +189,7 @@ function getBookingWindowStatus(
 
 function calculateClassDiscount(classInstance: ClassInstance): DiscountCalculationResult {
   const priceInCents = classInstance.price ?? 1000; // Default 10.00 in cents
-  const originalPrice = priceInCents / 50; // Convert from cents to credits (1 credit = 50 cents)
+  const originalPrice = centsToCredits(priceInCents);
 
   const now = Date.now();
   const hoursUntilClass = (classInstance.startTime - now) / (1000 * 60 * 60);
@@ -215,7 +215,7 @@ function calculateClassDiscount(classInstance: ClassInstance): DiscountCalculati
     };
   }
 
-  const discountValueInCredits = bestRule.rule.discount.value / 50;
+  const discountValueInCredits = centsToCredits(bestRule.rule.discount.value);
   const finalPrice = Math.max(0, originalPrice - discountValueInCredits);
   const creditsSaved = originalPrice - finalPrice;
 

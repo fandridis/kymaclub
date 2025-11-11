@@ -156,7 +156,7 @@ function getBookingWindowText(
 
 function calculateClassDiscount(classInstance: any, templateData: any): DiscountCalculationResult {
     const priceInCents = classInstance?.price ?? templateData?.price ?? 1000;
-    const originalPrice = priceInCents / 50; // Convert cents to credits
+    const originalPrice = centsToCredits(priceInCents);
 
     if (!classInstance) {
         return {
@@ -193,7 +193,7 @@ function calculateClassDiscount(classInstance: any, templateData: any): Discount
         };
     }
 
-    const discountValueInCredits = bestRule.rule.discount.value / 50; // Convert cents to credits
+    const discountValueInCredits = centsToCredits(bestRule.rule.discount.value);
     const finalPrice = Math.max(0, originalPrice - discountValueInCredits);
     const creditsSaved = originalPrice - finalPrice;
 
@@ -455,7 +455,9 @@ export function ClassDetailsModalScreen() {
                 <View style={styles.fixedHeader}>
                     <TouchableOpacity
                         style={styles.headerBackButton}
+                        activeOpacity={0.9}
                         onPress={() => navigation.goBack()}
+
                     >
                         <ChevronLeftIcon
                             size={24}
@@ -477,6 +479,7 @@ export function ClassDetailsModalScreen() {
                 <View style={styles.fixedHeader}>
                     <TouchableOpacity
                         style={styles.headerBackButton}
+                        activeOpacity={0.9}
                         onPress={() => navigation.goBack()}
                     >
                         <ChevronLeftIcon
@@ -855,6 +858,7 @@ export function ClassDetailsModalScreen() {
                             <TouchableOpacity
                                 style={[styles.bookButton, spotsLeft === 0 && styles.bookButtonDisabled]}
                                 disabled={spotsLeft === 0 || isBooking}
+                                activeOpacity={0.8}
                                 onPress={onPress}
                             >
                                 <View style={styles.bookButtonLeft}>

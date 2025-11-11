@@ -39,41 +39,42 @@ export function FloatingNavButtons() {
             {hasUpcomingBookings && <View style={styles.spacer} />}
 
             {/* Search Button - Always visible, centered */}
-            <TouchableOpacity
-                onPress={handleSearchPress}
-                style={styles.searchButton}
-                activeOpacity={0.8}
-                accessibilityLabel={t('navigation.explore')}
-                accessibilityRole="button"
-            >
-                <BlurView intensity={20} style={[StyleSheet.absoluteFillObject, styles.blurContainer]} />
-                <View style={styles.searchButtonContent}>
-                    <SearchIcon size={24} color={theme.colors.zinc[950]} />
-                    <Text style={styles.buttonLabel}>{t('navigation.explore')}</Text>
-                </View>
-            </TouchableOpacity>
+            <View style={styles.searchButtonShadow}>
+                <TouchableOpacity
+                    onPress={handleSearchPress}
+                    style={styles.searchButton}
+                    activeOpacity={0.8}
+                    accessibilityLabel={t('navigation.explore')}
+                    accessibilityRole="button"
+                >
+                    <BlurView intensity={20} style={[StyleSheet.absoluteFillObject, styles.blurContainer]} />
+                    <View style={styles.searchButtonContent}>
+                        <SearchIcon size={24} color={theme.colors.zinc[950]} />
+                        <Text style={styles.buttonLabel}>{t('navigation.explore')}</Text>
+                    </View>
+                </TouchableOpacity>
+            </View>
 
             {/* Bookings Button - Only visible if there are upcoming bookings */}
             {hasUpcomingBookings && (
-                <TouchableOpacity
-                    onPress={handleBookingsPress}
-                    style={styles.bookingsButton}
-                    activeOpacity={0.8}
-                    accessibilityLabel={t('navigation.bookings')}
-                    accessibilityRole="button"
-                >
-                    <View style={styles.bookingsGradientContainer}>
+                <View style={styles.bookingsButtonShadow}>
+                    <TouchableOpacity
+                        onPress={handleBookingsPress}
+                        style={styles.bookingsButton}
+                        activeOpacity={0.8}
+                        accessibilityLabel={t('navigation.bookings')}
+                        accessibilityRole="button"
+                    >
                         <LinearGradient
                             colors={['#10b981', '#8b5cf6', '#f97316']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
-                            style={StyleSheet.absoluteFillObject}
-                        />
-                        <BlurView intensity={20} style={styles.bookingsBlurContainer}>
+                            style={styles.bookingsGradient}
+                        >
                             <TicketIcon size={24} color={theme.colors.zinc[50]} />
-                        </BlurView>
-                    </View>
-                </TouchableOpacity>
+                        </LinearGradient>
+                    </TouchableOpacity>
+                </View>
             )}
 
             {/* Spacer to balance layout when bookings button is visible */}
@@ -97,36 +98,24 @@ const styles = StyleSheet.create({
     spacer: {
         flex: 1,
     },
+    searchButtonShadow: {
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 8,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
+        elevation: 16,
+    },
     searchButton: {
         borderRadius: 32,
         overflow: 'hidden',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 4,
-        },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 10,
-    },
-    bookingsButton: {
-        borderRadius: 32,
-        overflow: 'hidden',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 4,
-        },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 10,
     },
     blurContainer: {
         borderRadius: 32,
         overflow: 'hidden',
         backgroundColor: 'rgba(255, 255, 255, 0.3)',
-        borderWidth: 1,
-        borderColor: 'rgba(80, 80, 80, 0.1)',
     },
     searchButtonContent: {
         flexDirection: 'row',
@@ -136,25 +125,35 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         gap: 8,
     },
-    bookingsGradientContainer: {
-        borderRadius: 32,
-        overflow: 'hidden',
-        width: 54,
-        height: 54,
-    },
-    bookingsBlurContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 14,
-        paddingHorizontal: 14,
-        width: 54,
-        height: 54,
-        borderRadius: 32,
-    },
     buttonLabel: {
         fontSize: 16,
         fontWeight: '600',
         color: theme.colors.zinc[950],
+    },
+    bookingsButtonShadow: {
+        width: 54,
+        height: 54,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 12,
+        },
+        shadowOpacity: 0.4,
+        shadowRadius: 20,
+        elevation: 20,
+    },
+    bookingsButton: {
+        width: 54,
+        height: 54,
+        borderRadius: 27,
+        overflow: 'hidden',
+    },
+    bookingsGradient: {
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 27,
     },
 });
 
