@@ -47,7 +47,11 @@ export function FloatingNavButtons() {
                     accessibilityLabel={t('navigation.explore')}
                     accessibilityRole="button"
                 >
-                    <BlurView intensity={20} style={[StyleSheet.absoluteFillObject, styles.blurContainer]} />
+                    <BlurView
+                        intensity={20}
+                        tint="light"
+                        style={[StyleSheet.absoluteFillObject, styles.blurContainer]}
+                    />
                     <View style={styles.searchButtonContent}>
                         <SearchIcon size={24} color={theme.colors.zinc[950]} />
                         <Text style={styles.buttonLabel}>{t('navigation.explore')}</Text>
@@ -115,7 +119,7 @@ const styles = StyleSheet.create({
     blurContainer: {
         borderRadius: 32,
         overflow: 'hidden',
-        backgroundColor: 'rgba(255, 255, 255, 0.3)',
+        backgroundColor: 'rgba(255, 255, 255, 0.7)',
     },
     searchButtonContent: {
         flexDirection: 'row',
