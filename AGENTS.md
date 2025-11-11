@@ -9,6 +9,14 @@ Before starting any task:
 - Timezone: display times in business/Greece timezone (`Europe/Athens`)
 - Follow repo commands: install/build/lint/test using pnpm and Turbo
 
+After building a plan and executing changes:
+- **Check AGENTS.md**: Review this file to determine if it needs updates based on the changes made. Update it if:
+  - New patterns, conventions, or best practices were established
+  - Repository structure changed significantly
+  - New critical rules or guidelines emerged
+  - Folder structures or file organization changed
+  - New common commands or workflows were introduced
+
 ## Repository Structure
 
 **Monorepo**: Managed by `pnpm` + Turborepo
