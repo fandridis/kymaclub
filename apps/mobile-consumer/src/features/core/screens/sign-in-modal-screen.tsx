@@ -49,7 +49,7 @@ export function SignInModalScreen() {
                 </View>
 
                 <View style={styles.content}>
-                    <SignInForm />
+                    <SignInForm onBack={() => navigation.goBack()} />
                 </View>
             </KeyboardAvoidingView>
         </SafeAreaView>

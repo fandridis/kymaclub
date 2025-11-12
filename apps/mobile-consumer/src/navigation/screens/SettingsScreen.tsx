@@ -460,7 +460,7 @@ export function SettingsScreen() {
                     color={theme.colors.rose[500]}
                   />
                 </View>
-                <Text style={styles.logoutText}>Sign Out</Text>
+                <Text style={styles.logoutText}>{t('auth.signOut')}</Text>
               </View>
             </TouchableOpacity>
           </SettingsGroup>

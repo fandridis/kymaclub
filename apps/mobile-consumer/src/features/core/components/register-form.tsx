@@ -17,6 +17,7 @@ import { useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { getDeviceId } from '../../../utils/storage';
 import { checkRateLimit, clearRateLimit, formatTimeRemaining } from '../../../utils/rateLimiter';
+import { useTypedTranslation } from '../../../i18n/typed';
 
 interface SimpleRegisterFormProps {
     onSuccess: () => void;
@@ -25,6 +26,7 @@ interface SimpleRegisterFormProps {
 
 export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
     const navigation = useNavigation();
+    const { t } = useTypedTranslation();
     const { signIn } = useAuthActions();
     const [step, setStep] = useState<"email" | { email: string }>("email");
     const [submitting, setSubmitting] = useState(false);
@@ -36,7 +38,7 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
 
     const handleSendCode = async () => {
         if (!email.trim()) {
-            Alert.alert('Error', 'Please enter your email address');
+            Alert.alert(t('auth.register.error'), t('auth.register.errorEnterEmail'));
             return;
         }
 
@@ -47,9 +49,9 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
         if (!rateLimitResult.allowed) {
             const timeText = formatTimeRemaining(rateLimitResult.timeUntilReset || 0);
             Alert.alert(
-                'Too Many Registration Attempts',
-                `Please try again in ${timeText}.`,
-                [{ text: 'OK' }]
+                t('auth.register.tooManyAttempts'),
+                t('auth.register.tooManyAttemptsMessage', { time: timeText }),
+                [{ text: t('auth.register.ok') }]
             );
             return;
         }
@@ -62,17 +64,17 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
 
             if (userExists) {
                 Alert.alert(
-                    'Account Already Exists',
-                    'An account with this email already exists. Please sign in instead.',
+                    t('auth.register.accountExists'),
+                    t('auth.register.accountExistsMessage'),
                     [
                         {
-                            text: 'Sign In',
+                            text: t('auth.register.signInButton'),
                             onPress: () => {
                                 // Navigate to sign-in screen
                                 navigation.navigate('SignInModal' as never);
                             }
                         },
-                        { text: 'OK' }
+                        { text: t('auth.register.ok') }
                     ]
                 );
                 return;
@@ -89,7 +91,7 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
             setStep({ email });
         } catch (error) {
             console.error(error);
-            Alert.alert('Error', 'Could not send verification code. Please try again.');
+            Alert.alert(t('auth.register.error'), t('auth.register.errorSendCode'));
         } finally {
             setCheckingUser(false);
             setSubmitting(false);
@@ -98,7 +100,7 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
 
     const handleVerifyCode = async () => {
         if (!code.trim()) {
-            Alert.alert('Error', 'Please enter the verification code');
+            Alert.alert(t('auth.register.error'), t('auth.register.errorEnterCode'));
             return;
         }
 
@@ -134,7 +136,7 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
 
         } catch (error) {
             console.error(error);
-            Alert.alert('Error', 'Invalid verification code. Please try again.');
+            Alert.alert(t('auth.register.error'), t('auth.register.errorInvalidCode'));
             setSubmitting(false);
         }
     };
@@ -154,17 +156,17 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
                     {step === "email" ? (
                         <>
                             <View style={styles.headerContainer}>
-                                <Text style={styles.title}>Create Account</Text>
-                                <Text style={styles.subtitle}>Enter your email to get started</Text>
+                                <Text style={styles.title}>{t('auth.register.title')}</Text>
+                                <Text style={styles.subtitle}>{t('auth.register.subtitle')}</Text>
                             </View>
 
                             <View style={styles.inputContainer}>
-                                <Text style={styles.label}>Email</Text>
+                                <Text style={styles.label}>{t('auth.register.emailLabel')}</Text>
                                 <TextInput
                                     style={styles.input}
                                     value={email}
                                     onChangeText={setEmail}
-                                    placeholder="Enter your email"
+                                    placeholder={t('auth.register.emailPlaceholder')}
                                     keyboardType="email-address"
                                     autoCapitalize="none"
                                     autoComplete="email"
@@ -180,7 +182,7 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
                                 {(submitting || checkingUser) ? (
                                     <ActivityIndicator color="white" />
                                 ) : (
-                                    <Text style={styles.buttonText}>Create Account</Text>
+                                    <Text style={styles.buttonText}>{t('auth.register.button')}</Text>
                                 )}
                             </TouchableOpacity>
 
@@ -189,25 +191,25 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
                                 onPress={onBack}
                                 disabled={submitting || checkingUser}
                             >
-                                <Text style={styles.backButtonText}>Back</Text>
+                                <Text style={styles.backButtonText}>{t('auth.register.back')}</Text>
                             </TouchableOpacity>
                         </>
                     ) : (
                         <>
                             <View style={styles.headerContainer}>
-                                <Text style={styles.title}>Check your email</Text>
+                                <Text style={styles.title}>{t('auth.register.checkEmailTitle')}</Text>
                                 <Text style={styles.subtitle}>
-                                    We sent a verification code to {step.email}
+                                    {t('auth.register.checkEmailSubtitle', { email: step.email })}
                                 </Text>
                             </View>
 
                             <View style={styles.inputContainer}>
-                                <Text style={styles.label}>Verification Code</Text>
+                                <Text style={styles.label}>{t('auth.register.verificationCodeLabel')}</Text>
                                 <TextInput
                                     style={styles.input}
                                     value={code}
                                     onChangeText={setCode}
-                                    placeholder="Enter 6-digit code"
+                                    placeholder={t('auth.register.verificationCodePlaceholder')}
                                     keyboardType="number-pad"
                                     maxLength={6}
                                     editable={!submitting}
@@ -222,7 +224,7 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
                                 {submitting ? (
                                     <ActivityIndicator color="white" />
                                 ) : (
-                                    <Text style={styles.buttonText}>Verify & Create Account</Text>
+                                    <Text style={styles.buttonText}>{t('auth.register.verifyButton')}</Text>
                                 )}
                             </TouchableOpacity>
 
@@ -231,7 +233,7 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
                                 onPress={handleBackToEmail}
                                 disabled={submitting}
                             >
-                                <Text style={styles.backButtonText}>Back to Email</Text>
+                                <Text style={styles.backButtonText}>{t('auth.register.backToEmail')}</Text>
                             </TouchableOpacity>
                         </>
                     )}

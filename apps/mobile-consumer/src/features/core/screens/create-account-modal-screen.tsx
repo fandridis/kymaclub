@@ -16,13 +16,14 @@ import { X } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import { LocationGate } from '../components/location-gate';
 import { WaitlistData, WaitlistForm } from '../components/waitlist-form';
-import { checkServiceAreaAccess } from '../../../utils/location';
 import { RegisterForm } from '../components/register-form';
+import { useTypedTranslation } from '../../../i18n/typed';
 
 type FlowState = 'location-check' | 'register' | 'waitlist';
 
 export function CreateAccountModalScreen() {
     const navigation = useNavigation();
+    const { t } = useTypedTranslation();
     const [flowState, setFlowState] = useState<FlowState>('location-check');
     const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
     const [serviceAreaCheck, setServiceAreaCheck] = useState<any>(null);
@@ -43,10 +44,10 @@ export function CreateAccountModalScreen() {
             await new Promise(resolve => setTimeout(resolve, 1000));
 
             Alert.alert(
-                'Welcome to the Waitlist! 🎉',
-                `Thanks for joining! We'll notify you at ${data.email} when we launch in ${data.selectedCity}.`,
+                t('auth.waitlist.welcomeTitle'),
+                t('auth.waitlist.welcomeMessage', { email: data.email, city: data.selectedCity }),
                 [{
-                    text: 'OK',
+                    text: t('auth.waitlist.ok'),
                     onPress: () => navigation.goBack()
                 }]
             );

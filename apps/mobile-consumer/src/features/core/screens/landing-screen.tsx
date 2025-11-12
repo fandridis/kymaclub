@@ -6,20 +6,15 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { RootStackParamList } from '../../../navigation';
 import { useAuth } from '../../../stores/auth-store';
-import { secureStorage } from '../../../utils/storage';
 import { useTypedTranslation } from '../../../i18n/typed';
-
-const { width, height } = Dimensions.get('window');
+import { theme } from '../../../theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Landing'>;
 
@@ -62,60 +57,39 @@ export function LandingScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-
-      <LinearGradient
-        colors={['#667eea', '#764ba2']}
-        style={styles.backgroundGradient}
-      />
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
           <View style={styles.headerSection}>
-            <Text style={styles.logo}>🌊</Text>
             <Text style={styles.title}>{t('auth.landing.title')}</Text>
             <Text style={styles.subtitle}>{t('auth.landing.subtitle')}</Text>
           </View>
 
-          <View style={styles.featuresSection}>
-            <BlurView intensity={20} tint="light" style={styles.featureCard}>
-              <Text style={styles.featureEmoji}>🏖️</Text>
-              <Text style={styles.featureTitle}>{t('auth.landing.feature1')}</Text>
-            </BlurView>
+          <View style={styles.bottomSection}>
+            <View style={styles.buttonSection}>
+              <TouchableOpacity
+                style={[styles.button, styles.primaryButton]}
+                onPress={handleCreateAccount}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.primaryButtonText}>{t('auth.landing.createAccount')}</Text>
+              </TouchableOpacity>
 
-            <BlurView intensity={20} tint="light" style={styles.featureCard}>
-              <Text style={styles.featureEmoji}>📱</Text>
-              <Text style={styles.featureTitle}>{t('auth.landing.feature2')}</Text>
-            </BlurView>
+              <TouchableOpacity
+                style={[styles.button, styles.secondaryButton]}
+                onPress={handleSignIn}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.secondaryButtonText}>{t('auth.landing.signIn')}</Text>
+              </TouchableOpacity>
+            </View>
 
-            <BlurView intensity={20} tint="light" style={styles.featureCard}>
-              <Text style={styles.featureEmoji}>🍹</Text>
-              <Text style={styles.featureTitle}>{t('auth.landing.feature3')}</Text>
-            </BlurView>
-          </View>
-
-          <View style={styles.buttonSection}>
-            <TouchableOpacity
-              style={[styles.button, styles.primaryButton]}
-              onPress={handleCreateAccount}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.primaryButtonText}>{t('auth.landing.createAccount')}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.button, styles.secondaryButton]}
-              onPress={handleSignIn}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.secondaryButtonText}>{t('auth.landing.signIn')}</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              {t('auth.landing.footer')}
-            </Text>
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>
+                {t('auth.landing.footer')}
+              </Text>
+            </View>
           </View>
         </View>
       </SafeAreaView>
@@ -126,114 +100,82 @@ export function LandingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  backgroundGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    backgroundColor: theme.colors.zinc[50],
   },
   safeArea: {
     flex: 1,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    justifyContent: 'space-between',
-    paddingTop: 40,
-    paddingBottom: 20,
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing['4xl'],
+    paddingBottom: theme.spacing.xl,
   },
   headerSection: {
+    flex: 1,
     alignItems: 'center',
-    marginBottom: 40,
+    justifyContent: 'center',
+    marginTop: theme.spacing['5xl'],
   },
-  logo: {
-    fontSize: 72,
-    marginBottom: 16,
+  bottomSection: {
+    gap: theme.spacing.md,
   },
   title: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 8,
+    fontSize: theme.fontSize['4xl'],
+    fontWeight: theme.fontWeight.bold,
+    color: theme.colors.zinc[900],
+    marginBottom: theme.spacing.sm,
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.9)',
-  },
-  featuresSection: {
-    gap: 16,
-    marginBottom: 40,
-  },
-  featureCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 16,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  featureEmoji: {
-    fontSize: 32,
-    marginRight: 16,
-  },
-  featureTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 4,
-  },
-  featureDescription: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
-    flex: 1,
+    fontSize: theme.fontSize.lg,
+    color: theme.colors.zinc[600],
+    textAlign: 'center',
+    lineHeight: 24,
   },
   buttonSection: {
-    gap: 12,
+    gap: theme.spacing.md,
+    paddingBottom: theme.spacing.xl,
   },
   button: {
     borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 56,
   },
   primaryButton: {
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.emerald[600],
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 2,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   primaryButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#667eea',
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.semibold,
+    color: 'white',
   },
   secondaryButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.7)',
+    backgroundColor: 'white',
+    borderWidth: 1.5,
+    borderColor: theme.colors.zinc[300],
   },
   secondaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.semibold,
+    color: theme.colors.zinc[900],
   },
   footer: {
     alignItems: 'center',
-    marginTop: 20,
   },
   footerText: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontStyle: 'italic',
+    fontSize: theme.fontSize.xs,
+    color: theme.colors.zinc[500],
   },
 });

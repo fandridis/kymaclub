@@ -17,9 +17,15 @@ import { useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { getDeviceId } from '../../../utils/storage';
 import { checkRateLimit, clearRateLimit, formatTimeRemaining } from '../../../utils/rateLimiter';
+import { useTypedTranslation } from '../../../i18n/typed';
 
-export function SignInForm() {
+interface SignInFormProps {
+    onBack?: () => void;
+}
+
+export function SignInForm({ onBack }: SignInFormProps = {}) {
     const navigation = useNavigation();
+    const { t } = useTypedTranslation();
     const { signIn } = useAuthActions();
     const [step, setStep] = useState<"signIn" | { email: string }>("signIn");
     const [submitting, setSubmitting] = useState(false);
@@ -30,7 +36,7 @@ export function SignInForm() {
 
     const handleSendCode = async () => {
         if (!email.trim()) {
-            Alert.alert('Error', 'Please enter your email address');
+            Alert.alert(t('auth.signIn.error'), t('auth.signIn.errorEnterEmail'));
             return;
         }
 
@@ -41,9 +47,9 @@ export function SignInForm() {
         if (!rateLimitResult.allowed) {
             const timeText = formatTimeRemaining(rateLimitResult.timeUntilReset || 0);
             Alert.alert(
-                'Too Many Login Attempts',
-                `Please try again in ${timeText}.`,
-                [{ text: 'OK' }]
+                t('auth.signIn.tooManyAttempts'),
+                t('auth.signIn.tooManyAttemptsMessage', { time: timeText }),
+                [{ text: t('auth.signIn.ok') }]
             );
             return;
         }
@@ -56,17 +62,17 @@ export function SignInForm() {
 
             if (!userExists) {
                 Alert.alert(
-                    'Account Not Found',
-                    'No account found with this email address. Please create an account first. If this is a mistake, contact support.',
+                    t('auth.signIn.accountNotFound'),
+                    t('auth.signIn.accountNotFoundMessage'),
                     [
                         {
-                            text: 'Create Account',
+                            text: t('auth.signIn.createAccountButton'),
                             onPress: () => {
                                 // Navigate to registration screen
                                 navigation.navigate('CreateAccountModal' as never);
                             }
                         },
-                        { text: 'OK' }
+                        { text: t('auth.signIn.ok') }
                     ]
                 );
                 return;
@@ -83,7 +89,7 @@ export function SignInForm() {
             setStep({ email });
         } catch (error) {
             console.error(error);
-            Alert.alert('Error', 'Could not send verification code. Please try again.');
+            Alert.alert(t('auth.signIn.error'), t('auth.signIn.errorSendCode'));
         } finally {
             setCheckingUser(false);
             setSubmitting(false);
@@ -92,7 +98,7 @@ export function SignInForm() {
 
     const handleVerifyCode = async () => {
         if (!code.trim()) {
-            Alert.alert('Error', 'Please enter the verification code');
+            Alert.alert(t('auth.signIn.error'), t('auth.signIn.errorEnterCode'));
             return;
         }
 
@@ -121,7 +127,7 @@ export function SignInForm() {
 
         } catch (error) {
             console.error(error);
-            Alert.alert('Error', 'Invalid verification code. Please try again.');
+            Alert.alert(t('auth.signIn.error'), t('auth.signIn.errorInvalidCode'));
             setSubmitting(false);
         }
     };
@@ -141,17 +147,17 @@ export function SignInForm() {
                     {step === "signIn" ? (
                         <>
                             <View style={styles.headerContainer}>
-                                <Text style={styles.title}>Welcome to KymaClub</Text>
-                                <Text style={styles.subtitle}>Enter your email to sign in.</Text>
+                                <Text style={styles.title}>{t('auth.signIn.title')}</Text>
+                                <Text style={styles.subtitle}>{t('auth.signIn.subtitle')}</Text>
                             </View>
 
                             <View style={styles.inputContainer}>
-                                <Text style={styles.label}>Email</Text>
+                                <Text style={styles.label}>{t('auth.signIn.emailLabel')}</Text>
                                 <TextInput
                                     style={styles.input}
                                     value={email}
                                     onChangeText={setEmail}
-                                    placeholder="Enter your email"
+                                    placeholder={t('auth.signIn.emailPlaceholder')}
                                     keyboardType="email-address"
                                     autoCapitalize="none"
                                     autoComplete="email"
@@ -167,26 +173,36 @@ export function SignInForm() {
                                 {(submitting || checkingUser) ? (
                                     <ActivityIndicator color="white" />
                                 ) : (
-                                    <Text style={styles.buttonText}>Sign In</Text>
+                                    <Text style={styles.buttonText}>{t('auth.signIn.button')}</Text>
                                 )}
                             </TouchableOpacity>
+
+                            {onBack && (
+                                <TouchableOpacity
+                                    style={styles.backButton}
+                                    onPress={onBack}
+                                    disabled={submitting || checkingUser}
+                                >
+                                    <Text style={styles.backButtonText}>{t('auth.signIn.back')}</Text>
+                                </TouchableOpacity>
+                            )}
                         </>
                     ) : (
                         <>
                             <View style={styles.headerContainer}>
-                                <Text style={styles.title}>Check your email</Text>
+                                <Text style={styles.title}>{t('auth.signIn.checkEmailTitle')}</Text>
                                 <Text style={styles.subtitle}>
-                                    We sent a verification code to {step.email}
+                                    {t('auth.signIn.checkEmailSubtitle', { email: step.email })}
                                 </Text>
                             </View>
 
                             <View style={styles.inputContainer}>
-                                <Text style={styles.label}>Verification Code</Text>
+                                <Text style={styles.label}>{t('auth.signIn.verificationCodeLabel')}</Text>
                                 <TextInput
                                     style={styles.input}
                                     value={code}
                                     onChangeText={setCode}
-                                    placeholder="Enter 6-digit code"
+                                    placeholder={t('auth.signIn.verificationCodePlaceholder')}
                                     keyboardType="number-pad"
                                     maxLength={6}
                                     editable={!submitting}
@@ -201,7 +217,7 @@ export function SignInForm() {
                                 {submitting ? (
                                     <ActivityIndicator color="white" />
                                 ) : (
-                                    <Text style={styles.buttonText}>Sign In</Text>
+                                    <Text style={styles.buttonText}>{t('auth.signIn.button')}</Text>
                                 )}
                             </TouchableOpacity>
 
@@ -210,7 +226,7 @@ export function SignInForm() {
                                 onPress={handleBackToSignIn}
                                 disabled={submitting}
                             >
-                                <Text style={styles.outlineButtonText}>Back to Sign In</Text>
+                                <Text style={styles.outlineButtonText}>{t('auth.signIn.backToSignIn')}</Text>
                             </TouchableOpacity>
                         </>
                     )}
@@ -293,6 +309,18 @@ const styles = StyleSheet.create({
     },
     outlineButtonText: {
         color: '#000',
+        fontSize: 16,
+        fontWeight: '500',
+    },
+    backButton: {
+        backgroundColor: 'transparent',
+        borderRadius: 8,
+        padding: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    backButtonText: {
+        color: '#666',
         fontSize: 16,
         fontWeight: '500',
     },
