@@ -50,7 +50,11 @@ function InnerApp() {
   const { user } = useAuth()
 
   if (user === undefined) {
-    return <SpinningCircles />
+    return (
+      <div className="h-screen w-screen flex items-center justify-center">
+        <SpinningCircles />
+      </div>
+    )
   }
 
   return (

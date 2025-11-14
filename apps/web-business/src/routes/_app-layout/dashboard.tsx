@@ -34,7 +34,11 @@ function Dashboard() {
      * brief time where the user does not exist, until we get redirected.
      */
     if (!user || !business) {
-        return <SpinningCircles />
+        return (
+            <div className="h-screen w-screen flex items-center justify-center">
+                <SpinningCircles />
+            </div>
+        );
     }
 
     return (

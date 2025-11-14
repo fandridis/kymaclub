@@ -11,7 +11,13 @@ export function VenuesList() {
     const [editingVenue, setEditingVenue] = useState<Doc<"venues"> | undefined>();
     const [deletingVenue, setDeletingVenue] = useState<Doc<"venues"> | undefined>();
 
-    if (loading) return <SpinningCircles />;
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-16">
+                <SpinningCircles />
+            </div>
+        );
+    }
 
     if (venues.length === 0) {
         return (
