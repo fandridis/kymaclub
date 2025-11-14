@@ -7,7 +7,7 @@ import { DiamondIcon } from 'lucide-react-native';
 import { theme } from '../../theme';
 import { SettingsGroup, SettingsRow, SettingsHeader } from '../../components/Settings';
 import { StackScreenHeader } from '../../components/StackScreenHeader';
-import { useAuthenticatedUser } from '../../stores/auth-store';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useQuery, useAction } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { CREDIT_PACKS } from '@repo/api/operations/payments';
@@ -19,10 +19,13 @@ const formatCurrency = (amount: number) => `${amount.toFixed(2)}€`;
 export function BuyCreditsScreen() {
     const { t } = useTypedTranslation();
     const navigation = useNavigation();
-    const user = useAuthenticatedUser();
+    const { user } = useCurrentUser();
 
     // Get user credit balance
-    const creditBalance = useQuery(api.queries.credits.getUserBalance, { userId: user._id });
+    const creditBalance = useQuery(
+        api.queries.credits.getUserBalance,
+        user?._id ? { userId: user._id } : 'skip'
+    );
 
     // One-time credit purchase action
     const createOneTimeCheckout = useAction(api.actions.payments.createOneTimeCreditCheckout);
@@ -32,12 +35,12 @@ export function BuyCreditsScreen() {
         if (!pack) return;
 
         Alert.alert(
-            t('purchaseCredits'),
-            t('purchaseConfirm', { credits, price: formatCurrency(pack.price) }),
+            t('credits.purchase'),
+            t('credits.purchaseConfirm', { credits, price: formatCurrency(pack.price) }),
             [
                 { text: t('common.cancel'), style: 'cancel' },
                 {
-                    text: t('purchase'),
+                    text: t('credits.purchase'),
                     onPress: async () => {
                         try {
                             const result = await createOneTimeCheckout({
@@ -49,7 +52,7 @@ export function BuyCreditsScreen() {
                             }
                         } catch (error) {
                             console.error('Error creating checkout:', error);
-                            Alert.alert(t('errors.error'), t('errorPurchase'));
+                            Alert.alert(t('errors.error'), t('credits.errorPurchase'));
                         }
                     }
                 }
@@ -68,7 +71,7 @@ export function BuyCreditsScreen() {
                 {/* Header Section */}
                 <View style={styles.headerSection}>
                     <Text style={styles.screenSubtitle}>
-                        {t('purchaseDescription')}
+                        {t('credits.purchaseDescription')}
                     </Text>
                 </View>
 
@@ -76,18 +79,18 @@ export function BuyCreditsScreen() {
                 <View style={styles.balanceCard}>
                     <View style={styles.balanceHeader}>
                         <DiamondIcon size={20} color={theme.colors.emerald[600]} />
-                        <Text style={styles.balanceTitle}>{t('currentBalance')}</Text>
+                        <Text style={styles.balanceTitle}>{t('credits.currentBalance')}</Text>
                     </View>
                     <View style={styles.balanceDisplay}>
                         <Text style={styles.balanceCredits}>{creditBalance?.balance || 0}</Text>
-                        <Text style={styles.balanceLabel}>{t('creditsAvailable')}</Text>
+                        <Text style={styles.balanceLabel}>{t('credits.creditsAvailable')}</Text>
                     </View>
                 </View>
 
                 {/* Credit Packs Section */}
                 <View style={styles.packsSection}>
-                    <Text style={styles.packsTitle}>{t('availableCreditPacks')}</Text>
-                    <Text style={styles.packsSubtitle}>{t('choosePackMessage')}</Text>
+                    <Text style={styles.packsTitle}>{t('credits.availableCreditPacks')}</Text>
+                    <Text style={styles.packsSubtitle}>{t('credits.choosePackMessage')}</Text>
 
                     <View style={styles.creditPacksGrid}>
                         {CREDIT_PACKS.map((pack) => {
@@ -112,7 +115,7 @@ export function BuyCreditsScreen() {
                                         {formatCurrency(pack.price)}
                                     </Text>
                                     <Text style={styles.pricePerCredit}>
-                                        {formatCurrency(pricePerCredit)} {t('perCredit')}
+                                        {formatCurrency(pricePerCredit)} {t('credits.perCredit')}
                                     </Text>
                                 </TouchableOpacity>
                             );

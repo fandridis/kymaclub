@@ -13,16 +13,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CommonActions, useNavigation } from '@react-navigation/native';
 import { X } from 'lucide-react-native';
 import { SignInForm } from '../components/sign-in-form';
-import { useAuth } from '../../../stores/auth-store';
+import { api } from '@repo/api/convex/_generated/api';
+import { useConvexAuth, useQuery } from 'convex/react';
 
 export function SignInModalScreen() {
     const navigation = useNavigation();
-    const { user } = useAuth();
+    const { isAuthenticated } = useConvexAuth();
+    const data = useQuery(api.queries.core.getCurrentUserQuery, isAuthenticated ? {} : 'skip');
+    const user = data?.user;
 
 
     useEffect(() => {
         if (user) {
-            const redirectTo = user.hasConsumerOnboarded ? 'Home' : 'Onboarding';
+            const redirectTo = user.hasConsumerOnboarded ? 'News' : 'Onboarding';
             navigation.dispatch(
                 CommonActions.reset({
                     index: 0,

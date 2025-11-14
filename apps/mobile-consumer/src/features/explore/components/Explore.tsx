@@ -11,7 +11,7 @@ import { useTypedTranslation } from '../../../i18n/typed';
 import { useAllVenues } from '../hooks/useAllVenues';
 import { VenuesSection } from './VenuesSection';
 import { TabScreenHeader } from '../../../components/TabScreenHeader';
-import { useAuthenticatedUser } from '../../../stores/auth-store';
+import { useCurrentUser } from '../../../hooks/useCurrentUser';
 import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { theme } from '../../../theme';
@@ -26,7 +26,7 @@ import { TouchableOpacity } from 'react-native';
 export function Explore() {
     const { t } = useTypedTranslation();
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-    const user = useAuthenticatedUser();
+    const { user } = useCurrentUser();
     const [activeTab, setActiveTab] = useState<TabType>('businesses');
     const tabItems = useMemo<AppTabItem<TabType>[]>(
         () => [
@@ -60,7 +60,10 @@ export function Explore() {
     });
 
     // Get user credit balance
-    const creditBalance = useQuery(api.queries.credits.getUserBalance, { userId: user._id });
+    const creditBalance = useQuery(
+        api.queries.credits.getUserBalance,
+        user?._id ? { userId: user._id } : 'skip'
+    );
 
     const [loadingLocation, setLoadingLocation] = useState(true);
 

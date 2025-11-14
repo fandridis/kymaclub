@@ -11,7 +11,7 @@ import { theme } from '../../theme';
 import type { RootStackParamList } from '../index';
 import type { Doc } from '@repo/api/convex/_generated/dataModel';
 import { CreditsBadge } from '../../components/CreditsBadge';
-import { useAuthenticatedUser } from '../../stores/auth-store';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { ProfileIconButton } from '../../components/ProfileIconButton';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import ReAnimated, {
@@ -230,7 +230,7 @@ function MessageThreadItem({
 export function MessagesScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [deletingThreadId, setDeletingThreadId] = useState<string | null>(null);
-  const user = useAuthenticatedUser();
+  const { user } = useCurrentUser();
   const { t } = useTypedTranslation();
 
   // Fetch message threads

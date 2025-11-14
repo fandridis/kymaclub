@@ -3,13 +3,13 @@ import { StyleSheet, View, Text, Dimensions, ScrollView, ActivityIndicator, Touc
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MapPinIcon, StarIcon, UserIcon, DiamondIcon, ClockIcon } from 'lucide-react-native';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useConvexAuth } from 'convex/react';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { api } from '@repo/api/convex/_generated/api';
 import { useTypedTranslation } from '../../i18n/typed';
 import { theme } from '../../theme';
 import { TabScreenHeader } from '../../components/TabScreenHeader';
-import { useAuthenticatedUser } from '../../stores/auth-store';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
 import { useAllVenues } from '../../features/explore/hooks/useAllVenues';
 import type { RootStackParamListWithNestedTabs } from '../index';
@@ -96,7 +96,9 @@ const NoUpcomingClassesMessage = ({
 export function NewsScreen() {
     const { t } = useTypedTranslation();
     const navigation = useNavigation<NavigationProp<RootStackParamListWithNestedTabs>>();
-    const user = useAuthenticatedUser();
+    const { isAuthenticated } = useConvexAuth();
+    const data = useQuery(api.queries.core.getCurrentUserQuery, isAuthenticated ? {} : 'skip');
+    const user = data?.user;
 
     const next4Hours = useMemo(() => new Date(now.getTime() + (4 * 60 * 60 * 1000)), [now]);
     const next24Hours = useMemo(() => new Date(now.getTime() + (24 * 60 * 60 * 1000)), [now]);
@@ -124,7 +126,7 @@ export function NewsScreen() {
     );
 
     // Get user credit balance
-    const creditBalance = useQuery(api.queries.credits.getUserBalance, { userId: user._id });
+    const creditBalance = useQuery(api.queries.credits.getUserBalance, { userId: user?._id! });
 
     // Query for happening today classes (until midnight)
     const happeningTodayInstances = useQuery(

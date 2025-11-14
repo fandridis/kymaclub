@@ -2,14 +2,14 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useAuthActions } from '@convex-dev/auth/react';
-import { useAuth } from '../../stores/auth-store';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
+import { useLogout } from '../../hooks/useLogout';
 import { SettingsGroup, SettingsHeader, SettingsRow } from '../../components/Settings';
 import { StackScreenHeader } from '../../components/StackScreenHeader';
 
 export function SettingsProfileScreen() {
-    const { signOut } = useAuthActions();
-    const { user, logout } = useAuth();
+    const { user } = useCurrentUser();
+    const logout = useLogout();
 
     const handleSignOut = async () => {
         Alert.alert(
@@ -25,8 +25,7 @@ export function SettingsProfileScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            signOut();
-                            logout();
+                            await logout();
                         } catch (error) {
                             console.error('Sign out error:', error);
                             Alert.alert('Error', 'Failed to sign out. Please try again.');

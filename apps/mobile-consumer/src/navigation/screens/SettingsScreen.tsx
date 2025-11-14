@@ -9,7 +9,7 @@ import { BellIcon, ShieldIcon, CameraIcon, LogOutIcon } from 'lucide-react-nativ
 import { theme } from '../../theme';
 import { SettingsHeader, SettingsRow } from '../../components/Settings';
 import { SettingsGroup } from '../../components/Settings';
-import { useAuthenticatedUser } from '../../stores/auth-store';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { useCompressedImageUpload } from '../../hooks/useCompressedImageUpload';
@@ -26,14 +26,14 @@ import { useTypedTranslation } from '../../i18n/typed';
 export function SettingsScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const logout = useLogout();
-  const user = useAuthenticatedUser();
+  const { user } = useCurrentUser();
   const { t } = useTypedTranslation();
 
-  const creditBalance = useQuery(api.queries.credits.getUserBalance, { userId: user._id });
-  const expiringCredits = useQuery(api.queries.credits.getUserExpiringCredits, { userId: user._id });
+  const creditBalance = useQuery(api.queries.credits.getUserBalance, { userId: user?._id! });
+  const expiringCredits = useQuery(api.queries.credits.getUserExpiringCredits, { userId: user?._id! });
 
   // Get user profile image URL
-  const profileImageUrl = useQuery(api.queries.uploads.getUserProfileImageUrl, { userId: user._id });
+  const profileImageUrl = useQuery(api.queries.uploads.getUserProfileImageUrl, { userId: user?._id! });
 
   // Get user subscription status
   const subscription = useQuery(api.queries.subscriptions.getCurrentUserSubscription);
@@ -144,8 +144,8 @@ export function SettingsScreen() {
         {
           text: t('auth.signOut'),
           style: 'destructive',
-          onPress: () => {
-            logout(() => {
+          onPress: async () => {
+            await logout(() => {
               // Navigate to Landing screen after logout
               navigation.dispatch(
                 CommonActions.reset({
@@ -284,7 +284,7 @@ export function SettingsScreen() {
 
           {/* New Header Design */}
           <View style={styles.headerSection}>
-            <Text style={styles.greeting}>Hi {user.name?.split(' ')[0] || 'there'}!</Text>
+            <Text style={styles.greeting}>Hi {user?.name?.split(' ')[0] || 'there'}!</Text>
             <View style={styles.avatarRow}>
               <TouchableOpacity
                 style={styles.avatarContainer}

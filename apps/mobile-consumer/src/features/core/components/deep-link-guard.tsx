@@ -1,6 +1,13 @@
-import { useEffect, type ReactNode } from 'react'
-import { useAuth } from '../../../stores/auth-store'
+import { useEffect, useState, createContext, useContext, type ReactNode } from 'react'
+import { useCurrentUser } from '../../../hooks/useCurrentUser'
 import * as Linking from 'expo-linking'
+
+interface PendingDeepLinkContextValue {
+    pendingDeepLink: string | null;
+    setPendingDeepLink: (link: string | null) => void;
+}
+
+const PendingDeepLinkContext = createContext<PendingDeepLinkContextValue | undefined>(undefined);
 
 interface DeepLinkGuardProps {
     children: ReactNode
@@ -12,8 +19,19 @@ function isPaymentResultUrl(url: string | null): boolean {
     return url.includes('/payment/success') || url.includes('/payment/cancel')
 }
 
+/**
+ * DeepLinkGuard - Handles deep link management and provides context
+ * 
+ * Combines:
+ * - State management for pending deep links (Context Provider)
+ * - Logic for storing/processing deep links when user is not authenticated
+ * 
+ * Stores deep links that arrive when user is not authenticated,
+ * so they can be processed after authentication.
+ */
 export function DeepLinkGuard({ children }: DeepLinkGuardProps) {
-    const { user, pendingDeepLink, setPendingDeepLink } = useAuth()
+    const [pendingDeepLink, setPendingDeepLink] = useState<string | null>(null);
+    const { user } = useCurrentUser()
     const url = Linking.useURL()
 
     // Handle incoming deep links
@@ -62,5 +80,20 @@ export function DeepLinkGuard({ children }: DeepLinkGuardProps) {
         }
     }, [user, pendingDeepLink, setPendingDeepLink])
 
-    return <>{children}</>
+    return (
+        <PendingDeepLinkContext.Provider value={{ pendingDeepLink, setPendingDeepLink }}>
+            {children}
+        </PendingDeepLinkContext.Provider>
+    )
+}
+
+/**
+ * Hook to access pending deep link state
+ */
+export function usePendingDeepLink() {
+    const context = useContext(PendingDeepLinkContext);
+    if (context === undefined) {
+        throw new Error('usePendingDeepLink must be used within DeepLinkGuard');
+    }
+    return context;
 }

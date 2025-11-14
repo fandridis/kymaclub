@@ -40,7 +40,7 @@ interface SecureStorageSchema {
  * 
  * User Change Detection:
  * - lastAuthenticatedUserId NEVER auto-clears, only replaced on user change
- * - On app load, AuthSync compares current user ID with lastAuthenticatedUserId
+ * - On app load, useStorageSync hook compares current user ID with lastAuthenticatedUserId
  * - If same user → preserve preferences ✅
  * - If different user → clear previous user's preferences
  * 
@@ -51,7 +51,7 @@ interface SecureStorageSchema {
  * - Preserve: User preferences, lastUserId
  * - Result: Same user keeps settings on re-login ✅
  * 
- * USER CHANGE (AuthSync component):
+ * USER CHANGE (useStorageSync hook):
  * - Clear: User preferences (language, theme, onboarding)
  * - Preserve: Auth tokens (new user needs them!)
  * - Update: lastAuthenticatedUserId to new user
@@ -139,10 +139,24 @@ export const secureStorage = {
     },
 };
 
+/**
+ * ConvexAuthStorage - Async storage adapter for Convex Auth
+ * 
+ * IMPORTANT: Even though MMKV is synchronous, these methods MUST be async
+ * to ensure Convex properly detects storage changes and updates authentication state.
+ * 
+ * Without async methods, Convex may not immediately reflect logout/login state changes,
+ * requiring an app refresh to see the correct authentication state.
+ */
 export const convexAuthStorage = {
-    getItem: (key: string) => convexAuthMMKV.getString(key),
-    setItem: (key: string, value: string) => convexAuthMMKV.set(key, value),
-    removeItem: (key: string) => {
+    getItem: async (key: string): Promise<string | null> => {
+        const value = convexAuthMMKV.getString(key);
+        return value ?? null;
+    },
+    setItem: async (key: string, value: string): Promise<void> => {
+        convexAuthMMKV.set(key, value);
+    },
+    removeItem: async (key: string): Promise<void> => {
         convexAuthMMKV.remove(key);
     },
 };

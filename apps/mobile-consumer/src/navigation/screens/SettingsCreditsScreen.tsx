@@ -7,7 +7,7 @@ import { DiamondIcon, CrownIcon, CheckIcon, InfoIcon } from 'lucide-react-native
 import { theme } from '../../theme';
 import { SettingsHeader, SettingsGroup, SettingsRow } from '../../components/Settings';
 import { StackScreenHeader } from '../../components/StackScreenHeader';
-import { useAuthenticatedUser } from '../../stores/auth-store';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { calculateSubscriptionPricing, CREDIT_PACKS } from '@repo/api/operations/payments';
@@ -53,14 +53,14 @@ const creditPacks: CreditPack[] = CREDIT_PACKS.map(pack => ({
 
 export function SettingsCreditsScreen() {
   const navigation = useNavigation();
-  const user = useAuthenticatedUser();
+  const { user } = useCurrentUser();
   const [selectedSubscription, setSelectedSubscription] = useState<number>(20);
   const [subscriptionEnabled, setSubscriptionEnabled] = useState(false);
   const [useNativeSlider, setUseNativeSlider] = useState(true);
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Get user credit balance
-  const creditBalance = useQuery(api.queries.credits.getUserBalance, { userId: user._id });
+  const creditBalance = useQuery(api.queries.credits.getUserBalance, { userId: user?._id! });
 
   // Mock current subscription status
   const currentSubscription = {

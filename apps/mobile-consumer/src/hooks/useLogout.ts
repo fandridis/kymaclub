@@ -1,8 +1,6 @@
 import { useCallback } from 'react';
-import { useMutation } from 'convex/react';
-import { api } from '@repo/api/convex/_generated/api';
 import { clearAuthTokens } from '../utils/storage';
-import { useAuthStore } from '../stores/auth-store';
+import { useAuthActions } from '@convex-dev/auth/react';
 
 /**
  * Hook for handling user logout with smart cleanup
@@ -19,15 +17,14 @@ import { useAuthStore } from '../stores/auth-store';
  * ✅ Language/theme preserved across sessions
  * 
  * Different user logs in?
- * → AuthSync detects user change and clears preferences automatically
+ * → useStorageSync hook detects user change and clears preferences automatically
  * 
  * Performs the following actions:
- * 1. Removes all sessions from the database
+ * 1. Signs out from Convex Auth (removes session)
  * 2. Clears auth tokens (logout)
  * 3. PRESERVES user preferences (language, theme, etc.)
  * 4. PRESERVES lastUserId (for user recognition)
- * 5. Updates auth state to null
- * 6. Executes optional callback after cleanup
+ * 5. Executes optional callback after cleanup
  * 
  * @returns logout function that accepts an optional callback
  * 
@@ -55,21 +52,16 @@ import { useAuthStore } from '../stores/auth-store';
  * ```
  */
 export function useLogout() {
-    const removeAllSessions = useMutation(api.mutations.core.removeAllSessions);
-    const { logout: clearAuthState } = useAuthStore();
+    const { signOut } = useAuthActions();
 
     const logout = useCallback(async (onComplete?: () => void) => {
         try {
             console.log('Logging out user...');
 
-            // Remove all sessions from the database
-            await removeAllSessions({});
+            await signOut();
 
             // Clear auth tokens only (PRESERVE preferences and lastUserId)
             clearAuthTokens();
-
-            // Update auth state
-            clearAuthState();
 
             console.log('Logout completed successfully');
 
@@ -82,14 +74,12 @@ export function useLogout() {
             // Still clear local state even if remote cleanup fails
             clearAuthTokens();
 
-            clearAuthState();
-
             // Still execute callback even on error since local state is cleared
             if (onComplete) {
                 onComplete();
             }
         }
-    }, [removeAllSessions, clearAuthState]);
+    }, []);
 
     return logout;
 }

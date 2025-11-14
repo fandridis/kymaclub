@@ -6,7 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 
 import { BookingCard } from '../../components/BookingCard';
 import { AppTabs, AppTabItem } from '../../components/AppTabs';
-import { useAuthenticatedUser } from '../../stores/auth-store';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { TabScreenHeader } from '../../components/TabScreenHeader';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../index';
@@ -109,7 +109,7 @@ const buildSections = (bookings: Doc<'bookings'>[], tabType: BookingTabType): Bo
 
 export function BookingsScreen() {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-    const user = useAuthenticatedUser();
+    const { user } = useCurrentUser();
     const { t } = useTypedTranslation();
 
     const [activeTab, setActiveTab] = useState<BookingTabType>('upcoming');

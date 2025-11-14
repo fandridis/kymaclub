@@ -24,7 +24,7 @@ export function PaymentCancelScreen() {
     navigation.reset({
       index: 0,
       routes: [
-        { name: 'Home' },
+        { name: 'News' },
         { name: 'Settings' }
       ],
     });

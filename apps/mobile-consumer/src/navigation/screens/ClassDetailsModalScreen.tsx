@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 import { tz } from '@date-fns/tz';
 import type { RootStackParamList } from '..';
 import { useActionSheet } from '@expo/react-native-action-sheet';
-import { useAuth } from '../../stores/auth-store';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { centsToCredits } from '@repo/utils/credits';
 import { theme } from '../../theme';
 import { BlurView } from 'expo-blur';
@@ -218,7 +218,7 @@ export function ClassDetailsModalScreen() {
     const { classInstance, classInstanceId } = route.params;
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const { showActionSheetWithOptions } = useActionSheet();
-    const { user } = useAuth();
+    const { user } = useCurrentUser();
     const bookClass = useMutation(api.mutations.bookings.bookClass);
     const cancelBookingMutation = useMutation(api.mutations.bookings.cancelBooking);
     const [isBooking, setIsBooking] = useState(false);

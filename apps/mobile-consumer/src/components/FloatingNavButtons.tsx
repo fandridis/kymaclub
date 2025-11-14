@@ -10,12 +10,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTypedTranslation } from '../i18n/typed';
 import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
-import { useAuthenticatedUser } from '../stores/auth-store';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 
 export function FloatingNavButtons() {
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
     const { t } = useTypedTranslation();
-    const user = useAuthenticatedUser();
+    const { user } = useCurrentUser();
 
     // Check if there are upcoming bookings
     const userBookings = useQuery(

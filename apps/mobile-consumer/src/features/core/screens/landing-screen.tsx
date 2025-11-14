@@ -12,25 +12,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../navigation';
-import { useAuth } from '../../../stores/auth-store';
 import { useTypedTranslation } from '../../../i18n/typed';
 import { theme } from '../../../theme';
+import { useCurrentUser } from '../../../hooks/useCurrentUser';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Landing'>;
 
 export function LandingScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { t } = useTypedTranslation();
-  // const isAuthenticated = secureStorage.getIsAuthenticated();
-  const { user } = useAuth();
+  const { user } = useCurrentUser();
+
 
   useEffect(() => {
-    console.log('[landing-screen.tsx] user', user);
-    console.log('[landing-screen.tsx] hasConsumerOnboarded', user?.hasConsumerOnboarded);
-
-
     if (user) {
-      const redirectTo = user.hasConsumerOnboarded ? 'Home' : 'Onboarding';
+      const redirectTo = user.hasConsumerOnboarded ? 'News' : 'Onboarding';
       // Reset the entire navigation stack and navigate to the next screen without history
       navigation.dispatch(
         CommonActions.reset({
@@ -39,7 +35,7 @@ export function LandingScreen() {
         })
       );
     }
-  }, [user, navigation, user])
+  }, [user, navigation])
 
 
   const handleSignIn = () => {

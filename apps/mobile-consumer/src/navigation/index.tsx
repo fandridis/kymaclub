@@ -22,7 +22,7 @@ import { SuperpowersScreen } from './screens/SuperpowersScreen';
 import { BuyCreditsScreen } from './screens/BuyCreditsScreen';
 import { LandingScreen } from '../features/core/screens/landing-screen';
 import { CreateAccountModalScreen } from '../features/core/screens/create-account-modal-screen';
-import { useAuth } from '../stores/auth-store';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 import { LocationObject } from 'expo-location';
 import { SignInModalScreen } from '../features/core/screens/sign-in-modal-screen';
 import { PaymentSuccessScreen } from './screens/PaymentSuccessScreen';
@@ -34,17 +34,14 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 // Root navigator with modal presentation - all screens always available
 export function RootNavigator() {
-  const { user } = useAuth();
-  // const [isAuthenticated] = secureStorage.useIsAuthenticated();
-
-  const isReallyAuthenticated = user;  // && isAuthenticated;
+  const { user } = useCurrentUser();
 
   const getIntialRouteName = () => {
-    if (!isReallyAuthenticated) {
+    if (!user) {
       return 'Landing';
     }
 
-    if (!user?.hasConsumerOnboarded) {
+    if (!user.hasConsumerOnboarded) {
       return 'Onboarding';
     }
 

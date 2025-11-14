@@ -7,7 +7,7 @@ import { CrownIcon, DiamondIcon } from 'lucide-react-native';
 import { theme } from '../../theme';
 import { SettingsHeader, SettingsGroup } from '../../components/Settings';
 import { StackScreenHeader } from '../../components/StackScreenHeader';
-import { useAuthenticatedUser } from '../../stores/auth-store';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useQuery, useAction } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { calculateSubscriptionPricing } from '@repo/utils/credits';
@@ -47,7 +47,7 @@ const subscriptionOptions: SubscriptionTier[] = generateSubscriptionOptions();
 export function SubscriptionScreen() {
     const { t } = useTypedTranslation();
     const navigation = useNavigation();
-    const user = useAuthenticatedUser();
+    const { user } = useCurrentUser();
     const [selectedCredits, setSelectedCredits] = useState<number>(20);
     const [isLoading, setIsLoading] = useState(false);
 

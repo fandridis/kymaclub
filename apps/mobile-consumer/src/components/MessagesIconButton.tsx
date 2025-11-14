@@ -7,11 +7,11 @@ import type { RootStackParamList } from '../navigation';
 import { theme } from '../theme';
 import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
-import { useAuth } from '../stores/auth-store';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 
 export function MessagesIconButton() {
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-    const { user } = useAuth();
+    const { user } = useCurrentUser();
 
     // Get unread message count for the current user
     const unreadCount = useQuery(

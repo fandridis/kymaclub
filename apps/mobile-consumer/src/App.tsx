@@ -11,17 +11,16 @@ import { Asset } from 'expo-asset';
 import * as SplashScreen from 'expo-splash-screen';
 import * as React from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
-import { ConvexProvider, ConvexReactClient, useMutation, useQuery } from "convex/react";
-import { ConvexAuthProvider } from "@convex-dev/auth/react";
+import { ConvexProvider, ConvexReactClient, useMutation } from "convex/react";
 import { ConvexQueryCacheProvider } from "convex-helpers/react/cache";
 import i18n from './i18n';
 import { useEffect, useState } from 'react';
-import { useAuth, useAuthStore } from './stores/auth-store';
-import { AuthSync } from './features/core/components/auth-sync';
-import { DeepLinkGuard } from './features/core/components/deep-link-guard';
 import { ErrorBoundary } from './components/error-boundary';
 import { convexAuthStorage } from './utils/storage';
 import { RootNavigator } from './navigation';
+import { useCurrentUser } from './hooks/useCurrentUser';
+import { useStorageSync } from './hooks/useStorageSync';
+import { DeepLinkGuard, usePendingDeepLink } from './features/core/components/deep-link-guard';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useTypedTranslation } from './i18n/typed';
@@ -32,6 +31,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { api } from '@repo/api/convex/_generated/api';
 import { parseDeepLink } from '@repo/api/utils/deep-linking';
+import { ConvexAuthProvider } from '@convex-dev/auth/react';
 
 
 // Grab env values safely from app.config.js → extra
@@ -47,6 +47,7 @@ if (!convexUrl) {
 // Use a fallback URL to prevent silent failures (will still fail but more obviously)
 const convex = new ConvexReactClient(convexUrl || "https://MISSING_CONVEX_URL.convex.cloud", {
   unsavedChangesWarning: false,
+  // verbose: true,
 });
 // Create navigation reference for deep linking
 const navigationRef = createNavigationContainerRef();
@@ -101,18 +102,16 @@ export function App() {
       <ConvexProvider client={convex}>
         <ConvexAuthProvider client={convex} storage={convexAuthStorage}>
           <ConvexQueryCacheProvider expiration={60 * 1000}>
-            <AuthSync>
-              <DeepLinkGuard>
-                <ActionSheetProvider>
-                  <SafeAreaProvider>
-                    <InnerApp
-                      theme={theme}
-                      onReady={() => { SplashScreen.hideAsync() }}
-                    />
-                  </SafeAreaProvider>
-                </ActionSheetProvider>
-              </DeepLinkGuard>
-            </AuthSync>
+            <DeepLinkGuard>
+              <ActionSheetProvider>
+                <SafeAreaProvider>
+                  <InnerApp
+                    theme={theme}
+                    onReady={() => { SplashScreen.hideAsync() }}
+                  />
+                </SafeAreaProvider>
+              </ActionSheetProvider>
+            </DeepLinkGuard>
           </ConvexQueryCacheProvider>
         </ConvexAuthProvider>
       </ConvexProvider>
@@ -126,13 +125,15 @@ interface InnerAppProps {
 }
 
 export function InnerApp({ theme, onReady }: InnerAppProps) {
-  const { user } = useAuth();
+  const { user, isLoading } = useCurrentUser();
+  const { setPendingDeepLink } = usePendingDeepLink();
   const { t } = useTypedTranslation();
-  const data = useQuery(api.queries.core.getCurrentUserQuery);
   const recordPushNotificationToken = useMutation(api.mutations.pushNotifications.recordPushNotificationToken);
   const [appReady, setAppReady] = useState(false);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
-  const isLoading = data === undefined;
+
+  // Sync storage cleanup on user changes
+  useStorageSync();
 
   // Add timeout to prevent infinite loading (15 seconds)
   useEffect(() => {
@@ -193,7 +194,7 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
           if (user?._id) {
             tryNavigate(parsedLink.route, parsedLink.params);
           } else {
-            useAuthStore.getState().setPendingDeepLink(data.deepLink as string);
+            setPendingDeepLink(data.deepLink as string);
             tryNavigate('SignInModal', {});
           }
         } else {
@@ -214,11 +215,11 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
       } else {
         // Construct a deep link so auth guard can handle after sign-in
         const deepLink = `kymaclub://chat/${data.threadId}${data.venueName ? `?venueName=${encodeURIComponent(data.venueName)}` : ''}`;
-        useAuthStore.getState().setPendingDeepLink(deepLink);
+        setPendingDeepLink(deepLink);
         tryNavigate('SignInModal', {});
       }
     }
-  }, [user?._id]);
+  }, [user?._id, setPendingDeepLink]);
 
   // Handle notification interactions (when user taps on a notification)
   useEffect(() => {
@@ -307,10 +308,10 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
               Landing: 'welcome',
               SignInModal: 'signin',
               CreateAccountModal: 'signup',
-                  News: 'news',
-                  Explore: 'explore',
-                  Bookings: 'bookings',
-                  Messages: 'messages',
+              News: 'news',
+              Explore: 'explore',
+              Bookings: 'bookings',
+              Messages: 'messages',
               Conversation: {
                 path: 'chat/:threadId',
                 parse: {

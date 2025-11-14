@@ -53,7 +53,7 @@ export default function OnboardingWizard() {
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: "Home" }],
+          routes: [{ name: "News" }],
         })
       );
 
@@ -198,8 +198,8 @@ export default function OnboardingWizard() {
 
           {/* Back to Sign In Link */}
           <TouchableOpacity
-            onPress={() => {
-              logout(() => {
+            onPress={async () => {
+              await logout(() => {
                 navigation.dispatch(
                   CommonActions.reset({
                     index: 0,

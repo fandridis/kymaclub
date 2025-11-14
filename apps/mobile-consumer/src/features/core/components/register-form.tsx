@@ -20,7 +20,7 @@ import { checkRateLimit, clearRateLimit, formatTimeRemaining } from '../../../ut
 import { useTypedTranslation } from '../../../i18n/typed';
 
 interface SimpleRegisterFormProps {
-    onSuccess: () => void;
+    onSuccess?: () => void;
     onBack: () => void;
 }
 
@@ -90,7 +90,6 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
             await signIn("resend-otp", formData);
             setStep({ email });
         } catch (error) {
-            console.error(error);
             Alert.alert(t('auth.register.error'), t('auth.register.errorSendCode'));
         } finally {
             setCheckingUser(false);
@@ -109,7 +108,8 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
         try {
             // Create FormData with email and code
             const formData = new FormData();
-            formData.append('email', step === "email" ? email : step.email);
+            const emailValue = step === "email" ? email : step.email;
+            formData.append('email', emailValue);
             formData.append('code', code);
 
             await signIn("resend-otp", formData);
@@ -118,24 +118,11 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
             const deviceId = getDeviceId();
             clearRateLimit('register', email.trim(), deviceId);
 
-            /**
-             * Not used cause the landing-screen has a useEffect that will navigate to the next screen.
-             */
-            // Keep loading state for 3 seconds to show success, then navigate to Landing
-            // This ensures users always land on Landing screen, regardless of navigation stack
-            // setTimeout(() => {
-            //     // Reset navigation stack to Landing to clear any modal stack
-            //     navigation.dispatch(
-            //         CommonActions.reset({
-            //             index: 0,
-            //             routes: [{ name: 'Landing' }],
-            //         })
-            //     );
-            //     setSubmitting(false);
-            // }, 3000);
+            // Note: submitting state will remain true until user state updates and redirect happens
+            // This is intentional - the useEffect in create-account-modal-screen will handle navigation
 
         } catch (error) {
-            console.error(error);
+            console.error('[RegisterForm] Verification error:', error);
             Alert.alert(t('auth.register.error'), t('auth.register.errorInvalidCode'));
             setSubmitting(false);
         }

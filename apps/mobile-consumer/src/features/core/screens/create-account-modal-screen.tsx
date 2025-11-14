@@ -1,5 +1,5 @@
 // components/create-account-modal.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -11,22 +11,36 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useNavigation } from '@react-navigation/native';
+import { CommonActions, useNavigation } from '@react-navigation/native';
 import { X } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import { LocationGate } from '../components/location-gate';
 import { WaitlistData, WaitlistForm } from '../components/waitlist-form';
 import { RegisterForm } from '../components/register-form';
 import { useTypedTranslation } from '../../../i18n/typed';
+import { useCurrentUser } from '../../../hooks/useCurrentUser';
 
 type FlowState = 'location-check' | 'register' | 'waitlist';
 
 export function CreateAccountModalScreen() {
     const navigation = useNavigation();
     const { t } = useTypedTranslation();
+    const { user } = useCurrentUser();
     const [flowState, setFlowState] = useState<FlowState>('location-check');
     const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
     const [serviceAreaCheck, setServiceAreaCheck] = useState<any>(null);
+
+    useEffect(() => {
+        if (user) {
+            const redirectTo = user.hasConsumerOnboarded ? 'News' : 'Onboarding';
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: redirectTo }],
+                })
+            );
+        }
+    }, [user, navigation]);
 
     const handleLocationVerified = () => {
         setFlowState('register');
@@ -75,10 +89,6 @@ export function CreateAccountModalScreen() {
             case 'register':
                 return (
                     <RegisterForm
-                        onSuccess={() => {
-                            // Registration successful, close modal
-                            navigation.goBack();
-                        }}
                         onBack={handleBack}
                     />
                 );
