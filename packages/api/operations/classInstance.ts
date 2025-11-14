@@ -403,7 +403,8 @@ export const createInstanceFromTemplate = (
     venue: Doc<"venues">,
     business: Doc<"businesses">,
     user: Doc<"users">,
-    startTime: number
+    startTime: number,
+    disableBookings?: boolean
 ) => {
     // ADR-005: Time Calculation Strategy
     // Decision: Calculate endTime from template duration, validate startTime first
@@ -451,7 +452,7 @@ export const createInstanceFromTemplate = (
         color: template.color,
         discountRules: template.discountRules,
         hasDiscountRules: hasDiscountRules(template.discountRules),
-        disableBookings: template.disableBookings,
+        disableBookings: disableBookings !== undefined ? disableBookings : template.disableBookings,
 
         // Booking tracking
         bookedCount: 0,

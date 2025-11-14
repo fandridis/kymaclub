@@ -269,6 +269,7 @@ export const transformClassInstancesToCalendarEvents = (classInstances: ClassIns
             end: formattedEnd,
             backgroundColor: TEMPLATE_COLORS_MAP[instance.color as TemplateColorType].backgroundHex,
             opacity: 1,
+            classNames: instance.disableBookings ? ['fc-event-hidden'] : [],
             extendedProps: {
                 classInstance: instance,
                 instructor: instance.instructor,

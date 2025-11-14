@@ -122,7 +122,9 @@
                 "scheduleClassButton": "Schedule Class",
                 "createdInstancesSuccess": "Created {{count}} instances of {{name}}",
                 "scheduledSuccess": "{{name}} scheduled successfully!",
-                "failedToSchedule": "Failed to schedule class. Please try again."
+                "failedToSchedule": "Failed to schedule class. Please try again.",
+                "startHidden": "Start Hidden",
+                "startHiddenDescription": "The created class will not be visible to users."
             },
             "eventMenu": {
                 "viewBookings": "View Bookings",

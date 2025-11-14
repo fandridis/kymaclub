@@ -17,6 +17,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 import { Calendar, BookOpen, ExternalLink, RotateCcw } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useActiveClassTemplates } from '../hooks/use-class-templates';
@@ -68,6 +69,7 @@ export function CreateInstanceFromTemplateDialog({
     const [weeks, setWeeks] = useState<number>(2);
     const [selectedDaysOfWeek, setSelectedDaysOfWeek] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]); // All days selected by default
     const [isCreating, setIsCreating] = useState(false);
+    const [startHidden, setStartHidden] = useState(false);
 
     const createClassInstance = useMutation(api.mutations.classInstances.createClassInstance);
     const createMultipleClassInstances = useMutation(api.mutations.classInstances.createMultipleClassInstances);
@@ -78,6 +80,19 @@ export function CreateInstanceFromTemplateDialog({
     useEffect(() => {
         setScheduledDateTime(selectedDateTime);
     }, [selectedDateTime]);
+
+    // Reset form state when dialog closes
+    useEffect(() => {
+        if (!open) {
+            setSelectedTemplateId('');
+            setScheduledDateTime(selectedDateTime);
+            setIsRecurring(false);
+            setFrequency('weekly');
+            setWeeks(2);
+            setSelectedDaysOfWeek([0, 1, 2, 3, 4, 5, 6]);
+            setStartHidden(false);
+        }
+    }, [open, selectedDateTime]);
 
     const selectedTemplate = classTemplates.find(t => t._id === selectedTemplateId);
 
@@ -124,6 +139,7 @@ export function CreateInstanceFromTemplateDialog({
                         weeks: weeks,
                         duration: selectedTemplate.duration,
                         selectedDaysOfWeek: frequency === 'daily' ? selectedDaysOfWeek : undefined,
+                        disableBookings: startHidden,
                     });
 
                     toast.success(t('routes.calendar.scheduleClass.createdInstancesSuccess', { count, name: selectedTemplate.name }));
@@ -138,6 +154,7 @@ export function CreateInstanceFromTemplateDialog({
                     await createClassInstance({
                         templateId: selectedTemplate._id,
                         startTime,
+                        disableBookings: startHidden,
                     });
 
                     toast.success(t('routes.calendar.scheduleClass.scheduledSuccess', { name: selectedTemplate.name }));
@@ -238,8 +255,28 @@ export function CreateInstanceFromTemplateDialog({
                             )}
                         </div>
 
+                        {/* Start Hidden Checkbox */}
+                        <div className="mt-6">
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="startHidden"
+                                    checked={startHidden}
+                                    onCheckedChange={(checked) => setStartHidden(checked as boolean)}
+                                />
+                                <Label htmlFor="startHidden" className="text-sm font-medium cursor-pointer">
+                                    {t('routes.calendar.scheduleClass.startHidden')}
+                                </Label>
+                            </div>
+                            <p className="text-sm text-muted-foreground pl-6">
+                                {t('routes.calendar.scheduleClass.startHiddenDescription')}
+                            </p>
+                        </div>
+
+                        {/* Divider */}
+                        <Separator className="my-6" />
+
                         {/* Recurring Toggle */}
-                        <div className="mt-6 flex items-center space-x-2">
+                        <div className="flex items-center space-x-2">
                             <Switch
                                 id="recurring"
                                 checked={isRecurring}

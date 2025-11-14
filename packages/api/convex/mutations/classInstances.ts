@@ -13,6 +13,7 @@ import { partial } from "convex-helpers/validators";
 export const createClassInstanceArgs = v.object({
     templateId: v.id("classTemplates"),
     startTime: v.number(),
+    disableBookings: v.optional(v.boolean()),
 });
 export type CreateClassInstanceArgs = Infer<typeof createClassInstanceArgs>;
 
@@ -35,6 +36,7 @@ export const createMultipleClassInstancesArgs = v.object({
     weeks: v.number(),
     duration: v.number(),
     selectedDaysOfWeek: v.optional(v.array(v.number())),
+    disableBookings: v.optional(v.boolean()),
 });
 export type CreateMultipleClassInstancesArgs = Infer<typeof createMultipleClassInstancesArgs>;
 

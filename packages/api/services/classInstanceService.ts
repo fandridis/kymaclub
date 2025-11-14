@@ -94,7 +94,8 @@ export const classInstanceService = {
             venue,
             business,
             user,
-            args.startTime
+            args.startTime,
+            args.disableBookings
         );
 
         const createdInstanceId = await ctx.db.insert("classInstances", instanceToCreate);
@@ -160,7 +161,8 @@ export const classInstanceService = {
                 venue,
                 business,
                 user,
-                startTime
+                startTime,
+                args.disableBookings
             );
             const classInstanceId = await ctx.db.insert("classInstances", instanceToCreate);
             createdInstanceIds.push(classInstanceId);

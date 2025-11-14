@@ -89,9 +89,6 @@ const createTemplateSchema = z.object({
     enableRefundPolicy: z.boolean(),
     cancellationWindowHours: z.string().optional(),
 
-    // Booking Control
-    disableBookings: z.boolean().optional(),
-
     // Discount Rules
     discountRules: z.array(discountRuleSchema).optional(),
 }).refine((data) => {
@@ -152,7 +149,6 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
             bookingWindowMaxHours: z.string().optional(),
             enableRefundPolicy: z.boolean(),
             cancellationWindowHours: z.string().optional(),
-            disableBookings: z.boolean().optional(),
             discountRules: z.array(discountRuleSchema).optional(),
         }).refine((data) => {
             if (data.enableBookingWindow) {
@@ -182,7 +178,6 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
             bookingWindowMaxHours: "168",
             enableRefundPolicy: false,
             cancellationWindowHours: "2",
-            disableBookings: false,
             discountRules: [],
             primaryCategory: '' as VenueCategory,
         },
@@ -216,7 +211,6 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                 bookingWindowMaxHours: (classTemplate!.bookingWindow?.maxHours || 168).toString(),
                 enableRefundPolicy: !!(classTemplate!.cancellationWindowHours && classTemplate!.cancellationWindowHours > 0),
                 cancellationWindowHours: classTemplate!.cancellationWindowHours?.toString() || "2",
-                disableBookings: classTemplate!.disableBookings || false,
                 discountRules: classTemplate!.discountRules || [],
                 primaryCategory: (classTemplate!.primaryCategory as VenueCategory) || '' as VenueCategory,
             });
@@ -284,7 +278,6 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                 cancellationWindowHours: data.enableRefundPolicy && data.cancellationWindowHours
                     ? parseInt(data.cancellationWindowHours)
                     : 0,
-                disableBookings: data.disableBookings || false,
                 tags: data.tags.length > 0 ? data.tags : undefined,
                 color: data.color,
                 discountRules: discountRules.length > 0 ? discountRules.map(rule => ({
@@ -580,15 +573,6 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                                 </div>
                                             )}
                                         </div>
-
-                                        <FormField control={form.control} name="disableBookings" render={({ field }) => (
-                                            <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                                                <FormControl>
-                                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                                </FormControl>
-                                                <FormLabel>{t('routes.templates.dialog.startWithBookingsDisabled')}</FormLabel>
-                                            </FormItem>
-                                        )} />
 
                                         <div className="mt-8">
                                             <FormField control={form.control} name="color" render={({ field }) => (

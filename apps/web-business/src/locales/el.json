@@ -122,7 +122,9 @@
                 "scheduleClassButton": "Προγραμματισμός Τάξης",
                 "createdInstancesSuccess": "Δημιουργήθηκαν {{count}} περιπτώσεις του {{name}}",
                 "scheduledSuccess": "Το {{name}} προγραμματίστηκε με επιτυχία!",
-                "failedToSchedule": "Αποτυχία προγραμματισμού τάξης. Παρακαλώ δοκιμάστε ξανά."
+                "failedToSchedule": "Αποτυχία προγραμματισμού τάξης. Παρακαλώ δοκιμάστε ξανά.",
+                "startHidden": "Έναρξη Κρυφά",
+                "startHiddenDescription": "Η νέα τάξη δεν θα είναι ορατή στους χρήστες."
             },
             "eventMenu": {
                 "viewBookings": "Προβολή Κρατήσεων",

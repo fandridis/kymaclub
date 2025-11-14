@@ -1,5 +1,5 @@
 import type { EventContentArg } from "@fullcalendar/core/index.js";
-import { MoreVertical, Edit, Trash2, Users, Lock, Unlock, CalendarIcon, User } from "lucide-react";
+import { MoreVertical, Edit, Trash2, Users, Eye, EyeOff, AlarmClock, User, AlarmClockOff } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -97,12 +97,12 @@ export const CalendarEventCard = ({ eventInfo, onEdit, onDelete, onViewBookings,
                             <DropdownMenuItem onClick={handleToggleBookingsClick} className="text-gray-700 focus:text-gray-700">
                                 {classInstance.disableBookings ? (
                                     <>
-                                        <Unlock className="h-4 w-4 mr-2" />
+                                        <Eye className="h-4 w-4 mr-2" />
                                         {t('routes.calendar.eventMenu.openBookings')}
                                     </>
                                 ) : (
                                     <>
-                                        <Lock className="h-4 w-4 mr-2" />
+                                        <EyeOff className="h-4 w-4 mr-2" />
                                         {t('routes.calendar.eventMenu.closeBookings')}
                                     </>
                                 )}
@@ -130,18 +130,18 @@ export const CalendarEventCard = ({ eventInfo, onEdit, onDelete, onViewBookings,
 
                 {/* Right side - Status icons */}
                 <div className="flex items-center gap-1">
-                    {/* Lock icon for disabled bookings */}
+                    {/* EyeOff icon for disabled bookings */}
                     {classInstance.disableBookings && (
-                        <Lock className="h-3 w-3 opacity-60" />
+                        <EyeOff className="h-3 w-3 opacity-60" />
                     )}
 
                     {/* Booking window status icon */}
                     {bookingWindowStatus && (
                         <>
                             {bookingWindowStatus === 'open' ? (
-                                <CalendarIcon className="h-3 w-3 opacity-60" />
+                                <AlarmClock className="h-3 w-3 opacity-60" />
                             ) : (
-                                <CalendarIcon className="h-3 w-3 opacity-60" />
+                                <AlarmClockOff className="h-3 w-3 opacity-60" />
                             )}
                         </>
                     )}
