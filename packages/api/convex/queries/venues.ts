@@ -28,8 +28,8 @@ export const getAllVenues = query({
         locationFilter: v.optional(locationFilterArgs),
     },
     handler: async (ctx, args) => {
-        await getAuthenticatedUserOrThrow(ctx);
-        return await venueService.getAllVenues({ ctx, args });
+        const user = await getAuthenticatedUserOrThrow(ctx);
+        return await venueService.getAllVenues({ ctx, args, user });
     }
 });
 
@@ -61,6 +61,7 @@ export const getUpcomingClassesForVenueArgs = v.object({
 export const getUpcomingClassesForVenue = query({
     args: getUpcomingClassesForVenueArgs,
     handler: async (ctx, args) => {
-        return await venueService.getUpcomingClassesForVenue({ ctx, args });
+        const user = await getAuthenticatedUserOrThrow(ctx);
+        return await venueService.getUpcomingClassesForVenue({ ctx, args, user });
     }
 });

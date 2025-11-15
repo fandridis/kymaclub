@@ -6,6 +6,7 @@ import { pricingOperations } from "../../operations/pricing";
 import { ERROR_CODES } from "../../utils/errorCodes";
 import { calculateDistance } from "@repo/utils/distances";
 import { rateLimiter } from "../utils/rateLimiter";
+import { filterTestClassInstances, isClassInstanceVisible } from "../../utils/testDataFilter";
 
 /***************************************************************
  * Get Class Instance By ID
@@ -38,11 +39,20 @@ export const getConsumerClassInstanceByIdArgs = v.object({
 export const getConsumerClassInstanceById = query({
     args: getConsumerClassInstanceByIdArgs,
     handler: async (ctx, args) => {
-        await getAuthenticatedUserOrThrow(ctx);
+        const user = await getAuthenticatedUserOrThrow(ctx);
 
         const instance = await ctx.db.get(args.instanceId);
 
         if (!instance || instance.deleted) {
+            throw new ConvexError({
+                message: "Instance not found",
+                field: "instanceId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND,
+            });
+        }
+
+        // Check if instance is visible to user (filter test instances)
+        if (!isClassInstanceVisible(instance, user)) {
             throw new ConvexError({
                 message: "Instance not found",
                 field: "instanceId",
@@ -143,6 +153,7 @@ export const getBusinessClassInstancesOptimized = query({
         )),
     }),
     handler: async (ctx, args) => {
+        const user = await getAuthenticatedUserOrThrow(ctx);
         let query;
 
         if (args.status && !args.includeDeleted) {
@@ -180,7 +191,8 @@ export const getBusinessClassInstancesOptimized = query({
         // Apply end date filter (can't be in compound index)
         query = query.filter(q => q.lte(q.field("startTime"), args.endDate));
 
-        return query.collect();
+        const instances = await query.collect();
+        return filterTestClassInstances(instances, user);
     }
 });
 
@@ -196,6 +208,7 @@ export const getTemplateInstancesOptimized = query({
         limit: v.optional(v.number()),
     }),
     handler: async (ctx, args) => {
+        const user = await getAuthenticatedUserOrThrow(ctx);
         let query;
 
         if (!args.includeDeleted) {
@@ -212,9 +225,11 @@ export const getTemplateInstancesOptimized = query({
                 .withIndex("by_template", (q) => q.eq("templateId", args.templateId));
         }
 
-        return query
+        const instances = await query
             .order("desc")
             .take(args.limit || 100);
+        
+        return filterTestClassInstances(instances, user);
     }
 });
 
@@ -235,7 +250,7 @@ export const getBestOffersClassInstancesArgs = v.object({
 export const getBestOffersClassInstances = query({
     args: getBestOffersClassInstancesArgs,
     handler: async (ctx, args) => {
-        await getAuthenticatedUserOrThrow(ctx);
+        const user = await getAuthenticatedUserOrThrow(ctx);
         const limit = args.limit || 10;
 
         // 🚀 OPTIMIZED: Use compound index to only fetch instances with discount rules
@@ -293,8 +308,15 @@ export const getBestOffersClassInstances = query({
             }
         }
 
+        // Filter test instances
+        const filteredDiscountedInstances = discountedInstances.filter(instance => {
+            // Get the original instance to check isTest flag
+            const originalInstance = instances.find(i => i._id === instance._id);
+            return originalInstance ? isClassInstanceVisible(originalInstance, user) : false;
+        });
+
         // Sort by discount percentage (highest first), then by start time
-        return discountedInstances
+        return filteredDiscountedInstances
             .sort((a, b) => {
                 if (b.discountPercentage !== a.discountPercentage) {
                     return b.discountPercentage - a.discountPercentage;
@@ -338,7 +360,7 @@ export const getHappeningTodayClassInstances = query({
         }),
     })),
     handler: async (ctx, args) => {
-        await getAuthenticatedUserOrThrow(ctx);
+        const user = await getAuthenticatedUserOrThrow(ctx);
 
         const limit = args.limit || 10;
 
@@ -390,6 +412,11 @@ export const getHappeningTodayClassInstances = query({
 
         // Calculate pricing for each instance and filter by booking windows
         for (const instance of instances) {
+            // Skip test instances unless user is tester
+            if (!isClassInstanceVisible(instance, user)) {
+                continue;
+            }
+
             // Skip instances that can't be booked
             if (!canBookClass(instance, currentTime)) {
                 continue;
@@ -481,9 +508,12 @@ export const getBusinessHappeningTodayClassInstances = query({
             .order("asc")
             .take(limit);
 
+        // Filter test instances
+        const filteredInstances = filterTestClassInstances(instances, user);
+
         // Get booking counts for all instances in parallel
         const enrichedInstances = await Promise.all(
-            instances.map(async (instance) => {
+            filteredInstances.map(async (instance) => {
                 // Count pending bookings for this instance
                 const bookings = await ctx.db
                     .query("bookings")
@@ -570,8 +600,11 @@ export const getConsumerClassInstancesWithBookingStatus = query({
             return [];
         }
 
+        // Filter test instances first
+        const testFilteredInstances = filterTestClassInstances(instances, user);
+
         const filteredInstances = shouldFilterByDistance && locationFilter
-            ? instances.filter((instance) => {
+            ? testFilteredInstances.filter((instance) => {
                 const venueAddress = instance.venueSnapshot?.address;
                 const latitude = typeof venueAddress?.latitude === "number" ? venueAddress.latitude : null;
                 const longitude = typeof venueAddress?.longitude === "number" ? venueAddress.longitude : null;
@@ -589,7 +622,7 @@ export const getConsumerClassInstancesWithBookingStatus = query({
 
                 return distanceMeters <= locationFilter.maxDistanceKm * 1000;
             })
-            : instances;
+            : testFilteredInstances;
 
         if (filteredInstances.length === 0) {
             return [];
@@ -663,9 +696,12 @@ export const getVenueClassInstancesOptimized = query({
             .filter(q => q.lte(q.field("startTime"), args.endDate))
             .collect();
 
+        // Filter test instances
+        const filteredInstances = filterTestClassInstances(instances, user);
+
         // If booking status needed, get user bookings
         if (args.includeBookingStatus) {
-            const instanceIds = instances.map(i => i._id);
+            const instanceIds = filteredInstances.map(i => i._id);
             const userBookings = await ctx.db
                 .query("bookings")
                 .withIndex("by_user", q => q.eq("userId", user._id))
@@ -684,7 +720,7 @@ export const getVenueClassInstancesOptimized = query({
                 userBookings.map(booking => [booking.classInstanceId, booking])
             );
 
-            return instances.map(instance => ({
+            return filteredInstances.map(instance => ({
                 _id: instance._id,
                 venueId: instance.venueId, // Include venueId for navigation
                 startTime: instance.startTime,
@@ -721,7 +757,7 @@ export const getVenueClassInstancesOptimized = query({
         }
 
         // Return minimal fields without booking status
-        return instances.map(instance => ({
+        return filteredInstances.map(instance => ({
             _id: instance._id,
             venueId: instance.venueId, // Include venueId for navigation
             startTime: instance.startTime,

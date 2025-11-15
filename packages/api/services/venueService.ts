@@ -8,6 +8,7 @@ import { createDefaultVenue, prepareCreateVenue, prepareUpdateVenue } from "../o
 import { ERROR_CODES } from "../utils/errorCodes";
 import { venueRules } from "../rules/venue";
 import { calculateDistance } from "@repo/utils/distances";
+import { filterTestVenues, filterTestClassInstances, isVenueVisible } from "../utils/testDataFilter";
 
 
 // Service object with all venue operations
@@ -164,13 +165,13 @@ export const venueService = {
             .filter(q => q.neq(q.field("deleted"), true))
             .collect();
 
-        return venues;
+        return filterTestVenues(venues, user);
     },
 
     /**
      * Get all venues for all businesses
      */
-    getAllVenues: async ({ ctx, args }: {
+    getAllVenues: async ({ ctx, args, user }: {
         ctx: QueryCtx,
         args?: {
             locationFilter?: {
@@ -179,22 +180,26 @@ export const venueService = {
                 maxDistanceKm: number;
             };
         };
+        user?: Doc<"users"> | null;
     }): Promise<Doc<"venues">[]> => {
         const venues = await ctx.db
             .query("venues")
             .withIndex("by_deleted", q => q.eq("deleted", false))
             .collect();
 
+        // Filter test venues first
+        const filteredVenues = filterTestVenues(venues, user);
+
         const locationFilter = args?.locationFilter;
 
         if (!locationFilter || locationFilter.maxDistanceKm <= 0) {
-            return venues;
+            return filteredVenues;
         }
 
         const { latitude: userLat, longitude: userLon, maxDistanceKm } = locationFilter;
         const maxDistanceMeters = maxDistanceKm * 1000;
 
-        return venues.filter((venue) => {
+        return filteredVenues.filter((venue) => {
             const latitude = typeof venue.address?.latitude === "number" ? venue.address.latitude : null;
             const longitude = typeof venue.address?.longitude === "number" ? venue.address.longitude : null;
 
@@ -221,23 +226,42 @@ export const venueService = {
             });
         }
 
+        // Check if venue is visible to user (filter test venues)
+        if (!isVenueVisible(venue, user)) {
+            throw new ConvexError({
+                message: "Venue not found",
+                field: "venueId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND
+            });
+        }
+
         return venue;
     },
 
     /**
      * Get upcoming classes for a venue
      */
-    getUpcomingClassesForVenue: async ({ ctx, args }: {
+    getUpcomingClassesForVenue: async ({ ctx, args, user }: {
         ctx: QueryCtx,
         args: {
             venueId: Id<"venues">,
             daysAhead?: number
-        }
+        };
+        user?: Doc<"users"> | null;
     }): Promise<Doc<"classInstances">[]> => {
 
         // Verify venue exists
         const venue = await ctx.db.get(args.venueId);
         if (!venue) {
+            throw new ConvexError({
+                message: "Venue not found",
+                field: "venueId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND
+            });
+        }
+
+        // Check if venue is visible to user (filter test venues)
+        if (!isVenueVisible(venue, user)) {
             throw new ConvexError({
                 message: "Venue not found",
                 field: "venueId",
@@ -262,8 +286,11 @@ export const venueService = {
             ))
             .collect();
 
+        // Filter test class instances
+        const filteredInstances = filterTestClassInstances(allInstances, user);
+
         // Sort chronologically and limit
-        const sortedInstances = allInstances
+        const sortedInstances = filteredInstances
             .sort((a, b) => a.startTime - b.startTime)
             .slice(0, 20);
 

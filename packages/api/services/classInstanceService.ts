@@ -9,6 +9,7 @@ import { classInstanceOperations } from "../operations/classInstance";
 import { timeUtils } from "../utils/timeGeneration";
 import type { CreateClassInstanceArgs, CreateMultipleClassInstancesArgs, DeleteSimilarFutureInstancesArgs, DeleteSingleInstanceArgs, UpdateMultipleInstancesArgs, UpdateSingleInstanceArgs } from "../convex/mutations/classInstances";
 import { bookingService } from "./bookingService";
+import { filterTestClassInstances, isClassInstanceVisible } from "../utils/testDataFilter";
 
 /**
  * Update bookings when class time changes:
@@ -439,7 +440,7 @@ export const classInstanceService = {
             .filter(q => q.neq(q.field("deleted"), true))
             .collect();
 
-        return instances;
+        return filterTestClassInstances(instances, user);
     },
 
     /**
@@ -472,7 +473,8 @@ export const classInstanceService = {
         }
 
         const matching = await classInstanceService.findSimilarFutureInstances(ctx, originalInstance, user.businessId!);
-        return matching.filter(instance => instance._id !== args.instanceId);
+        const filtered = matching.filter(instance => instance._id !== args.instanceId);
+        return filterTestClassInstances(filtered, user);
     },
 
     /**
@@ -525,6 +527,15 @@ export const classInstanceService = {
             });
         }
 
+        // Check if instance is visible to user (filter test instances)
+        if (!isClassInstanceVisible(instance, user)) {
+            throw new ConvexError({
+                message: "Instance not found",
+                field: "instanceId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND
+            });
+        }
+
         return instance;
     },
 
@@ -557,12 +568,15 @@ export const classInstanceService = {
             .order("asc") // Sort by startTime ascending
             .take(limit);
 
-        if (classInstances.length === 0) {
+        // Filter test instances
+        const filteredInstances = filterTestClassInstances(classInstances, user);
+
+        if (filteredInstances.length === 0) {
             return [];
         }
 
         // Get all instance IDs for batch booking query
-        const classInstanceIds = classInstances.map(instance => instance._id);
+        const classInstanceIds = filteredInstances.map(instance => instance._id);
 
         // Get all active bookings for these class instances
         const allBookings: Doc<"bookings">[] = [];
@@ -651,12 +665,15 @@ export const classInstanceService = {
             .order("asc") // Sort by startTime ascending
             .collect();
 
-        if (classInstances.length === 0) {
+        // Filter test instances
+        const filteredInstances = filterTestClassInstances(classInstances, user);
+
+        if (filteredInstances.length === 0) {
             return [];
         }
 
         // Get all instance IDs for batch booking query
-        const classInstanceIds = classInstances.map(instance => instance._id);
+        const classInstanceIds = filteredInstances.map(instance => instance._id);
 
         // Get all active bookings for these class instances
         const allBookings: Doc<"bookings">[] = [];
@@ -677,7 +694,7 @@ export const classInstanceService = {
         // Build the result array with enriched bookings
         const result: Array<{ classInstance: Doc<"classInstances">; bookings: Doc<"bookings">[] }> = [];
 
-        for (const classInstance of classInstances) {
+        for (const classInstance of filteredInstances) {
             // Find bookings for this class instance
             const instanceBookings = allBookings.filter(
                 booking => booking.classInstanceId === classInstance._id

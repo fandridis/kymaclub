@@ -41,58 +41,58 @@ import { clearAuthTokens, clearUserPreferences, secureStorage } from '../utils/s
  * Call this hook once at the app root (e.g., in App.tsx)
  */
 export function useStorageSync() {
-  const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
-  const userQuery = useQuery(
-    api.queries.core.getCurrentUserQuery,
-    isAuthenticated ? {} : 'skip'
-  );
+    const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
+    const userQuery = useQuery(
+        api.queries.core.getCurrentUserQuery,
+        isAuthenticated ? {} : 'skip'
+    );
 
-  const isUserQueryLoading = userQuery === undefined;
-  const currentUser = userQuery?.user;
+    const isUserQueryLoading = userQuery === undefined;
+    const currentUser = userQuery?.user;
 
-  useEffect(() => {
-    // Wait for auth to initialize
-    if (isAuthLoading || isUserQueryLoading) {
-      console.log('[useStorageSync] 🔄 Initializing...');
-      return;
-    }
+    useEffect(() => {
+        // Wait for auth to initialize
+        if (isAuthLoading || isUserQueryLoading) {
+            console.log('[useStorageSync] 🔄 Initializing...');
+            return;
+        }
 
-    // Not authenticated - clear user state and auth tokens
-    if (!isAuthenticated) {
-      console.log('[useStorageSync] 🚫 Not authenticated, clearing auth tokens');
-      clearAuthTokens();
-      return;
-    }
+        // Not authenticated - clear user state and auth tokens
+        if (!isAuthenticated) {
+            console.log('[useStorageSync] 🚫 Not authenticated, clearing auth tokens');
+            clearAuthTokens();
+            return;
+        }
 
-    // Handle storage cleanup based on user changes
-    const currentUserId = currentUser?._id || null;
-    const lastUserId = secureStorage.getLastUserId();
+        // Handle storage cleanup based on user changes
+        const currentUserId = currentUser?._id || null;
+        const lastUserId = secureStorage.getLastUserId();
 
-    console.log('[useStorageSync] 🔍 User check:', { currentUserId, lastUserId });
+        console.log('[useStorageSync] 🔍 User check:', { currentUserId, lastUserId });
 
-    // No current user → logout/session expired scenario
-    if (!currentUserId) {
-      console.log('[useStorageSync] 🔐 User logged out, clearing auth tokens only');
-      clearAuthTokens(); // Clear auth tokens, but KEEP preferences and lastUserId
-      return;
-    }
+        // No current user → logout/session expired scenario
+        if (!currentUserId) {
+            console.log('[useStorageSync] 🔐 User logged out, clearing auth tokens only');
+            clearAuthTokens(); // Clear auth tokens, but KEEP preferences and lastUserId
+            return;
+        }
 
-    // Have a user - check if it changed
-    if (lastUserId !== currentUserId) {
-      console.log('[useStorageSync] 🔐 User changed:', { from: lastUserId, to: currentUserId });
+        // Have a user - check if it changed
+        if (lastUserId !== currentUserId) {
+            console.log('[useStorageSync] 🔐 User changed:', { from: lastUserId, to: currentUserId });
 
-      // Clear previous user's preferences only if there was a previous user
-      if (lastUserId) {
-        console.log('[useStorageSync]   → Clearing previous user preferences');
-        clearUserPreferences(); // Clear app preferences, KEEP auth tokens and lastUserId
-      } else {
-        console.log('[useStorageSync]   → First login, no cleanup needed');
-      }
+            // Clear previous user's preferences only if there was a previous user
+            if (lastUserId) {
+                console.log('[useStorageSync]   → Clearing previous user preferences');
+                clearUserPreferences(); // Clear app preferences, KEEP auth tokens and lastUserId
+            } else {
+                console.log('[useStorageSync]   → First login, no cleanup needed');
+            }
 
-      // Update to new user ID
-      secureStorage.setLastUserId(currentUserId);
-      console.log('[useStorageSync]   → New user ID saved:', currentUserId);
-    }
-  }, [currentUser, isAuthenticated, isAuthLoading, isUserQueryLoading]);
+            // Update to new user ID
+            secureStorage.setLastUserId(currentUserId);
+            console.log('[useStorageSync]   → New user ID saved:', currentUserId);
+        }
+    }, [currentUser, isAuthenticated, isAuthLoading, isUserQueryLoading]);
 }
 

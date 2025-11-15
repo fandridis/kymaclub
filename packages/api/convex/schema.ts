@@ -100,6 +100,9 @@ export const usersFields = {
   // Stripe customer ID for payments
   stripeCustomerId: v.optional(v.string()),
 
+  // Testing flag for production testing
+  isTester: v.optional(v.boolean()),
+
   ...softDeleteFields,
 };
 
@@ -254,6 +257,10 @@ export const venuesFields = {
 
   isActive: v.boolean(),
   imageStorageIds: v.optional(v.array(v.id("_storage"))),
+
+  // Testing flag for production testing
+  isTest: v.optional(v.boolean()),
+
   ...auditFields,
   ...softDeleteFields,
 };
@@ -371,6 +378,9 @@ export const classInstancesFields = {
     imageStorageIds: v.optional(v.array(v.id("_storage"))),
     deleted: v.optional(v.boolean()),
   }),
+
+  // Testing flag for production testing
+  isTest: v.optional(v.boolean()),
 
   ...auditFields,
   ...softDeleteFields,
