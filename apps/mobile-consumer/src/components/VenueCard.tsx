@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
     borderWidth: 1,
-    borderColor: theme.colors.zinc[400],
+    borderColor: theme.colors.zinc[300],
   },
   container: {
     backgroundColor: 'white',

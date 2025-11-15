@@ -112,7 +112,7 @@ export function Explore() {
 
     if (isLoading) {
         return (
-            <SafeAreaView style={styles.centerContainer}>
+            <SafeAreaView style={styles.centerContainer} edges={['top', 'left', 'right']}>
                 <ActivityIndicator size="large" color="#ff4747" />
                 <Text style={styles.loadingText}>{t('common.loading')}</Text>
             </SafeAreaView>
@@ -121,7 +121,7 @@ export function Explore() {
 
     if (error) {
         return (
-            <SafeAreaView style={styles.centerContainer}>
+            <SafeAreaView style={styles.centerContainer} edges={['top', 'left', 'right']}>
                 <Text style={styles.errorText}>{error}</Text>
             </SafeAreaView>
         );
@@ -132,7 +132,7 @@ export function Explore() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <TabScreenHeader
                 renderLeftSide={() => (
                     <TouchableOpacity
