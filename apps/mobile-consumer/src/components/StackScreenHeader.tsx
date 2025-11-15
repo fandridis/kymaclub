@@ -38,7 +38,7 @@ export function StackScreenHeader({ title, renderRightSide, onBackPress }: Stack
         activeOpacity={0.7}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <ChevronLeftIcon size={24} color="#111827" />
+        <ChevronLeftIcon size={30} color="#111827" />
       </TouchableOpacity>
 
       {title && (

@@ -449,7 +449,7 @@ export function ConversationScreen() {
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
-            <ArrowLeftIcon size={24} color={theme.colors.zinc[700]} />
+            <ChevronLeftIcon size={30} color={theme.colors.zinc[700]} />
           </TouchableOpacity>
           <View style={styles.headerInfo}>
             <View style={styles.headerText}>
@@ -478,7 +478,7 @@ export function ConversationScreen() {
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
-            <ArrowLeftIcon size={24} color={theme.colors.zinc[700]} />
+            <ArrowLeftIcon size={28} color={theme.colors.zinc[700]} />
           </TouchableOpacity>
 
           <View style={styles.headerInfo}>

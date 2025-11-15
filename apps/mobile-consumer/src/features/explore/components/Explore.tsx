@@ -143,7 +143,7 @@ export function Explore() {
                         accessibilityLabel={t('common.back')}
                         accessibilityRole="button"
                     >
-                        <ChevronLeftIcon size={24} color="#111827" />
+                        <ChevronLeftIcon size={30} color="#111827" />
                     </TouchableOpacity>
                 )}
                 renderRightSide={() => (

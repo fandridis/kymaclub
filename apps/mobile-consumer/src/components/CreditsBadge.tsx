@@ -25,7 +25,7 @@ export function CreditsBadge({ creditBalance }: CreditsBadgeProps) {
             activeOpacity={0.85}
             style={styles.creditsBadge}
         >
-            <DiamondIcon size={14} color={theme.colors.emerald[950]} />
+            <DiamondIcon size={18} color={theme.colors.emerald[950]} />
             <Text style={styles.creditsBadgeText}>{creditBalance || 0}</Text>
         </TouchableOpacity>
     );

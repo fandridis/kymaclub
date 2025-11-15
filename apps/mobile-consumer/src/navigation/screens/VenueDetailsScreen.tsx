@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Image } from 'expo-image';
 import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
-import { StarIcon, ArrowLeftIcon, ShowerHeadIcon, AccessibilityIcon, UserIcon, ClockIcon, CheckCircleIcon, MessageCircleIcon, PhoneIcon, MailIcon, GlobeIcon, MapPinIcon } from 'lucide-react-native';
+import { StarIcon, ShowerHeadIcon, AccessibilityIcon, UserIcon, ClockIcon, CheckCircleIcon, MessageCircleIcon, PhoneIcon, MailIcon, GlobeIcon, MapPinIcon, ChevronLeftIcon } from 'lucide-react-native';
 import Carousel from 'react-native-reanimated-carousel';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
@@ -704,8 +704,8 @@ export function VenueDetailsScreen() {
                         }
                     }}
                 >
-                    <ArrowLeftIcon
-                        size={26}
+                    <ChevronLeftIcon
+                        size={30}
                     // color={theme.colors.zinc[950]}
                     />
                 </TouchableOpacity>

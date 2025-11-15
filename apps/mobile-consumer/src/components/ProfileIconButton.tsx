@@ -16,7 +16,7 @@ export function ProfileIconButton() {
       accessibilityLabel="Open settings"
       accessibilityRole="button"
     >
-      <UserIcon size={20} color={theme.colors.zinc[700]} />
+      <UserIcon size={22} color={theme.colors.zinc[700]} />
     </TouchableOpacity>
   );
 }

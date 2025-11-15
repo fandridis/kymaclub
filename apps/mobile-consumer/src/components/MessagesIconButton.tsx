@@ -29,7 +29,7 @@ export function MessagesIconButton() {
             accessibilityLabel="Open messages"
             accessibilityRole="button"
         >
-            <MessageCircleIcon size={20} color={theme.colors.zinc[700]} />
+            <MessageCircleIcon size={22} color={theme.colors.zinc[700]} />
             {hasUnread && typeof unreadCount === 'number' && (
                 <View style={styles.badge}>
                     <Text style={styles.badgeText}>
@@ -59,8 +59,8 @@ const styles = StyleSheet.create({
         right: -3,
         backgroundColor: theme.colors.rose[600],
         borderRadius: 8,
-        minWidth: 16,
-        height: 16,
+        minWidth: 18,
+        height: 18,
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: 3,

@@ -90,7 +90,7 @@ export function FloatingNavButtons() {
 const styles = StyleSheet.create({
     container: {
         position: 'absolute',
-        bottom: 24,
+        bottom: 40,
         left: 20,
         right: 20,
         flexDirection: 'row',
