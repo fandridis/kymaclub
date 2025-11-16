@@ -5,6 +5,7 @@ import { throwIfError, updateIfExists } from '../utils/core';
 import { ERROR_CODES } from '../utils/errorCodes';
 import { classValidations } from "../validations/class";
 import type { CreateMultipleClassInstancesArgs, UpdateSingleInstanceArgs } from "../convex/mutations/classInstances";
+import { isUserTester } from "../utils/testDataFilter";
 
 /**
  * Helper function to determine if discount rules exist
@@ -358,7 +359,6 @@ export const prepareInstanceUpdatesFromVenueChanges = (
  * @param user - Creating user for audit trail
  * @param startTime - Start timestamp for the class instance
  * @param disableBookings - Optional flag to disable bookings for this instance
- * @param isTest - Optional flag to mark this instance as a test instance (for testers)
  * @returns Complete class instance object ready for database insertion
  * 
  * @example
@@ -406,8 +406,7 @@ export const createInstanceFromTemplate = (
     business: Doc<"businesses">,
     user: Doc<"users">,
     startTime: number,
-    disableBookings?: boolean,
-    isTest?: boolean
+    disableBookings?: boolean
 ) => {
     // ADR-005: Time Calculation Strategy
     // Decision: Calculate endTime from template duration, validate startTime first
@@ -494,8 +493,8 @@ export const createInstanceFromTemplate = (
         createdAt: now,
         createdBy: user._id,
 
-        // Testing flag for production testing
-        ...(isTest !== undefined && { isTest }),
+        // Testing flag for production testing - determined from user
+        ...(isUserTester(user) && { isTest: true }),
     };
 };
 

@@ -46,6 +46,8 @@ describe('Profile Image Moderation Integration', () => {
         user = await asUser.query(api.queries.core.getCurrentUserQuery, {});
         expect(user?.user?.profileImageModerationStatus).toBe("auto_approved");
         expect(user?.user?.profileImageModerationScore).toBe(15);
+        // Verify storageId is still set
+        expect(user?.user?.consumerProfileImageStorageId).toBe(storageId);
 
         // Step 3: Verify image is now visible
         const imageUrl = await asUser.query(api.queries.uploads.getUserProfileImageUrl, { userId });

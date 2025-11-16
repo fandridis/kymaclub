@@ -400,6 +400,42 @@ describe('Class Instance Operations - Safety Tests', () => {
       expect(instance.templateSnapshot.discountRules).toBeUndefined();
     });
 
+    it('should set isTest flag when user is a tester', () => {
+      const testerUser: Doc<"users"> = {
+        ...mockUser,
+        isTester: true
+      } as Doc<"users">;
+      const startTime = new Date('2024-01-08T10:00:00').getTime();
+
+      const instance = createInstanceFromTemplate(
+        mockTemplate,
+        mockVenue,
+        mockBusiness,
+        testerUser,
+        startTime
+      );
+
+      expect(instance.isTest).toBe(true);
+    });
+
+    it('should not set isTest flag when user is not a tester', () => {
+      const regularUser: Doc<"users"> = {
+        ...mockUser,
+        isTester: false
+      } as Doc<"users">;
+      const startTime = new Date('2024-01-08T10:00:00').getTime();
+
+      const instance = createInstanceFromTemplate(
+        mockTemplate,
+        mockVenue,
+        mockBusiness,
+        regularUser,
+        startTime
+      );
+
+      expect(instance.isTest).toBeUndefined();
+    });
+
     it('should validate startTime through validation layer', async () => {
       const invalidStartTime = "not a number" as any;
 

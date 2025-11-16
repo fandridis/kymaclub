@@ -9,7 +9,7 @@ import { classInstanceOperations } from "../operations/classInstance";
 import { timeUtils } from "../utils/timeGeneration";
 import type { CreateClassInstanceArgs, CreateMultipleClassInstancesArgs, DeleteSimilarFutureInstancesArgs, DeleteSingleInstanceArgs, UpdateMultipleInstancesArgs, UpdateSingleInstanceArgs } from "../convex/mutations/classInstances";
 import { bookingService } from "./bookingService";
-import { filterTestClassInstances, isClassInstanceVisible, isUserTester } from "../utils/testDataFilter";
+import { filterTestClassInstances, isClassInstanceVisible } from "../utils/testDataFilter";
 
 /**
  * Update bookings when class time changes:
@@ -96,8 +96,7 @@ export const classInstanceService = {
             business,
             user,
             args.startTime,
-            args.disableBookings,
-            isUserTester(user) ? true : undefined
+            args.disableBookings
         );
 
         const createdInstanceId = await ctx.db.insert("classInstances", instanceToCreate);
@@ -157,7 +156,6 @@ export const classInstanceService = {
         );
 
         const createdInstanceIds: Array<Id<"classInstances">> = [];
-        const isTester = isUserTester(user);
         for (const { startTime } of instanceTimes) {
             const instanceToCreate = classInstanceOperations.createInstanceFromTemplate(
                 template,
@@ -165,8 +163,7 @@ export const classInstanceService = {
                 business,
                 user,
                 startTime,
-                args.disableBookings,
-                isTester ? true : undefined
+                args.disableBookings
             );
 
             const classInstanceId = await ctx.db.insert("classInstances", instanceToCreate);
