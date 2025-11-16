@@ -103,6 +103,9 @@ export const usersFields = {
   // Testing flag for production testing
   isTester: v.optional(v.boolean()),
 
+  // Active city slug for location-based filtering
+  activeCitySlug: v.optional(v.string()),
+
   ...softDeleteFields,
 };
 
@@ -220,9 +223,11 @@ export const venuesFields = {
     linkedin: v.optional(v.string()),
   })),
 
+  citySlug: v.optional(v.string()),
   address: v.object({
     street: v.string(),
     city: v.string(),
+    area: v.optional(v.string()),
     zipCode: v.string(),
     country: v.string(),
     state: v.optional(v.string()),
@@ -311,6 +316,9 @@ export const classInstancesFields = {
   templateId: v.id("classTemplates"),
   venueId: v.id("venues"),
 
+  // City slug for efficient city-based filtering (denormalized from venue)
+  citySlug: v.optional(v.string()),
+
   primaryCategory: v.optional(venueCategoryField),
 
   // Scheduling (REQUIRED for every instance)
@@ -366,9 +374,11 @@ export const classInstancesFields = {
   // Venue Snapshot
   venueSnapshot: v.object({
     name: v.string(),
+    citySlug: v.optional(v.string()),
     address: v.object({
       street: v.string(),
       city: v.string(),
+      area: v.optional(v.string()),
       zipCode: v.string(),
       country: v.string(),
       state: v.optional(v.string()),
@@ -985,7 +995,9 @@ export default defineSchema({
   /** 
    * Users that register to the system
    */
-  users: defineTable(usersFields).index("email", ["email"]),
+  users: defineTable(usersFields)
+    .index("email", ["email"])
+    .index("by_active_city_slug", ["activeCitySlug"]),
 
   /** 
    * Business that the user belongs to - created on onboarding
@@ -1011,7 +1023,7 @@ export default defineSchema({
    */
   venues: defineTable(venuesFields)
     .index("by_business", ["businessId"])
-    .index("by_city", ["address.city"])
+    .index("by_city_slug", ["citySlug"])
     .index("by_deleted", ["deleted"])
     // 🆕 PERFORMANCE INDEXES FOR DELETED ITEM FILTERING
     .index("by_business_deleted", ["businessId", "deleted"]),
@@ -1046,8 +1058,12 @@ export default defineSchema({
     .index("by_venue_deleted_start_time", ["venueId", "deleted", "startTime"])
     // 🚀 GLOBAL CONSUMER QUERY OPTIMIZATION - eliminates expensive filters
     .index("by_status_deleted_start_time", ["status", "deleted", "startTime"])
+    // 🏙️ CITY-BASED FILTERING - efficient city filtering for consumer queries
+    .index("by_city_slug_status_deleted_start_time", ["citySlug", "status", "deleted", "startTime"])
     // 🎯 DISCOUNT OPTIMIZATION - only fetch instances with discount rules
     .index("by_status_deleted_hasDiscountRules_start_time", ["status", "deleted", "hasDiscountRules", "startTime"])
+    // 🏙️🎯 CITY-BASED DISCOUNT OPTIMIZATION - efficient city + discount filtering
+    .index("by_city_slug_status_deleted_hasDiscountRules_start_time", ["citySlug", "status", "deleted", "hasDiscountRules", "startTime"])
     // 🏁 CLASS COMPLETION OPTIMIZATION - efficient queries for classes that have ended
     .index("by_status_deleted_end_time", ["status", "deleted", "endTime"]),
 

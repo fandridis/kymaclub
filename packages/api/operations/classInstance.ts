@@ -321,14 +321,16 @@ export const prepareInstanceUpdatesFromVenueChanges = (
     // Rationale: Venues are reference data, instances need historical point-in-time snapshots
     // Date: 2024-08, Context: Customer booking confirmations must show venue as it was when booked
     // Alternative considered: Update instance.venueId references, rejected due to data integrity concerns
+    // Exception: Update root citySlug for future instances to enable efficient city-based queries
 
-    return instances.map(instance => ({
-        instanceId: instance._id,
-        changes: {
+    const now = Date.now();
+    return instances.map(instance => {
+        const changes: Partial<Doc<"classInstances">> = {
             venueSnapshot: {
                 ...instance.venueSnapshot, // Preserve existing snapshot data
                 ...updateIfExists({
                     name: venueChanges.name,
+                    citySlug: venueChanges.citySlug,
                     // Smart address merging - preserve fields not being updated
                     address: venueChanges.address && {
                         ...instance.venueSnapshot.address, // Keep existing city, state, etc.
@@ -338,8 +340,19 @@ export const prepareInstanceUpdatesFromVenueChanges = (
                     deleted: venueChanges.deleted,
                 }),
             },
+        };
+
+        // Update root citySlug for future instances to enable efficient city-based queries
+        // Past instances keep their original citySlug for historical accuracy
+        if (venueChanges.citySlug !== undefined && instance.startTime > now) {
+            changes.citySlug = venueChanges.citySlug;
         }
-    }));
+
+        return {
+            instanceId: instance._id,
+            changes,
+        };
+    });
 };
 
 /***************************************************************
@@ -434,6 +447,7 @@ export const createInstanceFromTemplate = (
         businessId: business._id,
         templateId: template._id,
         venueId: template.venueId!,
+        citySlug: venue.citySlug, // Denormalized for efficient city-based queries
         primaryCategory,
         timezone: business.timezone,
         startTime: validatedStartTime,
@@ -479,9 +493,11 @@ export const createInstanceFromTemplate = (
         // Venue snapshot - captures venue state at instance creation
         venueSnapshot: {
             name: venue.name,
+            citySlug: venue.citySlug,
             address: {
                 street: venue.address.street,
                 city: venue.address.city,
+                area: venue.address.area,
                 zipCode: venue.address.zipCode,
                 country: venue.address.country,
                 state: venue.address.state,

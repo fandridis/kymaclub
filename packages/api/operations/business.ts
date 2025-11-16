@@ -3,9 +3,11 @@ import { CreateBusinessWithVenueArgs } from "../convex/mutations/core";
 
 import { throwIfError } from "../utils/core";
 import { coreValidations } from "../validations/core";
-import { venueValidations } from "../validations/venue";
+import { prepareCreateVenue } from "./venue";
 
 export const prepareCreateBusiness = (args: CreateBusinessWithVenueArgs): CreateBusinessWithVenueArgs => {
+    const preparedVenue = prepareCreateVenue({ venue: args.venue });
+
     const cleanBusiness: CreateBusinessWithVenueArgs = {
         business: {
             name: throwIfError(coreValidations.validateBusinessName(args.business.name), 'name'),
@@ -19,21 +21,7 @@ export const prepareCreateBusiness = (args: CreateBusinessWithVenueArgs): Create
                 country: throwIfError(coreValidations.validateCountry(args.business.address.country), 'country'),
             }
         },
-        venue: {
-            name: throwIfError(venueValidations.validateName(args.venue.name), 'name'),
-            description: throwIfError(venueValidations.validateDescription(args.venue.description ?? ''), 'description'),
-            email: throwIfError(coreValidations.validateEmail(args.venue.email), 'email'),
-            address: {
-                street: throwIfError(coreValidations.validateStreet(args.venue.address.street), 'street'),
-                city: throwIfError(coreValidations.validateCity(args.venue.address.city), 'city'),
-                state: throwIfError(coreValidations.validateState(args.venue.address.state), 'state'),
-                zipCode: throwIfError(coreValidations.validateZipCode(args.venue.address.zipCode), 'zipCode'),
-                country: throwIfError(coreValidations.validateCountry(args.venue.address.country), 'country'),
-            },
-            primaryCategory: args.venue.primaryCategory,
-            services: args.venue.services,
-            amenities: args.venue.amenities,
-        }
+        venue: preparedVenue,
     };
 
     if (args.business.phone !== undefined) {
@@ -42,10 +30,6 @@ export const prepareCreateBusiness = (args: CreateBusinessWithVenueArgs): Create
 
     if (args.business.website !== undefined) {
         cleanBusiness.business.website = throwIfError(coreValidations.validateWebsite(args.business.website), 'website');
-    }
-
-    if (args.business.description !== undefined) {
-        cleanBusiness.business.description = throwIfError(coreValidations.validateDescription(args.business.description), 'description');
     }
 
     return cleanBusiness;

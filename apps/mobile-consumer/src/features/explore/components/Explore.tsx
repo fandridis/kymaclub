@@ -22,6 +22,7 @@ import { CreditsBadge } from '../../../components/CreditsBadge';
 import { ProfileIconButton } from '../../../components/ProfileIconButton';
 import { ChevronLeftIcon } from 'lucide-react-native';
 import { TouchableOpacity } from 'react-native';
+import { useUserCity } from '../../../hooks/use-user-city';
 
 export function Explore() {
     const { t } = useTypedTranslation();
@@ -39,24 +40,11 @@ export function Explore() {
     const [error, setError] = useState<string | null>(null);
     const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
     const filters = useExploreFiltersStore((state) => state.filters);
-
-    const locationFilter = useMemo(() => {
-        if (!userLocation || !filters.distanceKm || filters.distanceKm <= 0) {
-            return undefined;
-        }
-
-        return {
-            latitude: userLocation.coords.latitude,
-            longitude: userLocation.coords.longitude,
-            maxDistanceKm: filters.distanceKm,
-        } as const;
-    }, [userLocation, filters.distanceKm]);
-
-    const shouldSkipVenuesQuery = filters.distanceKm > 0 && !userLocation;
+    const { city: userCity, loading: cityLoading } = useUserCity();
 
     const { venues, venuesLoading, storageIdToUrl } = useAllVenues({
-        locationFilter: locationFilter,
-        skip: shouldSkipVenuesQuery,
+        cityFilter: userCity,
+        skip: !userCity || cityLoading,
     });
 
     // Get user credit balance
@@ -108,7 +96,7 @@ export function Explore() {
         navigation.navigate('ExploreFiltersModal');
     }, [navigation]);
 
-    const isLoading = loadingLocation || venuesLoading;
+    const isLoading = loadingLocation || venuesLoading || cityLoading;
 
     if (isLoading) {
         return (
@@ -123,6 +111,48 @@ export function Explore() {
         return (
             <SafeAreaView style={styles.centerContainer} edges={['top', 'left', 'right']}>
                 <Text style={styles.errorText}>{error}</Text>
+            </SafeAreaView>
+        );
+    }
+
+    // Show empty state if no city selected
+    if (!userCity && !cityLoading) {
+        return (
+            <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+                <TabScreenHeader
+                    renderLeftSide={() => (
+                        <TouchableOpacity
+                            onPress={handleBackPress}
+                            style={styles.backButton}
+                            activeOpacity={0.7}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            accessibilityLabel={t('common.back')}
+                            accessibilityRole="button"
+                        >
+                            <ChevronLeftIcon size={30} color="#111827" />
+                        </TouchableOpacity>
+                    )}
+                    renderRightSide={() => (
+                        <>
+                            {creditBalance !== undefined && (
+                                <CreditsBadge creditBalance={creditBalance.balance} />
+                            )}
+                            <ProfileIconButton />
+                        </>
+                    )}
+                />
+                <View style={styles.emptyStateContainer}>
+                    <Text style={styles.emptyStateTitle}>Select Your City</Text>
+                    <Text style={styles.emptyStateText}>
+                        Please select a city in settings to explore classes and venues.
+                    </Text>
+                    <TouchableOpacity
+                        style={styles.settingsButton}
+                        onPress={() => navigation.navigate('Settings' as never)}
+                    >
+                        <Text style={styles.settingsButtonText}>Go to Settings</Text>
+                    </TouchableOpacity>
+                </View>
             </SafeAreaView>
         );
     }
@@ -224,5 +254,36 @@ const styles = StyleSheet.create({
         padding: 8,
         marginLeft: -8,
         borderRadius: 20,
+    },
+    emptyStateContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 40,
+    },
+    emptyStateTitle: {
+        fontSize: 24,
+        fontWeight: '800',
+        color: theme.colors.zinc[900],
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    emptyStateText: {
+        fontSize: 16,
+        color: theme.colors.zinc[600],
+        textAlign: 'center',
+        marginBottom: 24,
+        lineHeight: 24,
+    },
+    settingsButton: {
+        backgroundColor: theme.colors.emerald[600],
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 12,
+    },
+    settingsButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: '700',
     },
 });

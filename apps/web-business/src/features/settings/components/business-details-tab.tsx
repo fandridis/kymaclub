@@ -13,6 +13,8 @@ import { api } from '@repo/api/convex/_generated/api';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useVenues } from '@/features/venues/hooks/use-venues';
 import { SpinningCircles } from '@/components/spinning-circles';
+import { getCityOptions, getCityLabel, normalizeCityInput } from '@repo/utils/constants';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const amenitiesSchema = z.object({
     showers: z.boolean().default(false),
@@ -47,6 +49,8 @@ const socialSchema = z.object({
     youtube: z.string().url().optional().or(z.literal('')),
 }).partial();
 
+const CITY_OPTIONS = getCityOptions();
+
 const businessFormSchema = z.object({
     name: z.string().min(1, 'Name is required').max(100),
     email: z.string().min(1, 'Email is required'),
@@ -59,6 +63,7 @@ const businessFormSchema = z.object({
     address: z.object({
         street: z.string().min(1, 'Street address is required'),
         city: z.string().min(1, 'City is required'),
+        area: z.string().max(100, 'Area must be less than 100 characters').optional(),
         zipCode: z.string().min(1, 'Zip code is required').regex(/^\d{5}$/, 'Zip code must be 5 digits'),
         country: z.string().min(1),
         state: z.string().optional(),
@@ -107,7 +112,8 @@ export function BusinessDetailsTab() {
         website: venue?.website ?? business.website ?? '',
         address: {
             street: venue?.address?.street ?? '',
-            city: venue?.address?.city ?? '',
+            city: venue?.citySlug ?? normalizeCityInput(venue?.address?.city ?? '') ?? '',
+            area: venue?.address?.area ?? '',
             zipCode: venue?.address?.zipCode ?? '',
             country: venue?.address?.country ?? 'Greece',
             state: venue?.address?.state ?? undefined,
@@ -159,6 +165,10 @@ export function BusinessDetailsTab() {
         if (!venue) return;
         setIsSaving(true);
         try {
+            const selectedCity = CITY_OPTIONS.find(option => option.value === values.address.city);
+            const citySlug = selectedCity?.value ?? values.address.city;
+            const areaValue = values.address.area?.trim() || undefined;
+
             await updateVenue({
                 venueId: venue._id,
                 venue: {
@@ -176,7 +186,8 @@ export function BusinessDetailsTab() {
                     },
                     address: {
                         street: values.address.street,
-                        city: values.address.city,
+                        city: citySlug,
+                        ...(areaValue ? { area: areaValue } : {}),
                         zipCode: values.address.zipCode,
                         country: values.address.country,
                         ...(values.address.state ? { state: values.address.state } : {}),
@@ -338,13 +349,24 @@ export function BusinessDetailsTab() {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>City <span className="text-red-500">*</span></FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            placeholder="Athens"
-                                            disabled={isSaving || !venue}
-                                            {...field}
-                                        />
-                                    </FormControl>
+                                    <Select
+                                        onValueChange={field.onChange}
+                                        value={field.value}
+                                        disabled={isSaving || !venue}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select a city" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {CITY_OPTIONS.map((option) => (
+                                                <SelectItem key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -367,7 +389,6 @@ export function BusinessDetailsTab() {
                                 </FormItem>
                             )}
                         />
-
                         <FormField
                             control={form.control}
                             name="address.country"
@@ -386,6 +407,24 @@ export function BusinessDetailsTab() {
                             )}
                         />
                     </div>
+
+                    <FormField
+                        control={form.control}
+                        name="address.area"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Area / Neighborhood (optional)</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        placeholder="Kallithea, Nea Smyrni..."
+                                        disabled={isSaving || !venue}
+                                        {...field}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                 </div>
 
                 {/* Amenities Section */}

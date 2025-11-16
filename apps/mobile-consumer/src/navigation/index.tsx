@@ -17,6 +17,7 @@ import { SettingsSubscriptionScreen } from './screens/SettingsSubscriptionScreen
 import { SettingsAccountScreen } from './screens/SettingsAccountScreen';
 import { SettingsCreditsScreen } from './screens/SettingsCreditsScreen';
 import { LanguageSelectionScreen } from './screens/LanguageSelectionScreen';
+import { CitySelectionScreen } from './screens/CitySelectionScreen';
 import { SubscriptionScreen } from './screens/SubscriptionScreen';
 import { SuperpowersScreen } from './screens/SuperpowersScreen';
 import { BuyCreditsScreen } from './screens/BuyCreditsScreen';
@@ -155,6 +156,14 @@ export function RootNavigator() {
       <RootStack.Screen
         name="LanguageSelection"
         component={LanguageSelectionScreen}
+        options={{
+          animation: 'slide_from_right',
+          headerShown: false,
+        }}
+      />
+      <RootStack.Screen
+        name="CitySelection"
+        component={CitySelectionScreen}
         options={{
           animation: 'slide_from_right',
           headerShown: false,
@@ -306,6 +315,7 @@ export type RootStackParamList = {
   SettingsSubscription: undefined;
   SettingsAccount: undefined;
   LanguageSelection: undefined;
+  CitySelection: undefined;
   SettingsCredits: undefined;
   Subscription: undefined;
   Superpowers: undefined;
@@ -366,6 +376,7 @@ export type RootStackParamListWithNestedTabs = {
   SettingsSubscription: undefined;
   SettingsAccount: undefined;
   LanguageSelection: undefined;
+  CitySelection: undefined;
   SettingsCredits: undefined;
   Subscription: undefined;
   Superpowers: undefined;

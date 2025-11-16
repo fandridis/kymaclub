@@ -6,11 +6,7 @@ interface UseClassInstancesProps {
     endDate?: number;
     includeBookingStatus?: boolean;
     limit?: number;
-    locationFilter?: {
-        latitude: number;
-        longitude: number;
-        maxDistanceKm: number;
-    };
+    cityFilter?: string;
 }
 
 const THIRTY_DAYS_IN_MS = 1000 * 60 * 60 * 24 * 30;
@@ -20,18 +16,18 @@ export function useClassInstances({
     endDate, 
     includeBookingStatus = false,
     limit,
-    locationFilter,
+    cityFilter,
 }: UseClassInstancesProps) {
     const finalEndDate = endDate ?? startDate + THIRTY_DAYS_IN_MS;
     
     // Use optimized consumer query when booking status is needed
     const classInstancesWithBookings = useQuery(
         api.queries.classInstances.getConsumerClassInstancesWithBookingStatus,
-        includeBookingStatus ? {
+        includeBookingStatus && cityFilter ? {
             startDate,
             endDate: finalEndDate,
             limit,
-            ...(locationFilter ? { locationFilter } : {}),
+            cityFilter,
         } : "skip"
     );
     

@@ -10,7 +10,8 @@ import type { RootStackParamList } from '../navigation';
 import { theme } from '../theme';
 import { ExploreCategoryId, getExploreCategoryTag } from '@repo/utils/exploreFilters';
 import * as Location from 'expo-location';
-import { calculateDistance } from '../utils/location';
+import { calculateDistance, sortByDistance } from '../utils/location';
+import { useUserCity } from '../hooks/use-user-city';
 
 interface ClassesListProps {
   selectedDate: string;
@@ -25,18 +26,8 @@ interface ClassesListProps {
 export function ClassesList({ selectedDate, searchFilters, userLocation }: ClassesListProps) {
   const { t } = useTypedTranslation();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-
-  const locationFilter = useMemo(() => {
-    if (!userLocation || !searchFilters.distanceKm || searchFilters.distanceKm <= 0) {
-      return undefined;
-    }
-
-    return {
-      latitude: userLocation.coords.latitude,
-      longitude: userLocation.coords.longitude,
-      maxDistanceKm: searchFilters.distanceKm,
-    } as const;
-  }, [userLocation, searchFilters.distanceKm]);
+  const { city: userCity } = useUserCity();
+  type ClassWithDistance = ClassInstance & { distance: number };
 
   // Get class instances for the selected date
   const selectedDateStart = useMemo(() => {
@@ -63,14 +54,15 @@ export function ClassesList({ selectedDate, searchFilters, userLocation }: Class
     startDate: selectedDateStart,
     endDate: selectedDateEnd,
     includeBookingStatus: true, // Enable booking status for consumer app
-    locationFilter,
+    cityFilter: userCity,
   });
 
-  // Apply filters immediately using useMemo (like VenuesSection)
-  const filteredClasses = useMemo(() => {
-    const { searchQuery, categories, distanceKm } = searchFilters;
+  // Apply filters and calculate distances
+  const filteredAndSortedClasses = useMemo<ClassWithDistance[]>(() => {
+    const { searchQuery, categories } = searchFilters;
 
-    return classInstances.filter((instance) => {
+    // Filter by search query and categories
+    let filtered = classInstances.filter((instance) => {
       const name = instance.name?.toLowerCase() ?? '';
       const business = instance.venueSnapshot?.name?.toLowerCase() ?? '';
       const tags = (instance.tags ?? []).map((t) => t.toLowerCase());
@@ -92,31 +84,38 @@ export function ClassesList({ selectedDate, searchFilters, userLocation }: Class
         );
       })();
 
-      const matchesDistance = (() => {
-        if (!distanceKm || distanceKm <= 0 || !userLocation) {
-          return true;
-        }
-
-        const venueAddress = instance.venueSnapshot?.address;
-        const latitude = typeof venueAddress?.latitude === 'number' ? venueAddress.latitude : null;
-        const longitude = typeof venueAddress?.longitude === 'number' ? venueAddress.longitude : null;
-
-        if (latitude === null || longitude === null) {
-          return true;
-        }
-
-        const distanceMeters = calculateDistance(
-          userLocation.coords.latitude,
-          userLocation.coords.longitude,
-          latitude,
-          longitude
-        );
-
-        return distanceMeters <= distanceKm * 1000;
-      })();
-
-      return matchesSearch && matchesCategory && matchesDistance;
+      return matchesSearch && matchesCategory;
     });
+
+    // Calculate distances if user location is available
+    if (userLocation) {
+      const withDistances: ClassWithDistance[] = filtered.map((instance) => {
+        const venueAddress = instance.venueSnapshot?.address;
+        const lat = typeof venueAddress?.latitude === 'number' ? venueAddress.latitude : null;
+        const lng = typeof venueAddress?.longitude === 'number' ? venueAddress.longitude : null;
+
+        if (lat !== null && lng !== null && isFinite(lat) && isFinite(lng)) {
+          const distance = calculateDistance(
+            userLocation.coords.latitude,
+            userLocation.coords.longitude,
+            lat,
+            lng
+          );
+          return { ...instance, distance };
+        }
+        return { ...instance, distance: Infinity };
+      });
+
+      // Sort by distance (closest first)
+      return sortByDistance(withDistances);
+    }
+
+    return sortByDistance(
+      filtered.map((instance) => ({
+        ...instance,
+        distance: Infinity,
+      })),
+    );
   }, [classInstances, searchFilters, userLocation]);
 
   if (classInstancesLoading) {
@@ -130,10 +129,11 @@ export function ClassesList({ selectedDate, searchFilters, userLocation }: Class
 
   return (
     <FlashList
-      data={filteredClasses}
+      data={filteredAndSortedClasses}
       renderItem={({ item }) => (
         <ClassCard
           classInstance={item}
+          distance={item.distance !== undefined && item.distance !== Infinity ? item.distance : undefined}
           onPress={(classInstance) =>
             navigation.navigate('ClassDetailsModal', { classInstance })
           }
@@ -177,6 +177,18 @@ const styles = StyleSheet.create({
     paddingVertical: 50,
   },
   emptyText: {
+    fontSize: 16,
+    color: theme.colors.zinc[500],
+    textAlign: 'center',
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 50,
+    paddingHorizontal: 20,
+  },
+  emptyStateText: {
     fontSize: 16,
     color: theme.colors.zinc[500],
     textAlign: 'center',

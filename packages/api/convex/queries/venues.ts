@@ -17,15 +17,9 @@ export const getVenues = query({
 /***************************************************************
  * Get all venues of the application
  ***************************************************************/
-const locationFilterArgs = v.object({
-    latitude: v.number(),
-    longitude: v.number(),
-    maxDistanceKm: v.number(),
-});
-
 export const getAllVenues = query({
     args: {
-        locationFilter: v.optional(locationFilterArgs),
+        cityFilter: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);

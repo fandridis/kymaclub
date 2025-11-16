@@ -3,6 +3,7 @@ import { coreValidations } from "../validations/core";
 import { venueValidations } from "../validations/venue";
 import { CreateVenueArgs, UpdateVenueArgs } from "../convex/mutations/venues";
 import { throwIfError } from "../utils/core";
+import { getCityLabel } from "@repo/utils/constants";
 
 /**
  * Venue Operations - Business Logic for Venue Management
@@ -81,6 +82,10 @@ import { throwIfError } from "../utils/core";
 export const prepareCreateVenue = (args: CreateVenueArgs): CreateVenueArgs['venue'] => {
     const v = args.venue;
 
+    const citySlug = throwIfError(coreValidations.validateCitySelection(v.address.city), 'address.city');
+    const cityDisplayName = getCityLabel(citySlug) || v.address.city;
+    const area = throwIfError(coreValidations.validateArea(v.address.area), 'address.area');
+
     const cleanVenue: CreateVenueArgs['venue'] = {
         // ADR-007: Field Preservation Strategy
         // Decision: Preserve non-validated fields during venue creation
@@ -94,9 +99,11 @@ export const prepareCreateVenue = (args: CreateVenueArgs): CreateVenueArgs['venu
         email: throwIfError(coreValidations.validateEmail(v.email), 'email'), // Required for venue contact
 
         // Address validation - comprehensive geographic data validation
+        citySlug,
         address: {
             street: throwIfError(coreValidations.validateStreet(v.address.street), 'address.street'),
-            city: throwIfError(coreValidations.validateCity(v.address.city), 'address.city'),
+            city: cityDisplayName,
+            ...(area !== undefined && { area }),
             zipCode: throwIfError(coreValidations.validateZipCode(v.address.zipCode), 'address.zipCode'),
             country: throwIfError(coreValidations.validateCountry(v.address.country), 'address.country'),
             // State is optional (not all countries use states)
@@ -220,42 +227,92 @@ export const createDefaultVenue = (
 export const prepareUpdateVenue = (updates: UpdateVenueArgs, existingVenue: Doc<"venues">): UpdateVenueArgs['venue'] => {
     const v = updates.venue;
 
-    const cleanVenue: UpdateVenueArgs['venue'] = {
-        // Spread the original to keep values that are not being validated
-        ...v,
-        // ADR-008: Smart Address Merging Strategy
-        // Decision: Merge address updates with existing address data
-        // Rationale: Allows partial address updates without losing existing geographic data
-        // Date: 2024-08, Context: Geocoding updates shouldn't require re-entering full address
-        // Alternative considered: Replace entire address object, rejected due to data loss risk
+    const cleanVenue: UpdateVenueArgs['venue'] = {};
 
-        // Address merging - preserve existing fields, validate and update only provided fields
-        address: {
-            ...existingVenue.address, // Preserve all existing address data
-            ...(v.address?.street !== undefined && { street: throwIfError(coreValidations.validateStreet(v.address.street), 'address.street') }),
-            ...(v.address?.city !== undefined && { city: throwIfError(coreValidations.validateCity(v.address.city), 'address.city') }),
-            ...(v.address?.zipCode !== undefined && { zipCode: throwIfError(coreValidations.validateZipCode(v.address.zipCode), 'address.zipCode') }),
-            ...(v.address?.country !== undefined && { country: throwIfError(coreValidations.validateCountry(v.address.country), 'address.country') }),
-            // State is optional for international venues
-            ...(v.address?.state !== undefined && { state: throwIfError(coreValidations.validateState(v.address.state), 'address.state') }),
-            // Geocoding coordinates - support for map integration
-            ...(v.address?.latitude !== undefined && { latitude: throwIfError(venueValidations.validateLatitude(v.address.latitude), 'address.latitude') }),
-            ...(v.address?.longitude !== undefined && { longitude: throwIfError(venueValidations.validateLongitude(v.address.longitude), 'address.longitude') }),
-        },
-
-        // Optional fields
-        ...(v.name !== undefined && { name: throwIfError(venueValidations.validateName(v.name), 'name') }),
-        ...(v.description !== undefined && { description: throwIfError(venueValidations.validateDescription(v.description), 'description') }),
-        ...(v.capacity !== undefined && { capacity: throwIfError(venueValidations.validateCapacity(v.capacity), 'capacity') }),
-        ...(v.equipment !== undefined && { equipment: throwIfError(venueValidations.validateEquipment(v.equipment), 'equipment') }),
-        ...(v.amenities !== undefined && { amenities: v.amenities }),
-        ...(v.services !== undefined && { services: v.services }),
-        ...(v.imageStorageIds !== undefined && { imageStorageIds: v.imageStorageIds }),
-        ...(v.phone !== undefined && { phone: v.phone }),
-        ...(v.website !== undefined && { website: v.website }),
-        ...(v.email !== undefined && { email: v.email }),
-        ...(v.socialMedia !== undefined && { socialMedia: v.socialMedia }),
+    const mergedAddress: Doc<"venues">["address"] = {
+        ...existingVenue.address,
     };
+
+    if (v.address?.street !== undefined) {
+        mergedAddress.street = throwIfError(coreValidations.validateStreet(v.address.street), 'address.street');
+    }
+
+    let nextCitySlug: string | undefined;
+    if (v.address?.city !== undefined) {
+        nextCitySlug = throwIfError(coreValidations.validateCitySelection(v.address.city), 'address.city');
+    }
+    if (v.citySlug !== undefined) {
+        nextCitySlug = throwIfError(coreValidations.validateCitySelection(v.citySlug), 'citySlug');
+    }
+    if (nextCitySlug) {
+        cleanVenue.citySlug = nextCitySlug;
+        const display = getCityLabel(nextCitySlug);
+        if (display) {
+            mergedAddress.city = display;
+        }
+    }
+
+    if (v.address?.area !== undefined) {
+        const area = throwIfError(coreValidations.validateArea(v.address.area), 'address.area');
+        if (area === undefined) {
+            delete mergedAddress.area;
+        } else {
+            mergedAddress.area = area;
+        }
+    }
+
+    if (v.address?.zipCode !== undefined) {
+        mergedAddress.zipCode = throwIfError(coreValidations.validateZipCode(v.address.zipCode), 'address.zipCode');
+    }
+    if (v.address?.country !== undefined) {
+        mergedAddress.country = throwIfError(coreValidations.validateCountry(v.address.country), 'address.country');
+    }
+    if (v.address?.state !== undefined) {
+        mergedAddress.state = throwIfError(coreValidations.validateState(v.address.state), 'address.state');
+    }
+    if (v.address?.latitude !== undefined) {
+        mergedAddress.latitude = throwIfError(venueValidations.validateLatitude(v.address.latitude), 'address.latitude');
+    }
+    if (v.address?.longitude !== undefined) {
+        mergedAddress.longitude = throwIfError(venueValidations.validateLongitude(v.address.longitude), 'address.longitude');
+    }
+
+    cleanVenue.address = mergedAddress;
+
+    // Optional fields
+    if (v.name !== undefined) {
+        cleanVenue.name = throwIfError(venueValidations.validateName(v.name), 'name');
+    }
+    if (v.description !== undefined) {
+        cleanVenue.description = throwIfError(venueValidations.validateDescription(v.description), 'description');
+    }
+    if (v.capacity !== undefined) {
+        cleanVenue.capacity = throwIfError(venueValidations.validateCapacity(v.capacity), 'capacity');
+    }
+    if (v.equipment !== undefined) {
+        cleanVenue.equipment = throwIfError(venueValidations.validateEquipment(v.equipment), 'equipment');
+    }
+    if (v.amenities !== undefined) {
+        cleanVenue.amenities = v.amenities;
+    }
+    if (v.services !== undefined) {
+        cleanVenue.services = v.services;
+    }
+    if (v.imageStorageIds !== undefined) {
+        cleanVenue.imageStorageIds = v.imageStorageIds;
+    }
+    if (v.phone !== undefined) {
+        cleanVenue.phone = v.phone;
+    }
+    if (v.website !== undefined) {
+        cleanVenue.website = v.website;
+    }
+    if (v.email !== undefined) {
+        cleanVenue.email = v.email;
+    }
+    if (v.socialMedia !== undefined) {
+        cleanVenue.socialMedia = v.socialMedia;
+    }
 
     return cleanVenue;
 };

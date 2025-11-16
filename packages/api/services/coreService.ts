@@ -3,7 +3,8 @@ import type { Doc, Id } from "../convex/_generated/dataModel";
 import { internal } from "../convex/_generated/api";
 import { canOnlyCreateBusinessOnce } from "../rules/business";
 import { prepareCreateBusiness, createDefaultBusiness } from "../operations/business";
-import { CreateBusinessWithVenueArgs, UpdateBusinessDetailsArgs, UpdateBusinessSocialArgs, UpdateCurrentUserProfileArgs } from "../convex/mutations/core";
+import { CreateBusinessWithVenueArgs, UpdateBusinessDetailsArgs, UpdateBusinessSocialArgs, UpdateCurrentUserProfileArgs, CompleteConsumerOnboardingArgs } from "../convex/mutations/core";
+import { coreValidations } from "../validations/core";
 
 export const coreService = {
     /**
@@ -42,6 +43,7 @@ export const coreService = {
             services: cleanArgs.venue.services,
             address: cleanArgs.venue.address,
             primaryCategory: cleanArgs.venue.primaryCategory,
+            citySlug: cleanArgs.venue.citySlug,
             isActive: true,
             deleted: false,
             createdAt: Date.now(),
@@ -124,13 +126,18 @@ export const coreService = {
         return { updatedUserId: user._id };
     },
 
-    // Specific onboarding method completeConsumerOnboarding - it looks exactly like updateCurrentUserProfile
-    completeConsumerOnboarding: async ({ ctx, args, user }: { ctx: MutationCtx, args: UpdateCurrentUserProfileArgs, user: Doc<"users"> }): Promise<{ updatedUserId: Id<'users'> }> => {
+    // Specific onboarding method completeConsumerOnboarding
+    completeConsumerOnboarding: async ({ ctx, args, user }: { ctx: MutationCtx, args: CompleteConsumerOnboardingArgs, user: Doc<"users"> }): Promise<{ updatedUserId: Id<'users'> }> => {
+        // Validate city
+        const cityValidation = coreValidations.validateCitySelection(args.city);
+        if (!cityValidation.success) {
+            throw new Error(cityValidation.error);
+        }
+
         await ctx.db.patch(user._id, {
-            ...(args.name !== undefined ? {
-                name: args.name,
-                hasConsumerOnboarded: true,
-            } : {}),
+            ...(args.name !== undefined ? { name: args.name } : {}),
+            activeCitySlug: cityValidation.value,
+            hasConsumerOnboarded: true,
         });
         return { updatedUserId: user._id };
     },

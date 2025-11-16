@@ -1,4 +1,5 @@
 import { ValidationResult } from "../types/core";
+import { normalizeCityInput, type CitySlug } from "@repo/utils/constants";
 
 export const validateBusinessName = (name: string): ValidationResult<string> => {
     const trimmed = name.trim();
@@ -82,6 +83,33 @@ export const validateCity = (city: string): ValidationResult<string> => {
     return { success: true, value: trimmed };
 };
 
+export const validateCitySelection = (citySlug: string): ValidationResult<CitySlug> => {
+    const normalizedSlug = normalizeCityInput(citySlug);
+
+    if (!normalizedSlug) {
+        return { success: false, error: "City is not supported yet" };
+    }
+
+    return { success: true, value: normalizedSlug };
+};
+
+export const validateArea = (area: string | undefined): ValidationResult<string | undefined> => {
+    if (area === undefined) {
+        return { success: true, value: undefined };
+    }
+
+    const trimmed = area.trim();
+    if (!trimmed) {
+        return { success: true, value: undefined };
+    }
+
+    if (trimmed.length > 100) {
+        return { success: false, error: "Area must be 100 characters or less" };
+    }
+
+    return { success: true, value: trimmed };
+};
+
 export const validateZipCode = (zipCode: string): ValidationResult<string> => {
     const trimmed = zipCode.trim();
     if (!trimmed) {
@@ -129,6 +157,8 @@ export const coreValidations = {
     validateDescription,
     validateStreet,
     validateCity,
+    validateCitySelection,
+    validateArea,
     validateZipCode,
     validateCountry,
     validateState,

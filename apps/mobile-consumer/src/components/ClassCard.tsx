@@ -8,6 +8,8 @@ import { useTypedTranslation } from '../i18n/typed';
 import type { ClassInstance } from '../hooks/use-class-instances';
 import { centsToCredits } from '@repo/utils/credits';
 import { theme } from '../theme';
+import { formatDistance } from '../utils/location';
+import { MapPinIcon } from 'lucide-react-native';
 
 // Discount rule type based on schema
 type ClassDiscountRule = {
@@ -232,10 +234,11 @@ function calculateClassDiscount(classInstance: ClassInstance): DiscountCalculati
 
 interface ClassCardProps {
   classInstance: ClassInstance;
+  distance?: number; // Distance in meters
   onPress?: (classInstance: ClassInstance) => void;
 }
 
-export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
+export const ClassCard = memo<ClassCardProps>(({ classInstance, distance, onPress }) => {
   const { t } = useTypedTranslation();
 
   const businessName = classInstance.venueSnapshot?.name ?? 'Unknown Venue';
@@ -340,11 +343,21 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, onPress }) => {
           </View>
         </View>
 
-        {!!metaLine && (
-          <Text style={styles.metaText} numberOfLines={1}>
-            {metaLine}
-          </Text>
-        )}
+        <View style={styles.metaRow}>
+          {!!metaLine && (
+            <Text style={styles.metaText} numberOfLines={1}>
+              {metaLine}
+            </Text>
+          )}
+          {distance !== undefined && (
+            <View style={styles.distanceBadge}>
+              <MapPinIcon size={12} color={theme.colors.zinc[500]} />
+              <Text style={styles.distanceText}>
+                {formatDistance(distance)}
+              </Text>
+            </View>
+          )}
+        </View>
 
         <View style={styles.cardDivider} />
 
@@ -485,9 +498,26 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: theme.colors.zinc[900],
   },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
   metaText: {
     fontSize: 14,
     color: theme.colors.zinc[500],
+    flex: 1,
+  },
+  distanceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  distanceText: {
+    fontSize: 12,
+    color: theme.colors.zinc[500],
+    fontWeight: '500',
   },
   cardDivider: {
     height: 1,

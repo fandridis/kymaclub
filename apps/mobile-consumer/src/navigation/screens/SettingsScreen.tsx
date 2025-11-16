@@ -5,13 +5,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { format } from 'date-fns';
 import { tz } from '@date-fns/tz';
-import { BellIcon, ShieldIcon, CameraIcon, LogOutIcon } from 'lucide-react-native';
+import { BellIcon, ShieldIcon, CameraIcon, LogOutIcon, MapPinIcon } from 'lucide-react-native';
 import { theme } from '../../theme';
 import { SettingsHeader, SettingsRow } from '../../components/Settings';
 import { SettingsGroup } from '../../components/Settings';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
+import { useUserCity } from '../../hooks/use-user-city';
 import { useCompressedImageUpload } from '../../hooks/useCompressedImageUpload';
 import { useProfileImageModeration } from '../../hooks/useProfileImageModeration';
 import { StackScreenHeader } from '../../components/StackScreenHeader';
@@ -28,6 +29,7 @@ export function SettingsScreen() {
   const logout = useLogout();
   const { user } = useCurrentUser();
   const { t } = useTypedTranslation();
+  const { city: userCity, cityLabel } = useUserCity();
 
   const creditBalance = useQuery(api.queries.credits.getUserBalance, { userId: user?._id! });
   const expiringCredits = useQuery(api.queries.credits.getUserExpiringCredits, { userId: user?._id! });
@@ -432,6 +434,12 @@ export function SettingsScreen() {
           {/* Settings Navigation */}
           <SettingsHeader title={t('settings.title')} />
           <SettingsGroup>
+            <SettingsRow
+              title="City"
+              subtitle={cityLabel || 'Not set'}
+              onPress={() => navigation.navigate('CitySelection' as never)}
+              icon={MapPinIcon}
+            />
             <SettingsRow
               title={t('settings.notifications.title')}
               subtitle={t('settings.notifications.notificationsSubtitle')}

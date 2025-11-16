@@ -4,9 +4,9 @@ import { classInstanceService } from "../../services/classInstanceService";
 import { getAuthenticatedUserOrThrow } from "../utils";
 import { pricingOperations } from "../../operations/pricing";
 import { ERROR_CODES } from "../../utils/errorCodes";
-import { calculateDistance } from "@repo/utils/distances";
 import { rateLimiter } from "../utils/rateLimiter";
 import { filterTestClassInstances, isClassInstanceVisible } from "../../utils/testDataFilter";
+import { normalizeCityInput } from "@repo/utils/constants";
 
 /***************************************************************
  * Get Class Instance By ID
@@ -228,7 +228,7 @@ export const getTemplateInstancesOptimized = query({
         const instances = await query
             .order("desc")
             .take(args.limit || 100);
-        
+
         return filterTestClassInstances(instances, user);
     }
 });
@@ -245,6 +245,7 @@ export const getBestOffersClassInstancesArgs = v.object({
     startDate: v.number(), // Current time
     endDate: v.number(),   // 24 hours from now
     limit: v.optional(v.number()),
+    cityFilter: v.optional(v.string()),
 });
 
 export const getBestOffersClassInstances = query({
@@ -252,14 +253,35 @@ export const getBestOffersClassInstances = query({
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
         const limit = args.limit || 10;
+        const cityFilter = args.cityFilter;
 
-        // 🚀 OPTIMIZED: Use compound index to only fetch instances with discount rules
-        // This dramatically reduces bandwidth by filtering at the index level
+        if (!cityFilter || cityFilter.trim() === "") {
+            throw new ConvexError({
+                message: "City filter is required",
+                field: "cityFilter",
+                code: ERROR_CODES.VALIDATION_ERROR
+            });
+        }
+
+        const normalizedCitySlug = normalizeCityInput(cityFilter);
+        if (!normalizedCitySlug) {
+            throw new ConvexError({
+                message: "City is not supported",
+                field: "cityFilter",
+                code: ERROR_CODES.VALIDATION_ERROR,
+            });
+        }
+
+        // Query using city-based discount index for efficient filtering
+        // Index: by_city_slug_status_deleted_hasDiscountRules_start_time
+        // Query for deleted=false (explicitly not deleted instances) with discount rules
         const instances = await ctx.db
             .query("classInstances")
-            .withIndex("by_status_deleted_hasDiscountRules_start_time", (q) =>
-                q.eq("status", "scheduled")
-                    .eq("deleted", undefined) // undefined means not deleted
+            .withIndex("by_city_slug_status_deleted_hasDiscountRules_start_time", (q) =>
+                q
+                    .eq("citySlug", normalizedCitySlug)
+                    .eq("status", "scheduled")
+                    .eq("deleted", false)
                     .eq("hasDiscountRules", true) // Only instances with discount rules
                     .gte("startTime", args.startDate)
             )
@@ -340,6 +362,7 @@ export const getHappeningTodayClassInstancesArgs = v.object({
     startDate: v.number(), // Current time
     endDate: v.number(),   // End of today (midnight)
     limit: v.optional(v.number()),
+    cityFilter: v.optional(v.string()),
 });
 
 export const getHappeningTodayClassInstances = query({
@@ -363,6 +386,24 @@ export const getHappeningTodayClassInstances = query({
         const user = await getAuthenticatedUserOrThrow(ctx);
 
         const limit = args.limit || 10;
+        const cityFilter = args.cityFilter;
+
+        if (!cityFilter || cityFilter.trim() === "") {
+            throw new ConvexError({
+                message: "City filter is required",
+                field: "cityFilter",
+                code: ERROR_CODES.VALIDATION_ERROR
+            });
+        }
+
+        const normalizedCitySlug = normalizeCityInput(cityFilter);
+        if (!normalizedCitySlug) {
+            throw new ConvexError({
+                message: "City is not supported",
+                field: "cityFilter",
+                code: ERROR_CODES.VALIDATION_ERROR,
+            });
+        }
 
         // Helper function to check if a class instance can be booked
         const canBookClass = (instance: any, currentTime: number): boolean => {
@@ -395,15 +436,22 @@ export const getHappeningTodayClassInstances = query({
             return true;
         };
 
-        // Use efficient index to fetch scheduled classes in time window
+        // Query using start_time index and filter by city, status, and deleted
+        // Using by_start_time since deleted is optional and undefined values aren't indexed
+        // This handles both deleted=false and deleted=undefined cases
         const instances = await ctx.db
             .query("classInstances")
-            .withIndex("by_status_deleted_start_time", (q) =>
-                q.eq("status", "scheduled")
-                    .eq("deleted", undefined)
-                    .gte("startTime", args.startDate)
+            .withIndex("by_start_time", (q) =>
+                q.gte("startTime", args.startDate)
             )
-            .filter(q => q.lte(q.field("startTime"), args.endDate))
+            .filter(q =>
+                q.and(
+                    q.eq(q.field("citySlug"), normalizedCitySlug),
+                    q.eq(q.field("status"), "scheduled"),
+                    q.lte(q.field("startTime"), args.endDate),
+                    q.neq(q.field("deleted"), true) // Matches both false and undefined
+                )
+            )
             .order("asc")
             .take(limit);
 
@@ -558,17 +606,11 @@ export const getBusinessHappeningTodayClassInstances = query({
  * Performance: 2 DB queries regardless of number of class instances
  ***************************************************************/
 
-const locationFilterArgs = v.object({
-    latitude: v.number(),
-    longitude: v.number(),
-    maxDistanceKm: v.number(),
-});
-
 export const getConsumerClassInstancesWithBookingStatusArgs = v.object({
     startDate: v.number(),
     endDate: v.number(),
     limit: v.optional(v.number()),
-    locationFilter: v.optional(locationFilterArgs),
+    cityFilter: v.optional(v.string()),
 });
 
 export const getConsumerClassInstancesWithBookingStatus = query({
@@ -576,11 +618,28 @@ export const getConsumerClassInstancesWithBookingStatus = query({
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
         const requestedLimit = args.limit || 100; // Reasonable default to prevent performance issues
-        const locationFilter = args.locationFilter;
-        const shouldFilterByDistance = Boolean(locationFilter && locationFilter.maxDistanceKm > 0);
-        const fetchLimit = shouldFilterByDistance ? Math.min(requestedLimit * 3, 500) : requestedLimit;
+        const cityFilter = args.cityFilter;
 
-        // Get class instances for date range (all businesses - consumers see everything)
+        // Validate city filter
+        if (!cityFilter || cityFilter.trim() === "") {
+            throw new ConvexError({
+                message: "City filter is required",
+                field: "cityFilter",
+                code: ERROR_CODES.VALIDATION_ERROR
+            });
+        }
+
+        const normalizedCitySlug = normalizeCityInput(cityFilter);
+        if (!normalizedCitySlug) {
+            throw new ConvexError({
+                message: "City is not supported",
+                field: "cityFilter",
+                code: ERROR_CODES.VALIDATION_ERROR,
+            });
+        }
+
+        // Query using start_time index and filter by city, status, and deleted
+        // Using by_start_time since deleted is optional and undefined values aren't indexed
         const instances = await ctx.db
             .query("classInstances")
             .withIndex("by_start_time", (q) =>
@@ -588,51 +647,27 @@ export const getConsumerClassInstancesWithBookingStatus = query({
             )
             .filter(q =>
                 q.and(
-                    q.lte(q.field("startTime"), args.endDate),
+                    q.eq(q.field("citySlug"), normalizedCitySlug),
                     q.eq(q.field("status"), "scheduled"),
-                    q.neq(q.field("deleted"), true)
+                    q.lte(q.field("startTime"), args.endDate),
+                    q.neq(q.field("deleted"), true) // Matches both false and undefined
                 )
             )
-            .order("asc") // Sort by start time
-            .take(fetchLimit);
+            .order("asc")
+            .take(requestedLimit);
 
         if (instances.length === 0) {
             return [];
         }
 
-        // Filter test instances first
+        // Filter test instances
         const testFilteredInstances = filterTestClassInstances(instances, user);
 
-        const filteredInstances = shouldFilterByDistance && locationFilter
-            ? testFilteredInstances.filter((instance) => {
-                const venueAddress = instance.venueSnapshot?.address;
-                const latitude = typeof venueAddress?.latitude === "number" ? venueAddress.latitude : null;
-                const longitude = typeof venueAddress?.longitude === "number" ? venueAddress.longitude : null;
-
-                if (latitude === null || longitude === null) {
-                    return true;
-                }
-
-                const distanceMeters = calculateDistance(
-                    locationFilter.latitude,
-                    locationFilter.longitude,
-                    latitude,
-                    longitude
-                );
-
-                return distanceMeters <= locationFilter.maxDistanceKm * 1000;
-            })
-            : testFilteredInstances;
-
-        if (filteredInstances.length === 0) {
+        if (testFilteredInstances.length === 0) {
             return [];
         }
 
-        const limitedInstances = filteredInstances.slice(0, requestedLimit);
-
-        if (limitedInstances.length === 0) {
-            return [];
-        }
+        const limitedInstances = testFilteredInstances.slice(0, requestedLimit);
 
 
         // Get user's active bookings (efficient - typically small dataset per user)

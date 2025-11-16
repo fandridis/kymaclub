@@ -6,28 +6,18 @@ import { StarIcon, MapPinIcon } from 'lucide-react-native';
 import { useTypedTranslation } from '../i18n/typed';
 import { Doc } from '@repo/api/convex/_generated/dataModel';
 import { theme } from '../theme';
+import { formatDistance } from '../utils/location';
 
 
 interface VenueCardProps {
   venue: Doc<'venues'>;
   storageIdToUrl: Map<string, string | null>;
+  distance?: number; // Distance in meters
   onPress?: (venue: Doc<'venues'>) => void;
 }
 
-export const VenueCard = ({ venue, storageIdToUrl, onPress }: VenueCardProps) => {
+export const VenueCard = ({ venue, storageIdToUrl, distance, onPress }: VenueCardProps) => {
   const { t } = useTypedTranslation();
-
-  const formatDistance = (distance: number) => {
-    // Safety check for invalid distance values
-    if (!isFinite(distance) || distance < 0) {
-      return '0m';
-    }
-
-    if (distance < 1) {
-      return `${Math.round(distance * 1000)}m`;
-    }
-    return `${distance.toFixed(1)}km`;
-  };
 
   return (
     <View style={styles.shadowContainer}>
@@ -77,9 +67,19 @@ export const VenueCard = ({ venue, storageIdToUrl, onPress }: VenueCardProps) =>
             <Text style={styles.imageOverlayTitle} numberOfLines={1}>
               {venue.name}
             </Text>
-            <Text style={styles.imageOverlaySubtitle} numberOfLines={1}>
-              {venue.primaryCategory}
-            </Text>
+            <View style={styles.subtitleRow}>
+              <Text style={styles.imageOverlaySubtitle} numberOfLines={1}>
+                {venue.primaryCategory}
+              </Text>
+              {distance !== undefined && (
+                <View style={styles.distanceBadge}>
+                  <MapPinIcon size={12} color="rgba(255,255,255,0.92)" />
+                  <Text style={styles.distanceText}>
+                    {formatDistance(distance)}
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
       </TouchableOpacity>
@@ -167,16 +167,24 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: 'rgba(255,255,255,0.92)',
   },
-  locationRow: {
-    marginTop: 4,
+  subtitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
+    marginTop: 2,
   },
-  locationText: {
+  distanceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  distanceText: {
     color: 'rgba(255,255,255,0.92)',
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '600',
-    flex: 1,
   },
 });

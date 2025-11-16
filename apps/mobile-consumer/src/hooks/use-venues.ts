@@ -1,26 +1,19 @@
 import { useQuery } from "convex-helpers/react/cache";
 import { api } from "@repo/api/convex/_generated/api";
 
-export interface LocationFilter {
-    latitude: number;
-    longitude: number;
-    maxDistanceKm: number;
-}
 interface UseVenuesOptions {
-    locationFilter?: LocationFilter;
+    cityFilter?: string;
     skip?: boolean;
 }
 
 export function useVenues(options: UseVenuesOptions = {}) {
-    const { locationFilter, skip } = options;
+    const { cityFilter, skip } = options;
 
     const venues = useQuery(
         api.queries.venues.getAllVenues,
-        skip
+        skip || !cityFilter
             ? "skip"
-            : locationFilter
-                ? { locationFilter }
-                : {}
+            : { cityFilter }
     );
 
     return {

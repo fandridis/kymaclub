@@ -18,7 +18,7 @@ import { toast } from 'sonner';
 import { ConvexError } from 'convex/values';
 import { getAuthState, useAuthStore } from '@/components/stores/auth';
 import { useRedirectGuard } from '@/hooks/use-redirect-guard';
-import { getVenueCategoryOptions, type VenueCategory } from '@repo/utils/constants';
+import { getCityOptions, getVenueCategoryOptions, type VenueCategory } from '@repo/utils/constants';
 
 export const Route = createFileRoute('/onboarding')({
     component: Onboarding,
@@ -44,6 +44,8 @@ export const Route = createFileRoute('/onboarding')({
     }
 });
 
+const CITY_OPTIONS = getCityOptions();
+
 const onboardingSchema = z.object({
     // Business details
     businessName: z.string().min(1, "Business name is required").max(100),
@@ -55,6 +57,7 @@ const onboardingSchema = z.object({
     address: z.object({
         street: z.string().min(1, "Street address is required"),
         city: z.string().min(1, "City is required"),
+        area: z.string().max(100, "Area must be 100 characters or less").optional(),
         zipCode: z.string().min(1, "Zip code is required").regex(/^\d{5}$/, "Zip code must be 5 digits"),
     }),
 
@@ -116,6 +119,7 @@ function Onboarding() {
             address: {
                 street: '',
                 city: '',
+                area: '',
                 zipCode: '',
             },
             primaryCategory: '' as VenueCategory,
@@ -147,6 +151,11 @@ function Onboarding() {
         setIsSubmitting(true);
 
         try {
+            const selectedCity = CITY_OPTIONS.find(option => option.value === data.address.city);
+            const citySlug = selectedCity?.value ?? data.address.city;
+            const cityLabel = selectedCity?.label ?? data.address.city;
+            const areaValue = data.address.area?.trim() || undefined;
+
             // Prepare venue services from selected checkboxes
             const services = {
                 yoga: data.serviceYoga,
@@ -179,7 +188,7 @@ function Onboarding() {
                     // currency: 'EUR',
                     address: {
                         street: data.address.street.trim(),
-                        city: data.address.city,
+                        city: cityLabel,
                         zipCode: data.address.zipCode.trim(),
                         state: 'Greece', // Default for Athens/Heraklion
                         country: 'Greece'
@@ -192,7 +201,8 @@ function Onboarding() {
                     primaryCategory: data.primaryCategory,
                     address: {
                         street: data.address.street.trim(),
-                        city: data.address.city,
+                        city: citySlug,
+                        ...(areaValue ? { area: areaValue } : {}),
                         zipCode: data.address.zipCode.trim(),
                         state: 'Greece', // Default for Athens/Heraklion
                         country: 'Greece'
@@ -383,15 +393,17 @@ function Onboarding() {
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
-                                                        <SelectItem value="Athens">Athens</SelectItem>
-                                                        <SelectItem value="Heraklion">Heraklion</SelectItem>
+                                                        {CITY_OPTIONS.map((option) => (
+                                                            <SelectItem key={option.value} value={option.value}>
+                                                                {option.label}
+                                                            </SelectItem>
+                                                        ))}
                                                     </SelectContent>
                                                 </Select>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
                                     />
-
                                     <FormField
                                         control={form.control}
                                         name="address.zipCode"
@@ -410,6 +422,24 @@ function Onboarding() {
                                         )}
                                     />
                                 </div>
+
+                                <FormField
+                                    control={form.control}
+                                    name="address.area"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Area / Neighborhood (optional)</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    placeholder="Kallithea, Nea Smyrni..."
+                                                    disabled={isSubmitting}
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                             </div>
 
                             {/* Amenities */}

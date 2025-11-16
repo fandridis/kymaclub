@@ -47,6 +47,7 @@ describe('Venue Operations', () => {
             expect(result.address.city).toBe('Athens');
             expect(result.address.state).toBe('Attica');
             expect(result.equipment).toEqual(['yoga mats', 'blocks', 'straps']);
+            expect(result.citySlug).toBe('athens');
         });
 
         it('should trim whitespace from name', () => {
@@ -193,9 +194,11 @@ describe('Venue Operations', () => {
             address: {
                 street: '123 Old Street',
                 city: 'Athens',
+                area: 'Kallithea',
                 zipCode: '10001',
                 country: 'Greece'
             },
+            citySlug: 'athens',
             coordinates: { latitude: 37.9838, longitude: 23.7275 },
             primaryCategory: 'yoga_studio' as any,
             socialMediaLinks: {},
@@ -228,7 +231,8 @@ describe('Venue Operations', () => {
                 venue: {
                     address: {
                         street: '456 New Street',
-                        city: 'Thessaloniki'
+                        city: 'Athens',
+                        area: 'Nea Smyrni'
                     }
                 }
             };
@@ -236,9 +240,11 @@ describe('Venue Operations', () => {
             const result = venueOperations.prepareUpdateVenue(updates, existingVenue);
             
             expect(result.address.street).toBe('456 New Street');
-            expect(result.address.city).toBe('Thessaloniki');
+            expect(result.address.city).toBe('Athens');
+            expect(result.address.area).toBe('Nea Smyrni');
             expect(result.address.zipCode).toBe('10001'); // Preserved from existing
             expect(result.address.country).toBe('Greece'); // Preserved from existing
+            expect(result.citySlug).toBe('athens');
         });
 
         it('should validate updated fields', () => {
@@ -258,7 +264,7 @@ describe('Venue Operations', () => {
                 venue: {
                     address: {
                         street: '', // Invalid empty street
-                        city: 'Valid City'
+                        city: 'Athens'
                     }
                 }
             };

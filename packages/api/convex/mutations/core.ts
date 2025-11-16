@@ -7,6 +7,7 @@ import { getAuthenticatedUserOrThrow } from "../utils";
 import { omit } from "convex-helpers";
 import { ConvexError } from "convex/values";
 import { ERROR_CODES } from "../../utils/errorCodes";
+import { coreValidations } from "../../validations/core";
 
 /***************************************************************
  * Create Business with Venue
@@ -111,6 +112,7 @@ export const updateCurrentUserProfile = mutationWithTriggers({
  ***************************************************************/
 export const completeConsumerOnboardingArgs = v.object({
     name: v.optional(v.string()),
+    city: v.string(),
 });
 export type CompleteConsumerOnboardingArgs = Infer<typeof completeConsumerOnboardingArgs>;
 
@@ -184,6 +186,38 @@ export const removeAllSessions = mutation({
             await ctx.db.delete(session._id);
         }
         return { success: true };
+    }
+});
+
+/***************************************************************
+ * Update User City
+ ***************************************************************/
+export const updateUserCityArgs = v.object({
+    city: v.string(),
+});
+export type UpdateUserCityArgs = Infer<typeof updateUserCityArgs>;
+
+export const updateUserCity = mutationWithTriggers({
+    args: updateUserCityArgs,
+    handler: async (ctx, args) => {
+        const user = await getAuthenticatedUserOrThrow(ctx);
+        
+        // Validate city
+        const validationResult = coreValidations.validateCitySelection(args.city);
+        if (!validationResult.success) {
+            throw new ConvexError({
+                message: validationResult.error,
+                field: "city",
+                code: ERROR_CODES.VALIDATION_ERROR,
+            });
+        }
+
+        // Update user's active city slug
+        await ctx.db.patch(user._id, {
+            activeCitySlug: validationResult.value,
+        });
+
+        return { success: true, city: validationResult.value };
     }
 });
 

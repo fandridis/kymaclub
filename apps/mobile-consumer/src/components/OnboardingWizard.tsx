@@ -5,10 +5,14 @@ import { useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { CommonActions, useNavigation } from '@react-navigation/native';
 import { useLogout } from '../hooks/useLogout';
+import { getCityOptions } from '@repo/utils/constants';
 
 interface OnboardingData {
   userName?: string;
+  city?: string;
 }
+
+const CITY_OPTIONS = getCityOptions();
 
 
 const stepConfig = [
@@ -35,19 +39,33 @@ const THEME = {
 export default function OnboardingWizard() {
   const navigation = useNavigation();
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({});
+  const [currentStep, setCurrentStep] = useState<'name' | 'city'>('name');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const logout = useLogout();
 
   const completeOnboardingMutation = useMutation(api.mutations.core.completeConsumerOnboarding);
 
+  const handleNext = () => {
+    if (currentStep === 'name') {
+      setCurrentStep('city');
+    }
+  };
+
   const handleFinish = async () => {
     if (isSubmitting) return;
+
+    // Validate city is selected
+    if (!onboardingData.city) {
+      Alert.alert('Error', 'Please select a city');
+      return;
+    }
 
     try {
       setIsSubmitting(true);
 
       await completeOnboardingMutation({
         name: onboardingData.userName?.trim() || undefined,
+        city: onboardingData.city,
       });
 
       navigation.dispatch(
@@ -107,6 +125,44 @@ export default function OnboardingWizard() {
     </View>
   );
 
+  const renderCityStep = () => (
+    <View style={{ alignItems: 'center', paddingHorizontal: 24 }}>
+      <Text style={{
+        fontSize: 16,
+        color: THEME.textSecondary,
+        marginBottom: 24,
+        textAlign: 'center',
+        lineHeight: 24
+      }}>
+        Which city do you want to explore classes in?
+      </Text>
+      <View style={{ width: '100%', maxWidth: 320, gap: 12 }}>
+        {CITY_OPTIONS.map((city) => (
+          <TouchableOpacity
+            key={city.value}
+            onPress={() => setOnboardingData(prev => ({ ...prev, city: city.value }))}
+            style={{
+              backgroundColor: onboardingData.city === city.value ? THEME.primaryLight : THEME.white,
+              padding: 16,
+              borderRadius: 12,
+              borderWidth: 2,
+              borderColor: onboardingData.city === city.value ? THEME.primary : THEME.border,
+            }}
+          >
+            <Text style={{
+              fontSize: 16,
+              fontWeight: '600',
+              color: onboardingData.city === city.value ? THEME.primary : THEME.text,
+              textAlign: 'center',
+            }}>
+              {city.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: THEME.background }}>
@@ -151,7 +207,7 @@ export default function OnboardingWizard() {
 
           {/* Step Content */}
           <View style={{ flex: 1 }}>
-            {renderNameStep()}
+            {currentStep === 'name' ? renderNameStep() : renderCityStep()}
           </View>
         </View>
       </View>
@@ -168,10 +224,10 @@ export default function OnboardingWizard() {
         <View style={{
           alignItems: 'center'
         }}>
-          {/* Get Started Button */}
+          {/* Next/Finish Button */}
           <TouchableOpacity
-            onPress={handleFinish}
-            disabled={isSubmitting}
+            onPress={currentStep === 'name' ? handleNext : handleFinish}
+            disabled={isSubmitting || (currentStep === 'name' && !onboardingData.userName?.trim()) || (currentStep === 'city' && !onboardingData.city)}
             style={{
               paddingHorizontal: 24,
               paddingVertical: 16,
@@ -192,9 +248,28 @@ export default function OnboardingWizard() {
               fontWeight: '700',
               textAlign: 'center'
             }}>
-              {isSubmitting ? 'Completing...' : 'Get Started'}
+              {isSubmitting ? 'Completing...' : currentStep === 'name' ? 'Next' : 'Get Started'}
             </Text>
           </TouchableOpacity>
+          
+          {currentStep === 'city' && (
+            <TouchableOpacity
+              onPress={() => setCurrentStep('name')}
+              disabled={isSubmitting}
+              style={{
+                paddingVertical: 12,
+                alignItems: 'center'
+              }}
+            >
+              <Text style={{
+                color: isSubmitting ? THEME.textLight : THEME.textSecondary,
+                fontSize: 16,
+                fontWeight: '500',
+              }}>
+                Back
+              </Text>
+            </TouchableOpacity>
+          )}
 
           {/* Back to Sign In Link */}
           <TouchableOpacity

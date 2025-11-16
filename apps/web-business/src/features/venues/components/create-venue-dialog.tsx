@@ -9,6 +9,7 @@ import { ConvexError } from 'convex/values';
 import type { Doc } from '@repo/api/convex/_generated/dataModel';
 import { Plus, MapPin, Mail, Phone, Globe } from 'lucide-react';
 import { useTypedTranslation } from '@/lib/typed';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from '@/components/ui/drawer';
@@ -17,7 +18,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { getVenueCategoryOptions, type VenueCategory } from '@repo/utils/constants';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { getVenueCategoryOptions, getCityOptions, normalizeCityInput, type VenueCategory } from '@repo/utils/constants';
+
+const CITY_OPTIONS = getCityOptions();
 
 const createVenueSchema = z.object({
     name: z.string().min(1, "Venue name is required").max(100),
@@ -60,6 +64,7 @@ const createVenueSchema = z.object({
     // Address fields
     addressStreet: z.string().min(1, "Street is required"),
     addressCity: z.string().min(1, "City is required"),
+    addressArea: z.string().max(100, "Area must be less than 100 characters").optional(),
     addressZipCode: z.string().min(1, "Zip code is required").regex(/^\d{5}$/, "Zip code must be 5 digits"),
 });
 
@@ -99,6 +104,7 @@ interface CreateVenueDialogProps {
 
 export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: CreateVenueDialogProps) {
     const { t } = useTypedTranslation();
+    const isMobile = useIsMobile();
     const createVenue = useMutation(api.mutations.venues.createVenue);
     const updateVenue = useMutation(api.mutations.venues.updateVenue);
     const [isDrawerOpen, setIsDrawerOpen] = useState(isOpen ?? false);
@@ -138,6 +144,7 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
             serviceTrx: false,
             addressStreet: '',
             addressCity: '',
+            addressArea: '',
             addressZipCode: '',
         },
     });
@@ -174,7 +181,8 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                 serviceZumba: venue.services?.zumba || false,
                 serviceTrx: venue.services?.trx || false,
                 addressStreet: venue.address.street || '',
-                addressCity: venue.address.city || '',
+                addressCity: venue.citySlug || normalizeCityInput(venue.address.city || '') || '',
+                addressArea: venue.address.area || '',
                 addressZipCode: venue.address.zipCode || '',
             });
         }
@@ -224,6 +232,10 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                 trx: data.serviceTrx,
             };
 
+            const selectedCity = CITY_OPTIONS.find(option => option.value === data.addressCity);
+            const citySlug = selectedCity?.value ?? data.addressCity;
+            const areaValue = data.addressArea?.trim() || undefined;
+
             const venueData = {
                 name: data.name.trim(),
                 email: data.email.trim(),
@@ -239,7 +251,8 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                 services,
                 address: {
                     street: data.addressStreet.trim(),
-                    city: data.addressCity.trim(),
+                    city: citySlug,
+                    ...(areaValue ? { area: areaValue } : {}),
                     zipCode: data.addressZipCode.trim(),
                     country: 'Greece', // Default country
                 },
@@ -281,217 +294,240 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                 </Button>
             )}
 
-            <Drawer direction='right' open={isDrawerOpen ?? isOpen} onOpenChange={(open) => {
+            <Drawer direction={isMobile ? 'bottom' : 'right'} open={isDrawerOpen ?? isOpen} onOpenChange={(open) => {
                 if (!open) {
                     onClose?.();
                 }
                 setIsDrawerOpen(open);
             }}>
-                <DrawerContent className="w-full px-2 sm:max-w-lg overflow-y-auto">
-                    <DrawerHeader className="pb-4">
-                        <DrawerTitle className="text-left">
+                <DrawerContent className={`flex flex-col h-screen ${!isMobile ? 'data-[vaul-drawer-direction=right]:sm:max-w-md' : ''}`}>
+                    <DrawerHeader className="h-[64px] border-b">
+                        <DrawerTitle className="text-xl">
                             {isEditMode ? t('routes.settings.venueDialog.editVenueTitle') : t('routes.settings.venueDialog.addVenueTitle')}
                         </DrawerTitle>
-                        <DrawerDescription>
-                            {isEditMode ? t('routes.settings.venueDialog.editVenueDescription', { name: venue!.name }) : t('routes.settings.venueDialog.addVenueDescription')}
-                        </DrawerDescription>
                     </DrawerHeader>
 
-                    <Form {...form}>
-                        <div className="space-y-6 pb-6">
-                            <div className="space-y-4">
-                                {/* Basic Information */}
-                                <div className="grid grid-cols-1 gap-4">
-                                    <FormField control={form.control} name="name" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="flex items-center gap-2">
-                                                <MapPin className="h-4 w-4" />
-                                                {t('routes.settings.venueDialog.locationName')} <span className="text-red-500">*</span>
-                                            </FormLabel>
-                                            <FormControl>
-                                                <Input autoFocus placeholder={t('routes.settings.venueNamePlaceholder')} {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
+                    <div className="flex-1 overflow-y-auto">
+                        <ScrollArea className="h-full p-4">
+                            <Form {...form}>
+                                <div className="space-y-6 pb-6">
+                                    <div className="space-y-4">
+                                        {/* Basic Information */}
+                                        <div className="grid grid-cols-1 gap-4">
+                                            <FormField control={form.control} name="name" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="flex items-center gap-2">
+                                                        <MapPin className="h-4 w-4" />
+                                                        {t('routes.settings.venueDialog.locationName')} <span className="text-red-500">*</span>
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input autoFocus placeholder={t('routes.settings.venueNamePlaceholder')} {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
 
-                                    <FormField control={form.control} name="email" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="flex items-center gap-2">
-                                                <Mail className="h-4 w-4" />
-                                                {t('common.email')} <span className="text-red-500">*</span>
-                                            </FormLabel>
-                                            <FormControl>
-                                                <Input type="email" placeholder={t('routes.settings.venueEmailPlaceholder')} {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
-                                </div>
+                                            <FormField control={form.control} name="email" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="flex items-center gap-2">
+                                                        <Mail className="h-4 w-4" />
+                                                        {t('common.email')} <span className="text-red-500">*</span>
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input type="email" placeholder={t('routes.settings.venueEmailPlaceholder')} {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        </div>
 
-                                <FormField control={form.control} name="description" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>{t('common.description')}</FormLabel>
-                                        <FormControl>
-                                            <Textarea placeholder={t('routes.settings.venueDescriptionPlaceholder')} rows={3} {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )} />
+                                        <FormField control={form.control} name="description" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>{t('common.description')}</FormLabel>
+                                                <FormControl>
+                                                    <Textarea placeholder={t('routes.settings.venueDescriptionPlaceholder')} rows={3} {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
 
-                                <FormField control={form.control} name="primaryCategory" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>{t('routes.settings.venueDialog.businessCategory')} <span className="text-red-500">*</span></FormLabel>
-                                        <Select
-                                            onValueChange={field.onChange}
-                                            value={field.value as string}
-                                        >
-                                            <FormControl>
-                                                <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder={t('routes.settings.venueDialog.selectBusinessCategory')} />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {getVenueCategoryOptions().map((option) => (
-                                                    <SelectItem key={option.value} value={option.value}>
-                                                        {option.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )} />
+                                        <FormField control={form.control} name="primaryCategory" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>{t('routes.settings.venueDialog.businessCategory')} <span className="text-red-500">*</span></FormLabel>
+                                                <Select
+                                                    onValueChange={field.onChange}
+                                                    value={field.value as string}
+                                                >
+                                                    <FormControl>
+                                                        <SelectTrigger className="w-full">
+                                                            <SelectValue placeholder={t('routes.settings.venueDialog.selectBusinessCategory')} />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {getVenueCategoryOptions().map((option) => (
+                                                            <SelectItem key={option.value} value={option.value}>
+                                                                {option.label}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
 
-                                <div className="grid grid-cols-1 gap-4">
-                                    <FormField control={form.control} name="phone" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="flex items-center gap-2">
-                                                <Phone className="h-4 w-4" />
-                                                {t('common.phone')}
-                                            </FormLabel>
-                                            <FormControl>
-                                                <Input type="tel" placeholder={t('routes.settings.venuePhonePlaceholder')} {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
+                                        <div className="grid grid-cols-1 gap-4">
+                                            <FormField control={form.control} name="phone" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="flex items-center gap-2">
+                                                        <Phone className="h-4 w-4" />
+                                                        {t('common.phone')}
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input type="tel" placeholder={t('routes.settings.venuePhonePlaceholder')} {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
 
-                                    <FormField control={form.control} name="website" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="flex items-center gap-2">
-                                                <Globe className="h-4 w-4" />
-                                                Website
-                                            </FormLabel>
-                                            <FormControl>
-                                                <Input type="url" placeholder={t('routes.settings.venueWebsitePlaceholder')} {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
-                                </div>
+                                            <FormField control={form.control} name="website" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="flex items-center gap-2">
+                                                        <Globe className="h-4 w-4" />
+                                                        Website
+                                                    </FormLabel>
+                                                    <FormControl>
+                                                        <Input type="url" placeholder={t('routes.settings.venueWebsitePlaceholder')} {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        </div>
+                                    </div>
 
-                            </div>
+                                    {/* Address Section */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-sm font-medium">{t('common.address')}</h3>
 
-                            {/* Address Section */}
-                            <div className="space-y-4">
-                                <h3 className="text-sm font-medium">{t('common.address')}</h3>
+                                        <FormField control={form.control} name="addressStreet" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>{t('routes.settings.venueDialog.streetAddress')} <span className="text-red-500">*</span></FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder={t('routes.settings.addressPlaceholder')} {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
 
-                                <FormField control={form.control} name="addressStreet" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>{t('routes.settings.venueDialog.streetAddress')} <span className="text-red-500">*</span></FormLabel>
-                                        <FormControl>
-                                            <Input placeholder={t('routes.settings.addressPlaceholder')} {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )} />
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FormField control={form.control} name="addressCity" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>{t('common.city')} <span className="text-red-500">*</span></FormLabel>
+                                                    <Select
+                                                        onValueChange={field.onChange}
+                                                        value={field.value}
+                                                    >
+                                                        <FormControl>
+                                                            <SelectTrigger className="w-full">
+                                                                <SelectValue placeholder={t('routes.settings.cityPlaceholder')} />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            {CITY_OPTIONS.map((option) => (
+                                                                <SelectItem key={option.value} value={option.value}>
+                                                                    {option.label}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField control={form.control} name="addressCity" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>{t('common.city')} <span className="text-red-500">*</span></FormLabel>
-                                            <FormControl>
-                                                <Input placeholder={t('routes.settings.cityPlaceholder')} {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
+                                            <FormField control={form.control} name="addressZipCode" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>{t('common.zipCode')} <span className="text-red-500">*</span></FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder={t('routes.settings.zipCodePlaceholder')} {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        </div>
 
-                                    <FormField control={form.control} name="addressZipCode" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>{t('common.zipCode')} <span className="text-red-500">*</span></FormLabel>
-                                            <FormControl>
-                                                <Input placeholder={t('routes.settings.zipCodePlaceholder')} {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
-                                </div>
+                                        <FormField control={form.control} name="addressArea" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Area / Neighborhood (optional)</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="Kallithea, Nea Smyrni..." {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                    </div>
 
-                            </div>
+                                    {/* Services */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-sm font-medium">{t('routes.settings.venueDialog.servicesOffered')}</h3>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {SERVICE_OPTIONS.map((option) => (
+                                                <FormField
+                                                    key={option.key}
+                                                    control={form.control}
+                                                    name={`service${option.key.charAt(0).toUpperCase() + option.key.slice(1)}` as keyof VenueFormInput}
+                                                    render={({ field }) => (
+                                                        <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                                            <FormControl>
+                                                                <Checkbox
+                                                                    checked={field.value as boolean}
+                                                                    onCheckedChange={field.onChange}
+                                                                />
+                                                            </FormControl>
+                                                            <FormLabel>{t(option.translationKey as any)}</FormLabel>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
 
-                            {/* Services */}
-                            <div className="space-y-4">
-                                <h3 className="text-sm font-medium">{t('routes.settings.venueDialog.servicesOffered')}</h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    {SERVICE_OPTIONS.map((option) => (
-                                        <FormField
-                                            key={option.key}
-                                            control={form.control}
-                                            name={`service${option.key.charAt(0).toUpperCase() + option.key.slice(1)}` as keyof VenueFormInput}
-                                            render={({ field }) => (
+                                    {/* Amenities */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-sm font-medium">{t('routes.settings.venueDialog.amenities')}</h3>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FormField control={form.control} name="amenitiesShowers" render={({ field }) => (
                                                 <FormItem className="flex flex-row items-center space-x-2 space-y-0">
                                                     <FormControl>
-                                                        <Checkbox
-                                                            checked={field.value as boolean}
-                                                            onCheckedChange={field.onChange}
-                                                        />
+                                                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                                                     </FormControl>
-                                                    <FormLabel>{t(option.translationKey as any)}</FormLabel>
+                                                    <FormLabel>{t('routes.settings.venueDialog.showers')}</FormLabel>
                                                 </FormItem>
-                                            )}
-                                        />
-                                    ))}
+                                            )} />
+
+                                            <FormField control={form.control} name="amenitiesAccessible" render={({ field }) => (
+                                                <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                                    <FormControl>
+                                                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                                    </FormControl>
+                                                    <FormLabel>{t('routes.settings.venueDialog.accessible')}</FormLabel>
+                                                </FormItem>
+                                            )} />
+
+                                            <FormField control={form.control} name="amenitiesMats" render={({ field }) => (
+                                                <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                                    <FormControl>
+                                                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                                    </FormControl>
+                                                    <FormLabel>{t('routes.settings.venueDialog.matsProvided')}</FormLabel>
+                                                </FormItem>
+                                            )} />
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            </Form>
+                        </ScrollArea>
+                    </div>
 
-                            {/* Amenities */}
-                            <div className="space-y-4">
-                                <h3 className="text-sm font-medium">{t('routes.settings.venueDialog.amenities')}</h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField control={form.control} name="amenitiesShowers" render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                                            <FormControl>
-                                                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                            </FormControl>
-                                            <FormLabel>{t('routes.settings.venueDialog.showers')}</FormLabel>
-                                        </FormItem>
-                                    )} />
-
-                                    <FormField control={form.control} name="amenitiesAccessible" render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                                            <FormControl>
-                                                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                            </FormControl>
-                                            <FormLabel>{t('routes.settings.venueDialog.accessible')}</FormLabel>
-                                        </FormItem>
-                                    )} />
-
-                                    <FormField control={form.control} name="amenitiesMats" render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                                            <FormControl>
-                                                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                            </FormControl>
-                                            <FormLabel>{t('routes.settings.venueDialog.matsProvided')}</FormLabel>
-                                        </FormItem>
-                                    )} />
-                                </div>
-                            </div>
-                        </div>
-                    </Form>
-
-                    <DrawerFooter className="flex-col gap-2 pt-4 border-t">
+                    <DrawerFooter className="flex-col gap-2 pt-4 border-t flex-shrink-0">
                         <Button
                             onClick={form.handleSubmit(handleSubmit)}
                             disabled={isSubmitting}

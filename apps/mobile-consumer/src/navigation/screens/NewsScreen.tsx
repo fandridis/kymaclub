@@ -12,6 +12,7 @@ import { TabScreenHeader } from '../../components/TabScreenHeader';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
 import { useAllVenues } from '../../features/explore/hooks/useAllVenues';
+import { useUserCity } from '../../hooks/use-user-city';
 import type { RootStackParamListWithNestedTabs } from '../index';
 import { centsToCredits } from '@repo/utils/credits';
 import { NewsClassCard } from '../../components/news/NewsCard';
@@ -99,6 +100,7 @@ export function NewsScreen() {
     const { isAuthenticated } = useConvexAuth();
     const data = useQuery(api.queries.core.getCurrentUserQuery, isAuthenticated ? {} : 'skip');
     const user = data?.user;
+    const { city: userCity } = useUserCity();
 
     const next4Hours = useMemo(() => new Date(now.getTime() + (4 * 60 * 60 * 1000)), [now]);
     const next24Hours = useMemo(() => new Date(now.getTime() + (24 * 60 * 60 * 1000)), [now]);
@@ -132,23 +134,28 @@ export function NewsScreen() {
     // Query for happening today classes (until midnight)
     const happeningTodayInstances = useQuery(
         api.queries.classInstances.getHappeningTodayClassInstances,
-        {
+        userCity ? {
             startDate: now.getTime(),
             endDate: endOfToday.getTime(),
-        }
+            cityFilter: userCity,
+        } : "skip"
     );
 
     // Query for best offers (next 24 hours)
     const bestOffersInstances = useQuery(
         api.queries.classInstances.getBestOffersClassInstances,
-        {
+        userCity ? {
             startDate: now.getTime(),
             endDate: next24Hours.getTime(),
-        }
+            cityFilter: userCity,
+        } : "skip"
     );
 
     // Get venues with image URLs using custom hook
-    const { venues: allVenues, venuesLoading, storageIdToUrl } = useAllVenues();
+    const { venues: allVenues, venuesLoading, storageIdToUrl } = useAllVenues({
+        cityFilter: userCity,
+        skip: !userCity,
+    });
 
     // Get class instance IDs from user bookings
     const upcomingClassInstanceIds = useMemo(() => {
@@ -164,11 +171,12 @@ export function NewsScreen() {
     // Fetch full class instances
     const upcomingClassInstances = useQuery(
         api.queries.classInstances.getConsumerClassInstancesWithBookingStatus,
-        upcomingClassInstanceIds.length > 0 ? {
+        upcomingClassInstanceIds.length > 0 && userCity ? {
             startDate: now.getTime() - (24 * 60 * 60 * 1000),
             endDate: now.getTime() + (30 * 24 * 60 * 60 * 1000),
             // Pull a generous slice so booked classes are always included
             limit: Math.max(upcomingClassInstanceIds.length * 2, 50),
+            cityFilter: userCity,
         } : "skip"
     );
 

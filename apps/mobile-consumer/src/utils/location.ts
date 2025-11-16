@@ -181,3 +181,48 @@ export function validateCoordinates(lat: number, lon: number): { valid: boolean;
   }
   return { valid: true };
 }
+
+/**
+ * Calculate distances for items with coordinates relative to user location
+ * @param items - Array of items with latitude/longitude properties
+ * @param userLocation - User's current location
+ * @returns Items with distance property added (in meters)
+ */
+export function calculateDistancesForItems<T extends { latitude?: number | null; longitude?: number | null }>(
+  items: T[],
+  userLocation: { coords: { latitude: number; longitude: number } } | null
+): (T & { distance: number })[] {
+  if (!userLocation) {
+    return items.map(item => ({ ...item, distance: Infinity }));
+  }
+
+  const { latitude: userLat, longitude: userLon } = userLocation.coords;
+
+  return items.map(item => {
+    const lat = item.latitude;
+    const lon = item.longitude;
+
+    if (typeof lat !== 'number' || typeof lon !== 'number' || !isFinite(lat) || !isFinite(lon)) {
+      return { ...item, distance: Infinity };
+    }
+
+    const distance = calculateDistance(userLat, userLon, lat, lon);
+    return { ...item, distance };
+  });
+}
+
+/**
+ * Sort items by distance (closest first)
+ * Items without valid coordinates are sorted to the end
+ * @param items - Array of items with distance property
+ * @returns Sorted array (closest first)
+ */
+export function sortByDistance<T extends { distance: number }>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    // Items with Infinity distance go to the end
+    if (a.distance === Infinity && b.distance === Infinity) return 0;
+    if (a.distance === Infinity) return 1;
+    if (b.distance === Infinity) return -1;
+    return a.distance - b.distance;
+  });
+}

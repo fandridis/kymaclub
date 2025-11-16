@@ -1,16 +1,16 @@
 import { useMemo } from 'react';
-import { LocationFilter, useVenues } from '../../../hooks/use-venues';
+import { useVenues } from '../../../hooks/use-venues';
 import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 
 interface UseAllVenuesOptions {
-    locationFilter?: LocationFilter;
+    cityFilter?: string;
     skip?: boolean;
 }
 
 export function useAllVenues(options: UseAllVenuesOptions = {}) {
-    const { locationFilter, skip } = options;
-    const { venues, loading: venuesLoading } = useVenues({ locationFilter, skip });
+    const { cityFilter, skip } = options;
+    const { venues, loading: venuesLoading } = useVenues({ cityFilter, skip });
 
     const allImageStorageIds = useMemo(
         () => venues.flatMap(venue => venue.imageStorageIds || []),
