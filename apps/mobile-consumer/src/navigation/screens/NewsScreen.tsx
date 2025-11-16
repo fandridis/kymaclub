@@ -114,6 +114,7 @@ export function NewsScreen() {
         api.queries.settings.getUserSettings,
         user ? {} : "skip"
     );
+    const isUserSettingsLoading = user ? userSettings === undefined : false;
 
     // Mutation to dismiss the welcome banner
     // TODO: Update to use api.mutations.settings.updateUserBannerSettings once API is regenerated
@@ -432,8 +433,12 @@ export function NewsScreen() {
         handleExplorePress();
     };
 
-    // Check if welcome banner should be shown
-    const shouldShowWelcomeBanner = user && !userSettings?.banners?.welcomeBannerDismissed;
+    // Check if welcome banner should be shown (hide while loading settings)
+    const shouldShowWelcomeBanner = Boolean(
+        user &&
+        !isUserSettingsLoading &&
+        !userSettings?.banners?.welcomeBannerDismissed
+    );
 
     // Loading state
     const isInitialLoading = user && (
