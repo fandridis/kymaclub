@@ -102,8 +102,6 @@ export function NewsScreen() {
     const user = data?.user;
     const { city: userCity } = useUserCity();
 
-    const next4Hours = useMemo(() => new Date(now.getTime() + (4 * 60 * 60 * 1000)), [now]);
-    const next24Hours = useMemo(() => new Date(now.getTime() + (24 * 60 * 60 * 1000)), [now]);
     const endOfToday = useMemo(() => {
         const end = new Date(now);
         end.setHours(23, 59, 59, 999);
@@ -137,16 +135,6 @@ export function NewsScreen() {
         userCity ? {
             startDate: now.getTime(),
             endDate: endOfToday.getTime(),
-            cityFilter: userCity,
-        } : "skip"
-    );
-
-    // Query for best offers (next 24 hours)
-    const bestOffersInstances = useQuery(
-        api.queries.classInstances.getBestOffersClassInstances,
-        userCity ? {
-            startDate: now.getTime(),
-            endDate: next24Hours.getTime(),
             cityFilter: userCity,
         } : "skip"
     );
@@ -202,17 +190,8 @@ export function NewsScreen() {
             }
         });
 
-        bestOffersInstances?.forEach(instance => {
-            if (instance.templateSnapshot?.imageStorageIds) {
-                ids.push(...instance.templateSnapshot.imageStorageIds);
-            }
-            if (instance.venueSnapshot?.imageStorageIds) {
-                ids.push(...instance.venueSnapshot.imageStorageIds);
-            }
-        });
-
         return [...new Set(ids)];
-    }, [upcomingClassInstances, happeningTodayInstances, bestOffersInstances]);
+    }, [upcomingClassInstances, happeningTodayInstances]);
 
     // Fetch image URLs
     const classImageUrlsQuery = useQuery(
@@ -369,35 +348,6 @@ export function NewsScreen() {
             });
     }, [happeningTodayInstances, now, combinedStorageIdToUrl, t]);
 
-    // Process best offers
-    const bestOffersClasses = useMemo(() => {
-        const instancesData = bestOffersInstances || [];
-        if (!instancesData.length) return [];
-
-        return instancesData
-            .slice(0, 10)
-            .map(instance => {
-                const templateImageId = instance.templateSnapshot?.imageStorageIds?.[0];
-                const venueImageId = instance.venueSnapshot?.imageStorageIds?.[0];
-                const imageUrl = templateImageId ? combinedStorageIdToUrl.get(templateImageId) :
-                    venueImageId ? combinedStorageIdToUrl.get(venueImageId) : null;
-
-                return {
-                    id: instance._id,
-                    title: instance.name || t('news.class'),
-                    originalPrice: `${centsToCredits(instance.pricing.originalPrice)}`,
-                    discountedPrice: `${centsToCredits(instance.pricing.finalPrice)}`,
-                    discountPercentage: `${instance.discountPercentage}%`,
-                    venueName: instance.venueSnapshot?.name,
-                    venueCity: instance.venueSnapshot?.address?.city,
-                    instructor: instance.templateSnapshot?.instructor,
-                    imageUrl,
-                    startTime: instance.startTime,
-                    classInstanceId: instance._id,
-                };
-            });
-    }, [bestOffersInstances, now, combinedStorageIdToUrl, t]);
-
     // Get new venues for VenueCard
     const newVenuesForCards = useMemo(() => {
         const venuesData = allVenues || [];
@@ -452,7 +402,6 @@ export function NewsScreen() {
     const isInitialLoading = user && (
         userBookings === undefined &&
         happeningTodayInstances === undefined &&
-        bestOffersInstances === undefined &&
         (allVenues === undefined || venuesLoading)
     );
 
@@ -619,111 +568,6 @@ export function NewsScreen() {
                                                 </View>
                                             );
                                         }}
-                                        renderTopRight={() => {
-                                            if (!discountBadge) {
-                                                return null;
-                                            }
-
-                                            return (
-                                                <View style={[styles.lastMinuteBadge, styles.offerBadge]}>
-                                                    <Text style={styles.badgeText}>{discountBadge}</Text>
-                                                </View>
-                                            );
-                                        }}
-                                        renderFooter={() => (
-                                            <View style={styles.newsClassCardFooterRow}>
-                                                <View style={styles.newsClassCardFooterMetric}>
-                                                    <View style={styles.newsClassCardFooterIcon}>
-                                                        <DiamondIcon
-                                                            size={14}
-                                                            color={theme.colors.zinc[700]}
-                                                            strokeWidth={2}
-                                                        />
-                                                    </View>
-                                                    <Text
-                                                        style={styles.newsClassCardFooterText}
-                                                        numberOfLines={1}
-                                                    >
-                                                        {item.discountedPrice}
-                                                    </Text>
-                                                </View>
-                                                <View style={styles.newsClassCardFooterMetric}>
-                                                    <View style={styles.newsClassCardFooterIcon}>
-                                                        <ClockIcon
-                                                            size={14}
-                                                            color={theme.colors.zinc[700]}
-                                                            strokeWidth={2}
-                                                        />
-                                                    </View>
-                                                    <Text
-                                                        style={styles.newsClassCardFooterText}
-                                                        numberOfLines={1}
-                                                    >
-                                                        {startTime}
-                                                    </Text>
-                                                </View>
-                                                {item.venueCity ? (
-                                                    <View style={styles.newsClassCardFooterMetric}>
-                                                        <View style={styles.newsClassCardFooterIcon}>
-                                                            <MapPinIcon
-                                                                size={14}
-                                                                color={theme.colors.zinc[600]}
-                                                                strokeWidth={2}
-                                                            />
-                                                        </View>
-                                                        <Text
-                                                            style={styles.newsClassCardFooterText}
-                                                            numberOfLines={1}
-                                                        >
-                                                            {item.venueCity}
-                                                        </Text>
-                                                    </View>
-                                                ) : null}
-                                            </View>
-                                        )}
-                                        onPress={() => {
-                                            if (item.classInstanceId) {
-                                                navigation.navigate('ClassDetailsModal', {
-                                                    classInstanceId: item.classInstanceId,
-                                                });
-                                            }
-                                        }}
-                                        style={styles.lastMinuteCarouselCard}
-                                    />
-                                );
-                            })}
-                        </ScrollView>
-                    </View>
-                )}
-
-                {/* Best Offers Section */}
-                {bestOffersClasses.length > 0 && (
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>{t('news.bestOffers')}</Text>
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={styles.carouselScrollContent}
-                        >
-                            {bestOffersClasses.map((item) => {
-                                const discountBadge = item.discountPercentage ? `-${item.discountPercentage}` : null;
-
-                                const subtitleText = item.instructor
-                                    ? t('news.withInstructor', { instructor: item.instructor })
-                                    : item.venueName || undefined;
-
-                                const startTime = new Date(item.startTime).toLocaleTimeString('en-US', {
-                                    hour: 'numeric',
-                                    minute: '2-digit',
-                                    hour12: true,
-                                });
-
-                                return (
-                                    <NewsClassCard
-                                        key={item.id}
-                                        title={item.title}
-                                        subtitle={subtitleText}
-                                        imageUrl={item.imageUrl}
                                         renderTopRight={() => {
                                             if (!discountBadge) {
                                                 return null;

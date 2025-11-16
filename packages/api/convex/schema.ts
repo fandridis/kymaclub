@@ -1062,8 +1062,6 @@ export default defineSchema({
     .index("by_city_slug_status_deleted_start_time", ["citySlug", "status", "deleted", "startTime"])
     // 🎯 DISCOUNT OPTIMIZATION - only fetch instances with discount rules
     .index("by_status_deleted_hasDiscountRules_start_time", ["status", "deleted", "hasDiscountRules", "startTime"])
-    // 🏙️🎯 CITY-BASED DISCOUNT OPTIMIZATION - efficient city + discount filtering
-    .index("by_city_slug_status_deleted_hasDiscountRules_start_time", ["citySlug", "status", "deleted", "hasDiscountRules", "startTime"])
     // 🏁 CLASS COMPLETION OPTIMIZATION - efficient queries for classes that have ended
     .index("by_status_deleted_end_time", ["status", "deleted", "endTime"]),
 
