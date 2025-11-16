@@ -357,6 +357,8 @@ export const prepareInstanceUpdatesFromVenueChanges = (
  * @param business - Business context for timezone and ownership
  * @param user - Creating user for audit trail
  * @param startTime - Start timestamp for the class instance
+ * @param disableBookings - Optional flag to disable bookings for this instance
+ * @param isTest - Optional flag to mark this instance as a test instance (for testers)
  * @returns Complete class instance object ready for database insertion
  * 
  * @example
@@ -404,7 +406,8 @@ export const createInstanceFromTemplate = (
     business: Doc<"businesses">,
     user: Doc<"users">,
     startTime: number,
-    disableBookings?: boolean
+    disableBookings?: boolean,
+    isTest?: boolean
 ) => {
     // ADR-005: Time Calculation Strategy
     // Decision: Calculate endTime from template duration, validate startTime first
@@ -490,6 +493,9 @@ export const createInstanceFromTemplate = (
         // Audit fields
         createdAt: now,
         createdBy: user._id,
+
+        // Testing flag for production testing
+        ...(isTest !== undefined && { isTest }),
     };
 };
 

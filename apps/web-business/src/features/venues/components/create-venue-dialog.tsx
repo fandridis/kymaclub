@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { ConvexError } from 'convex/values';
 import type { Doc } from '@repo/api/convex/_generated/dataModel';
 import { Plus, MapPin, Mail, Phone, Globe } from 'lucide-react';
+import { useTypedTranslation } from '@/lib/typed';
 
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from '@/components/ui/drawer';
@@ -68,25 +69,25 @@ type VenueFormOutput = z.output<typeof createVenueSchema>;
 
 type ServiceKey = 'yoga' | 'pilates' | 'gym' | 'massage' | 'dance' | 'crossfit' | 'spinning' | 'boxing' | 'martialArts' | 'swimming' | 'personalTraining' | 'physiotherapy' | 'nutrition' | 'meditation' | 'stretching' | 'hiit' | 'zumba' | 'trx';
 
-const SERVICE_OPTIONS: Array<{ key: ServiceKey; label: string }> = [
-    { key: 'yoga', label: 'Yoga' },
-    { key: 'pilates', label: 'Pilates' },
-    { key: 'gym', label: 'Gym / Fitness' },
-    { key: 'massage', label: 'Massage / Therapy' },
-    { key: 'dance', label: 'Dance' },
-    { key: 'crossfit', label: 'Crossfit' },
-    { key: 'spinning', label: 'Spinning' },
-    { key: 'boxing', label: 'Boxing' },
-    { key: 'martialArts', label: 'Martial Arts' },
-    { key: 'swimming', label: 'Swimming' },
-    { key: 'personalTraining', label: 'Personal Training' },
-    { key: 'physiotherapy', label: 'Physiotherapy' },
-    { key: 'nutrition', label: 'Nutrition' },
-    { key: 'meditation', label: 'Meditation' },
-    { key: 'stretching', label: 'Stretching' },
-    { key: 'hiit', label: 'HIIT' },
-    { key: 'zumba', label: 'Zumba' },
-    { key: 'trx', label: 'TRX' },
+const SERVICE_OPTIONS: Array<{ key: ServiceKey; translationKey: string }> = [
+    { key: 'yoga', translationKey: 'routes.onboarding.yoga' },
+    { key: 'pilates', translationKey: 'routes.onboarding.pilates' },
+    { key: 'gym', translationKey: 'routes.onboarding.gym' },
+    { key: 'massage', translationKey: 'routes.onboarding.massage' },
+    { key: 'dance', translationKey: 'routes.onboarding.dance' },
+    { key: 'crossfit', translationKey: 'routes.onboarding.crossfit' },
+    { key: 'spinning', translationKey: 'routes.onboarding.spinning' },
+    { key: 'boxing', translationKey: 'routes.onboarding.boxing' },
+    { key: 'martialArts', translationKey: 'routes.onboarding.martialArts' },
+    { key: 'swimming', translationKey: 'routes.onboarding.swimming' },
+    { key: 'personalTraining', translationKey: 'routes.onboarding.personalTraining' },
+    { key: 'physiotherapy', translationKey: 'routes.onboarding.physiotherapy' },
+    { key: 'nutrition', translationKey: 'routes.onboarding.nutrition' },
+    { key: 'meditation', translationKey: 'routes.onboarding.meditation' },
+    { key: 'stretching', translationKey: 'routes.onboarding.stretching' },
+    { key: 'hiit', translationKey: 'routes.onboarding.hiit' },
+    { key: 'zumba', translationKey: 'routes.onboarding.zumba' },
+    { key: 'trx', translationKey: 'routes.onboarding.trx' },
 ];
 
 interface CreateVenueDialogProps {
@@ -97,6 +98,7 @@ interface CreateVenueDialogProps {
 }
 
 export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: CreateVenueDialogProps) {
+    const { t } = useTypedTranslation();
     const createVenue = useMutation(api.mutations.venues.createVenue);
     const updateVenue = useMutation(api.mutations.venues.updateVenue);
     const [isDrawerOpen, setIsDrawerOpen] = useState(isOpen ?? false);
@@ -250,10 +252,10 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                         ...venueData
                     }
                 });
-                toast.success("Venue updated successfully");
+                toast.success(t('routes.settings.venueDialog.venueUpdatedSuccess'));
             } else {
                 await createVenue({ venue: venueData });
-                toast.success("Venue created successfully");
+                toast.success(t('routes.settings.venueDialog.venueCreatedSuccess'));
             }
 
             setIsDrawerOpen(false);
@@ -263,7 +265,7 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                 toast.error(error.data.message);
             } else {
                 console.error(`Error ${isEditMode ? 'updating' : 'creating'} venue:`, error);
-                toast.error(`Failed to ${isEditMode ? 'update' : 'create'} venue.`);
+                toast.error(isEditMode ? t('routes.settings.venueDialog.failedToUpdateVenue') : t('routes.settings.venueDialog.failedToCreateVenue'));
             }
         } finally {
             setIsSubmitting(false);
@@ -275,7 +277,7 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
             {!hideTrigger && (
                 <Button onClick={() => setIsDrawerOpen(true)}>
                     <Plus className="w-4 h-4 mr-2" />
-                    Add Venue
+                    {t('routes.settings.venueDialog.addVenue')}
                 </Button>
             )}
 
@@ -288,10 +290,10 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                 <DrawerContent className="w-full px-2 sm:max-w-lg overflow-y-auto">
                     <DrawerHeader className="pb-4">
                         <DrawerTitle className="text-left">
-                            {isEditMode ? 'Edit Venue' : 'Add Venue'}
+                            {isEditMode ? t('routes.settings.venueDialog.editVenueTitle') : t('routes.settings.venueDialog.addVenueTitle')}
                         </DrawerTitle>
                         <DrawerDescription>
-                            {isEditMode ? `Editing "${venue!.name}" venue` : 'Add a new venue where your classes will be held.'}
+                            {isEditMode ? t('routes.settings.venueDialog.editVenueDescription', { name: venue!.name }) : t('routes.settings.venueDialog.addVenueDescription')}
                         </DrawerDescription>
                     </DrawerHeader>
 
@@ -304,10 +306,10 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                                         <FormItem>
                                             <FormLabel className="flex items-center gap-2">
                                                 <MapPin className="h-4 w-4" />
-                                                Location Name <span className="text-red-500">*</span>
+                                                {t('routes.settings.venueDialog.locationName')} <span className="text-red-500">*</span>
                                             </FormLabel>
                                             <FormControl>
-                                                <Input autoFocus placeholder="e.g., Main Studio" {...field} />
+                                                <Input autoFocus placeholder={t('routes.settings.venueNamePlaceholder')} {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -317,10 +319,10 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                                         <FormItem>
                                             <FormLabel className="flex items-center gap-2">
                                                 <Mail className="h-4 w-4" />
-                                                Email <span className="text-red-500">*</span>
+                                                {t('common.email')} <span className="text-red-500">*</span>
                                             </FormLabel>
                                             <FormControl>
-                                                <Input type="email" placeholder="venue@example.com" {...field} />
+                                                <Input type="email" placeholder={t('routes.settings.venueEmailPlaceholder')} {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -329,9 +331,9 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
 
                                 <FormField control={form.control} name="description" render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Description</FormLabel>
+                                        <FormLabel>{t('common.description')}</FormLabel>
                                         <FormControl>
-                                            <Textarea placeholder="Describe this venue..." rows={3} {...field} />
+                                            <Textarea placeholder={t('routes.settings.venueDescriptionPlaceholder')} rows={3} {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -339,14 +341,14 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
 
                                 <FormField control={form.control} name="primaryCategory" render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Business Category <span className="text-red-500">*</span></FormLabel>
+                                        <FormLabel>{t('routes.settings.venueDialog.businessCategory')} <span className="text-red-500">*</span></FormLabel>
                                         <Select
                                             onValueChange={field.onChange}
                                             value={field.value as string}
                                         >
                                             <FormControl>
                                                 <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="Select business category" />
+                                                    <SelectValue placeholder={t('routes.settings.venueDialog.selectBusinessCategory')} />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
@@ -366,10 +368,10 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                                         <FormItem>
                                             <FormLabel className="flex items-center gap-2">
                                                 <Phone className="h-4 w-4" />
-                                                Phone
+                                                {t('common.phone')}
                                             </FormLabel>
                                             <FormControl>
-                                                <Input type="tel" placeholder="+30 123 456 7890" {...field} />
+                                                <Input type="tel" placeholder={t('routes.settings.venuePhonePlaceholder')} {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -382,7 +384,7 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                                                 Website
                                             </FormLabel>
                                             <FormControl>
-                                                <Input type="url" placeholder="https://example.com" {...field} />
+                                                <Input type="url" placeholder={t('routes.settings.venueWebsitePlaceholder')} {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -393,13 +395,13 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
 
                             {/* Address Section */}
                             <div className="space-y-4">
-                                <h3 className="text-sm font-medium">Address</h3>
+                                <h3 className="text-sm font-medium">{t('common.address')}</h3>
 
                                 <FormField control={form.control} name="addressStreet" render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Street Address <span className="text-red-500">*</span></FormLabel>
+                                        <FormLabel>{t('routes.settings.venueDialog.streetAddress')} <span className="text-red-500">*</span></FormLabel>
                                         <FormControl>
-                                            <Input placeholder="123 Main Street" {...field} />
+                                            <Input placeholder={t('routes.settings.addressPlaceholder')} {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -408,9 +410,9 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                                 <div className="grid grid-cols-2 gap-4">
                                     <FormField control={form.control} name="addressCity" render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>City <span className="text-red-500">*</span></FormLabel>
+                                            <FormLabel>{t('common.city')} <span className="text-red-500">*</span></FormLabel>
                                             <FormControl>
-                                                <Input placeholder="Athens" {...field} />
+                                                <Input placeholder={t('routes.settings.cityPlaceholder')} {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -418,9 +420,9 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
 
                                     <FormField control={form.control} name="addressZipCode" render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Zip Code <span className="text-red-500">*</span></FormLabel>
+                                            <FormLabel>{t('common.zipCode')} <span className="text-red-500">*</span></FormLabel>
                                             <FormControl>
-                                                <Input placeholder="12345" {...field} />
+                                                <Input placeholder={t('routes.settings.zipCodePlaceholder')} {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -431,7 +433,7 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
 
                             {/* Services */}
                             <div className="space-y-4">
-                                <h3 className="text-sm font-medium">Services Offered</h3>
+                                <h3 className="text-sm font-medium">{t('routes.settings.venueDialog.servicesOffered')}</h3>
                                 <div className="grid grid-cols-2 gap-4">
                                     {SERVICE_OPTIONS.map((option) => (
                                         <FormField
@@ -446,7 +448,7 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                                                             onCheckedChange={field.onChange}
                                                         />
                                                     </FormControl>
-                                                    <FormLabel>{option.label}</FormLabel>
+                                                    <FormLabel>{t(option.translationKey as any)}</FormLabel>
                                                 </FormItem>
                                             )}
                                         />
@@ -456,14 +458,14 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
 
                             {/* Amenities */}
                             <div className="space-y-4">
-                                <h3 className="text-sm font-medium">Amenities</h3>
+                                <h3 className="text-sm font-medium">{t('routes.settings.venueDialog.amenities')}</h3>
                                 <div className="grid grid-cols-2 gap-4">
                                     <FormField control={form.control} name="amenitiesShowers" render={({ field }) => (
                                         <FormItem className="flex flex-row items-center space-x-2 space-y-0">
                                             <FormControl>
                                                 <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                                             </FormControl>
-                                            <FormLabel>Showers</FormLabel>
+                                            <FormLabel>{t('routes.settings.venueDialog.showers')}</FormLabel>
                                         </FormItem>
                                     )} />
 
@@ -472,7 +474,7 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                                             <FormControl>
                                                 <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                                             </FormControl>
-                                            <FormLabel>Accessible</FormLabel>
+                                            <FormLabel>{t('routes.settings.venueDialog.accessible')}</FormLabel>
                                         </FormItem>
                                     )} />
 
@@ -481,7 +483,7 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                                             <FormControl>
                                                 <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                                             </FormControl>
-                                            <FormLabel>Mats Provided</FormLabel>
+                                            <FormLabel>{t('routes.settings.venueDialog.matsProvided')}</FormLabel>
                                         </FormItem>
                                     )} />
                                 </div>
@@ -495,7 +497,7 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                             disabled={isSubmitting}
                             className="w-full"
                         >
-                            {isSubmitting ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update venue' : 'Create venue')}
+                            {isSubmitting ? (isEditMode ? t('routes.settings.venueDialog.updating') : t('routes.settings.venueDialog.creating')) : (isEditMode ? t('routes.settings.venueDialog.updateVenueButton') : t('routes.settings.venueDialog.createVenueButton'))}
                         </Button>
 
                         <Button
@@ -507,7 +509,7 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                             disabled={isSubmitting}
                             className="w-full"
                         >
-                            Cancel
+                            {t('common.cancel')}
                         </Button>
                     </DrawerFooter>
                 </DrawerContent>

@@ -34,7 +34,7 @@ test.describe('Venue, Template & Calendar Management Flow', () => {
         await page.click('text=user_with_business'); // Click on user dropdown in sidenav
         await page.click('text=Settings'); // Click on Settings in dropdown
         await page.click('text=Venues'); // Click on Venues tab in settings
-        await page.click('button:has-text("Add another venue")');
+        await page.click('button:has-text("Add venue")');
 
         // Fill venue form
         await page.fill('[name="name"]', 'gefatest01 Test Yoga Studio');
@@ -65,7 +65,7 @@ test.describe('Venue, Template & Calendar Management Flow', () => {
         await expect(page.locator('text=gefatest01 Test Yoga Studio').first()).toBeVisible();
 
         // Step 4: Navigate to templates and create a new template
-        await page.click('text=Lessons');
+        await page.click('text=Class Templates');
         await page.click('button:has-text("Create Template")');
 
         // Fill template form
@@ -119,7 +119,7 @@ test.describe('Venue, Template & Calendar Management Flow', () => {
         await expect(page.locator('text=gefatest01 Morning Hatha Yoga').first()).toBeVisible();
 
         // Step 7: Navigate to calendar and create a standalone class instance
-        await page.click('text=Schedule');
+        await page.click('text=My Calendar');
 
         // Open new class dialog and select date & time for tomorrow
         await page.click('button:has-text("New Class")');
