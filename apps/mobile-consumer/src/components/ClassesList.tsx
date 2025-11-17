@@ -11,7 +11,7 @@ import { theme } from '../theme';
 import { ExploreCategoryId, getExploreCategoryTag } from '@repo/utils/exploreFilters';
 import * as Location from 'expo-location';
 import { calculateDistance, sortByDistance } from '../utils/location';
-import { useUserCity } from '../hooks/use-user-city';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 
 interface ClassesListProps {
   selectedDate: string;
@@ -26,7 +26,8 @@ interface ClassesListProps {
 export function ClassesList({ selectedDate, searchFilters, userLocation }: ClassesListProps) {
   const { t } = useTypedTranslation();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const { city: userCity } = useUserCity();
+  const { user } = useCurrentUser();
+  const userCity = user?.activeCitySlug;
   type ClassWithDistance = ClassInstance & { distance: number };
 
   // Get class instances for the selected date

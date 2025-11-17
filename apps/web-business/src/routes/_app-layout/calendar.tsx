@@ -43,7 +43,7 @@ function RouteComponent() {
     return (
         <>
             <Header fixed title={t('routes.calendar.title')} />
-            <Main className="-pr-4 max-w-none">
+            <Main className="-pr-4 max-w-none flex flex-col">
                 <CalendarPage
                     startDate={startDate}
                     classInstances={classInstances}

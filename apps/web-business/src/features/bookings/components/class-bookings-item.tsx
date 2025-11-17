@@ -13,6 +13,8 @@ import {
     Phone,
     User,
     Calendar,
+    Clock,
+    Euro,
     Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -96,11 +98,19 @@ export function ClassBookingsItem({
         return format(new Date(timestamp), "MMM d, yyyy 'at' h:mm a");
     };
 
-    // Calculate discount savings if discount was applied  
-    // originalPrice and finalPrice are now in cents, so discountSavings is in cents
-    const discountSavings = booking.appliedDiscount
-        ? booking.originalPrice - booking.finalPrice
-        : 0;
+    // Format class date and time from classInstanceSnapshot
+    const formatClassDate = (timestamp: number) => {
+        return format(new Date(timestamp), "MMM d, yyyy");
+    };
+
+    const formatClassTime = (startTime: number, endTime?: number) => {
+        const start = format(new Date(startTime), "h:mm a");
+        if (endTime) {
+            const end = format(new Date(endTime), "h:mm a");
+            return `${start} - ${end}`;
+        }
+        return start;
+    };
 
     const getStatusVariant = (status: string) => {
         switch (status) {
@@ -165,20 +175,24 @@ export function ClassBookingsItem({
                                 </div>
                             )}
                         </div>
-                        <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
+                        <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                            {booking.classInstanceSnapshot?.startTime && (
+                                <>
+                                    <div className="flex items-center gap-1">
+                                        <Calendar className="h-3 w-3" />
+                                        <span>{formatClassDate(booking.classInstanceSnapshot.startTime)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        <span>{formatClassTime(booking.classInstanceSnapshot.startTime, booking.classInstanceSnapshot.endTime)}</span>
+                                    </div>
+                                </>
+                            )}
                             <div className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                <span>Booked: {formatBookingTime(booking.bookedAt)}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <span className="text-green-600 font-medium">{formatEuros(booking.creditsUsed)}</span>
+                                <Euro className="h-3 w-3" />
+                                <span className="font-medium">{formatEuros(booking.creditsUsed)}</span>
                             </div>
                         </div>
-                        {booking.appliedDiscount && (
-                            <div className="text-xs text-green-600">
-                                Discount applied: {booking.appliedDiscount.ruleName} (-€{(discountSavings / 100).toFixed(2)})
-                            </div>
-                        )}
                     </div>
                 </div>
 

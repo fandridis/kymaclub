@@ -22,12 +22,11 @@ import { CreditsBadge } from '../../../components/CreditsBadge';
 import { ProfileIconButton } from '../../../components/ProfileIconButton';
 import { ChevronLeftIcon } from 'lucide-react-native';
 import { TouchableOpacity } from 'react-native';
-import { useUserCity } from '../../../hooks/use-user-city';
 
 export function Explore() {
     const { t } = useTypedTranslation();
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-    const { user } = useCurrentUser();
+    const { user, isLoading: userLoading } = useCurrentUser();
     const [activeTab, setActiveTab] = useState<TabType>('businesses');
     const tabItems = useMemo<AppTabItem<TabType>[]>(
         () => [
@@ -40,11 +39,12 @@ export function Explore() {
     const [error, setError] = useState<string | null>(null);
     const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
     const filters = useExploreFiltersStore((state) => state.filters);
-    const { city: userCity, loading: cityLoading } = useUserCity();
+    const userCity = user?.activeCitySlug;
+
 
     const { venues, venuesLoading, storageIdToUrl } = useAllVenues({
         cityFilter: userCity,
-        skip: !userCity || cityLoading,
+        skip: !userCity || userLoading,
     });
 
     // Get user credit balance
@@ -96,7 +96,7 @@ export function Explore() {
         navigation.navigate('ExploreFiltersModal');
     }, [navigation]);
 
-    const isLoading = loadingLocation || venuesLoading || cityLoading;
+    const isLoading = loadingLocation || venuesLoading || userLoading;
 
     if (isLoading) {
         return (
@@ -116,7 +116,7 @@ export function Explore() {
     }
 
     // Show empty state if no city selected
-    if (!userCity && !cityLoading) {
+    if (!userCity && !userLoading) {
         return (
             <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
                 <TabScreenHeader

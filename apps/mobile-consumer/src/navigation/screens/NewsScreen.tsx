@@ -12,7 +12,6 @@ import { TabScreenHeader } from '../../components/TabScreenHeader';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
 import { useAllVenues } from '../../features/explore/hooks/useAllVenues';
-import { useUserCity } from '../../hooks/use-user-city';
 import type { RootStackParamListWithNestedTabs } from '../index';
 import { centsToCredits } from '@repo/utils/credits';
 import { NewsClassCard } from '../../components/news/NewsCard';
@@ -97,10 +96,8 @@ const NoUpcomingClassesMessage = ({
 export function NewsScreen() {
     const { t } = useTypedTranslation();
     const navigation = useNavigation<NavigationProp<RootStackParamListWithNestedTabs>>();
-    const { isAuthenticated } = useConvexAuth();
-    const data = useQuery(api.queries.core.getCurrentUserQuery, isAuthenticated ? {} : 'skip');
-    const user = data?.user;
-    const { city: userCity } = useUserCity();
+    const { user } = useCurrentUser();
+    const userCity = user?.activeCitySlug;
 
     const endOfToday = useMemo(() => {
         const end = new Date(now);

@@ -1,50 +1,17 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { useNavigation } from '@react-navigation/native';
 import { SettingsGroup, SettingsHeader, SettingsRow } from '../../components/Settings';
 import { StackScreenHeader } from '../../components/StackScreenHeader';
 import { useTypedTranslation } from '../../i18n/typed';
-import { theme } from '../../theme';
 
 export function SettingsAccountScreen() {
-    const navigation = useNavigation();
-    const { t, i18n } = useTypedTranslation();
-
-    const getLanguageDisplay = (languageCode: string) => {
-        const languages = {
-            'en': { name: 'English', flag: '🇺🇸' },
-            'el': { name: 'Ελληνικά', flag: '🇬🇷' }
-        };
-        const lang = languages[languageCode as keyof typeof languages] || languages['en'];
-        return `${lang.flag} ${lang.name}`;
-    };
-
-    const handleLanguagePress = () => {
-        navigation.navigate('LanguageSelection' as never);
-    };
+    const { t } = useTypedTranslation();
 
     return (
         <SafeAreaView style={styles.container}>
             <StackScreenHeader title={t('settings.account.title')} />
             <View style={styles.content}>
-                <SettingsHeader title={t('settings.account.appSettings')} />
-                <SettingsGroup>
-                    <SettingsRow
-                        title={t('settings.account.appLanguage')}
-                        subtitle={getLanguageDisplay(i18n.language)}
-                        renderRightSide={() => (
-                            <TouchableOpacity
-                                style={styles.changeButton}
-                                onPress={handleLanguagePress}
-                            >
-                                <Text style={styles.changeButtonText}>{t('settings.account.change')}</Text>
-                            </TouchableOpacity>
-                        )}
-                    />
-                </SettingsGroup>
-
                 <SettingsHeader title={t('settings.account.accountSettings')} />
                 <SettingsGroup>
                     <SettingsRow
@@ -92,16 +59,5 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
         textAlign: 'center',
         marginTop: 40,
-    },
-    changeButton: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        backgroundColor: theme.colors.zinc[50],
-        borderRadius: 6,
-    },
-    changeButtonText: {
-        color: theme.colors.zinc[950],
-        fontSize: 14,
-        fontWeight: '600',
     },
 });

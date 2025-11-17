@@ -263,6 +263,14 @@
             "totalBookings": "Συνολικές Κρατήσεις",
             "completedClasses": "Ολοκληρωμένα Μαθήματα",
             "memberSince": "Μέλος από"
+        },
+        "city": {
+            "title": "Πόλη",
+            "notSet": "Δεν έχει οριστεί",
+            "selectCity": "Επιλογή Πόλης",
+            "description": "Επιλέξτε την πόλη όπου θέλετε να εξερευνήσετε.",
+            "errorSelectCity": "Παρακαλώ επιλέξτε μια πόλη",
+            "errorUpdateFailed": "Αποτυχία ενημέρωσης πόλης. Παρακαλώ δοκιμάστε ξανά."
         }
     },
     "subscription": {
@@ -602,6 +610,9 @@
         "crossfit": "CrossFit",
         "boxing": "Πυγμαχία",
         "other": "Άλλο"
+    },
+    "cities": {
+        "athens": "Αθήνα"
     },
     "accessibility": {
         "openSettings": "Άνοιγμα ρυθμίσεων",

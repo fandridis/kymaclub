@@ -3,27 +3,28 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useMutation } from 'convex/react';
+import { CheckIcon } from 'lucide-react-native';
 import { api } from '@repo/api/convex/_generated/api';
 import { StackScreenHeader } from '../../components/StackScreenHeader';
-import { useUserCity } from '../../hooks/use-user-city';
+import { SettingsGroup } from '../../components/Settings';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useTypedTranslation } from '../../i18n/typed';
 import { theme } from '../../theme';
-import { getCityOptions } from '@repo/utils/constants';
-
-const CITY_OPTIONS = getCityOptions();
+import { useCityOptions } from '../../hooks/use-city-options';
 
 export function CitySelectionScreen() {
   const navigation = useNavigation();
   const { t } = useTypedTranslation();
-  const { city: currentCity } = useUserCity();
-  const [selectedCity, setSelectedCity] = useState<string>(currentCity || CITY_OPTIONS[0]?.value || '');
+  const { user } = useCurrentUser();
+  const cityOptions = useCityOptions();
+  const [selectedCity, setSelectedCity] = useState<string>(user?.activeCitySlug || cityOptions[0]?.value || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const updateCityMutation = useMutation(api.mutations.core.updateUserCity);
 
   const handleSave = async () => {
     if (!selectedCity) {
-      Alert.alert('Error', 'Please select a city');
+      Alert.alert(t('common.error'), t('settings.city.errorSelectCity'));
       return;
     }
 
@@ -33,7 +34,7 @@ export function CitySelectionScreen() {
       navigation.goBack();
     } catch (error) {
       console.error('Failed to update city:', error);
-      Alert.alert('Error', 'Failed to update city. Please try again.');
+      Alert.alert(t('common.error'), t('settings.city.errorUpdateFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -41,33 +42,48 @@ export function CitySelectionScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StackScreenHeader title="Select City" />
+      <StackScreenHeader title={t('settings.city.selectCity')} />
       <View style={styles.content}>
-        <Text style={styles.description}>
-          Choose the city where you want to explore classes
-        </Text>
+        <View style={styles.headerSection}>
+          <Text style={styles.subtitle}>
+            {t('settings.city.description')}
+          </Text>
+        </View>
 
-        <View style={styles.citiesList}>
-          {CITY_OPTIONS.map((option) => (
-            <TouchableOpacity
-              key={option.value}
-              onPress={() => setSelectedCity(option.value)}
-              style={[
-                styles.cityOption,
-                selectedCity === option.value && styles.cityOptionSelected,
-              ]}
-            >
-              <Text
+        <SettingsGroup>
+          {cityOptions.map((option) => {
+            const isSelected = selectedCity === option.value;
+            return (
+              <TouchableOpacity
+                key={option.value}
+                onPress={() => setSelectedCity(option.value)}
                 style={[
-                  styles.cityOptionText,
-                  selectedCity === option.value && styles.cityOptionTextSelected,
+                  styles.cityOption,
+                  isSelected && styles.selectedCityOption,
                 ]}
               >
-                {option.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+                <View style={styles.cityInfo}>
+                  <Text
+                    style={[
+                      styles.cityName,
+                      isSelected && styles.selectedCityName,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </View>
+                {isSelected && (
+                  <View style={styles.checkContainer}>
+                    <CheckIcon
+                      size={20}
+                      color={theme.colors.emerald[600]}
+                    />
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </SettingsGroup>
 
         <TouchableOpacity
           style={[
@@ -83,7 +99,7 @@ export function CitySelectionScreen() {
           {isSubmitting ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text style={styles.saveButtonText}>Save</Text>
+            <Text style={styles.saveButtonText}>{t('common.save')}</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -98,37 +114,43 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 20,
   },
-  description: {
-    fontSize: 16,
+  headerSection: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.lg,
+  },
+  subtitle: {
+    fontSize: theme.fontSize.base,
     color: theme.colors.zinc[600],
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  citiesList: {
-    gap: 12,
-    marginBottom: 24,
+    lineHeight: theme.fontSize.base * 1.4,
   },
   cityOption: {
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: theme.colors.zinc[200],
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.zinc[100],
   },
-  cityOptionSelected: {
-    borderColor: theme.colors.emerald[600],
+  selectedCityOption: {
     backgroundColor: theme.colors.emerald[50],
   },
-  cityOptionText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.zinc[900],
-    textAlign: 'center',
+  cityInfo: {
+    flex: 1,
   },
-  cityOptionTextSelected: {
-    color: theme.colors.emerald[900],
+  cityName: {
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.semibold,
+    color: theme.colors.zinc[900],
+  },
+  selectedCityName: {
+    color: theme.colors.emerald[700],
+  },
+  checkContainer: {
+    marginLeft: theme.spacing.md,
   },
   saveButton: {
     backgroundColor: theme.colors.emerald[600],
@@ -136,6 +158,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 'auto',
+    marginHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.lg,
   },
   saveButtonDisabled: {
     backgroundColor: theme.colors.zinc[300],

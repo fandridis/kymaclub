@@ -179,7 +179,7 @@
         },
         "language": {
             "title": "App Language",
-            "description": "Choose your preferred language for the app interface",
+            "description": "Choose your preferred language.",
             "error": "Error",
             "failedToChange": "Failed to change language. Please try again.",
             "changesImmediate": "Language changes will take effect immediately"
@@ -263,6 +263,14 @@
             "totalBookings": "Total Bookings",
             "completedClasses": "Completed Classes",
             "memberSince": "Member Since"
+        },
+        "city": {
+            "title": "City",
+            "notSet": "Not set",
+            "selectCity": "Select City",
+            "description": "Choose the city where you want to explore classes",
+            "errorSelectCity": "Please select a city",
+            "errorUpdateFailed": "Failed to update city. Please try again."
         }
     },
     "subscription": {
@@ -602,6 +610,9 @@
         "crossfit": "CrossFit",
         "boxing": "Boxing",
         "other": "Other"
+    },
+    "cities": {
+        "athens": "Athens"
     },
     "accessibility": {
         "openSettings": "Open settings",

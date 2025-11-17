@@ -113,14 +113,14 @@ export function CalendarPage({ startDate, classInstances, user, loading }: Calen
     }, [classInstances, user.business.timezone]);
 
     return (
-        <>
-            <div className="mb-2 flex justify-end">
+        <div className="flex flex-col h-full">
+            <div className="mb-2 flex justify-end flex-shrink-0">
                 <Button onClick={() => setCreateDialog({ open: true, selectedDateTime: '' })}>
                     <Plus className="h-4 w-4 mr-2" />
                     {t('routes.calendar.newClass')}
                 </Button>
             </div>
-            <div className='w-full relative'>
+            <div className='w-full relative flex-1 min-h-0'>
                 {loading && (
                     <div className='absolute inset-0 backdrop-blur-xs z-10 flex items-center justify-center' />
                 )}
@@ -132,11 +132,12 @@ export function CalendarPage({ startDate, classInstances, user, loading }: Calen
                     plugins={[timeGridPlugin, interactionPlugin]}
                     locales={[elLocale, enGbLocale]}
                     locale={getLocale(i18n.language)}
-                    contentHeight="auto"
+                    height="100%"
                     expandRows={true}
                     allDaySlot={false}
                     initialDate={startDate}
                     events={preparedCalendarEvents}
+                    titleFormat={{ month: 'long', year: 'numeric' }}
                     editable={true}
                     selectable={true}
                     select={(info) => handleSelectTimeSlot(info.startStr)}
@@ -238,7 +239,7 @@ export function CalendarPage({ startDate, classInstances, user, loading }: Calen
                     <div />
                 </ClassBookingsDialog>
             )}
-        </>
+        </div>
     );
 }
 

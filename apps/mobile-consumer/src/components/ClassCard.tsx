@@ -324,7 +324,7 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, distance, onPres
 
           <View style={styles.priceContainer}>
             {discountResult.appliedDiscount ? (
-              <View style={styles.priceStack}>
+              <View style={styles.priceRowWithDiscount}>
                 <View style={styles.priceRow}>
                   <DiamondIcon size={12} color={theme.colors.zinc[400]} />
                   <Text style={styles.originalPriceText}>{discountResult.originalPrice}</Text>
@@ -481,6 +481,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+  },
+  priceRowWithDiscount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   priceText: {
     fontSize: 15,

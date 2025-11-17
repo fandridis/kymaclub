@@ -5,14 +5,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { format } from 'date-fns';
 import { tz } from '@date-fns/tz';
-import { BellIcon, ShieldIcon, CameraIcon, LogOutIcon, MapPinIcon } from 'lucide-react-native';
+import { BellIcon, ShieldIcon, CameraIcon, LogOutIcon, MapPinIcon, LanguagesIcon } from 'lucide-react-native';
 import { theme } from '../../theme';
 import { SettingsHeader, SettingsRow } from '../../components/Settings';
 import { SettingsGroup } from '../../components/Settings';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
-import { useUserCity } from '../../hooks/use-user-city';
+import { useCityLabel } from '../../hooks/use-city-label';
+import type { CitySlug } from '@repo/utils/constants';
 import { useCompressedImageUpload } from '../../hooks/useCompressedImageUpload';
 import { useProfileImageModeration } from '../../hooks/useProfileImageModeration';
 import { StackScreenHeader } from '../../components/StackScreenHeader';
@@ -28,8 +29,18 @@ export function SettingsScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const logout = useLogout();
   const { user } = useCurrentUser();
-  const { t } = useTypedTranslation();
-  const { city: userCity, cityLabel } = useUserCity();
+  const { t, i18n } = useTypedTranslation();
+  const cityLabel = useCityLabel(user?.activeCitySlug as CitySlug | undefined);
+
+  const getLanguageDisplay = (languageCode: string) => {
+    const languages = {
+      'en': { name: 'English', flag: '🇺🇸' },
+      'el': { name: 'Ελληνικά', flag: '🇬🇷' }
+    };
+    const lang = languages[languageCode as keyof typeof languages] || languages['en'];
+    return `${lang.flag} ${lang.name}`;
+  };
+
 
   const creditBalance = useQuery(api.queries.credits.getUserBalance, { userId: user?._id! });
   const expiringCredits = useQuery(api.queries.credits.getUserExpiringCredits, { userId: user?._id! });
@@ -435,10 +446,16 @@ export function SettingsScreen() {
           <SettingsHeader title={t('settings.title')} />
           <SettingsGroup>
             <SettingsRow
-              title="City"
-              subtitle={cityLabel || 'Not set'}
+              title={t('settings.city.title')}
+              subtitle={cityLabel || t('settings.city.notSet')}
               onPress={() => navigation.navigate('CitySelection' as never)}
               icon={MapPinIcon}
+            />
+            <SettingsRow
+              title={t('settings.account.appLanguage')}
+              subtitle={getLanguageDisplay(i18n.language)}
+              onPress={() => navigation.navigate('LanguageSelection' as never)}
+              icon={LanguagesIcon}
             />
             <SettingsRow
               title={t('settings.notifications.title')}
