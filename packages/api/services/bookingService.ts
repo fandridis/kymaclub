@@ -825,7 +825,8 @@ export const bookingService = {
         // 💰 REFUND CALCULATION AND PROCESSING
         const refundMultiplier = isLateCancellation ? 0.5 : 1;
         // booking.creditsUsed is already in credits, so we can use it directly for refund
-        const refundAmount = booking.creditsUsed * refundMultiplier; // 50% refund if late, full refund otherwise
+        // Always round up to nearest integer to ensure credits stay whole numbers
+        const refundAmount = Math.ceil(booking.creditsUsed * refundMultiplier); // 50% refund if late, full refund otherwise
 
         if (refundAmount > 0) {
 

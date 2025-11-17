@@ -235,6 +235,7 @@ export function BookingsScreen() {
                 activeKey={activeTab}
                 onChange={handleTabChange}
                 containerStyle={styles.tabsContainer}
+                tabsRowStyle={styles.tabsRow}
             />
 
             {isInitialLoading ? (
@@ -290,6 +291,9 @@ const styles = StyleSheet.create({
     tabsContainer: {
         paddingHorizontal: 12,
         paddingVertical: 10,
+    },
+    tabsRow: {
+        gap: 8,
     },
     loadingContainer: {
         flex: 1,

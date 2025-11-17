@@ -252,11 +252,11 @@ describe('Booking System Integration Tests', () => {
             expect(booking.status).toBe("cancelled_by_consumer");
             expect(booking.cancelledAt).toBeDefined();
 
-            // Verify full refund
+            // Verify full refund (rounded up to nearest integer)
             balance = await asUser.query(api.queries.credits.getUserBalance, {
                 userId: userId
             });
-            expect(balance.balance).toBe(30); // Full refund
+            expect(balance.balance).toBe(30.5); // Full refund: 7.5 credits rounded up to 8 credits (22.5 + 8 = 30.5)
 
             // Verify refund transaction
             const refundTransactions = await asUser.query(api.queries.credits.getUserTransactions, {
@@ -264,7 +264,7 @@ describe('Booking System Integration Tests', () => {
                 type: "refund"
             });
             expect(refundTransactions).toHaveLength(1);
-            expect(refundTransactions[0].amount).toBe(7.5); // 750 cents = 7.5 credits
+            expect(refundTransactions[0].amount).toBe(8); // 7.5 credits rounded up to 8 credits
             expect(refundTransactions[0].bookingId).toBe(booking._id);
         });
 

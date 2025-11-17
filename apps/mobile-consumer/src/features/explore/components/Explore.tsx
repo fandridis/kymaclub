@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
     },
     tabsRow: {
-        gap: 16,
+        gap: 8,
     },
     backButton: {
         padding: 8,

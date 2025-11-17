@@ -377,15 +377,13 @@ export function ClassDetailsModalScreen() {
 
         const classLabel = existingBooking.classInstanceSnapshot?.name ?? 'this class';
 
+        // Always calculate cancellation info to show accurate refund message
         let message = t('classes.cancelBookingMessage');
 
-        if (
-            existingBooking.classInstanceSnapshot?.startTime &&
-            existingBooking.classInstanceSnapshot?.cancellationWindowHours
-        ) {
+        if (existingBooking.classInstanceSnapshot?.startTime) {
             const cancellationInfo = getCancellationInfo(
                 existingBooking.classInstanceSnapshot.startTime,
-                existingBooking.classInstanceSnapshot.cancellationWindowHours,
+                existingBooking.classInstanceSnapshot.cancellationWindowHours ?? null,
                 existingBooking.hasFreeCancel,
                 existingBooking.freeCancelExpiresAt,
                 existingBooking.freeCancelReason

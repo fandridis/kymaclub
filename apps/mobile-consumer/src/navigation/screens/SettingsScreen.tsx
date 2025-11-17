@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { format } from 'date-fns';
 import { tz } from '@date-fns/tz';
-import { BellIcon, ShieldIcon, CameraIcon, LogOutIcon, MapPinIcon, LanguagesIcon } from 'lucide-react-native';
+import { BellIcon, ShieldIcon, CameraIcon, LogOutIcon, MapPinIcon, LanguagesIcon, TicketIcon } from 'lucide-react-native';
 import { theme } from '../../theme';
 import { SettingsHeader, SettingsRow } from '../../components/Settings';
 import { SettingsGroup } from '../../components/Settings';
@@ -445,6 +445,12 @@ export function SettingsScreen() {
           {/* Settings Navigation */}
           <SettingsHeader title={t('settings.title')} />
           <SettingsGroup>
+            <SettingsRow
+              title={t('bookings.myBookings')}
+              subtitle={t('bookings.myBookingsSubtitle')}
+              onPress={() => navigation.navigate('Bookings' as never)}
+              icon={TicketIcon}
+            />
             <SettingsRow
               title={t('settings.city.title')}
               subtitle={cityLabel || t('settings.city.notSet')}

@@ -1,4 +1,4 @@
-import { differenceInHours, differenceInMinutes, format } from 'date-fns';
+import { differenceInMinutes } from 'date-fns';
 
 export interface CancellationInfo {
   isWithinWindow: boolean;
@@ -23,6 +23,10 @@ export interface CancellationTranslations {
   outsideWindow: string;
   outsideWindowStatus: string;
   windowClosed: string;
+  noWindow: string;
+  noWindowStatus: string;
+  classStarted: string;
+  classStartedStatus: string;
   specialCircumstances: string;
   specialPrivilege: string;
 }
@@ -43,6 +47,10 @@ export function getCancellationTranslations(t: (key: any, options?: any) => stri
     outsideWindow: t('classes.cancellation.outsideWindow'),
     outsideWindowStatus: t('classes.cancellation.outsideWindowStatus'),
     windowClosed: t('classes.cancellation.windowClosed'),
+    noWindow: t('classes.cancellation.noWindow'),
+    noWindowStatus: t('classes.cancellation.noWindowStatus'),
+    classStarted: t('classes.cancellation.classStarted'),
+    classStartedStatus: t('classes.cancellation.classStartedStatus'),
     specialCircumstances: t('classes.cancellation.specialCircumstances'),
     specialPrivilege: t('classes.cancellation.specialPrivilege'),
   };
@@ -53,7 +61,7 @@ export function getCancellationTranslations(t: (key: any, options?: any) => stri
  */
 export function getCancellationInfo(
   classStartTime: number,
-  cancellationWindowHours: number,
+  cancellationWindowHours: number | null | undefined,
   hasFreeCancel?: boolean,
   freeCancelExpiresAt?: number,
   freeCancelReason?: string
@@ -62,14 +70,20 @@ export function getCancellationInfo(
   const startTime = new Date(classStartTime);
   const currentTime = new Date(now);
 
-  // Calculate hours until class starts
-  const hoursUntilStart = differenceInHours(startTime, currentTime);
+  // Calculate minutes until class starts (can be negative if class has started)
+  const minutesUntilStart = differenceInMinutes(startTime, currentTime);
+  const hoursUntilStart = minutesUntilStart / 60;
+
+  // Check if class has already started (with 10-minute grace period)
+  // Users can cancel up to 10 minutes after class starts and still get 50% refund
+  const GRACE_PERIOD_MINUTES = 10;
+  const classHasStarted = minutesUntilStart < -GRACE_PERIOD_MINUTES;
 
   // Check if free cancellation is active (takes precedence over normal window)
   const hasActiveFreeCancel = hasFreeCancel && freeCancelExpiresAt && now <= freeCancelExpiresAt;
 
-  // If free cancellation is active, always allow full refund
-  if (hasActiveFreeCancel) {
+  // If free cancellation is active, always allow full refund (unless class has started)
+  if (hasActiveFreeCancel && !classHasStarted) {
     const freeCancelDeadline = new Date(freeCancelExpiresAt!);
     const minutesRemaining = differenceInMinutes(freeCancelDeadline, currentTime);
 
@@ -93,20 +107,45 @@ export function getCancellationInfo(
       timeRemaining,
       refundPercentage: 100,
       hoursUntilStart,
-      cancellationWindowHours,
+      cancellationWindowHours: cancellationWindowHours ?? 0,
       hasFreeCancel: true,
       freeCancelReason
     };
   }
 
+  // If class has started, no refund
+  if (classHasStarted) {
+    return {
+      isWithinWindow: false,
+      timeRemaining: null,
+      refundPercentage: 0,
+      hoursUntilStart,
+      cancellationWindowHours: cancellationWindowHours ?? 0,
+      hasFreeCancel: false
+    };
+  }
+
+  // If there's no cancellation window (0, null, or undefined), full refund
+  const effectiveWindowHours = cancellationWindowHours ?? 0;
+  if (effectiveWindowHours === 0) {
+    return {
+      isWithinWindow: true,
+      timeRemaining: null,
+      refundPercentage: 100,
+      hoursUntilStart,
+      cancellationWindowHours: 0,
+      hasFreeCancel: false
+    };
+  }
+
   // Normal cancellation window logic
-  const isWithinWindow = hoursUntilStart >= cancellationWindowHours;
+  const isWithinWindow = hoursUntilStart >= effectiveWindowHours;
   const refundPercentage = isWithinWindow ? 100 : 50;
 
   // Calculate time remaining for normal cancellation window
   let timeRemaining: string | null = null;
   if (isWithinWindow) {
-    const cancellationDeadline = new Date(classStartTime - (cancellationWindowHours * 60 * 60 * 1000));
+    const cancellationDeadline = new Date(classStartTime - (effectiveWindowHours * 60 * 60 * 1000));
     const minutesRemaining = differenceInMinutes(cancellationDeadline, currentTime);
 
     if (minutesRemaining > 0) {
@@ -129,7 +168,7 @@ export function getCancellationInfo(
     timeRemaining,
     refundPercentage,
     hoursUntilStart,
-    cancellationWindowHours,
+    cancellationWindowHours: effectiveWindowHours,
     hasFreeCancel: false
   };
 }
@@ -141,12 +180,23 @@ export function formatCancellationStatus(
   cancellationInfo: CancellationInfo,
   translations: CancellationTranslations
 ): string {
+  // If class has started (more than 10 minutes ago), no refund
+  // hoursUntilStart is negative when class has started, so we check if it's less than -10/60 hours
+  if (cancellationInfo.hoursUntilStart < -10 / 60) {
+    return translations.classStartedStatus;
+  }
+
   // Free cancellation privilege takes priority
   if (cancellationInfo.hasFreeCancel && cancellationInfo.timeRemaining) {
     const reason = cancellationInfo.freeCancelReason || translations.specialPrivilege;
     return translations.freeCancelStatus
       .replace('{{time}}', cancellationInfo.timeRemaining)
       .replace('{{reason}}', reason);
+  }
+
+  // No cancellation window (0 hours) - full refund
+  if (cancellationInfo.cancellationWindowHours === 0) {
+    return translations.noWindowStatus;
   }
 
   // Normal cancellation window
@@ -167,6 +217,12 @@ export function getCancellationMessage(
   cancellationInfo: CancellationInfo,
   translations: CancellationTranslations
 ): string {
+  // If class has started (more than 10 minutes ago), no refund
+  // hoursUntilStart is negative when class has started, so we check if it's less than -10/60 hours
+  if (cancellationInfo.hoursUntilStart < -10 / 60) {
+    return translations.classStarted;
+  }
+
   // Free cancellation privilege - show special message
   if (cancellationInfo.hasFreeCancel) {
     const reason = cancellationInfo.freeCancelReason || translations.specialCircumstances;
@@ -177,6 +233,11 @@ export function getCancellationMessage(
     } else {
       return translations.freeCancelWithoutTime.replace('{{reason}}', reason);
     }
+  }
+
+  // No cancellation window (0 hours) - full refund
+  if (cancellationInfo.cancellationWindowHours === 0) {
+    return translations.noWindow;
   }
 
   // Normal cancellation window
