@@ -6,8 +6,9 @@ import type { PaginationOptions, PaginationResult } from "convex/server";
 import { components, internal } from "../convex/_generated/api";
 import { format } from "date-fns";
 import { PushNotifications } from "@convex-dev/expo-push-notifications";
-import { createNotificationWithDeepLink, type NotificationType } from "../utils/deep-linking";
-import { UserSettings, UserSettingsNotifications } from "../types/userSettings";
+import { createNotificationWithDeepLink } from "../utils/deep-linking";
+import { UserSettingsNotifications } from "../types/userSettings";
+import { NotificationType } from "../types/notification";
 
 /***************************************************************
  * Notification Service - All notification-related operations

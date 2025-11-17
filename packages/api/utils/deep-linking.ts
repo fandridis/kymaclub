@@ -4,7 +4,7 @@
  */
 
 import type { Id } from '../convex/_generated/dataModel';
-import type { NotificationType } from '../types/notification';
+import { NotificationType } from '../types/notification';
 
 // Base scheme for the app
 const SCHEME = 'kymaclub://';
