@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   },
   finePrint: {
     fontSize: theme.fontSize.xs,
-    color: theme.colors.zinc[400],
+    color: theme.colors.zinc[500],
     textAlign: 'center',
   },
   buyButton: {
