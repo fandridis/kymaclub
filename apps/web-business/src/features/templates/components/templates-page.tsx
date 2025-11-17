@@ -111,8 +111,8 @@ export default function TemplatesPage() {
                 <Card className="text-center py-12">
                     <CardContent>
                         <Loader2 className="h-12 w-12 mx-auto text-muted-foreground mb-4 animate-spin" />
-                        <h3 className="text-lg font-semibold mb-2">Loading templates...</h3>
-                        <p className="text-muted-foreground">Please wait while we fetch your templates</p>
+                        <h3 className="text-lg font-semibold mb-2">{t('routes.templates.loadingTemplates')}</h3>
+                        <p className="text-muted-foreground">{t('routes.templates.loadingTemplatesDescription')}</p>
                     </CardContent>
                 </Card>
             ) : templates.length === 0 ? (

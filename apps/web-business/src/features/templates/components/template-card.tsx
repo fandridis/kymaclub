@@ -40,6 +40,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@repo/api/convex/_generated/api";
 import { useCompressedImageUpload } from "@/hooks/useCompressedImageUpload";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTypedTranslation } from "@/lib/typed";
 
 interface TemplateCardProps {
     template: Doc<"classTemplates">
@@ -48,6 +49,7 @@ interface TemplateCardProps {
 }
 
 export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) {
+    const { t } = useTypedTranslation();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [imageStorageIds, setImageStorageIds] = useState<Id<"_storage">[]>(template.imageStorageIds || []);
@@ -82,7 +84,7 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
         return (
             <Card className="w-full max-w-md">
                 <CardContent className="p-6 text-center text-muted-foreground">
-                    No template data available
+                    {t('routes.templates.templateCard.noTemplateDataAvailable')}
                 </CardContent>
             </Card>
         );
@@ -107,7 +109,7 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
         if (!file) return;
 
         if (imageStorageIds.length >= 4) {
-            toast.error("You can upload a maximum of 4 images per template.");
+            toast.error(t('routes.templates.templateCard.maxImagesError'));
             return;
         }
 
@@ -137,9 +139,9 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
             try {
                 await removeTemplateImage({ templateId: template._id, storageId: imageToDelete });
                 setImageStorageIds((prevImages) => prevImages.filter((id) => id !== imageToDelete));
-                toast.success("The image has been removed from the template.");
+                toast.success(t('routes.templates.templateCard.imageRemovedSuccess'));
             } catch (e: any) {
-                toast.error(e?.message ?? "Failed to remove image.");
+                toast.error(e?.message ?? t('routes.templates.templateCard.failedToRemoveImage'));
             }
         }
         setImageToDelete(null);
@@ -156,20 +158,20 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
                             <DropdownMenuTrigger asChild>
                                 <Button size="sm" variant="outline" className="h-8 w-8 p-0">
                                     <MoreVertical className="h-4 w-4" />
-                                    <span className="sr-only">Open menu</span>
+                                    <span className="sr-only">{t('routes.templates.templateCard.openMenu')}</span>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 {onEdit && (
                                     <DropdownMenuItem onClick={handleEditTemplate}>
                                         <Edit className="mr-2 h-4 w-4" />
-                                        Edit
+                                        {t('routes.templates.templateCard.edit')}
                                     </DropdownMenuItem>
                                 )}
                                 {onDelete && (
                                     <DropdownMenuItem onClick={handleDeleteTemplate} variant="destructive">
                                         <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete
+                                        {t('routes.templates.templateCard.delete')}
                                     </DropdownMenuItem>
                                 )}
                             </DropdownMenuContent>
@@ -183,7 +185,7 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
                             {template.name}
                         </CardTitle>
                         <Badge variant={template.isActive ? "default" : "secondary"} className="shrink-0 mt-0.5">
-                            {template.isActive ? "Active" : "Inactive"}
+                            {template.isActive ? t('routes.templates.templateCard.active') : t('routes.templates.templateCard.inactive')}
                         </Badge>
                     </div>
 
@@ -196,7 +198,7 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
                                 {isLongDescription && (
                                     <CollapsibleTrigger asChild>
                                         <Button variant="link" size="sm" className="px-0 h-auto mt-1 transition-colors group-data-[state=open]/collapsible:text-primary">
-                                            {isDescriptionExpanded ? "Read less" : "Read more"}
+                                            {isDescriptionExpanded ? t('routes.templates.templateCard.readLess') : t('routes.templates.templateCard.readMore')}
                                         </Button>
                                     </CollapsibleTrigger>
                                 )}
@@ -209,7 +211,7 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
             <CardContent className="space-y-4">
                 {/* Images Section */}
                 <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Template Images ({imageStorageIds.length}/4)</h4>
+                    <h4 className="text-sm font-medium">{t('routes.templates.templateCard.templateImages')} ({imageStorageIds.length}/4)</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {imageStorageIds.length > 0 ? (
                             imageStorageIds.map((sid) => {
@@ -221,16 +223,16 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
                                                 <DialogTrigger asChild>
                                                     <img
                                                         src={url}
-                                                        alt={`Template image`}
+                                                        alt={t('routes.templates.templateCard.templateImage')}
                                                         className="w-full h-full object-cover cursor-pointer transition-transform group-hover:scale-105"
                                                     />
                                                 </DialogTrigger>
                                                 <DialogContent className="max-w-3xl p-0">
-                                                    <DialogTitle className="sr-only">Template image</DialogTitle>
-                                                    <DialogDescription className="sr-only">Enlarged preview of template image</DialogDescription>
+                                                    <DialogTitle className="sr-only">{t('routes.templates.templateCard.templateImage')}</DialogTitle>
+                                                    <DialogDescription className="sr-only">{t('routes.templates.templateCard.enlargedPreview')}</DialogDescription>
                                                     <img
                                                         src={url}
-                                                        alt={`Template image`}
+                                                        alt={t('routes.templates.templateCard.templateImage')}
                                                         className="w-full h-auto max-h-[80vh] object-contain"
                                                     />
                                                 </DialogContent>
@@ -252,7 +254,7 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
                             })
                         ) : (
                             <p className="text-sm text-muted-foreground col-span-full">
-                                No images uploaded yet.
+                                {t('routes.templates.templateCard.noImagesUploaded')}
                             </p>
                         )}
                     </div>
@@ -273,12 +275,12 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
                             {status !== "idle" ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    {status === "uploading" ? "Uploading..." : "Preparing..."}
+                                    {status === "uploading" ? t('routes.templates.templateCard.uploading') : t('routes.templates.templateCard.preparing')}
                                 </>
                             ) : (
                                 <>
                                     <UploadCloud className="mr-2 h-4 w-4" />
-                                    Add Image
+                                    {t('routes.templates.templateCard.addImage')}
                                 </>
                             )}
                         </Button>
@@ -291,7 +293,7 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
                 <div className="space-y-3">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Clock className="h-4 w-4" />
-                        <span>Duration: {template.duration} min</span>
+                        <span>{t('routes.templates.templateCard.duration')}: {template.duration} min</span>
                     </div>
 
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -312,16 +314,15 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('routes.templates.templateCard.deleteImageConfirmTitle')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently remove the image
-                            from your template.
+                            {t('routes.templates.templateCard.deleteImageConfirmDescription')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                         <AlertDialogAction onClick={confirmDeleteImage}>
-                            Continue
+                            {t('routes.templates.templateCard.continue')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
