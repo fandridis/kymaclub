@@ -5,7 +5,7 @@ import { getAuthenticatedUserOrThrow } from "../utils";
 import { pricingOperations } from "../../operations/pricing";
 import { ERROR_CODES } from "../../utils/errorCodes";
 import { rateLimiter } from "../utils/rateLimiter";
-import { filterTestClassInstances, isClassInstanceVisible } from "../../utils/testDataFilter";
+import { filterTestClassInstances, isClassInstanceVisible, isUserTester } from "../../utils/testDataFilter";
 import { normalizeCityInput } from "@repo/utils/constants";
 
 /***************************************************************
@@ -320,36 +320,50 @@ export const getHappeningTodayClassInstances = query({
             return true;
         };
 
-        // Query using start_time index and filter by city, status, and deleted
-        // Using by_start_time since deleted is optional and undefined values aren't indexed
-        // This handles both deleted=false and deleted=undefined cases
-        const instances = await ctx.db
-            .query("classInstances")
-            .withIndex("by_start_time", (q) =>
-                q.gte("startTime", args.startDate)
-            )
-            .filter(q =>
-                q.and(
-                    q.eq(q.field("citySlug"), normalizedCitySlug),
-                    q.eq(q.field("status"), "scheduled"),
-                    q.lte(q.field("startTime"), args.endDate),
-                    q.neq(q.field("deleted"), true) // Matches both false and undefined
+        // Query using optimized index based on user's tester status
+        // For non-testers: Use index that includes isTest to exclude test instances at DB level
+        // For testers: Use city-based index without isTest filter to get all instances
+        const isTester = isUserTester(user);
+        let instances;
+
+        if (!isTester) {
+            // Non-testers: Query with isTest=undefined to exclude test instances efficiently
+            // Most instances have isTest=undefined, so this index query is very efficient
+            // Note: Convex indexes undefined values, so we can query for them directly
+            instances = await ctx.db
+                .query("classInstances")
+                .withIndex("by_city_slug_status_deleted_isTest_start_time", (q) =>
+                    q.eq("citySlug", normalizedCitySlug)
+                        .eq("status", "scheduled")
+                        .eq("deleted", undefined)
+                        .eq("isTest", undefined) // Query for undefined (non-test instances)
+                        .gte("startTime", args.startDate)
                 )
-            )
-            .order("asc")
-            .take(limit);
+                .filter(q => q.lte(q.field("startTime"), args.endDate))
+                .order("asc")
+                .take(limit);
+        } else {
+            // Testers: Use city-based index without isTest filter to get all instances (including test)
+            instances = await ctx.db
+                .query("classInstances")
+                .withIndex("by_city_slug_status_deleted_start_time", (q) =>
+                    q.eq("citySlug", normalizedCitySlug)
+                        .eq("status", "scheduled")
+                        .eq("deleted", undefined)
+                        .gte("startTime", args.startDate)
+                )
+                .filter(q => q.lte(q.field("startTime"), args.endDate))
+                .order("asc")
+                .take(limit);
+        }
 
         const currentTime = Date.now();
         const enrichedInstances = [];
 
         // Calculate pricing for each instance and filter by booking windows
+        // Note: Test instances are already filtered at DB level for non-testers via index
         for (const instance of instances) {
-            // Skip test instances unless user is tester
-            if (!isClassInstanceVisible(instance, user)) {
-                continue;
-            }
-
-            // Skip instances that can't be booked
+            // Skip instances that can't be booked (same logic for all instances, including test)
             if (!canBookClass(instance, currentTime)) {
                 continue;
             }
@@ -522,36 +536,47 @@ export const getConsumerClassInstancesWithBookingStatus = query({
             });
         }
 
-        // Query using start_time index and filter by city, status, and deleted
-        // Using by_start_time since deleted is optional and undefined values aren't indexed
-        const instances = await ctx.db
-            .query("classInstances")
-            .withIndex("by_start_time", (q) =>
-                q.gte("startTime", args.startDate)
-            )
-            .filter(q =>
-                q.and(
-                    q.eq(q.field("citySlug"), normalizedCitySlug),
-                    q.eq(q.field("status"), "scheduled"),
-                    q.lte(q.field("startTime"), args.endDate),
-                    q.neq(q.field("deleted"), true) // Matches both false and undefined
+        // Query using optimized index based on user's tester status
+        // For non-testers: Use index that includes isTest to exclude test instances at DB level
+        // For testers: Use city-based index without isTest filter to get all instances
+        const isTester = isUserTester(user);
+        let instances;
+
+        if (!isTester) {
+            // Non-testers: Query with isTest=undefined to exclude test instances efficiently
+            instances = await ctx.db
+                .query("classInstances")
+                .withIndex("by_city_slug_status_deleted_isTest_start_time", (q) =>
+                    q.eq("citySlug", normalizedCitySlug)
+                        .eq("status", "scheduled")
+                        .eq("deleted", undefined)
+                        .eq("isTest", undefined) // Query for undefined (non-test instances)
+                        .gte("startTime", args.startDate)
                 )
-            )
-            .order("asc")
-            .take(requestedLimit);
+                .filter(q => q.lte(q.field("startTime"), args.endDate))
+                .order("asc")
+                .take(requestedLimit);
+        } else {
+            // Testers: Use city-based index without isTest filter to get all instances (including test)
+            instances = await ctx.db
+                .query("classInstances")
+                .withIndex("by_city_slug_status_deleted_start_time", (q) =>
+                    q.eq("citySlug", normalizedCitySlug)
+                        .eq("status", "scheduled")
+                        .eq("deleted", undefined)
+                        .gte("startTime", args.startDate)
+                )
+                .filter(q => q.lte(q.field("startTime"), args.endDate))
+                .order("asc")
+                .take(requestedLimit);
+        }
 
         if (instances.length === 0) {
             return [];
         }
 
-        // Filter test instances
-        const testFilteredInstances = filterTestClassInstances(instances, user);
-
-        if (testFilteredInstances.length === 0) {
-            return [];
-        }
-
-        const limitedInstances = testFilteredInstances.slice(0, requestedLimit);
+        // Note: Test instances are already filtered at DB level for non-testers via index
+        const limitedInstances = instances;
 
 
         // Get user's active bookings (efficient - typically small dataset per user)

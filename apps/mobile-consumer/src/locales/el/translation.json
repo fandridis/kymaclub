@@ -379,7 +379,7 @@
         "date": "Ημερομηνία",
         "durationMinutes": "Διάρκεια: {{minutes}} λεπτά",
         "cancelUntil": "Ακύρωση μέχρι: {{time}}",
-        "amenities": "Απολαύσεις",
+        "amenities": "Παροχές",
         "bookingHistory": "Ιστορικό Κρατήσεων",
         "currentBooking": "✓ Τρέχουσα Κράτηση",
         "completed": "✓ Ολοκληρώθηκε",

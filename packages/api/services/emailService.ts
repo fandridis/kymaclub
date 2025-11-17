@@ -5,6 +5,7 @@ import { components } from "../convex/_generated/api";
 import { Resend } from "@convex-dev/resend";
 import { createBusinessNotificationEmail } from "../emails/templates";
 import { createBookingConfirmationEmail } from "../emails/templates";
+import { formatCentsAsEuros } from "@repo/utils/credits";
 import { createClassCancellationEmail } from "../emails/templates";
 import { createEmailTemplate } from "../emails/templates";
 import { createReviewNotificationEmail } from "../emails/templates";
@@ -47,6 +48,9 @@ export const emailService = {
                     ? `Booking Cancelled: ${args.className}`
                     : `Your Booking Cancelled: ${args.className}`;
 
+            // Format booking amount in cents to euros for business display
+            const formattedAmount = formatCentsAsEuros(args.bookingAmount);
+
             const htmlContent = createBusinessNotificationEmail({
                 businessName: args.businessName,
                 customerName: args.customerName,
@@ -54,7 +58,7 @@ export const emailService = {
                 className: args.className,
                 venueName: args.venueName,
                 classTime: args.classTime,
-                bookingAmount: args.bookingAmount,
+                bookingAmount: formattedAmount,
                 notificationType: args.notificationType,
             });
 

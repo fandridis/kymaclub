@@ -7,6 +7,7 @@ import { creditService } from "./creditService";
 import { calculateBestDiscount } from "../utils/classDiscount";
 import { validateActiveBookingsLimit } from "../rules/booking";
 import { logger } from "../utils/logger";
+import { centsToCredits } from "@repo/utils/credits";
 
 
 /***************************************************************
@@ -538,8 +539,8 @@ export const bookingService = {
         const { originalPrice, finalPrice, appliedDiscount } = discountResult;
 
         // originalPrice and finalPrice are now in cents (not credits!)
-        // Calculate credits used for credit spending (1 credit = 50 cents)
-        const creditsUsed = finalPrice / 50;
+        // Calculate credits used for credit spending using utility function
+        const creditsUsed = centsToCredits(finalPrice);
 
         if (!Number.isFinite(originalPrice) || originalPrice <= 0) {
             throw new ConvexError({
@@ -567,7 +568,7 @@ export const bookingService = {
             status: "pending",
             originalPrice,  // Now stored in cents
             finalPrice,     // Now stored in cents
-            creditsUsed,    // Credits calculated from finalPrice (cents / 50)
+            creditsUsed,    // Credits calculated from finalPrice (cents / 100)
             creditTransactionId: "", // Will be updated after credit transaction
             appliedDiscount: appliedDiscount || undefined,
             // Populate user metadata for business owners to see customer details

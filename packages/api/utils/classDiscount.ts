@@ -1,5 +1,6 @@
 import type { Doc, Id } from "../convex/_generated/dataModel";
 import { ClassDiscountRule } from "../types/classDiscount";
+import { centsToCredits } from "@repo/utils/credits";
 
 /**
  * Flexible Discount System Overview:
@@ -119,9 +120,9 @@ export function calculateBestDiscount(
       const discountAmountInCents = bestInstanceRule.rule.discount.value;
       const finalPriceInCents = Math.max(0, originalPriceInCents - discountAmountInCents);
       const centsSaved = originalPriceInCents - finalPriceInCents;
-      
-      // Convert saved amount to credits for user-facing display (1 credit = 50 cents)
-      const creditsSaved = centsSaved / 50;
+
+      // Convert saved amount to credits for user-facing display using utility function
+      const creditsSaved = centsToCredits(centsSaved);
 
       return {
         originalPrice: originalPriceInCents, // Return cents for storage
@@ -145,9 +146,9 @@ export function calculateBestDiscount(
       const discountAmountInCents = bestTemplateRule.rule.discount.value;
       const finalPriceInCents = Math.max(0, originalPriceInCents - discountAmountInCents);
       const centsSaved = originalPriceInCents - finalPriceInCents;
-      
-      // Convert saved amount to credits for user-facing display (1 credit = 50 cents)
-      const creditsSaved = centsSaved / 50;
+
+      // Convert saved amount to credits for user-facing display using utility function
+      const creditsSaved = centsToCredits(centsSaved);
 
       return {
         originalPrice: originalPriceInCents, // Return cents for storage

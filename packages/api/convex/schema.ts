@@ -467,7 +467,7 @@ export const bookingsFields = {
   // Simple pricing tracking (links to credit ledger)
   originalPrice: v.number(),           // Template price in cents (before any discount)  
   finalPrice: v.number(),             // What they actually paid in cents
-  creditsUsed: v.number(),            // Credits spent (finalPrice / 50)
+  creditsUsed: v.number(),            // Credits spent (finalPrice / 100)
   creditTransactionId: v.string(),    // Links to creditLedger entries
 
   // What discount was actually applied at booking time
@@ -478,7 +478,7 @@ export const bookingsFields = {
     ),
     discountType: v.union(v.literal("percentage"), v.literal("fixed_amount")),
     // Note: discountValue removed as it was redundant with creditsSaved
-    creditsSaved: v.number(),         // (originalPrice - finalPrice) / 50 (in credits for display)
+    creditsSaved: v.number(),         // (originalPrice - finalPrice) / 100 (in credits for display)
     ruleName: v.string(),             // Name of the discount rule
     reason: v.optional(v.string()),   // Reason for the discount
     appliedBy: v.optional(v.id("users")), // Who applied the discount
@@ -1060,6 +1060,8 @@ export default defineSchema({
     .index("by_status_deleted_start_time", ["status", "deleted", "startTime"])
     // 🏙️ CITY-BASED FILTERING - efficient city filtering for consumer queries
     .index("by_city_slug_status_deleted_start_time", ["citySlug", "status", "deleted", "startTime"])
+    // 🧪 TEST INSTANCE FILTERING - efficient filtering of test instances for non-testers
+    .index("by_city_slug_status_deleted_isTest_start_time", ["citySlug", "status", "deleted", "isTest", "startTime"])
     // 🎯 DISCOUNT OPTIMIZATION - only fetch instances with discount rules
     .index("by_status_deleted_hasDiscountRules_start_time", ["status", "deleted", "hasDiscountRules", "startTime"])
     // 🏁 CLASS COMPLETION OPTIMIZATION - efficient queries for classes that have ended

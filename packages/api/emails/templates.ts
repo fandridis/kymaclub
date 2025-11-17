@@ -333,7 +333,7 @@ const createBusinessNotificationEmail = ({
   className: string;
   venueName: string;
   classTime: string;
-  bookingAmount: number;
+  bookingAmount: string; // Formatted euro amount (e.g., "15,00 €")
   notificationType: "booking_created" | "booking_cancelled_by_consumer" | "booking_cancelled_by_business";
 }) => {
   const isBooking = notificationType === "booking_created";
@@ -363,7 +363,7 @@ const createBusinessNotificationEmail = ({
         <p style="margin: 0 0 8px 0;"><strong>Class:</strong> ${className}</p>
         <p style="margin: 0 0 8px 0;"><strong>Venue:</strong> ${venueName}</p>
         <p style="margin: 0 0 8px 0;"><strong>Time:</strong> ${classTime}</p>
-        <p style="margin: 0;"><strong>Amount:</strong> ${bookingAmount} credits</p>
+        <p style="margin: 0;"><strong>Amount:</strong> ${bookingAmount}</p>
       </div>
       
       <div style="text-align: center; margin: 32px 0;">
