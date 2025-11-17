@@ -14,9 +14,13 @@ export const {
 export type TranslationKeys = ExtractTranslationKeys<typeof en>;
 
 // Create typed Trans component locally in the app
-export const TypedTrans = (props: Omit<React.ComponentProps<typeof TransOriginal>, 'i18nKey'> & {
-  i18nKey: TranslationKeys
-}) => <TransOriginal {...props} />;
+// Using type assertion to avoid complex union type computation from ComponentProps
+type TransProps = React.ComponentProps<typeof TransOriginal>;
+export const TypedTrans = (
+  props: {
+    i18nKey: TranslationKeys;
+  } & Omit<TransProps, 'i18nKey'>
+) => <TransOriginal {...(props as TransProps)} />;
 
 // Module augmentation for react-i18next to enable global type safety
 declare module 'react-i18next' {

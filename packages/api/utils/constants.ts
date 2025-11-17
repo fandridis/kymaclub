@@ -29,7 +29,7 @@ export const BOOKING_LIMITS = {
 export const CREDIT_LIMITS = {
   /**
    * Credit to cents conversion rate
-   * 1 credit = 50 cents spending value
+   * 1 credit = 100 cents spending value (1 credit = 1 euro)
    */
-  CENTS_PER_CREDIT: 50,
+  CENTS_PER_CREDIT: 100,
 } as const;

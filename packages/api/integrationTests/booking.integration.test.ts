@@ -68,15 +68,15 @@ describe('Booking System Integration Tests', () => {
             expect(booking.userId).toBe(userId);
             expect(booking.classInstanceId).toBe(instanceId);
             expect(booking.status).toBe("pending");
-            expect(booking.originalPrice).toBe(500); // Now stored in cents (500 cents = 10 credits)
-            expect(booking.finalPrice).toBe(500);    // Now stored in cents (500 cents = 10 credits)
-            expect(booking.creditsUsed).toBe(10);    // Still credits (500 cents / 50 = 10 credits)
+            expect(booking.originalPrice).toBe(500); // Now stored in cents (500 cents = 5 credits)
+            expect(booking.finalPrice).toBe(500);    // Now stored in cents (500 cents = 5 credits)
+            expect(booking.creditsUsed).toBe(5);    // Still credits (500 cents / 100 = 5 credits)
 
             // Verify user's credit balance
             const balance = await asUser.query(api.queries.credits.getUserBalance, {
                 userId: userId
             });
-            expect(balance.balance).toBe(20); // 30 - 10
+            expect(balance.balance).toBe(25); // 30 - 5 (500 cents = 5 credits)
 
             // Verify credit transaction was created
             const transactions = await asUser.query(api.queries.credits.getUserTransactions, {
@@ -84,7 +84,7 @@ describe('Booking System Integration Tests', () => {
                 type: "spend"
             });
             expect(transactions).toHaveLength(1);
-            expect(transactions[0].amount).toBe(-10); // Negative for spending
+            expect(transactions[0].amount).toBe(-5); // Negative for spending (500 cents = 5 credits)
             expect(transactions[0].businessId).toBe(businessId);
             expect(transactions[0].venueId).toBe(venueId);
             expect(transactions[0].classTemplateId).toBe(templateId);
@@ -96,10 +96,10 @@ describe('Booking System Integration Tests', () => {
             const { userId, businessId } = await initAuth();
             const asUser = testT.withIdentity({ subject: userId });
 
-            // Give user insufficient credits
+            // Give user insufficient credits (class costs 5 credits, give only 4)
             await asUser.mutation(api.mutations.credits.giftCredits, {
                 userId: userId,
-                amount: 5 // Class costs 10 credits
+                amount: 4 // Class costs 5 credits, insufficient
             });
 
             const { instanceId } = await setupClassForBooking(asUser, businessId, userId);
@@ -139,7 +139,7 @@ describe('Booking System Integration Tests', () => {
             const balance = await asUser.query(api.queries.credits.getUserBalance, {
                 userId: userId
             });
-            expect(balance.balance).toBe(20); // 30 - 10 (charged only once)
+            expect(balance.balance).toBe(25); // 30 - 5 (charged only once)
         });
 
         test('should prevent booking when class is full', async () => {
@@ -217,7 +217,7 @@ describe('Booking System Integration Tests', () => {
                 description: "A future yoga class",
                 duration: 60,
                 capacity: 20,
-                price: 750 // 15.00 in business currency (15 credits * 50 cents/credit)
+                price: 750 // 7.50 in business currency (7.5 credits * 100 cents/credit)
             });
 
             const startTime = Date.now() + (48 * 60 * 60 * 1000); // 48 hours from now
@@ -234,7 +234,7 @@ describe('Booking System Integration Tests', () => {
             let balance = await asUser.query(api.queries.credits.getUserBalance, {
                 userId: userId
             });
-            expect(balance.balance).toBe(15); // 30 - 15
+            expect(balance.balance).toBe(22.5); // 30 - 7.5
 
             // Cancel the booking
             const cancelResult = await asUser.mutation(api.mutations.bookings.cancelBooking, {
@@ -264,7 +264,7 @@ describe('Booking System Integration Tests', () => {
                 type: "refund"
             });
             expect(refundTransactions).toHaveLength(1);
-            expect(refundTransactions[0].amount).toBe(15);
+            expect(refundTransactions[0].amount).toBe(7.5); // 750 cents = 7.5 credits
             expect(refundTransactions[0].bookingId).toBe(booking._id);
         });
 
@@ -285,7 +285,7 @@ describe('Booking System Integration Tests', () => {
                 description: "A soon yoga class",
                 duration: 60,
                 capacity: 20,
-                price: 1000 // 20.00 in business currency (20 credits * 50 cents/credit)
+                price: 1000 // 10.00 in business currency (10 credits * 100 cents/credit)
             });
 
             // 8 hours from now - we are late!
@@ -303,7 +303,7 @@ describe('Booking System Integration Tests', () => {
             let balance = await asUser.query(api.queries.credits.getUserBalance, {
                 userId: userId
             });
-            expect(balance.balance).toBe(20); // 40 - 20
+            expect(balance.balance).toBe(30); // 40 - 10
 
             // Cancel the booking (late cancellation)
             const cancelResult = await asUser.mutation(api.mutations.bookings.cancelBooking, {
@@ -318,7 +318,7 @@ describe('Booking System Integration Tests', () => {
             balance = await asUser.query(api.queries.credits.getUserBalance, {
                 userId: userId
             });
-            expect(balance.balance).toBe(30); // 20 + 10 (50% refund)
+            expect(balance.balance).toBe(35); // 30 + 5 (50% refund of 10 credits = 5 credits)
 
             // Verify refund transaction
             const refundTransactions = await asUser.query(api.queries.credits.getUserTransactions, {
@@ -326,7 +326,7 @@ describe('Booking System Integration Tests', () => {
                 type: "refund"
             });
             expect(refundTransactions).toHaveLength(1);
-            expect(refundTransactions[0].amount).toBe(10); // 50% of 20
+            expect(refundTransactions[0].amount).toBe(5); // 50% of 10
         });
 
         test('should not allow cancelling already cancelled booking', async () => {

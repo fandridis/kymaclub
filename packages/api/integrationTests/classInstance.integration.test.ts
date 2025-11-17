@@ -41,7 +41,7 @@ describe('Class Instances Integration Tests', () => {
                     email: 'venue@example.com',
                     address: {
                         street: '123 Main St',
-                        city: 'Anytown',
+                        city: 'athens',
                         state: 'CA',
                         zipCode: '12345',
                         country: 'USA'
@@ -81,7 +81,7 @@ describe('Class Instances Integration Tests', () => {
                     email: 'venue@example.com',
                     address: {
                         street: '123 Main St',
-                        city: 'Anytown',
+                        city: 'athens',
                         state: 'CA',
                         zipCode: '12345',
                         country: 'USA'
@@ -133,7 +133,7 @@ describe('Class Instances Integration Tests', () => {
                     email: 'venue@example.com',
                     address: {
                         street: '123 Main St',
-                        city: 'Anytown',
+                        city: 'athens',
                         state: 'CA',
                         zipCode: '12345',
                         country: 'USA'
@@ -199,7 +199,7 @@ describe('Class Instances Integration Tests', () => {
                     email: 'venue@example.com',
                     address: {
                         street: '123 Main St',
-                        city: 'Anytown',
+                        city: 'athens',
                         state: 'CA',
                         zipCode: '12345',
                         country: 'USA'

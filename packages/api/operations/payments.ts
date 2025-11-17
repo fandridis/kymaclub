@@ -15,10 +15,9 @@
 import { CREDITS_TO_CENTS_RATIO, BASE_PURCHASE_PRICE_PER_CREDIT } from '@repo/utils/credits';
 
 // ADR-009: Credit Conversion Ratio
-// Decision: Use 1 credit = 50 cents spending value (CREDITS_TO_CENTS_RATIO = 50)
-// Rationale: Simple math for users while allowing business markup on purchase prices
-// Alternative considered: 100 cents per credit (rejected - too expensive for users)
-// Impact: Spending value separate from purchase price allows flexible pricing tiers
+// Decision: Use 1 credit = 100 cents spending value (CREDITS_TO_CENTS_RATIO = 100)
+// Rationale: 1 credit = 1 euro provides simple, intuitive pricing for users
+// Impact: Direct 1:1 relationship between credits and euros simplifies pricing calculations
 
 /**
  * Pricing tier result containing credits, pricing, and discount information

@@ -312,7 +312,7 @@
         "creditsPerMonth": "{{credits}} credits/μήνα",
         "nextBilling": "Επόμενη χρέωση: {{date}}",
         "savePercent": "Έκπτωση {{discount}}%",
-        "standardRate": "Τυπική τιμή",
+        "standardRate": "Standard τιμή",
         "paused": "Σε παύση",
         "inactive": "Ανενεργή",
         "resume": "Συνέχιση"
@@ -324,12 +324,12 @@
         "noHistory": "Δεν υπάρχει ιστορικό credits",
         "buyCredits": "Αγορά Credits",
         "manageCredits": "Διαχείριση Credits",
-        "buyNow": "Αγορά τώρα",
+        "buyNow": "Αγορά",
         "processing": "Επεξεργασία...",
-        "topUpCredits": "Συμπληρώστε το υπόλοιπο credits σας αμέσως",
-        "creditsValid": "Τα credits ισχύουν για 3 μήνες μετά την έκδοση. Ιδανικά για περιστασιακές κρατήσεις.",
+        "topUpCredits": "Συμπληρώστε το υπόλοιπο των credits σας",
+        "creditsValid": "Τα credits ισχύουν για 3 μήνες μετά την έκδοση.",
         "quickBuy": "Γρήγορη αγορά",
-        "quickBuySubtitle": "Αποκτήστε credits αμέσως",
+        "quickBuySubtitle": "Αποκτήστε άμεσα credits",
         "buyCreditsButton": "Αγορά credits",
         "oneTimePurchase": "Εφάπαξ Αγορά",
         "selectAmount": "Επιλέξτε Ποσό",
@@ -348,7 +348,7 @@
         "recommended": "Προτεινόμενο",
         "perCredit": "ανά credit",
         "savePercent": "Έκπτωση {{discount}}%",
-        "standardRate": "Τυπική τιμή"
+        "standardRate": "Standard τιμή"
     },
     "classes": {
         "title": "Μαθήματα",
@@ -417,7 +417,20 @@
         "joinClassDescription": "Ελάτε μαζί με τον {{instructor}} για ένα υπέροχο μάθημα στο {{businessName}}",
         "earlyBirdDiscount": "Έκπτωση πρώιμης κράτησης: {{time}}",
         "lastMinuteDiscount": "Έκπτωση τελευταίας στιγμής: {{time}}",
-        "discountActive": "Ενεργή έκπτωση: {{time}}"
+        "discountActive": "Έκπτωση μέχρι: {{time}}",
+        "cancellation": {
+            "freeCancelWithTime": "Λόγω {{reason}}, μπορείτε να ακυρώσετε αυτό το μάθημα δωρεάν για τα επόμενα {{time}}. Θα λάβετε πλήρη επιστροφή των credits σας.",
+            "freeCancelWithoutTime": "Λόγω {{reason}}, μπορείτε να ακυρώσετε αυτό το μάθημα και θα λάβετε πλήρη επιστροφή των credits σας.",
+            "freeCancelStatus": "Δωρεάν ακύρωση για {{time}} ({{reason}})",
+            "withinWindowWithTime": "Μπορείτε να ακυρώσετε δωρεάν για τα επόμενα {{time}}. Μετά από αυτό, θα λάβετε 50% επιστροφή. Οι απουσίες δεν δικαιούνται επιστροφή.",
+            "withinWindowWithoutTime": "Θα λάβετε πλήρη επιστροφή καθώς ακυρώνετε εντός του παραθύρου ακύρωσης.",
+            "withinWindowStatus": "Δωρεάν ακύρωση για {{time}}",
+            "outsideWindow": "Καθώς ακυρώνετε εντός {{hours}} ωρών από το μάθημα, θα λάβετε {{percentage}}% επιστροφή. Οι απουσίες δεν δικαιούνται επιστροφή.",
+            "outsideWindowStatus": "{{percentage}}% επιστροφή εάν ακυρωθεί",
+            "windowClosed": "Το παράθυρο ακύρωσης έχει κλείσει",
+            "specialCircumstances": "ειδικές περιστάσεις",
+            "specialPrivilege": "ειδικό προνόμιο"
+        }
     },
     "venues": {
         "title": "Χώροι",

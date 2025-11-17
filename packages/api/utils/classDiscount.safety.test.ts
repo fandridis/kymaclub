@@ -11,9 +11,9 @@ import type { Doc } from "../convex/_generated/dataModel";
  * 
  * BUG CONTEXT:
  * - Discount values are stored in cents in the database
- * - They must be converted to credits (÷50) before applying to prices
+ * - They must be converted to credits (÷100) before applying to prices
  * - Original bug: €20 class with €3 discount became FREE instead of €17
- * - Root cause: 2000 cents (40 credits) - 300 cents = 1700 cents, but we were doing 40 - 300 = 0
+ * - Root cause: 2000 cents (20 credits) - 300 cents = 1700 cents, but we were doing 20 - 300 = 0
  */
 describe("Discount Calculation Safety Tests", () => {
     const now = Date.now();
@@ -50,8 +50,8 @@ describe("Discount Calculation Safety Tests", () => {
             // Critical assertions for unit conversion
             expect(result.originalPrice).toBe(2000); // 2000 cents
             // Note: discountValue was redundant and removed; we now only use creditsSaved
-            expect(result.appliedDiscount?.creditsSaved).toBe(6); // 300 cents ÷ 50 = 6 credits
-            expect(result.appliedDiscount?.creditsSaved).toBe(6); // 6 credits saved
+            expect(result.appliedDiscount?.creditsSaved).toBe(3); // 300 cents ÷ 100 = 3 credits
+            expect(result.appliedDiscount?.creditsSaved).toBe(3); // 3 credits saved
             expect(result.finalPrice).toBe(1700); // 2000 - 300 = 1700 cents (€17)
 
             // Ensure class is NOT free
@@ -88,9 +88,9 @@ describe("Discount Calculation Safety Tests", () => {
 
             expect(result.originalPrice).toBe(1000); // 1000 cents
             // Note: discountValue was redundant and removed; we now only use creditsSaved
-            expect(result.appliedDiscount?.creditsSaved).toBe(20); // 1000 cents ÷ 50 = 20 credits
+            expect(result.appliedDiscount?.creditsSaved).toBe(10); // 1000 cents ÷ 100 = 10 credits
             expect(result.finalPrice).toBe(0); // 1000 - 1000 = 0 cents (FREE)
-            expect(result.appliedDiscount?.creditsSaved).toBe(20);
+            expect(result.appliedDiscount?.creditsSaved).toBe(10);
         });
 
         it("should handle edge case where discount exceeds original price", () => {
@@ -124,7 +124,7 @@ describe("Discount Calculation Safety Tests", () => {
             expect(result.originalPrice).toBe(1000); // 1000 cents
             expect(result.finalPrice).toBe(0); // Math.max(0, 1000 - 1500) = 0
             // Note: creditsSaved reflects actual savings (not theoretical discount amount)
-            expect(result.appliedDiscount?.creditsSaved).toBe(20); // Can only save what was originally priced
+            expect(result.appliedDiscount?.creditsSaved).toBe(10); // Can only save what was originally priced
         });
 
         it("should correctly handle multiple discount values with proper conversion", () => {
@@ -175,10 +175,10 @@ describe("Discount Calculation Safety Tests", () => {
             // Should select the bigger discount (€7.50)
             expect(result.originalPrice).toBe(3000); // 3000 cents
             // Note: discountValue was redundant and removed; we now only use creditsSaved
-            expect(result.appliedDiscount?.creditsSaved).toBe(15); // 750 cents ÷ 50 = 15 credits
+            expect(result.appliedDiscount?.creditsSaved).toBe(7.5); // 750 cents ÷ 100 = 7.5 credits
             expect(result.appliedDiscount?.ruleName).toBe("€7.50 Discount");
             expect(result.finalPrice).toBe(2250); // 3000 - 750 = 2250 cents (€22.50)
-            expect(result.appliedDiscount?.creditsSaved).toBe(15);
+            expect(result.appliedDiscount?.creditsSaved).toBe(7.5);
         });
     });
 
@@ -216,9 +216,9 @@ describe("Discount Calculation Safety Tests", () => {
 
             expect(result.originalPrice).toBe(1500); // €15 = 1500 cents
             // Note: discountValue was redundant and removed; we now only use creditsSaved
-            expect(result.appliedDiscount?.creditsSaved).toBe(4); // €2 = 4 credits
+            expect(result.appliedDiscount?.creditsSaved).toBe(2); // €2 = 200 cents ÷ 100 = 2 credits
             expect(result.finalPrice).toBe(1300); // €13 = 1300 cents
-            expect(result.appliedDiscount?.creditsSaved).toBe(4);
+            expect(result.appliedDiscount?.creditsSaved).toBe(2);
         });
 
         it("should handle premium class pricing with percentage-like discounts", () => {
@@ -251,9 +251,9 @@ describe("Discount Calculation Safety Tests", () => {
 
             expect(result.originalPrice).toBe(5000); // €50 = 5000 cents
             // Note: discountValue was redundant and removed; we now only use creditsSaved
-            expect(result.appliedDiscount?.creditsSaved).toBe(10); // €5 = 10 credits
+            expect(result.appliedDiscount?.creditsSaved).toBe(5); // €5 = 500 cents ÷ 100 = 5 credits
             expect(result.finalPrice).toBe(4500); // €45 = 4500 cents
-            expect(result.appliedDiscount?.creditsSaved).toBe(10);
+            expect(result.appliedDiscount?.creditsSaved).toBe(5);
         });
     });
 
@@ -303,9 +303,9 @@ describe("Discount Calculation Safety Tests", () => {
             expect(result.appliedDiscount?.source).toBe("instance_rule");
             expect(result.originalPrice).toBe(2000); // €20 = 2000 cents
             // Note: discountValue was redundant and removed; we now only use creditsSaved
-            expect(result.appliedDiscount?.creditsSaved).toBe(10); // €5 = 10 credits
+            expect(result.appliedDiscount?.creditsSaved).toBe(5); // €5 = 500 cents ÷ 100 = 5 credits
             expect(result.finalPrice).toBe(1500); // €15 = 1500 cents
-            expect(result.appliedDiscount?.creditsSaved).toBe(10);
+            expect(result.appliedDiscount?.creditsSaved).toBe(5);
             expect(result.appliedDiscount?.ruleName).toBe("Instance €5 Discount");
         });
     });
@@ -344,9 +344,9 @@ describe("Discount Calculation Safety Tests", () => {
             // Should use template price and apply discount
             expect(result.originalPrice).toBe(1200); // Template price: 1200 cents
             // Note: discountValue was redundant and removed; we now only use creditsSaved
-            expect(result.appliedDiscount?.creditsSaved).toBe(3); // 150 cents = 3 credits
+            expect(result.appliedDiscount?.creditsSaved).toBe(1.5); // 150 cents ÷ 100 = 1.5 credits
             expect(result.finalPrice).toBe(1050); // 1200 - 150 = 1050 cents (€10.50)
-            expect(result.appliedDiscount?.creditsSaved).toBe(3);
+            expect(result.appliedDiscount?.creditsSaved).toBe(1.5);
         });
 
         it("should handle default price fallback with discount conversion", () => {
@@ -380,9 +380,9 @@ describe("Discount Calculation Safety Tests", () => {
             // Should use default price (1000 cents) and apply discount
             expect(result.originalPrice).toBe(1000); // Default: 1000 cents
             // Note: discountValue was redundant and removed; we now only use creditsSaved
-            expect(result.appliedDiscount?.creditsSaved).toBe(4); // 200 cents = 4 credits
+            expect(result.appliedDiscount?.creditsSaved).toBe(2); // 200 cents ÷ 100 = 2 credits
             expect(result.finalPrice).toBe(800); // 1000 - 200 = 800 cents (€8)
-            expect(result.appliedDiscount?.creditsSaved).toBe(4);
+            expect(result.appliedDiscount?.creditsSaved).toBe(2);
         });
     });
 });

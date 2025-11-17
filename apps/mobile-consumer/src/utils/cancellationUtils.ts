@@ -11,6 +11,44 @@ export interface CancellationInfo {
 }
 
 /**
+ * Translation strings for cancellation messages
+ */
+export interface CancellationTranslations {
+  freeCancelWithTime: string;
+  freeCancelWithoutTime: string;
+  freeCancelStatus: string;
+  withinWindowWithTime: string;
+  withinWindowWithoutTime: string;
+  withinWindowStatus: string;
+  outsideWindow: string;
+  outsideWindowStatus: string;
+  windowClosed: string;
+  specialCircumstances: string;
+  specialPrivilege: string;
+}
+
+/**
+ * Get all cancellation translations from a translation function
+ * This helper makes it easy to pass translations to utility functions
+ * @param t - Any translation function (typed or untyped)
+ */
+export function getCancellationTranslations(t: (key: any, options?: any) => string): CancellationTranslations {
+  return {
+    freeCancelWithTime: t('classes.cancellation.freeCancelWithTime'),
+    freeCancelWithoutTime: t('classes.cancellation.freeCancelWithoutTime'),
+    freeCancelStatus: t('classes.cancellation.freeCancelStatus'),
+    withinWindowWithTime: t('classes.cancellation.withinWindowWithTime'),
+    withinWindowWithoutTime: t('classes.cancellation.withinWindowWithoutTime'),
+    withinWindowStatus: t('classes.cancellation.withinWindowStatus'),
+    outsideWindow: t('classes.cancellation.outsideWindow'),
+    outsideWindowStatus: t('classes.cancellation.outsideWindowStatus'),
+    windowClosed: t('classes.cancellation.windowClosed'),
+    specialCircumstances: t('classes.cancellation.specialCircumstances'),
+    specialPrivilege: t('classes.cancellation.specialPrivilege'),
+  };
+}
+
+/**
  * Calculate cancellation window information for a booking
  */
 export function getCancellationInfo(
@@ -99,19 +137,25 @@ export function getCancellationInfo(
 /**
  * Format cancellation status text for display
  */
-export function formatCancellationStatus(cancellationInfo: CancellationInfo): string {
+export function formatCancellationStatus(
+  cancellationInfo: CancellationInfo,
+  translations: CancellationTranslations
+): string {
   // Free cancellation privilege takes priority
   if (cancellationInfo.hasFreeCancel && cancellationInfo.timeRemaining) {
-    return `Free cancellation for ${cancellationInfo.timeRemaining} (${cancellationInfo.freeCancelReason || 'special privilege'})`;
+    const reason = cancellationInfo.freeCancelReason || translations.specialPrivilege;
+    return translations.freeCancelStatus
+      .replace('{{time}}', cancellationInfo.timeRemaining)
+      .replace('{{reason}}', reason);
   }
 
   // Normal cancellation window
   if (cancellationInfo.isWithinWindow && cancellationInfo.timeRemaining) {
-    return `Free to cancel for ${cancellationInfo.timeRemaining}`;
+    return translations.withinWindowStatus.replace('{{time}}', cancellationInfo.timeRemaining);
   } else if (!cancellationInfo.isWithinWindow) {
-    return `${cancellationInfo.refundPercentage}% refund if cancelled`;
+    return translations.outsideWindowStatus.replace('{{percentage}}', String(cancellationInfo.refundPercentage));
   } else {
-    return 'Cancellation window has closed';
+    return translations.windowClosed;
   }
 }
 
@@ -120,26 +164,31 @@ export function formatCancellationStatus(cancellationInfo: CancellationInfo): st
  */
 export function getCancellationMessage(
   className: string,
-  cancellationInfo: CancellationInfo
+  cancellationInfo: CancellationInfo,
+  translations: CancellationTranslations
 ): string {
   // Free cancellation privilege - show special message
   if (cancellationInfo.hasFreeCancel) {
-    const reason = cancellationInfo.freeCancelReason || 'special circumstances';
+    const reason = cancellationInfo.freeCancelReason || translations.specialCircumstances;
     if (cancellationInfo.timeRemaining) {
-      return `Due to ${reason}, you can cancel this class free of charge for the next ${cancellationInfo.timeRemaining}. You will receive a full refund of your credits.`;
+      return translations.freeCancelWithTime
+        .replace('{{reason}}', reason)
+        .replace('{{time}}', cancellationInfo.timeRemaining);
     } else {
-      return `Due to ${reason}, you can cancel this class and receive a full refund of your credits.`;
+      return translations.freeCancelWithoutTime.replace('{{reason}}', reason);
     }
   }
 
   // Normal cancellation window
   if (cancellationInfo.isWithinWindow) {
     if (cancellationInfo.timeRemaining) {
-      return `You can cancel free of charge for the next ${cancellationInfo.timeRemaining}. After that, you'll receive a 50% refund. No-shows are not eligible for a refund.`;
+      return translations.withinWindowWithTime.replace('{{time}}', cancellationInfo.timeRemaining);
     } else {
-      return `You will receive a full refund as you're cancelling within the cancellation window.`;
+      return translations.withinWindowWithoutTime;
     }
   } else {
-    return `As you're cancelling within ${cancellationInfo.cancellationWindowHours} hours of the class, you'll receive a ${cancellationInfo.refundPercentage}% refund. No-shows are not eligible for a refund.`;
+    return translations.outsideWindow
+      .replace('{{hours}}', String(cancellationInfo.cancellationWindowHours))
+      .replace('{{percentage}}', String(cancellationInfo.refundPercentage));
   }
 }

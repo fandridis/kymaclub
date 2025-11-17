@@ -142,7 +142,7 @@ describe('Credit System Integration Tests', () => {
 
             const { instanceId } = await setupClassForBooking(asUser, businessId, userId);
 
-            // Spent 10 credits
+            // Spent 5 credits (500 cents = 5 credits)
             const bookingResult = await asUser.mutation(api.mutations.bookings.bookClass, {
                 classInstanceId: instanceId,
                 description: "Test yoga session"
@@ -153,7 +153,7 @@ describe('Credit System Integration Tests', () => {
             const balance = await asUser.query(api.queries.credits.getUserBalance, {
                 userId: userId
             });
-            expect(balance.balance).toBe(20); // 20 + 10 - 10
+            expect(balance.balance).toBe(25); // 20 + 10 - 5
 
             // Verify transaction history
             const allTransactions = await asUser.query(api.queries.credits.getUserTransactions, {
@@ -213,7 +213,7 @@ describe('Credit System Integration Tests', () => {
             // Simulate bookings (earnings for business)
             const { instanceId } = await setupClassForBooking(asUser, businessId, userId);
 
-            // Spend 10 credits
+            // Spend 5 credits (500 cents = 5 credits)
             const bookingResult = await asUser.mutation(api.mutations.bookings.bookClass, {
                 classInstanceId: instanceId,
                 description: "Test yoga session"
@@ -233,9 +233,9 @@ describe('Credit System Integration Tests', () => {
                 businessId: businessId
             });
 
-            expect(earnings.totalEarnings).toBe(10); // 10
+            expect(earnings.totalEarnings).toBe(5); // 5 credits from booking
             expect(earnings.totalRefunds).toBe(5);
-            expect(earnings.netEarnings).toBe(5); // 10 - 5
+            expect(earnings.netEarnings).toBe(0); // 5 - 5
             expect(earnings.transactionCount).toBe(2); // 1 bookings + 1 refund
         });
     });
@@ -285,7 +285,7 @@ describe('Credit System Integration Tests', () => {
             balance = await asUser.query(api.queries.credits.getUserBalance, {
                 userId: userId
             });
-            expect(balance.balance).toBe(5); // 25 - 8 - 12
+            expect(balance.balance).toBe(15); // 25 - 5 - 5 (each class costs 5 credits)
 
             // 4. One class gets cancelled (refund)
             await asUser.mutation(api.mutations.credits.refundCredits, {
@@ -299,7 +299,7 @@ describe('Credit System Integration Tests', () => {
             balance = await asUser.query(api.queries.credits.getUserBalance, {
                 userId: userId
             });
-            expect(balance.balance).toBe(13); // 5 + 8
+            expect(balance.balance).toBe(23); // 15 + 8 (balance after bookings was 15, refund adds 8)
 
             // 5. Verify complete transaction history
             const transactions = await asUser.query(api.queries.credits.getUserTransactions, {
@@ -316,8 +316,8 @@ describe('Credit System Integration Tests', () => {
                 .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
             expect(totalCreditsIn).toBe(33); // 5 + 20 + 8 (refund)
-            expect(totalCreditsOut).toBe(20); // 8 + 12 (bookings)
-            expect(totalCreditsIn - totalCreditsOut).toBe(13); // Final balance
+            expect(totalCreditsOut).toBe(10); // 5 + 5 (bookings, each costs 5 credits)
+            expect(totalCreditsIn - totalCreditsOut).toBe(23); // Final balance (33 - 10 = 23)
         });
     });
 

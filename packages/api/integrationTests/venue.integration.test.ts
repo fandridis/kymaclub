@@ -14,7 +14,7 @@ describe('Venues Integration Tests', () => {
                         email: 'venue@example.com',
                         address: {
                             street: '123 Main St',
-                            city: 'Anytown',
+                            city: 'athens',
                             state: 'CA',
                             zipCode: '12345',
                             country: 'USA'
@@ -35,7 +35,7 @@ describe('Venues Integration Tests', () => {
                     email: 'venue@example.com',
                     address: {
                         street: '123 Main St',
-                        city: 'Anytown',
+                        city: 'athens',
                         state: 'CA',
                         zipCode: '12345',
                         country: 'USA'
@@ -62,7 +62,7 @@ describe('Venues Integration Tests', () => {
                 equipment: ['mats', 'blocks'],
                 address: {
                     street: '123 Yoga Street',
-                    city: 'Athens',
+                    city: 'athens',
                     state: 'Attica',
                     zipCode: '10001',
                     country: 'Greece'
@@ -98,7 +98,7 @@ describe('Venues Integration Tests', () => {
                     email: 'original@example.com',
                     address: {
                         street: '123 Main St',
-                        city: 'Anytown',
+                        city: 'athens',
                         state: 'CA',
                         zipCode: '12345',
                         country: 'USA'
@@ -137,7 +137,7 @@ describe('Venues Integration Tests', () => {
                     email: 'venue1@example.com',
                     address: {
                         street: '123 Main St',
-                        city: 'Anytown',
+                        city: 'athens',
                         state: 'CA',
                         zipCode: '12345',
                         country: 'USA'
@@ -153,7 +153,7 @@ describe('Venues Integration Tests', () => {
                     email: 'venue2@example.com',
                     address: {
                         street: '456 Second St',
-                        city: 'Anytown',
+                        city: 'athens',
                         state: 'CA',
                         zipCode: '12345',
                         country: 'USA'
@@ -204,7 +204,7 @@ describe('Venues Integration Tests', () => {
                     email: 'venue1@example.com',
                     address: {
                         street: '123 Main St',
-                        city: 'Anytown',
+                        city: 'athens',
                         state: 'CA',
                         zipCode: '12345',
                         country: 'USA'
@@ -221,7 +221,7 @@ describe('Venues Integration Tests', () => {
                     email: 'venue2@example.com',
                     address: {
                         street: '456 Second St',
-                        city: 'Anytown',
+                        city: 'athens',
                         state: 'CA',
                         zipCode: '12345',
                         country: 'USA'

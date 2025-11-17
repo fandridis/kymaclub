@@ -417,7 +417,20 @@
         "joinClassDescription": "Join {{instructor}} for an amazing class at {{businessName}}",
         "earlyBirdDiscount": "Early bird discount: {{time}}",
         "lastMinuteDiscount": "Last minute discount: {{time}}",
-        "discountActive": "Discount active: {{time}}"
+        "discountActive": "Discount active: {{time}}",
+        "cancellation": {
+            "freeCancelWithTime": "Due to {{reason}}, you can cancel this class free of charge for the next {{time}}. You will receive a full refund of your credits.",
+            "freeCancelWithoutTime": "Due to {{reason}}, you can cancel this class and receive a full refund of your credits.",
+            "freeCancelStatus": "Free cancellation for {{time}} ({{reason}})",
+            "withinWindowWithTime": "You can cancel free of charge for the next {{time}}. After that, you'll receive a 50% refund. No-shows are not eligible for a refund.",
+            "withinWindowWithoutTime": "You will receive a full refund as you're cancelling within the cancellation window.",
+            "withinWindowStatus": "Free to cancel for {{time}}",
+            "outsideWindow": "As you're cancelling within {{hours}} hours of the class, you'll receive a {{percentage}}% refund. No-shows are not eligible for a refund.",
+            "outsideWindowStatus": "{{percentage}}% refund if cancelled",
+            "windowClosed": "Cancellation window has closed",
+            "specialCircumstances": "special circumstances",
+            "specialPrivilege": "special privilege"
+        }
     },
     "venues": {
         "title": "Venues",

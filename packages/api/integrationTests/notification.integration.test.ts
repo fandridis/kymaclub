@@ -48,7 +48,7 @@ describe('Notification System Integration Tests', () => {
                 className: "Morning Yoga",
                 userEmail: "test@example.com",
                 userName: "Test User",
-                amount: 10
+                amount: 5
             });
 
             vi.useRealTimers();
@@ -102,7 +102,7 @@ describe('Notification System Integration Tests', () => {
                 className: "Morning Yoga",
                 userEmail: "test@example.com",
                 userName: "Test User",
-                amount: 10
+                amount: 5
             });
 
             vi.useRealTimers();
@@ -147,7 +147,7 @@ describe('Notification System Integration Tests', () => {
                 description: "A challenging flow class",
                 duration: 90,
                 capacity: 15,
-                price: 750, // 15.00 in business currency (15 credits * 50 cents/credit)
+                price: 750, // 7.50 in business currency (7.5 credits * 100 cents/credit)
             });
 
             const startTime = Date.now() + (24 * 60 * 60 * 1000); // 24 hours from now
@@ -179,7 +179,7 @@ describe('Notification System Integration Tests', () => {
                 className: "Advanced Vinyasa Flow",
                 userEmail: "test@example.com",
                 userName: "Test User",
-                amount: 15
+                amount: 7.5
             });
 
             vi.useRealTimers();
@@ -193,16 +193,16 @@ describe('Notification System Integration Tests', () => {
 
             await asUser.mutation(api.mutations.credits.giftCredits, {
                 userId: userId,
-                amount: 10,
+                amount: 5,
                 description: "Welcome bonus for new consumer"
             });
 
-            // Verify user received welcome bonus credits
+            // Verify user received gifted credits
             const balance = await asUser.query(api.queries.credits.getUserBalance, {
                 userId
             });
 
-            expect(balance.balance).toBe(10); // Welcome bonus should be 10 credits
+            expect(balance.balance).toBe(5); // Gifted 5 credits
 
             // Verify credit transaction was created
             const transactions = await asUser.query(api.queries.credits.getUserTransactions, {
@@ -211,7 +211,7 @@ describe('Notification System Integration Tests', () => {
             });
 
             expect(transactions).toHaveLength(1);
-            expect(transactions[0].amount).toBe(10);
+            expect(transactions[0].amount).toBe(5);
             expect(transactions[0].reason).toBe("admin_gift");
             expect(transactions[0].description).toBe("Welcome bonus for new consumer");
         });

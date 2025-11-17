@@ -27,7 +27,7 @@ describe("Discount Priority Edge Cases", () => {
                         condition: { type: "always" },
                         discount: {
                             type: "fixed_amount",
-                            value: 200 // €2 = 200 cents = 4 credits
+                            value: 200 // €2 = 200 cents = 2 credits
                         },
                         createdAt: now,
                         createdBy: "user1" as any
@@ -44,7 +44,7 @@ describe("Discount Priority Edge Cases", () => {
                         condition: { type: "always" },
                         discount: {
                             type: "fixed_amount",
-                            value: 500 // €5 = 500 cents = 10 credits
+                            value: 500 // €5 = 500 cents = 5 credits
                         },
                         createdAt: now,
                         createdBy: "user1" as any
@@ -55,7 +55,7 @@ describe("Discount Priority Edge Cases", () => {
                         condition: { type: "always" },
                         discount: {
                             type: "fixed_amount",
-                            value: 800 // €8 = 800 cents = 16 credits
+                            value: 800 // €8 = 800 cents = 8 credits
                         },
                         createdAt: now,
                         createdBy: "user1" as any
@@ -71,13 +71,13 @@ describe("Discount Priority Edge Cases", () => {
             // Should select the largest instance discount, not template
             expect(result.appliedDiscount?.source).toBe("instance_rule");
             expect(result.appliedDiscount?.ruleName).toBe("Instance Large €8 Off");
-            expect(result.appliedDiscount?.creditsSaved).toBe(16);
+            expect(result.appliedDiscount?.creditsSaved).toBe(8);
             expect(result.finalPrice).toBe(2200); // 3000 - 800 cents
         });
 
         it("should select highest template discount when no instance rules apply", () => {
             const template = createTestTemplate({
-                price: 2500, // €25 = 50 credits
+                price: 2500, // €25 = 25 credits
                 discountRules: [
                     {
                         id: "template_early",
@@ -88,7 +88,7 @@ describe("Discount Priority Edge Cases", () => {
                         },
                         discount: {
                             type: "fixed_amount",
-                            value: 300 // €3 = 300 cents = 6 credits
+                            value: 300 // €3 = 300 cents = 3 credits
                         },
                         createdAt: now,
                         createdBy: "user1" as any
@@ -102,7 +102,7 @@ describe("Discount Priority Edge Cases", () => {
                         },
                         discount: {
                             type: "fixed_amount",
-                            value: 700 // €7 = 700 cents = 14 credits
+                            value: 700 // €7 = 700 cents = 7 credits
                         },
                         createdAt: now,
                         createdBy: "user1" as any
@@ -122,13 +122,13 @@ describe("Discount Priority Edge Cases", () => {
             // Should select the larger template discount
             expect(result.appliedDiscount?.source).toBe("template_rule");
             expect(result.appliedDiscount?.ruleName).toBe("Template Super Early €7 Off");
-            expect(result.appliedDiscount?.creditsSaved).toBe(14);
+            expect(result.appliedDiscount?.creditsSaved).toBe(7);
             expect(result.finalPrice).toBe(1800); // 2500 - 700 cents
         });
 
         it("should prioritize smallest instance discount over largest template discount", () => {
             const template = createTestTemplate({
-                price: 4000, // €40 = 80 credits
+                price: 4000, // €40 = 40 credits
                 discountRules: [
                     {
                         id: "template_huge",
@@ -136,7 +136,7 @@ describe("Discount Priority Edge Cases", () => {
                         condition: { type: "always" },
                         discount: {
                             type: "fixed_amount",
-                            value: 1500 // €15 = 1500 cents = 30 credits
+                            value: 1500 // €15 = 1500 cents = 15 credits
                         },
                         createdAt: now,
                         createdBy: "user1" as any
@@ -153,7 +153,7 @@ describe("Discount Priority Edge Cases", () => {
                         condition: { type: "always" },
                         discount: {
                             type: "fixed_amount",
-                            value: 100 // €1 = 100 cents = 2 credits (much smaller than template)
+                            value: 100 // €1 = 100 cents = 1 credit (much smaller than template)
                         },
                         createdAt: now,
                         createdBy: "user1" as any
@@ -169,7 +169,7 @@ describe("Discount Priority Edge Cases", () => {
             // Instance priority should override template even if template is larger
             expect(result.appliedDiscount?.source).toBe("instance_rule");
             expect(result.appliedDiscount?.ruleName).toBe("Instance Tiny €1 Off");
-            expect(result.appliedDiscount?.creditsSaved).toBe(2);
+            expect(result.appliedDiscount?.creditsSaved).toBe(1);
             expect(result.finalPrice).toBe(3900); // 4000 - 100 cents (NOT 2500 from template)
         });
     });
@@ -185,7 +185,7 @@ describe("Discount Priority Edge Cases", () => {
                         condition: { type: "always" },
                         discount: {
                             type: "fixed_amount",
-                            value: 300 // €3 = 300 cents = 6 credits
+                            value: 300 // €3 = 300 cents = 3 credits
                         },
                         createdAt: now,
                         createdBy: "user1" as any
@@ -205,7 +205,7 @@ describe("Discount Priority Edge Cases", () => {
                         },
                         discount: {
                             type: "fixed_amount",
-                            value: 1000 // €10 = 1000 cents = 20 credits
+                            value: 1000 // €10 = 1000 cents = 10 credits
                         },
                         createdAt: now,
                         createdBy: "user1" as any
@@ -221,7 +221,7 @@ describe("Discount Priority Edge Cases", () => {
             // Instance condition not met, should fall back to template
             expect(result.appliedDiscount?.source).toBe("template_rule");
             expect(result.appliedDiscount?.ruleName).toBe("Template Always €3 Off");
-            expect(result.appliedDiscount?.creditsSaved).toBe(6);
+            expect(result.appliedDiscount?.creditsSaved).toBe(3);
             expect(result.finalPrice).toBe(1700); // 2000 - 300 cents
         });
 
@@ -238,7 +238,7 @@ describe("Discount Priority Edge Cases", () => {
                         },
                         discount: {
                             type: "fixed_amount",
-                            value: 400 // €4 = 400 cents = 8 credits
+                            value: 400 // €4 = 400 cents = 4 credits
                         },
                         createdAt: now,
                         createdBy: "user1" as any
@@ -258,7 +258,7 @@ describe("Discount Priority Edge Cases", () => {
                         },
                         discount: {
                             type: "fixed_amount",
-                            value: 600 // €6 = 600 cents = 12 credits
+                            value: 600 // €6 = 600 cents = 6 credits
                         },
                         createdAt: now,
                         createdBy: "user1" as any
@@ -274,7 +274,7 @@ describe("Discount Priority Edge Cases", () => {
             // Instance last-minute rule should apply (1 hour < 2 hours max)
             expect(result.appliedDiscount?.source).toBe("instance_rule");
             expect(result.appliedDiscount?.ruleName).toBe("Instance Last Minute €6 Off");
-            expect(result.appliedDiscount?.creditsSaved).toBe(12);
+            expect(result.appliedDiscount?.creditsSaved).toBe(6);
             expect(result.finalPrice).toBe(2900); // 3500 - 600 cents
         });
 
@@ -291,7 +291,7 @@ describe("Discount Priority Edge Cases", () => {
                         },
                         discount: {
                             type: "fixed_amount",
-                            value: 500 // €5 = 500 cents = 10 credits
+                            value: 500 // €5 = 500 cents = 5 credits
                         },
                         createdAt: now,
                         createdBy: "user1" as any
@@ -311,7 +311,7 @@ describe("Discount Priority Edge Cases", () => {
                         },
                         discount: {
                             type: "fixed_amount",
-                            value: 800 // €8 = 800 cents = 16 credits
+                            value: 800 // €8 = 800 cents = 8 credits
                         },
                         createdAt: now,
                         createdBy: "user1" as any
@@ -343,7 +343,7 @@ describe("Discount Priority Edge Cases", () => {
                         condition: { type: "always" },
                         discount: {
                             type: "fixed_amount",
-                            value: 200 // €2 = 200 cents = 4 credits
+                            value: 200 // €2 = 200 cents = 2 credits
                         },
                         createdAt: now,
                         createdBy: "user1" as any
@@ -360,7 +360,7 @@ describe("Discount Priority Edge Cases", () => {
                         condition: { type: "always" },
                         discount: {
                             type: "fixed_amount",
-                            value: 300 // €3 = 300 cents = 6 credits
+                            value: 300 // €3 = 300 cents = 3 credits
                         },
                         createdAt: now,
                         createdBy: "user1" as any
@@ -376,7 +376,7 @@ describe("Discount Priority Edge Cases", () => {
             // Should use template.price (1800 cents = 36 credits) with instance discount
             expect(result.originalPrice).toBe(1800); // From template.price
             expect(result.appliedDiscount?.source).toBe("instance_rule");
-            expect(result.appliedDiscount?.creditsSaved).toBe(6);
+            expect(result.appliedDiscount?.creditsSaved).toBe(3);
             expect(result.finalPrice).toBe(1500); // 1800 - 300 cents
         });
 
@@ -390,7 +390,7 @@ describe("Discount Priority Edge Cases", () => {
                         condition: { type: "always" },
                         discount: {
                             type: "fixed_amount",
-                            value: 200 // €2 = 200 cents = 4 credits
+                            value: 200 // €2 = 200 cents = 2 credits
                         },
                         createdAt: now,
                         createdBy: "user1" as any
@@ -407,7 +407,7 @@ describe("Discount Priority Edge Cases", () => {
                         condition: { type: "always" },
                         discount: {
                             type: "fixed_amount",
-                            value: 500 // €5 = 500 cents = 10 credits (equals full price)
+                            value: 500 // €5 = 500 cents = 5 credits (equals full price)
                         },
                         createdAt: now,
                         createdBy: "user1" as any
@@ -424,7 +424,7 @@ describe("Discount Priority Edge Cases", () => {
             expect(result.appliedDiscount?.source).toBe("instance_rule");
             expect(result.originalPrice).toBe(500);
             expect(result.finalPrice).toBe(0); // FREE
-            expect(result.appliedDiscount?.creditsSaved).toBe(10); // Full discount
+            expect(result.appliedDiscount?.creditsSaved).toBe(5); // Full discount
         });
     });
 
@@ -439,7 +439,7 @@ describe("Discount Priority Edge Cases", () => {
                         condition: { type: "always" },
                         discount: {
                             type: "fixed_amount",
-                            value: 300 // €3 = 300 cents = 6 credits
+                            value: 300 // €3 = 300 cents = 3 credits
                         },
                         createdAt: now,
                         createdBy: "user1" as any
@@ -456,7 +456,7 @@ describe("Discount Priority Edge Cases", () => {
                         condition: { type: "always" },
                         discount: {
                             type: "fixed_amount",
-                            value: 500 // €5 = 500 cents = 10 credits
+                            value: 500 // €5 = 500 cents = 5 credits
                         },
                         createdAt: now,
                         createdBy: "user1" as any

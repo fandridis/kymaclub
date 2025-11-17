@@ -7,6 +7,8 @@ import Carousel from 'react-native-reanimated-carousel';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { format } from 'date-fns';
+import { enUS } from 'date-fns/locale/en-US';
+import { el } from 'date-fns/locale/el';
 import { tz } from '@date-fns/tz';
 import type { RootStackParamList } from '..';
 import { useActionSheet } from '@expo/react-native-action-sheet';
@@ -14,9 +16,10 @@ import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { centsToCredits } from '@repo/utils/credits';
 import { theme } from '../../theme';
 import { BlurView } from 'expo-blur';
-import { getCancellationInfo, getCancellationMessage } from '../../utils/cancellationUtils';
+import { getCancellationInfo, getCancellationMessage, getCancellationTranslations } from '../../utils/cancellationUtils';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
 import { useTypedTranslation } from '../../i18n/typed';
+import i18n from '../../i18n';
 
 type ClassDetailsRoute = RouteProp<RootStackParamList, 'ClassDetailsModal'>;
 
@@ -210,6 +213,17 @@ function calculateClassDiscount(classInstance: any, templateData: any): Discount
 
 const { width: screenWidth } = Dimensions.get('window');
 
+// Map i18next language codes to date-fns locales
+const getDateFnsLocale = (language: string) => {
+    switch (language) {
+        case 'el':
+            return el;
+        case 'en':
+        default:
+            return enUS;
+    }
+};
+
 export function ClassDetailsModalScreen() {
     // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL LOGIC
     const navigation = useNavigation();
@@ -376,7 +390,9 @@ export function ClassDetailsModalScreen() {
                 existingBooking.freeCancelExpiresAt,
                 existingBooking.freeCancelReason
             );
-            message = getCancellationMessage(classLabel, cancellationInfo);
+
+            const cancellationTranslations = getCancellationTranslations(t);
+            message = getCancellationMessage(classLabel, cancellationInfo, cancellationTranslations);
         }
 
         const options = [t('classes.cancelBooking'), t('classes.keepBooking')];
@@ -503,9 +519,14 @@ export function ClassDetailsModalScreen() {
     const capacity = finalClassInstance.capacity ?? 0;
     const price = finalClassInstance.price ?? 0;
     const businessName = venue?.name ?? finalClassInstance.venueSnapshot?.name ?? 'Unknown Venue';
+    // Get date-fns locale based on current language
+    const currentLanguage = i18n.language || 'en';
+    const dateFnsLocale = getDateFnsLocale(currentLanguage);
+
     const startTime = new Date(finalClassInstance.startTime);
     const whenStr = format(startTime, 'eeee, dd MMMM, HH:mm', {
-        in: tz('Europe/Athens')
+        in: tz('Europe/Athens'),
+        locale: dateFnsLocale
     });
     const cancelUntilStr = finalClassInstance.cancellationWindowHours != null
         ? (() => {
@@ -513,7 +534,8 @@ export function ClassDetailsModalScreen() {
                 finalClassInstance.startTime - finalClassInstance.cancellationWindowHours * 60 * 60 * 1000,
             );
             return format(cancelUntilDate, 'eeee, dd MMMM, HH:mm', {
-                in: tz('Europe/Athens')
+                in: tz('Europe/Athens'),
+                locale: dateFnsLocale
             });
         })()
         : null;
@@ -693,18 +715,18 @@ export function ClassDetailsModalScreen() {
                             {/* Key details */}
                             <View style={styles.detailsList}>
                                 <View style={styles.detailItem}>
-                                    <Calendar1Icon style={styles.calendarIcon} size={26} />
+                                    <Calendar1Icon style={styles.calendarIcon} size={20} />
                                     <Text style={styles.detailText}>{t('classes.date')}: {whenStr}</Text>
                                 </View>
 
                                 <View style={styles.detailItem}>
-                                    <ClockIcon style={styles.clockIcon} size={26} />
+                                    <ClockIcon style={styles.clockIcon} size={20} />
                                     <Text style={styles.detailText}>{t('classes.durationMinutes', { minutes: duration })}</Text>
                                 </View>
 
                                 {cancelUntilStr && (
                                     <View style={styles.detailItem}>
-                                        <CalendarOffIcon style={styles.calendarOffIcon} size={26} />
+                                        <CalendarOffIcon style={styles.calendarOffIcon} size={20} />
                                         <Text style={styles.detailText}>{t('classes.cancelUntil', { time: cancelUntilStr })}</Text>
                                     </View>
                                 )}
@@ -1152,35 +1174,35 @@ const styles = StyleSheet.create({
     },
     detailsList: {
         paddingHorizontal: 32,
-        paddingTop: 16,
-        paddingBottom: 12,
+        paddingTop: 12,
+        paddingBottom: 8,
     },
     detailItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingBottom: 12,
-        paddingTop: 4,
+        paddingBottom: 8,
+        paddingTop: 2,
     },
     calendarIcon: {
-        marginRight: 12,
+        marginRight: 10,
         color: '#444444',
-        width: 24,
-        height: 24,
+        width: 20,
+        height: 20,
     },
     clockIcon: {
-        marginRight: 12,
+        marginRight: 10,
         color: '#444444',
-        width: 24,
-        height: 24,
+        width: 20,
+        height: 20,
     },
     calendarOffIcon: {
-        marginRight: 12,
+        marginRight: 10,
         color: '#444444',
-        width: 24,
-        height: 24,
+        width: 20,
+        height: 20,
     },
     detailText: {
-        fontSize: 16,
+        fontSize: 14,
         color: theme.colors.zinc[700],
         fontWeight: '400',
         flex: 1,

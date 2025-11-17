@@ -112,7 +112,7 @@ export async function setupClassForBooking(asUser: TestConvexForDataModel<Generi
         description: "A peaceful morning yoga class",
         duration: 60,
         capacity: 20,
-        price: 500, // 10.00 in business currency (10 credits * 50 cents/credit)
+        price: 500, // 5.00 in business currency (5 credits * 100 cents/credit)
     });
 
     // Create class instance (2 hours from now)
@@ -215,7 +215,7 @@ export async function setupCompleteBookingScenario(
         className = "Test Class",
         venueName = "Test Venue",
         credits = 5000, // Increased to 5000 credits (50 euros) to cover most test scenarios
-        price = 750, // 15.00 in business currency (15 credits * 50 cents/credit)
+        price = 750, // 7.50 in business currency (7.5 credits * 100 cents/credit)
         hoursFromNow = 24
     } = options;
 

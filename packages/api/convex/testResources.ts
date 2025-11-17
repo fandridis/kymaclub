@@ -57,7 +57,7 @@ export const classTemplate = {
     instructor: "John Doe",
     duration: 60,
     capacity: 20,
-    price: 500, // 10.00 in business currency (10 credits * 50 cents/credit)
+    price: 500, // 5.00 in business currency (5 credits * 100 cents/credit)
     allowWaitlist: true,
     isActive: true,
     tags: ["yoga", "wellness"],
@@ -126,7 +126,7 @@ export const classInstance = {
     name: "Yoga Class",
     instructor: "John Doe",
     capacity: 20,
-    price: 500, // 10.00 in business currency (10 credits * 50 cents/credit)
+    price: 500, // 5.00 in business currency (5 credits * 100 cents/credit)
     primaryCategory: 'wellness_center',
     bookedCount: 0,
     waitlistCount: 0,
