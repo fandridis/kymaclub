@@ -8,6 +8,7 @@ import { useBusinessReviews } from '../hooks/useBusinessReviews';
 import { useReviewEligibility } from '../hooks/useReviewEligibility';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
 import { theme } from '../theme';
+import { useTypedTranslation } from '../i18n/typed';
 
 interface ReviewsSectionProps {
   venueId: Id<"venues">;
@@ -18,13 +19,14 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
   venueId,
   venueName
 }) => {
+  const { t } = useTypedTranslation();
   const [isWriteReviewModalVisible, setIsWriteReviewModalVisible] = useState(false);
   const { reviews, ratingsSummary, userReview, isLoading } = useBusinessReviews(venueId);
   const { isEligible, reason } = useReviewEligibility(venueId);
 
   const handleWriteReviewPress = () => {
     if (!isEligible) {
-      Alert.alert('Cannot Review', reason || 'You are not eligible to review this venue.');
+      Alert.alert(t('reviews.cannotReview'), reason || t('reviews.notEligibleToReview'));
       return;
     }
 
@@ -38,7 +40,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading reviews...</Text>
+        <Text style={styles.loadingText}>{t('reviews.loadingReviews')}</Text>
       </View>
     );
   }
@@ -47,7 +49,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
     <View>
       {/* Section Title */}
       <View style={styles.titleContainer}>
-        <Text style={styles.sectionTitle}>Rating & Reviews</Text>
+        <Text style={styles.sectionTitle}>{t('reviews.ratingAndReviews')}</Text>
       </View>
 
       {/* Rating Summary */}
@@ -59,7 +61,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
             </Text>
             <StarRating rating={Math.floor(ratingsSummary.averageRating)} size={20} />
             <Text style={styles.reviewCount}>
-              {ratingsSummary.totalReviews} {ratingsSummary.totalReviews === 1 ? 'review' : 'reviews'}
+              {ratingsSummary.totalReviews} {ratingsSummary.totalReviews === 1 ? t('reviews.review') : t('reviews.reviews')}
             </Text>
           </View>
 
@@ -75,7 +77,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
               <PenIcon size={16} color={theme.colors.zinc[700]} />
             )}
             <Text style={[styles.writeReviewText, !isEligible && styles.writeReviewTextDisabled]}>
-              {!isEligible && userReview ? 'Reviewed Recently' : 'Write Review'}
+              {!isEligible && userReview ? t('reviews.reviewedRecently') : t('reviews.writeReview')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -87,9 +89,9 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
       ) : (
         <View style={styles.noReviewsContainer}>
           <MessageCircleIcon size={40} color={theme.colors.zinc[300]} />
-          <Text style={styles.noReviewsTitle}>No reviews yet</Text>
+          <Text style={styles.noReviewsTitle}>{t('reviews.noReviews')}</Text>
           <Text style={styles.noReviewsSubtitle}>
-            Be the first to share your experience!
+            {t('reviews.beTheFirstToShare')}
           </Text>
         </View>
       )}

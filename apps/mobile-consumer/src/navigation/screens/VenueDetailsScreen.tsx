@@ -14,11 +14,11 @@ import { ReviewsSection } from '../../components/ReviewsSection';
 import { useVenueClassInstances } from '../../hooks/use-venue-class-instances';
 import type { RootStackParamListWithNestedTabs } from '..';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
-import type { ClassInstance } from '../../hooks/use-class-instances';
 import * as Location from 'expo-location';
 import { formatDistance as formatDistanceMeters, calculateDistance } from '../../utils/location';
 import { useTypedTranslation } from '../../i18n/typed';
 import { theme } from '../../theme';
+import i18n from '../../i18n';
 
 const now = Date.now();
 
@@ -40,6 +40,54 @@ const amenitiesIconsMap: Record<string, React.ComponentType<any>> = {
     showers: ShowerHeadIcon,
     accessible: AccessibilityIcon,
 };
+
+// Amenities Section Component
+function AmenitiesSection({ venue }: { venue: any }) {
+    const { t } = useTypedTranslation();
+
+    // Helper function to get translated amenity label
+    const getAmenityLabel = (amenityKey: string): string => {
+        const translationKey = `venues.amenity${amenityKey.charAt(0).toUpperCase() + amenityKey.slice(1)}`;
+        // Use type assertion for dynamic translation keys
+        const translated = t(translationKey as any);
+        // If translation returns the key itself (not translated), fallback to formatted key
+        if (translated === translationKey) {
+            return amenityKey.charAt(0).toUpperCase() + amenityKey.slice(1);
+        }
+        return translated;
+    };
+
+    return (
+        <View style={styles.section}>
+            <Text style={[styles.sectionTitle, styles.amenitiesTitle]}>{t('venues.amenities')}</Text>
+            <View style={styles.tagContainer}>
+                {venue?.amenities ? Object.entries(venue.amenities)
+                    .filter(([_, enabled]) => enabled)
+                    .map(([amenity]) => {
+                        const IconComponent = amenitiesIconsMap[amenity];
+                        const amenityLabel = getAmenityLabel(amenity);
+                        return (
+                            <View key={amenity} style={styles.tag}>
+                                {IconComponent && (
+                                    <IconComponent size={16} color={theme.colors.zinc[600]} style={styles.tagIcon} />
+                                )}
+                                <Text style={styles.tagText}>
+                                    {amenityLabel}
+                                </Text>
+                            </View>
+                        );
+                    }) : (
+                    <>
+                        <View style={styles.tag}><Text style={styles.tagText}>Parking</Text></View>
+                        <View style={styles.tag}><Text style={styles.tagText}>Locker Rooms</Text></View>
+                        <View style={styles.tag}><Text style={styles.tagText}>WiFi</Text></View>
+                        <View style={styles.tag}><Text style={styles.tagText}>Water Station</Text></View>
+                    </>
+                )}
+            </View>
+        </View>
+    );
+}
 
 export function VenueDetailsScreen() {
     const navigation = useNavigation<NavigationProp<RootStackParamListWithNestedTabs>>();
@@ -120,12 +168,15 @@ export function VenueDetailsScreen() {
                 // Format date display
                 let dateDisplay = '';
                 const classDate = startTime.toDateString();
+                const currentLanguage = i18n.language || 'en';
+                const locale = currentLanguage === 'el' ? 'el-GR' : 'en-US';
+
                 if (classDate === today.toDateString()) {
-                    dateDisplay = 'Today, ' + startTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    dateDisplay = t('news.today') + ', ' + startTime.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
                 } else if (classDate === tomorrow.toDateString()) {
-                    dateDisplay = 'Tomorrow, ' + startTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    dateDisplay = t('news.tomorrow') + ', ' + startTime.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
                 } else {
-                    dateDisplay = startTime.toLocaleDateString('en-US', {
+                    dateDisplay = startTime.toLocaleDateString(locale, {
                         weekday: 'long',
                         month: 'short',
                         day: 'numeric'
@@ -133,11 +184,11 @@ export function VenueDetailsScreen() {
                 }
 
                 // Format time range
-                const timeRange = `${startTime.toLocaleTimeString('en-US', {
+                const timeRange = `${startTime.toLocaleTimeString(locale, {
                     hour: '2-digit',
                     minute: '2-digit',
                     hour12: false
-                })}-${endTime.toLocaleTimeString('en-US', {
+                })}-${endTime.toLocaleTimeString(locale, {
                     hour: '2-digit',
                     minute: '2-digit',
                     hour12: false
@@ -161,7 +212,7 @@ export function VenueDetailsScreen() {
             });
 
         return venueClasses;
-    }, [venueClasses, venueId]);
+    }, [venueClasses, venueId, t]);
 
     // Get image storage IDs
     const imageStorageIds = venue?.imageStorageIds ?? [];
@@ -198,9 +249,9 @@ export function VenueDetailsScreen() {
 
 
     // Venue info
-    const venueName = venue?.name ?? 'Venue';
+    const venueName = venue?.name ?? t('venues.venue');
     const venueAddress = venue?.address ?
-        `${venue.address.street}, ${venue.address.city}, ${venue.address.zipCode}` : 'Address not available';
+        `${venue.address.street}, ${venue.address.city}, ${venue.address.zipCode}` : t('venues.addressNotAvailable');
     const venueDescription = venue?.description ?? '';
     const venuePhone = venue?.phone;
     const venueWebsite = venue?.website;
@@ -235,7 +286,7 @@ export function VenueDetailsScreen() {
             // Navigate to conversation screen
             navigation.navigate('Conversation', {
                 threadId: result.threadId,
-                venueName: venue?.name || 'Venue',
+                venueName: venue?.name || t('venues.venue'),
                 venueImage: imageUrls[0], // Use first venue image if available
             });
         } catch (error) {
@@ -326,7 +377,7 @@ export function VenueDetailsScreen() {
             ) : (
                 <View style={styles.fullWidthPlaceholderContainer}>
                     <View style={styles.fullWidthPlaceholderImage}>
-                        <Text style={styles.placeholderText}>No Images Available</Text>
+                        <Text style={styles.placeholderText}>{t('venues.noImagesAvailable')}</Text>
                     </View>
                 </View>
             )}
@@ -362,14 +413,14 @@ export function VenueDetailsScreen() {
                     {/* JUST ARRIVED! Badge Column */}
                     <View style={styles.statsColumn}>
                         <View style={styles.newBadge}>
-                            <Text style={styles.newBadgeText}>JUST ARRIVED!</Text>
+                            <Text style={styles.newBadgeText}>{t('venues.justArrived')}</Text>
                         </View>
                     </View>
 
                     {/* Reviews Column - Two Rows */}
                     <View style={styles.statsColumn}>
                         <Text style={styles.reviewsNumber}>{venue?.reviewCount || 0}</Text>
-                        <Text style={styles.reviewsLabel}>reviews</Text>
+                        <Text style={styles.reviewsLabel}>{t('reviews.reviews')}</Text>
                     </View>
                 </View>
             </View>
@@ -393,7 +444,7 @@ export function VenueDetailsScreen() {
             {venueDescription && (
                 <>
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>About the studio</Text>
+                        <Text style={styles.sectionTitle}>{t('venues.aboutTheStudio')}</Text>
                         <Text style={styles.descriptionText}>
                             {venueDescription}
                         </Text>
@@ -453,33 +504,7 @@ export function VenueDetailsScreen() {
             </View> */}
 
             {/* Amenities Section */}
-            <View style={styles.section}>
-                <Text style={[styles.sectionTitle, styles.amenitiesTitle]}>Amenities</Text>
-                <View style={styles.tagContainer}>
-                    {venue?.amenities ? Object.entries(venue.amenities)
-                        .filter(([_, enabled]) => enabled)
-                        .map(([amenity]) => {
-                            const IconComponent = amenitiesIconsMap[amenity];
-                            return (
-                                <View key={amenity} style={styles.tag}>
-                                    {IconComponent && (
-                                        <IconComponent size={16} color={theme.colors.zinc[600]} style={styles.tagIcon} />
-                                    )}
-                                    <Text style={styles.tagText}>
-                                        {amenity.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                                    </Text>
-                                </View>
-                            );
-                        }) : (
-                        <>
-                            <View style={styles.tag}><Text style={styles.tagText}>Parking</Text></View>
-                            <View style={styles.tag}><Text style={styles.tagText}>Locker Rooms</Text></View>
-                            <View style={styles.tag}><Text style={styles.tagText}>WiFi</Text></View>
-                            <View style={styles.tag}><Text style={styles.tagText}>Water Station</Text></View>
-                        </>
-                    )}
-                </View>
-            </View>
+            <AmenitiesSection venue={venue} />
 
             <Divider />
 
@@ -488,17 +513,17 @@ export function VenueDetailsScreen() {
                 <>
                     <View style={styles.section}>
                         <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>Upcoming classes</Text>
+                            <Text style={styles.sectionTitle}>{t('venues.upcomingClasses')}</Text>
                             <TouchableOpacity
                                 onPress={() => {
                                     navigation.navigate('VenueClassInstancesModal', {
                                         venueId,
-                                        venueName: venue?.name || 'Venue'
+                                        venueName: venue?.name || t('venues.venue')
                                     });
                                 }}
                                 activeOpacity={0.7}
                             >
-                                <Text style={styles.seeAllButton}>See all</Text>
+                                <Text style={styles.seeAllButton}>{t('venues.seeAll')}</Text>
                             </TouchableOpacity>
                         </View>
                         <View style={styles.carouselContainer}>
@@ -518,14 +543,14 @@ export function VenueDetailsScreen() {
                                                 onPress={() => {
                                                     navigation.navigate('VenueClassInstancesModal', {
                                                         venueId,
-                                                        venueName: venue?.name || 'Venue'
+                                                        venueName: venue?.name || t('venues.venue')
                                                     });
                                                 }}
                                                 activeOpacity={0.7}
                                             >
                                                 <View style={styles.seeMoreCardContent}>
-                                                    <Text style={styles.seeMoreText}>See more</Text>
-                                                    <Text style={styles.seeMoreSubtext}>View all classes</Text>
+                                                    <Text style={styles.seeMoreText}>{t('venues.seeMore')}</Text>
+                                                    <Text style={styles.seeMoreSubtext}>{t('venues.viewAllClasses')}</Text>
                                                 </View>
                                             </TouchableOpacity>
                                         );
@@ -562,11 +587,11 @@ export function VenueDetailsScreen() {
                                                     {classItem.isBookedByUser ? (
                                                         <View style={styles.bookedBadge}>
                                                             <CheckCircleIcon size={12} color={theme.colors.emerald[950]} strokeWidth={2} />
-                                                            <Text style={styles.bookedText}>Already Booked</Text>
+                                                            <Text style={styles.bookedText}>{t('venues.alreadyBooked')}</Text>
                                                         </View>
                                                     ) : (
                                                         <Text style={styles.upcomingSpotsText}>
-                                                            {classItem.spotsLeft} spots available
+                                                            {t('venues.spotsAvailable', { count: classItem.spotsLeft })}
                                                         </Text>
                                                     )}
                                                 </View>
@@ -589,14 +614,14 @@ export function VenueDetailsScreen() {
             {/* Reviews Section */}
             <ReviewsSection
                 venueId={venueId as Id<"venues">}
-                venueName={venue?.name || 'Venue'}
+                venueName={venue?.name || t('venues.venue')}
             />
 
             <Divider />
 
             {/* Contact Section */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Contact</Text>
+                <Text style={styles.sectionTitle}>{t('venues.contact')}</Text>
 
                 <View style={styles.contactContainer}>
                     {/* Address */}
@@ -608,7 +633,7 @@ export function VenueDetailsScreen() {
                             <MapPinIcon size={18} color={theme.colors.emerald[600]} />
                         </View>
                         <View style={styles.contactContent}>
-                            <Text style={styles.contactLabel}>Address</Text>
+                            <Text style={styles.contactLabel}>{t('venues.address')}</Text>
                             <Text style={styles.contactText}>{venueAddress}</Text>
                         </View>
                     </View>
@@ -623,7 +648,7 @@ export function VenueDetailsScreen() {
                                 <PhoneIcon size={18} color={theme.colors.emerald[600]} />
                             </View>
                             <View style={styles.contactContent}>
-                                <Text style={styles.contactLabel}>Phone</Text>
+                                <Text style={styles.contactLabel}>{t('venues.phone')}</Text>
                                 <Text style={styles.contactText}>{venuePhone}</Text>
                             </View>
                         </TouchableOpacity>
@@ -639,7 +664,7 @@ export function VenueDetailsScreen() {
                                 <MailIcon size={18} color={theme.colors.emerald[600]} />
                             </View>
                             <View style={styles.contactContent}>
-                                <Text style={styles.contactLabel}>Email</Text>
+                                <Text style={styles.contactLabel}>{t('venues.email')}</Text>
                                 <Text style={styles.contactText}>{venueEmail}</Text>
                             </View>
                         </TouchableOpacity>
@@ -652,7 +677,7 @@ export function VenueDetailsScreen() {
                                 <GlobeIcon size={18} color={theme.colors.emerald[600]} />
                             </View>
                             <View style={styles.contactContent}>
-                                <Text style={styles.contactLabel}>Website</Text>
+                                <Text style={styles.contactLabel}>{t('venues.website')}</Text>
                                 <Text style={[styles.contactText, styles.contactLink]}>{venueWebsite}</Text>
                             </View>
                         </TouchableOpacity>
@@ -666,7 +691,7 @@ export function VenueDetailsScreen() {
                     activeOpacity={0.8}
                 >
                     <MessageCircleIcon size={20} color={theme.colors.zinc[50]} />
-                    <Text style={styles.contactMessageText}>Message Venue</Text>
+                    <Text style={styles.contactMessageText}>{t('venues.messageVenue')}</Text>
                 </TouchableOpacity>
             </View>
 
@@ -714,7 +739,7 @@ export function VenueDetailsScreen() {
             {isLoading ? (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#ff4747" />
-                    <Text style={styles.loadingText}>Loading venue details...</Text>
+                    <Text style={styles.loadingText}>{t('venues.loadingVenueDetails')}</Text>
                 </View>
             ) : (
                 renderContent()
@@ -1257,7 +1282,6 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: theme.colors.zinc[500],
         marginBottom: 4,
-        textTransform: 'uppercase',
         letterSpacing: 0.5,
     },
     contactText: {

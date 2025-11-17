@@ -511,12 +511,12 @@ export function ClassDetailsModalScreen() {
     }
 
     // Calculate derived values
-    const className = finalClassInstance.name ?? templateSnapshot?.name ?? 'Class';
+    const className = finalClassInstance.name ?? templateSnapshot?.name ?? t('classes.title');
     const description = finalClassInstance.description ?? templateSnapshot?.description ?? '';
     const instructor = finalClassInstance.instructor ?? templateSnapshot?.instructor ?? 'TBD';
     const capacity = finalClassInstance.capacity ?? 0;
     const price = finalClassInstance.price ?? 0;
-    const businessName = venue?.name ?? finalClassInstance.venueSnapshot?.name ?? 'Unknown Venue';
+    const businessName = venue?.name ?? finalClassInstance.venueSnapshot?.name ?? t('venues.unknownVenue');
     // Get date-fns locale based on current language
     const currentLanguage = i18n.language || 'en';
     const dateFnsLocale = getDateFnsLocale(currentLanguage);
@@ -1381,7 +1381,7 @@ const styles = StyleSheet.create({
 
         paddingHorizontal: 24,
         paddingVertical: 16,
-        gap: 20,
+        gap: 18,
         alignItems: 'center',
         shadowColor: '#000',
         shadowOffset: {
@@ -1401,7 +1401,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '700',
         color: theme.colors.zinc[950],
-        marginBlock: 12
+        marginBlock: 4
     },
     attendingActionsRow: {
         flexDirection: 'row',

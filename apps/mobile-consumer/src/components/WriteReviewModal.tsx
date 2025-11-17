@@ -17,6 +17,7 @@ import { StarRating } from './StarRating';
 import { useSubmitReview } from '../hooks/useSubmitReview';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
 import { theme } from '../theme';
+import { useTypedTranslation } from '../i18n/typed';
 
 interface WriteReviewModalProps {
   isVisible: boolean;
@@ -33,13 +34,14 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
   venueName,
   onReviewSubmitted
 }) => {
+  const { t } = useTypedTranslation();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const { submitReview, isSubmitting } = useSubmitReview();
 
   const handleSubmit = async () => {
     if (rating === 0) {
-      Alert.alert('Rating Required', 'Please select a star rating before submitting your review.');
+      Alert.alert(t('reviews.ratingRequired'), t('reviews.pleaseSelectRating'));
       return;
     }
 
@@ -51,11 +53,11 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
 
     if (result.success) {
       Alert.alert(
-        'Review Submitted',
-        'Thank you for taking the time to share your experience! We review all submissions to ensure quality, so your review will be visible shortly',
+        t('reviews.reviewSubmitted'),
+        t('reviews.reviewSubmittedMessage'),
         [
           {
-            text: 'OK',
+            text: t('common.ok'),
             onPress: () => {
               setRating(0);
               setComment('');
@@ -66,19 +68,19 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
         ]
       );
     } else {
-      Alert.alert('Error', result.error || 'Failed to submit review. Please try again.');
+      Alert.alert(t('common.error'), result.error || t('reviews.submitFailed'));
     }
   };
 
   const handleClose = () => {
     if (rating > 0 || comment.trim()) {
       Alert.alert(
-        'Discard Review?',
-        'You have unsaved changes. Are you sure you want to close?',
+        t('reviews.discardReview'),
+        t('reviews.unsavedChanges'),
         [
-          { text: 'Continue Writing', style: 'cancel' },
+          { text: t('reviews.continueWriting'), style: 'cancel' },
           {
-            text: 'Discard',
+            text: t('reviews.discard'),
             style: 'destructive',
             onPress: () => {
               setRating(0);
@@ -107,7 +109,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft} />
-          <Text style={styles.headerTitle}>Write Review</Text>
+          <Text style={styles.headerTitle}>{t('reviews.writeReview')}</Text>
           <TouchableOpacity
             onPress={handleClose}
             style={styles.closeButton}
@@ -119,13 +121,13 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Venue Info */}
           <View style={styles.venueInfo}>
-            <Text style={styles.venueLabel}>Reviewing</Text>
+            <Text style={styles.venueLabel}>{t('reviews.reviewing')}</Text>
             <Text style={styles.venueName}>{venueName}</Text>
           </View>
 
           {/* Rating Section */}
           <View style={styles.ratingSection}>
-            <Text style={styles.sectionTitle}>How would you rate your experience?</Text>
+            <Text style={styles.sectionTitle}>{t('reviews.howWouldYouRate')}</Text>
             <View style={styles.ratingContainer}>
               <StarRating
                 rating={rating}
@@ -138,13 +140,13 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
 
           {/* Comment Section */}
           <View style={styles.commentSection}>
-            <Text style={styles.sectionTitle}>Tell us about your experience (optional)</Text>
+            <Text style={styles.sectionTitle}>{t('reviews.tellUsExperience')}</Text>
             <TextInput
               style={styles.commentInput}
               multiline
               numberOfLines={6}
               maxLength={750}
-              placeholder="What did you like about this venue? What could be improved?"
+              placeholder={t('reviews.commentPlaceholder')}
               placeholderTextColor={theme.colors.zinc[400]}
               value={comment}
               onChangeText={setComment}
@@ -153,18 +155,15 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
               autoCorrect={true}
             />
             <Text style={styles.characterCount}>
-              {comment.length}/750
+              {t('reviews.characterCount', { current: comment.length, max: 750 })}
             </Text>
           </View>
 
           {/* Guidelines */}
           <View style={styles.guidelines}>
-            <Text style={styles.guidelinesTitle}>Review Guidelines</Text>
+            <Text style={styles.guidelinesTitle}>{t('reviews.guidelines')}</Text>
             <Text style={styles.guidelinesText}>
-              • Be honest and helpful to other users{'\n'}
-              • Focus on your experience at the venue{'\n'}
-              • Keep it respectful and constructive{'\n'}
-              • Avoid personal attacks or inappropriate content
+              {t('reviews.guidelinesText')}
             </Text>
           </View>
         </ScrollView>
@@ -179,7 +178,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
             {isSubmitting ? (
               <ActivityIndicator size="small" color="#ffffff" />
             ) : (
-              <Text style={styles.submitButtonText}>Submit Review</Text>
+              <Text style={styles.submitButtonText}>{t('reviews.submitReview')}</Text>
             )}
           </TouchableOpacity>
         </View>
