@@ -19,6 +19,7 @@ import { api } from '@repo/api/convex/_generated/api';
 
 import { theme } from '../../theme';
 import { SwipeToConfirmButton } from '../../components/SwipeToConfirmButton';
+import { useTypedTranslation } from '../../i18n/typed';
 import type { RootStackParamList } from '../index';
 
 const GREECE_TZ = 'Europe/Athens';
@@ -46,6 +47,7 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
   const booking = route.params?.booking;
   const rotation = useSharedValue(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { t } = useTypedTranslation();
 
   const completeBookingMutation = useMutation(api.mutations.bookings.completeBooking);
 
@@ -61,11 +63,11 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
       await completeBookingMutation({ bookingId: booking._id });
 
       Alert.alert(
-        'Check-in confirmed!',
-        "You've successfully checked in. Enjoy your class!",
+        t('ticket.checkInConfirmed'),
+        t('ticket.checkInSuccessMessage'),
         [
           {
-            text: 'OK',
+            text: t('common.ok'),
             style: 'default',
             onPress: () => navigation.goBack(),
           },
@@ -75,27 +77,27 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
       console.error('Failed to complete booking:', error);
 
       // Handle specific error messages from the backend
-      const errorMessage = error?.data?.message || error?.message || 'Unknown error';
+      const errorMessage = error?.data?.message || error?.message || t('errors.unexpectedError');
 
-      let title = 'Check-in failed';
-      let message = 'There was an error confirming your check-in. Please try again or contact the studio.';
+      let title = t('ticket.checkInFailed');
+      let message = t('ticket.checkInErrorMessage');
 
       if (errorMessage.includes('Too early to check in')) {
-        title = 'Too early';
-        message = 'Check-in opens 30 minutes before class starts. Please try again later.';
+        title = t('ticket.tooEarly');
+        message = t('ticket.tooEarlyMessage');
       } else if (errorMessage.includes('Check-in window has closed')) {
-        title = 'Check-in closed';
-        message = 'The check-in window has closed. Check-in must be done within 3 hours after class starts.';
+        title = t('ticket.checkInClosed');
+        message = t('ticket.checkInClosedMessage');
       } else if (errorMessage.includes('Cannot complete booking')) {
-        title = 'Already processed';
-        message = 'This booking has already been processed or cancelled.';
+        title = t('ticket.alreadyProcessed');
+        message = t('ticket.alreadyProcessedMessage');
       }
 
-      Alert.alert(title, message, [{ text: 'OK', style: 'default' }]);
+      Alert.alert(title, message, [{ text: t('common.ok'), style: 'default' }]);
     } finally {
       setIsSubmitting(false);
     }
-  }, [booking?._id, isSubmitting, completeBookingMutation, navigation]);
+  }, [booking?._id, isSubmitting, completeBookingMutation, navigation, t]);
 
   const safeBottomPadding = Math.max(insets.bottom, 16);
 
@@ -123,32 +125,32 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
     return (
       <View style={[styles.screen, { paddingBottom: safeBottomPadding }]}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Booking Ticket</Text>
+          <Text style={styles.headerTitle}>{t('ticket.title')}</Text>
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
             <X color={theme.colors.zinc[800]} size={24} />
           </TouchableOpacity>
         </View>
         <View style={styles.missingContainer}>
-          <Text style={styles.missingTitle}>Booking unavailable</Text>
-          <Text style={styles.missingText}>We couldn't find the booking information for this ticket.</Text>
+          <Text style={styles.missingTitle}>{t('ticket.bookingUnavailable')}</Text>
+          <Text style={styles.missingText}>{t('ticket.bookingUnavailableMessage')}</Text>
         </View>
       </View>
     );
   }
 
-  const className = booking.classInstanceSnapshot?.name ?? 'Class';
-  const instructorName = booking.classInstanceSnapshot?.instructor ?? 'Instructor';
-  const venueName = booking.venueSnapshot?.name ?? booking.venueSnapshot?.name ?? 'Studio';
+  const className = booking.classInstanceSnapshot?.name ?? t('classes.title');
+  const instructorName = booking.classInstanceSnapshot?.instructor ?? t('classes.instructor');
+  const venueName = booking.venueSnapshot?.name ?? booking.venueSnapshot?.name ?? t('venues.venue');
 
   const startTimeValue = booking.classInstanceSnapshot?.startTime;
   const startDate = startTimeValue ? new Date(startTimeValue) : null;
 
   const formattedDate = startDate
     ? format(startDate, 'MMM d', { in: tz(GREECE_TZ) })
-    : 'TBD';
+    : t('ticket.tbd');
   const formattedTime = startDate
     ? format(startDate, 'HH:mm', { in: tz(GREECE_TZ) })
-    : 'TBD';
+    : t('ticket.tbd');
 
   const statusVariant = useMemo<TicketStatusVariant>(() => {
     if (!booking.status) {
@@ -172,33 +174,33 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
 
   const statusLabel = useMemo(() => {
     if (!booking.status) {
-      return 'STATUS';
+      return t('ticket.status').toUpperCase();
     }
 
     if (booking.status === 'pending') {
-      return 'CONFIRMED';
+      return t('ticket.confirmed').toUpperCase();
     }
 
     if (booking.status.includes('cancelled')) {
-      return 'CANCELLED';
+      return t('ticket.cancelled').toUpperCase();
     }
 
     if (booking.status.includes('waitlist')) {
-      return 'WAITLIST';
+      return t('ticket.waitlist').toUpperCase();
     }
 
     return booking.status.replace(/_/g, ' ').toUpperCase();
-  }, [booking.status]);
+  }, [booking.status, t]);
 
   const formatTimeUntil = useCallback((milliseconds: number): string => {
     const totalMinutes = Math.ceil(milliseconds / (60 * 1000));
 
     if (totalMinutes < 1) {
-      return 'less than a minute';
+      return t('ticket.lessThanMinute');
     }
 
     if (totalMinutes < 60) {
-      return `${totalMinutes} ${totalMinutes === 1 ? 'minute' : 'minutes'}`;
+      return t('ticket.minutes', { count: totalMinutes });
     }
 
     const days = Math.floor(totalMinutes / (24 * 60));
@@ -208,26 +210,26 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
     const parts: string[] = [];
 
     if (days > 0) {
-      parts.push(`${days} ${days === 1 ? 'day' : 'days'}`);
+      parts.push(t('ticket.days', { count: days }));
     }
 
     if (hours > 0) {
-      parts.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
+      parts.push(t('ticket.hours', { count: hours }));
     }
 
     if (minutes > 0 || parts.length === 0) {
-      parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
+      parts.push(t('ticket.minutes', { count: minutes }));
     }
 
     return parts.join(', ');
-  }, []);
+  }, [t]);
 
   const checkInWindowInfo = useMemo(() => {
     const now = Date.now();
     const classStartTime = booking.classInstanceSnapshot?.startTime;
 
     if (!classStartTime) {
-      return { isInWindow: false, buttonText: 'Check-in unavailable' };
+      return { isInWindow: false, buttonText: t('ticket.checkInUnavailable') };
     }
 
     const thirtyMinutesInMs = 30 * 60 * 1000;
@@ -240,29 +242,29 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
       const formattedTime = formatTimeUntil(timeUntilOpen);
       return {
         isInWindow: false,
-        buttonText: `Opens in ${formattedTime}`
+        buttonText: t('ticket.opensIn', { time: formattedTime })
       };
     }
 
     if (now > latestCheckIn) {
       return {
         isInWindow: false,
-        buttonText: 'Check-in closed'
+        buttonText: t('ticket.checkInClosed')
       };
     }
 
     return {
       isInWindow: true,
-      buttonText: 'Drag to check-in'
+      buttonText: t('ticket.dragToCheckIn')
     };
-  }, [booking.classInstanceSnapshot?.startTime, formatTimeUntil]);
+  }, [booking.classInstanceSnapshot?.startTime, formatTimeUntil, t]);
 
   const isSwipeDisabled = booking.status !== 'pending' || !checkInWindowInfo.isInWindow;
 
   return (
     <View style={[styles.screen, { paddingBottom: safeBottomPadding }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Booking Ticket</Text>
+        <Text style={styles.headerTitle}>{t('ticket.title')}</Text>
         <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
           <X color={theme.colors.zinc[800]} size={24} />
         </TouchableOpacity>
@@ -291,19 +293,19 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
 
                 <View style={styles.ticketContent}>
                   <View style={styles.infoSection}>
-                    <Text style={styles.infoLabel}>Instructor</Text>
+                    <Text style={styles.infoLabel}>{t('classes.instructor')}</Text>
                     <Text style={styles.infoText}>{instructorName}</Text>
                   </View>
 
                   <View style={styles.infoSection}>
-                    <Text style={styles.infoLabel}>Date & Time</Text>
+                    <Text style={styles.infoLabel}>{t('ticket.dateTime')}</Text>
                     <Text style={styles.infoText}>{formattedDate} • {formattedTime}</Text>
                   </View>
 
                   <View style={styles.attendeeSection}>
-                    <Text style={styles.attendeeLabel}>ATTENDEE</Text>
+                    <Text style={styles.attendeeLabel}>{t('ticket.attendee').toUpperCase()}</Text>
                     <Text style={styles.attendeeName}>
-                      {booking.userSnapshot?.name ?? booking.userSnapshot?.name ?? 'Member'}
+                      {booking.userSnapshot?.name ?? booking.userSnapshot?.name ?? t('ticket.member')}
                     </Text>
                   </View>
                 </View>
@@ -323,7 +325,7 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
                   </View>
                   <View style={styles.stubRight}>
                     <Text style={styles.stubName}>
-                      {booking.userSnapshot?.name ?? booking.userSnapshot?.name ?? 'Member'}
+                      {booking.userSnapshot?.name ?? booking.userSnapshot?.name ?? t('ticket.member')}
                     </Text>
                     <View
                       style={[
@@ -345,12 +347,12 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
 
       <View style={styles.footer}>
         <SwipeToConfirmButton
-          label={isSubmitting ? "Checking in..." : checkInWindowInfo.buttonText}
+          label={isSubmitting ? t('ticket.checkingIn') : checkInWindowInfo.buttonText}
           onConfirm={handleConfirm}
           disabled={isSwipeDisabled || isSubmitting}
         />
         <Text style={styles.footerHelpText}>
-          Drag the button to let the studio verify your check-in.
+          {t('ticket.dragToVerify')}
         </Text>
       </View>
     </View>

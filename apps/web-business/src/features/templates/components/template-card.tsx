@@ -302,9 +302,9 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
                     </div>
 
                     <div className="flex items-center gap-2 text-sm font-medium">
-                        <Euro className="h-4 w-4 text-green-600" />
-                        <span className="text-green-600">
-                            €{template.price ? (template.price / 100).toFixed(2) : '10.00'}
+                        <Euro className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">
+                            {template.price ? (template.price / 100).toFixed(2) : '10.00'}
                         </span>
                     </div>
                 </div>
