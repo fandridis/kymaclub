@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, Text, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import * as Location from 'expo-location';
@@ -19,8 +19,7 @@ import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../../navigation';
 import { countActiveFilters, useExploreFiltersStore } from '../../../stores/explore-filters-store';
 import { CreditsBadge } from '../../../components/CreditsBadge';
-import { ProfileIconButton } from '../../../components/ProfileIconButton';
-import { ChevronLeftIcon } from 'lucide-react-native';
+import { ChevronLeftIcon, SearchIcon } from 'lucide-react-native';
 import { TouchableOpacity } from 'react-native';
 
 export function Explore() {
@@ -38,6 +37,7 @@ export function Explore() {
     const [isMapView, setIsMapView] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
+    const [searchQuery, setSearchQuery] = useState<string>('');
     const filters = useExploreFiltersStore((state) => state.filters);
     const userCity = user?.activeCitySlug;
 
@@ -115,6 +115,10 @@ export function Explore() {
         );
     }
 
+    const handleBackPress = () => {
+        navigation.goBack();
+    };
+
     // Show empty state if no city selected
     if (!userCity && !userLoading) {
         return (
@@ -132,12 +136,24 @@ export function Explore() {
                             <ChevronLeftIcon size={30} color="#111827" />
                         </TouchableOpacity>
                     )}
+                    renderMiddle={() => (
+                        <View style={styles.searchInputContainer}>
+                            <SearchIcon size={18} color={theme.colors.zinc[500]} style={styles.searchIcon} />
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder={t('explore.searchPlaceholder') || 'Search studios and classes...'}
+                                placeholderTextColor={theme.colors.zinc[500]}
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                                editable={false}
+                            />
+                        </View>
+                    )}
                     renderRightSide={() => (
                         <>
                             {creditBalance !== undefined && (
                                 <CreditsBadge creditBalance={creditBalance.balance} />
                             )}
-                            <ProfileIconButton />
                         </>
                     )}
                 />
@@ -157,10 +173,6 @@ export function Explore() {
         );
     }
 
-    const handleBackPress = () => {
-        navigation.goBack();
-    };
-
     return (
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <TabScreenHeader
@@ -176,30 +188,44 @@ export function Explore() {
                         <ChevronLeftIcon size={30} color="#111827" />
                     </TouchableOpacity>
                 )}
+                renderMiddle={() => (
+                    <View style={styles.searchInputContainer}>
+                        <SearchIcon size={18} color={theme.colors.zinc[500]} style={styles.searchIcon} />
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder={t('explore.searchPlaceholder') || 'Search studios and classes...'}
+                            placeholderTextColor={theme.colors.zinc[500]}
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            editable={false}
+                        />
+                    </View>
+                )}
                 renderRightSide={() => (
                     <>
                         {creditBalance !== undefined && (
                             <CreditsBadge creditBalance={creditBalance.balance} />
                         )}
-                        <ProfileIconButton />
                     </>
                 )}
             />
-            <FilterBar
-                leading={(
-                    <AppTabs
-                        items={tabItems}
-                        activeKey={activeTab}
-                        onChange={handleTabChange}
-                        tabsRowStyle={styles.tabsRow}
-                    />
-                )}
-                onPressFilters={handleOpenFilters}
-                activeFilterCount={countActiveFilters(filters)}
-                showMapToggle={activeTab === 'businesses'}
-                isMapView={isMapView}
-                onMapToggle={handleMapToggle}
-            />
+            <View style={styles.filterBarContainer}>
+                <FilterBar
+                    leading={(
+                        <AppTabs
+                            items={tabItems}
+                            activeKey={activeTab}
+                            onChange={handleTabChange}
+                            tabsRowStyle={styles.tabsRow}
+                        />
+                    )}
+                    onPressFilters={handleOpenFilters}
+                    activeFilterCount={countActiveFilters(filters)}
+                    showMapToggle={activeTab === 'businesses'}
+                    isMapView={isMapView}
+                    onMapToggle={handleMapToggle}
+                />
+            </View>
 
             <View style={styles.content}>
                 {activeTab === 'businesses' ? (
@@ -250,6 +276,9 @@ const styles = StyleSheet.create({
     tabsRow: {
         gap: 8,
     },
+    filterBarContainer: {
+        marginTop: -8,
+    },
     backButton: {
         padding: 8,
         marginLeft: -8,
@@ -285,5 +314,23 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 16,
         fontWeight: '700',
+    },
+    searchInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: theme.colors.zinc[100],
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        minHeight: 40,
+    },
+    searchIcon: {
+        marginRight: 8,
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 14,
+        color: theme.colors.zinc[900],
+        padding: 0,
     },
 });

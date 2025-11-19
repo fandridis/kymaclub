@@ -406,14 +406,12 @@ export function NewsScreen() {
         return (
             <SafeAreaView style={styles.container}>
                 <TabScreenHeader
-                    title="KymaClub"
-                    //subtitle="Discover amazing fitness classes"
+                    renderLeftSide={() => <ProfileIconButton />}
                     renderRightSide={() => (
                         <>
                             {creditBalance !== undefined && (
                                 <CreditsBadge creditBalance={creditBalance.balance} />
                             )}
-                            <ProfileIconButton />
                         </>
                     )}
                 />
@@ -428,15 +426,13 @@ export function NewsScreen() {
     return (
         <SafeAreaView style={styles.container}>
             <TabScreenHeader
-                title="KymaClub"
-                // subtitle="Discover amazing fitness classes"
+                renderLeftSide={() => <ProfileIconButton />}
                 renderRightSide={() => (
                     <>
+                        <MessagesIconButton />
                         {creditBalance !== undefined && (
                             <CreditsBadge creditBalance={creditBalance.balance} />
                         )}
-                        <MessagesIconButton />
-                        <ProfileIconButton />
                     </>
                 )}
             />
@@ -695,18 +691,17 @@ const styles = StyleSheet.create({
     },
     scrollContainer: {
         flex: 1,
+        marginTop: -6
     },
     scrollContent: {
-        paddingBottom: 100, // Extra padding for floating buttons
+        paddingBottom: 80, // Extra padding for floating buttons
     },
-
-    // Section styles
     section: {
         marginVertical: 16,
     },
     sectionTitle: {
-        fontSize: 20,
-        fontWeight: '600',
+        fontSize: 16,
+        fontWeight: '700',
         color: '#1a1a1a',
         marginBottom: 4,
         paddingHorizontal: SECTION_PADDING,
@@ -801,11 +796,6 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         color: '#6b7280',
     },
-
-    // width: CAROUSEL_ITEM_WIDTH,
-    // height: CAROUSEL_HEIGHT,
-
-
     // Image section
     cardImageContainer: {
         width: '100%',

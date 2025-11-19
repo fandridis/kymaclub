@@ -7,10 +7,11 @@ interface TabScreenHeaderProps {
   subtitle?: string;
   renderLeftSide?: () => React.ReactNode;
   renderRightSide?: () => React.ReactNode;
+  renderMiddle?: () => React.ReactNode;
   titleBadge?: React.ReactNode;
 }
 
-export function TabScreenHeader({ title, subtitle, renderLeftSide, renderRightSide, titleBadge }: TabScreenHeaderProps) {
+export function TabScreenHeader({ title, subtitle, renderLeftSide, renderRightSide, renderMiddle, titleBadge }: TabScreenHeaderProps) {
   return (
     <View style={styles.headerContainer}>
       {renderLeftSide && (
@@ -18,7 +19,11 @@ export function TabScreenHeader({ title, subtitle, renderLeftSide, renderRightSi
           {renderLeftSide()}
         </View>
       )}
-      {title && (
+      {renderMiddle ? (
+        <View style={styles.middleContainer}>
+          {renderMiddle()}
+        </View>
+      ) : title ? (
         <View style={styles.titleContainer}>
           <View style={styles.titleRow}>
             <Text style={styles.title}>{title}</Text>
@@ -32,7 +37,7 @@ export function TabScreenHeader({ title, subtitle, renderLeftSide, renderRightSi
             <Text style={styles.subtitle}>{subtitle}</Text>
           )}
         </View>
-      )}
+      ) : null}
       {renderRightSide && (
         <View style={styles.rightSide}>
           {renderRightSide()}
@@ -55,6 +60,10 @@ const styles = StyleSheet.create({
   titleContainer: {
     flex: 1,
     gap: 4,
+  },
+  middleContainer: {
+    flex: 1,
+    marginHorizontal: 8,
   },
   titleRow: {
     flexDirection: 'row',
