@@ -15,7 +15,6 @@ import { SettingsProfileScreen } from './screens/SettingsProfileScreen';
 import { SettingsNotificationsScreen } from './screens/SettingsNotificationsScreen';
 import { SettingsSubscriptionScreen } from './screens/SettingsSubscriptionScreen';
 import { SettingsAccountScreen } from './screens/SettingsAccountScreen';
-import { SettingsCreditsScreen } from './screens/SettingsCreditsScreen';
 import { LanguageSelectionScreen } from './screens/LanguageSelectionScreen';
 import { CitySelectionScreen } from './screens/CitySelectionScreen';
 import { SubscriptionScreen } from './screens/SubscriptionScreen';
@@ -165,15 +164,6 @@ export function RootNavigator() {
         name="CitySelection"
         component={CitySelectionScreen}
         options={{
-          animation: 'slide_from_right',
-          headerShown: false,
-        }}
-      />
-      <RootStack.Screen
-        name="SettingsCredits"
-        component={SettingsCreditsScreen}
-        options={{
-          title: 'Credits & Subscription',
           animation: 'slide_from_right',
           headerShown: false,
         }}

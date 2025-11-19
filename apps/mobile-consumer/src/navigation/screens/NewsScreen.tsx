@@ -15,6 +15,7 @@ import { useAllVenues } from '../../features/explore/hooks/useAllVenues';
 import type { RootStackParamListWithNestedTabs } from '../index';
 import { centsToCredits } from '@repo/utils/credits';
 import { NewsClassCard } from '../../components/news/NewsCard';
+import { FeaturedCarousel } from '../../components/news/FeaturedCarousel';
 import { XIcon } from 'lucide-react-native';
 import { CreditsBadge } from '../../components/CreditsBadge';
 import { ProfileIconButton } from '../../components/ProfileIconButton';
@@ -441,6 +442,11 @@ export function NewsScreen() {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
+                {/* Featured Carousel Section */}
+                <View style={styles.section}>
+                    <FeaturedCarousel />
+                </View>
+
                 {/* Welcome Banner - only show for new users */}
                 {shouldShowWelcomeBanner && (
                     <WelcomeBanner
