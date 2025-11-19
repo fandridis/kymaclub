@@ -9,7 +9,8 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 
-const ai = new GoogleGenAI({ apiKey: "AIzaSyBYXWBHcmxoulzbNTwcUw8EsXKkXxwi-8g" });
+const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_AI_STUDIO_API_KEY });
+
 
 interface ValidationResult {
     probabilityToBeBad: number; // 0.0 to 1.0

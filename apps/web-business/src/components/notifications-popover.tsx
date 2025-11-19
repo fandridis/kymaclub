@@ -43,8 +43,10 @@ export function NotificationsPopover() {
                     return t('routes.notificationsPopover.actionCancelled')
                 case "payment_received":
                     return t('routes.notificationsPopover.actionPaidFor')
+                case "review_received":
+                    return t('routes.notificationsPopover.actionVenueReviewed')
                 default:
-                    return t('routes.notificationsPopover.actionUpdated')
+                    return `Unhandled action: ${type}`
             }
         }
 

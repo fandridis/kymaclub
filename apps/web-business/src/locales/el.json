@@ -502,6 +502,7 @@
             "actionBooked": "έκανε κράτηση",
             "actionCancelled": "ακύρωσε",
             "actionPaidFor": "πλήρωσε για",
+            "actionVenueReviewed": "αξιολόγησε",
             "actionUpdated": "ενημερώθηκε"
         },
         "onboarding": {
