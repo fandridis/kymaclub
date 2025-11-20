@@ -190,7 +190,7 @@ export function ClassBookingsItem({
                             )}
                             <div className="flex items-center gap-1">
                                 <Euro className="h-3 w-3" />
-                                <span className="font-medium">{formatEuros(booking.creditsUsed)}</span>
+                                <span className="font-medium">{formatEuros(booking.finalPrice / 100)}</span>
                             </div>
                         </div>
                     </div>

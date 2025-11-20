@@ -102,7 +102,7 @@ describe('Booking with Discounts Integration Tests', () => {
 
             expect(booking.originalPrice).toBe(2000); // €20 = 2000 cents
             expect(booking.finalPrice).toBe(1500);   // €15 = 1500 cents (2000 - 500 discount)
-            expect(booking.creditsUsed).toBe(15);    // 1500 cents / 100 = 15 credits
+            expect(booking.finalPrice / 100).toBe(15);    // Credits used = finalPrice / 100 (1500 cents / 100 = 15 credits)
             expect(booking.appliedDiscount).toBeTruthy();
             expect(booking.appliedDiscount?.source).toBe("instance_rule");
             expect(booking.appliedDiscount?.creditsSaved).toBe(5); // €5 = 500 cents / 100 = 5 credits saved
@@ -186,7 +186,7 @@ describe('Booking with Discounts Integration Tests', () => {
 
             expect(booking.originalPrice).toBe(2000); // €20 = 2000 cents
             expect(booking.finalPrice).toBe(2000);   // No discount applied (2000 cents)
-            expect(booking.creditsUsed).toBe(20);    // 2000 cents / 100 = 20 credits
+            expect(booking.finalPrice / 100).toBe(20);    // Credits used = finalPrice / 100 (2000 cents / 100 = 20 credits)
             expect(booking.appliedDiscount).toBeUndefined();
 
             // Verify user charged full amount
@@ -253,7 +253,7 @@ describe('Booking with Discounts Integration Tests', () => {
 
             expect(booking.originalPrice).toBe(2500); // €25 = 2500 cents
             expect(booking.finalPrice).toBe(1800);   // €18 = 1800 cents (2500 - 700 instance discount)
-            expect(booking.creditsUsed).toBe(18);    // 1800 cents / 100 = 18 credits
+            expect(booking.finalPrice / 100).toBe(18);    // Credits used = finalPrice / 100 (1800 cents / 100 = 18 credits)
             expect(booking.appliedDiscount?.source).toBe("instance_rule");
             expect(booking.appliedDiscount?.creditsSaved).toBe(7); // €7 = 700 cents / 100 = 7 credits saved
             expect(booking.appliedDiscount?.ruleName).toBe("Instance Special €7 Off");
@@ -307,7 +307,7 @@ describe('Booking with Discounts Integration Tests', () => {
 
             expect(booking.originalPrice).toBe(1000); // €10 = 1000 cents
             expect(booking.finalPrice).toBe(0);      // FREE (0 cents)
-            expect(booking.creditsUsed).toBe(0);     // No credits used (0 cents / 100)
+            expect(booking.finalPrice / 100).toBe(0);     // Credits used = finalPrice / 100 (0 cents / 100 = 0 credits)
             expect(booking.appliedDiscount?.creditsSaved).toBe(10); // Full discount applied (1000 cents = 10 credits)
 
             // Verify user's balance unchanged
@@ -357,7 +357,7 @@ describe('Booking with Discounts Integration Tests', () => {
 
             expect(booking.originalPrice).toBe(1000); // €10 = 1000 cents
             expect(booking.finalPrice).toBe(0);      // FREE (capped at 0 cents)
-            expect(booking.creditsUsed).toBe(0);     // No credits used (0 cents / 100)
+            expect(booking.finalPrice / 100).toBe(0);     // Credits used = finalPrice / 100 (0 cents / 100 = 0 credits)
             expect(booking.appliedDiscount?.creditsSaved).toBe(10); // Can only save original price (1000 cents = 10 credits), not 15
         });
 

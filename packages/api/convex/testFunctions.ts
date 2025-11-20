@@ -217,7 +217,7 @@ export const createTestClassTemplate = internalMutation({
                 minHours: 2,
                 maxHours: 168
             },
-            cancellationWindowHours: 10,
+            cancellationWindowHours: 12,
             deleted: false,
             createdAt: Date.now(),
             createdBy: args.userId,
@@ -317,7 +317,6 @@ export const createTestBooking = internalMutation({
             status: v.optional(v.union(v.literal("pending"), v.literal("completed"), v.literal("cancelled_by_consumer"), v.literal("cancelled_by_business"), v.literal("no_show"))),
             originalPrice: v.optional(v.number()),
             finalPrice: v.optional(v.number()),
-            creditsUsed: v.optional(v.number()),
             creditTransactionId: v.optional(v.string()),
             bookedAt: v.optional(v.number()),
             createdAt: v.optional(v.number()),
@@ -337,8 +336,9 @@ export const createTestBooking = internalMutation({
             status: args.booking.status || "pending",
             originalPrice: args.booking.originalPrice || 10,
             finalPrice: args.booking.finalPrice || 10,
-            creditsUsed: args.booking.creditsUsed || 10,
             creditTransactionId: args.booking.creditTransactionId || "test_transaction_id",
+            platformFeeRate: 0.20, // Default platform fee rate for test bookings
+            refundAmount: undefined, // Will be set on cancellation if applicable
             // Include user metadata for test bookings if user exists
             userSnapshot: user ? {
                 name: user.name || undefined,
@@ -354,6 +354,69 @@ export const createTestBooking = internalMutation({
             createdBy: args.booking.createdBy || args.booking.userId,
         });
         return bookingId;
+    },
+});
+
+export const patchTestBooking = internalMutation({
+    args: {
+        bookingId: v.id("bookings"),
+        status: v.optional(v.union(
+            v.literal("pending"),
+            v.literal("completed"),
+            v.literal("cancelled_by_consumer"),
+            v.literal("cancelled_by_business"),
+            v.literal("cancelled_by_business_rebookable"),
+            v.literal("no_show")
+        )),
+        refundAmount: v.optional(v.number()),
+    },
+    returns: v.null(),
+    handler: async (ctx, args) => {
+        const now = Date.now();
+        const updates: any = {
+            updatedAt: now,
+        };
+        if (args.status !== undefined) {
+            updates.status = args.status;
+            // Set completedAt when marking as completed
+            if (args.status === "completed") {
+                updates.completedAt = now;
+            }
+        }
+        if (args.refundAmount !== undefined) {
+            updates.refundAmount = args.refundAmount;
+        }
+        await ctx.db.patch(args.bookingId, updates);
+        return null;
+    },
+});
+
+export const updateTestBusiness = internalMutation({
+    args: {
+        businessId: v.id("businesses"),
+        feeStructure: v.optional(v.object({
+            baseFeeRate: v.optional(v.number()),
+            payoutFrequency: v.optional(v.union(v.literal("weekly"), v.literal("monthly"), v.literal("bi_monthly"))),
+            minimumPayout: v.optional(v.number()),
+        })),
+    },
+    returns: v.null(),
+    handler: async (ctx, args) => {
+        const updates: any = {
+            updatedAt: Date.now(),
+        };
+        if (args.feeStructure !== undefined) {
+            const business = await ctx.db.get(args.businessId);
+            if (!business) {
+                throw new Error("Business not found");
+            }
+            updates.feeStructure = {
+                ...business.feeStructure,
+                ...args.feeStructure,
+            };
+        }
+        await ctx.db.patch(args.businessId, updates);
+        return null;
     },
 });
 

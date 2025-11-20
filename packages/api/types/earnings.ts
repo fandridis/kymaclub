@@ -3,6 +3,12 @@
  * 
  * Supports month-over-month comparison data for business dashboard
  * All earnings values are in cents for consistency with pricing system
+ * 
+ * Earnings calculation is revenue-based:
+ * - Includes all bookings with netRevenue > 0 (finalPrice - refundAmount)
+ * - Platform fee rate per booking (from business settings, default 0.20)
+ * - Business earnings = netRevenue * (1 - platformFeeRate)
+ * - System cut = netRevenue * platformFeeRate
  */
 
 /**
@@ -52,6 +58,10 @@ export interface EarningsBooking {
   status: string;
   /** Final price paid for the booking (in cents) */
   finalPrice: number;
+  /** Refund amount (in cents, 0 if no refund) */
+  refundAmount?: number;
+  /** Platform fee rate (0.0 to 1.0, e.g., 0.20 = 20%) */
+  platformFeeRate: number;
   userSnapshot?: any;
   classInstanceSnapshot?: any;
   createdAt: number;
@@ -63,25 +73,25 @@ export interface EarningsBooking {
  */
 export interface MonthlyEarningsWithComparison {
   // Current month earnings data
-  /** Total gross earnings before system cut (in cents) */
+  /** Total gross earnings (netRevenue) before platform fee (in cents) */
   totalGrossEarnings: number;
-  /** Net earnings after 20% system cut (in cents) */
+  /** Net earnings after platform fee (in cents) - what business receives */
   totalNetEarnings: number;
-  /** System cut amount (in cents) */
+  /** Platform fee amount (in cents) */
   totalSystemCut: number;
-  /** Total number of completed bookings */
+  /** Total number of bookings with revenue (netRevenue > 0) */
   totalBookings: number;
-  
+
   // All-time earnings data
   /** All-time net earnings from business creation to selected month (in cents) */
   allTimeNetEarnings: number;
   /** All-time gross earnings from business creation to selected month (in cents) */
   allTimeGrossEarnings: number;
-  
+
   // Month-over-month comparison data
   /** Comparison metrics for dashboard indicators */
   comparison: EarningsComparisonData;
-  
+
   // Context data for analysis
   /** Previous month context */
   previousMonth: MonthlyContext;
@@ -90,7 +100,7 @@ export interface MonthlyEarningsWithComparison {
     month: string;
     avgPrice: number;
   };
-  
+
   // Detailed booking data
   /** List of bookings for CSV export and table display */
   bookings: EarningsBooking[];

@@ -466,9 +466,12 @@ export const bookingsFields = {
 
   // Simple pricing tracking (links to credit ledger)
   originalPrice: v.number(),           // Template price in cents (before any discount)  
-  finalPrice: v.number(),             // What they actually paid in cents
-  creditsUsed: v.number(),            // Credits spent (finalPrice / 100)
+  finalPrice: v.number(),             // What they actually paid in cents (creditsUsed = finalPrice / 100)
   creditTransactionId: v.string(),    // Links to creditLedger entries
+
+  // Platform fee and refund tracking
+  platformFeeRate: v.number(),        // Platform fee rate (0.0 to 1.0, e.g., 0.20 = 20%)
+  refundAmount: v.optional(v.number()), // Refund amount in cents (0 if no refund, undefined until refund processed)
 
   // What discount was actually applied at booking time
   appliedDiscount: v.optional(v.object({

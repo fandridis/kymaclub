@@ -133,15 +133,16 @@ triggers.register("bookings", async (ctx, change) => {
                 userId: newDoc.userId,
                 classInstanceId: newDoc.classInstanceId,
                 businessId: newDoc.businessId,
-                creditsPaid: newDoc.creditsUsed,
+                creditsPaid: newDoc.finalPrice / 100, // Calculate from finalPrice (cents / 100)
             },
         });
     }
 
-    const becameCancelled = newDoc?.status === 'cancelled_by_consumer' || newDoc?.status === 'cancelled_by_business';
+    const wasCancelled = oldDoc?.status === 'cancelled_by_consumer' || oldDoc?.status === 'cancelled_by_business';
+    const becameCancelled = !wasCancelled && (newDoc?.status === 'cancelled_by_consumer' || newDoc?.status === 'cancelled_by_business');
     const becameRebookable = oldDoc?.status !== 'cancelled_by_business_rebookable' && newDoc?.status === 'cancelled_by_business_rebookable';
 
-    if (operation === 'update' && (becameCancelled)) {
+    if (operation === 'update' && becameCancelled) {
         if (newDoc.cancelledBy === "consumer") {
             await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleUserCancelledBookingEvent, {
                 payload: {
@@ -149,7 +150,7 @@ triggers.register("bookings", async (ctx, change) => {
                     userId: newDoc.userId,
                     classInstanceId: newDoc.classInstanceId,
                     businessId: newDoc.businessId,
-                    creditsPaid: newDoc.creditsUsed,
+                    creditsPaid: newDoc.finalPrice / 100, // Calculate from finalPrice (cents / 100)
                 },
             });
         }
@@ -160,7 +161,7 @@ triggers.register("bookings", async (ctx, change) => {
                     userId: newDoc.userId,
                     classInstanceId: newDoc.classInstanceId,
                     businessId: newDoc.businessId,
-                    creditsPaid: newDoc.creditsUsed,
+                    creditsPaid: newDoc.finalPrice / 100, // Calculate from finalPrice (cents / 100)
                 },
             });
         }
@@ -173,7 +174,7 @@ triggers.register("bookings", async (ctx, change) => {
                 userId: newDoc.userId,
                 classInstanceId: newDoc.classInstanceId,
                 businessId: newDoc.businessId,
-                creditsPaid: newDoc.creditsUsed,
+                creditsPaid: newDoc.finalPrice / 100, // Calculate from finalPrice (cents / 100)
             },
         });
     }

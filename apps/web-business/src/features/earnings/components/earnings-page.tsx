@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Download, TrendingUp, TrendingDown, Users, DollarSign } from 'lucide-react'
 import { useEarnings } from '../hooks/use-earnings'
 import { useTypedTranslation } from '@/lib/typed'
+import { getBookingFinalPrice, getBookingEarnings } from '@repo/utils/bookings'
 
 export default function EarningsPage() {
     const { t } = useTypedTranslation();
@@ -24,9 +25,6 @@ export default function EarningsPage() {
     const { earningsData, isLoading, hasData } = useEarnings({
         month: selectedMonth
     })
-
-    // System cut rate constant (20% as per business rules)
-    const systemCutRate = 0.20
 
     // Generate month options for the dropdown (current month + 11 previous months)
     const monthOptions = Array.from({ length: 12 }, (_, i) => {
@@ -44,11 +42,18 @@ export default function EarningsPage() {
         if (!earningsData?.bookings) return
 
         const csvContent = [
-            [t('routes.earnings.tableDate'), t('routes.earnings.tableClassName'), t('routes.earnings.tableConsumer'), t('routes.earnings.tableGrossPrice'), t('routes.earnings.tableSystemCut'), t('routes.earnings.tableYourEarnings'), t('routes.earnings.tableStatus')],
+            [t('routes.earnings.tableDate'), t('routes.earnings.tableClassName'), t('routes.earnings.tableConsumer'), t('routes.earnings.tablePrice'), t('routes.earnings.tablePlatformFee'), t('routes.earnings.tableEarnings'), t('routes.earnings.tableStatus')],
             ...earningsData.bookings.map((booking) => {
-                const grossPrice = booking.finalPrice / 100
-                const systemCut = grossPrice * systemCutRate
-                const netPrice = grossPrice - systemCut
+                // Calculate actual price paid (finalPrice - refundAmount)
+                const pricePaid = getBookingFinalPrice(booking) / 100;
+
+                // Get platform fee rate (default to 20% for legacy bookings)
+                const platformFeeRate = booking.platformFeeRate ?? 0.20;
+                const platformFeePercent = platformFeeRate * 100;
+
+                // Calculate earnings using utility function
+                const earnings = getBookingEarnings(booking) / 100;
+
                 const dateTime = new Date(booking.classInstanceSnapshot?.startTime || 0)
                 const formattedDate = `${dateTime.toLocaleDateString('en-US', {
                     month: 'short',
@@ -62,16 +67,16 @@ export default function EarningsPage() {
                     formattedDate,
                     booking.classInstanceSnapshot?.name || '',
                     booking.userSnapshot?.name || booking.userSnapshot?.email || '',
-                    `€${grossPrice.toFixed(2)}`,
-                    `€${systemCut.toFixed(2)}`,
-                    `€${netPrice.toFixed(2)}`,
+                    `€${pricePaid.toFixed(2)}`,
+                    `${platformFeePercent.toFixed(0)}%`,
+                    `€${earnings.toFixed(2)}`,
                     booking.status,
                 ]
             }),
             // Add totals row
             ['', '', '',
                 `€${(earningsData.totalGrossEarnings / 100).toFixed(2)}`,
-                `€${(earningsData.totalSystemCut / 100).toFixed(2)}`,
+                '—',
                 `€${(earningsData.totalNetEarnings / 100).toFixed(2)}`,
                 'TOTAL'
             ]
@@ -241,16 +246,24 @@ export default function EarningsPage() {
                                         <th className="text-left py-3 px-4 font-medium text-foreground">{t('routes.earnings.tableDate')}</th>
                                         <th className="text-left py-3 px-4 font-medium text-foreground">{t('routes.earnings.tableClassName')}</th>
                                         <th className="text-left py-3 px-4 font-medium text-foreground">{t('routes.earnings.tableConsumer')}</th>
-                                        <th className="text-right py-3 px-4 font-medium text-muted-foreground">{t('routes.earnings.tableGrossPrice')}</th>
-                                        <th className="text-right py-3 px-4 font-medium text-primary">{t('routes.earnings.tableYourEarnings')}</th>
+                                        <th className="text-right py-3 px-4 font-medium text-muted-foreground">{t('routes.earnings.tablePrice')}</th>
+                                        <th className="text-right py-3 px-4 font-medium text-muted-foreground">{t('routes.earnings.tablePlatformFee')}</th>
+                                        <th className="text-right py-3 px-4 font-medium text-primary">{t('routes.earnings.tableEarnings')}</th>
                                         <th className="text-center py-3 px-4 font-medium text-foreground">{t('routes.earnings.tableStatus')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {earningsData.bookings.map((booking) => {
-                                        const grossPrice = booking.finalPrice / 100
-                                        const systemCutRate = 0.20 // 20% system cut - matches backend logic
-                                        const netPrice = grossPrice * (1 - systemCutRate)
+                                        // Calculate actual price paid (finalPrice - refundAmount)
+                                        const pricePaid = getBookingFinalPrice(booking) / 100;
+
+                                        // Get platform fee rate (default to 20% for legacy bookings)
+                                        const platformFeeRate = booking.platformFeeRate ?? 0.20;
+                                        const platformFeePercent = platformFeeRate * 100;
+
+                                        // Calculate earnings using utility function
+                                        const earnings = getBookingEarnings(booking) / 100;
+
                                         return (
                                             <tr key={booking._id} className="border-b border-border hover:bg-muted/50 transition-colors">
                                                 <td className="py-3 px-4 text-sm text-muted-foreground">
@@ -271,10 +284,13 @@ export default function EarningsPage() {
                                                     {booking.userSnapshot?.name || booking.userSnapshot?.email || 'Unknown User'}
                                                 </td>
                                                 <td className="py-3 px-4 text-sm text-muted-foreground text-right">
-                                                    €{grossPrice.toFixed(2)}
+                                                    €{pricePaid.toFixed(2)}
+                                                </td>
+                                                <td className="py-3 px-4 text-sm text-muted-foreground text-right">
+                                                    {platformFeePercent.toFixed(0)}%
                                                 </td>
                                                 <td className="py-3 px-4 text-sm font-semibold text-primary text-right">
-                                                    €{netPrice.toFixed(2)}
+                                                    €{earnings.toFixed(2)}
                                                 </td>
                                                 <td className="py-3 px-4 text-center">
                                                     <Badge
@@ -290,11 +306,8 @@ export default function EarningsPage() {
                                 </tbody>
                                 <tfoot>
                                     <tr className="border-t-2 border-primary bg-primary/5">
-                                        <td colSpan={3} className="py-4 px-4 text-sm font-semibold text-foreground">
+                                        <td colSpan={5} className="py-4 px-4 text-sm font-semibold text-foreground">
                                             {t('routes.earnings.totalMonthlyEarnings')}
-                                        </td>
-                                        <td className="py-4 px-4 text-sm font-medium text-muted-foreground text-right">
-                                            €{((earningsData.totalGrossEarnings || 0) / 100).toFixed(2)}
                                         </td>
                                         <td className="py-4 px-4 text-lg font-bold text-primary text-right">
                                             €{((earningsData.totalNetEarnings || 0) / 100).toFixed(2)}

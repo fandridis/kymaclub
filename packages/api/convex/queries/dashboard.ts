@@ -45,8 +45,8 @@ async function getMonthEarningsData(
     const monthStart = new Date(year, monthNum - 1, 1).getTime();
     const monthEnd = new Date(year, monthNum, 1).getTime();
 
-    // Query completed bookings for the business within the month
-    const completedBookings = await ctx.db
+    // Query all bookings for the business within the month (not just completed)
+    const allBookings = await ctx.db
         .query("bookings")
         .withIndex("by_business_created", (q: any) =>
             q.eq("businessId", businessId)
@@ -54,23 +54,44 @@ async function getMonthEarningsData(
         )
         .filter((q: any) => q.and(
             q.lt(q.field("createdAt"), monthEnd),
-            q.eq(q.field("status"), "completed"),
             q.neq(q.field("deleted"), true)
         ))
         .order("desc")
         .collect();
 
-    // Calculate earnings with proper business logic
-    const totalGrossEarnings = completedBookings.reduce(
-        (sum: number, booking: any) => sum + booking.finalPrice,
-        0
-    );
+    // Calculate earnings using reconciled bookings only (same logic as earnings.ts)
+    let totalGrossEarnings = 0;
+    let totalNetEarnings = 0;
+    let totalSystemCut = 0;
+    let totalBookings = 0;
 
-    // Apply 20% system cut
-    const systemCutRate = 0.20;
-    const totalSystemCut = Math.round(totalGrossEarnings * systemCutRate);
-    const totalNetEarnings = totalGrossEarnings - totalSystemCut;
-    const totalBookings = completedBookings.length;
+    for (const booking of allBookings) {
+        const refundAmount = booking.refundAmount ?? 0;
+        const netRevenue = booking.finalPrice - refundAmount;
+        const status = booking.status;
+
+        // Only include reconciled bookings (completed, no_show, or cancelled with revenue)
+        // Excludes pending bookings (not yet earned)
+        const isReconciled = 
+            status === "completed" || 
+            status === "no_show" || 
+            (status === "cancelled_by_consumer" && netRevenue > 0) ||
+            (status === "cancelled_by_business" && netRevenue > 0);
+
+        if (isReconciled) {
+            // Get platform fee rate (default to 0.20 for legacy bookings)
+            const platformFeeRate = booking.platformFeeRate ?? 0.20;
+
+            // Calculate business earnings and system cut for this booking
+            const businessEarnings = Math.round(netRevenue * (1 - platformFeeRate));
+            const systemCut = Math.round(netRevenue * platformFeeRate);
+
+            totalGrossEarnings += netRevenue;
+            totalNetEarnings += businessEarnings;
+            totalSystemCut += systemCut;
+            totalBookings++;
+        }
+    }
 
     return {
         totalGrossEarnings,
@@ -243,17 +264,14 @@ export const getDashboardMetrics = query({
             getMonthEarningsData(ctx, args.businessId,
                 `${now.getFullYear()}-${String(now.getMonth()).padStart(2, '0')}`),
 
-            // All-time earnings (from business creation to now)
+            // All-time earnings (from business creation to now) - all bookings with revenue
             ctx.db
                 .query("bookings")
                 .withIndex("by_business_created", (q) =>
                     q.eq("businessId", args.businessId)
                         .gte("createdAt", business.createdAt)
                 )
-                .filter((q) => q.and(
-                    q.eq(q.field("status"), "completed"),
-                    q.neq(q.field("deleted"), true)
-                ))
+                .filter((q) => q.neq(q.field("deleted"), true))
                 .collect(),
 
             // Latest 100 completed class instances for attendance rate
@@ -323,13 +341,22 @@ export const getDashboardMetrics = query({
 
         const attendanceChange = calculatePercentageChange(latestAttendanceRate, previousAttendanceRate);
 
-        // Calculate all-time earnings
-        const allTimeGrossEarnings = allTimeBookings.reduce(
-            (sum, booking) => sum + booking.finalPrice,
-            0
-        );
-        const systemCutRate = 0.20;
-        const allTimeNetEarnings = allTimeGrossEarnings - Math.round(allTimeGrossEarnings * systemCutRate);
+        // Calculate all-time earnings using revenue-based calculation
+        let allTimeGrossEarnings = 0;
+        let allTimeNetEarnings = 0;
+
+        for (const booking of allTimeBookings) {
+            const refundAmount = booking.refundAmount ?? 0;
+            const netRevenue = booking.finalPrice - refundAmount;
+
+            if (netRevenue > 0) {
+                const platformFeeRate = booking.platformFeeRate ?? 0.20;
+                const businessEarnings = Math.round(netRevenue * (1 - platformFeeRate));
+
+                allTimeGrossEarnings += netRevenue;
+                allTimeNetEarnings += businessEarnings;
+            }
+        }
 
         return {
             checkInsToday: {

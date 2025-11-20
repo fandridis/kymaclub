@@ -466,6 +466,19 @@ export const bookingService = {
             });
         }
 
+        // Fetch business to get platform fee rate
+        const business = await ctx.db.get(instance.businessId);
+        if (!business) {
+            throw new ConvexError({
+                message: "Business not found",
+                field: "businessId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND,
+            });
+        }
+
+        // Get platform fee rate from business settings, default to 0.20 (20%)
+        const platformFeeRate = business.feeStructure.baseFeeRate ?? 0.20;
+
         // Enforce booking window: current time must be between [start - maxHours, start - minHours]
         const effectiveBookingWindow = instance.bookingWindow ?? template.bookingWindow;
         const timeUntilStartMs = instance.startTime - now;
@@ -567,9 +580,10 @@ export const bookingService = {
             classInstanceId: args.classInstanceId,
             status: "pending",
             originalPrice,  // Now stored in cents
-            finalPrice,     // Now stored in cents
-            creditsUsed,    // Credits calculated from finalPrice (cents / 100)
+            finalPrice,     // Now stored in cents (creditsUsed = finalPrice / 100)
             creditTransactionId: "", // Will be updated after credit transaction
+            platformFeeRate, // Platform fee rate from business settings (default 0.20)
+            refundAmount: undefined, // Will be set on cancellation if applicable
             appliedDiscount: appliedDiscount || undefined,
             // Populate user metadata for business owners to see customer details
             userSnapshot: {
@@ -804,12 +818,34 @@ export const bookingService = {
         // Late cancellation check - bypassed if free cancellation is active
         const isLateCancellation = hasFreeCancel ? false : now > cancellationCutoff;
 
-        // Update booking status
+        // 💰 REFUND CALCULATION AND PROCESSING
+        // For business cancellations, always full refund
+        // For consumer cancellations, check if late (50% refund) or early (100% refund)
+        let refundAmountInCents: number;
+        let refundAmountInCredits: number;
+
+        if (args.cancelledBy === "business") {
+            // Business cancellations: full refund
+            refundAmountInCents = booking.finalPrice;
+            refundAmountInCredits = centsToCredits(booking.finalPrice);
+        } else {
+            // Consumer cancellations: late = 50%, early = 100%
+            const refundMultiplier = isLateCancellation ? 0.5 : 1;
+            // Calculate credits from finalPrice, then apply refund multiplier
+            // Always round up to nearest integer to ensure credits stay whole numbers
+            const creditsUsed = centsToCredits(booking.finalPrice);
+            refundAmountInCredits = Math.ceil(creditsUsed * refundMultiplier);
+            // Convert to cents for storage (credits * 100)
+            refundAmountInCents = refundAmountInCredits * 100;
+        }
+
+        // Update booking status and refund amount in a single patch
         await ctx.db.patch(args.bookingId, {
             status: args.cancelledBy === "consumer" ? "cancelled_by_consumer" : "cancelled_by_business",
             cancelledAt: now,
             cancelledBy: args.cancelledBy,
             cancelReason: args.reason,
+            refundAmount: refundAmountInCents,
             updatedAt: now,
             updatedBy: user._id,
         });
@@ -821,22 +857,15 @@ export const bookingService = {
             updatedBy: user._id,
         });
 
-
-        // 💰 REFUND CALCULATION AND PROCESSING
-        const refundMultiplier = isLateCancellation ? 0.5 : 1;
-        // booking.creditsUsed is already in credits, so we can use it directly for refund
-        // Always round up to nearest integer to ensure credits stay whole numbers
-        const refundAmount = Math.ceil(booking.creditsUsed * refundMultiplier); // 50% refund if late, full refund otherwise
-
-        if (refundAmount > 0) {
-
+        if (refundAmountInCredits > 0) {
             // Process refund through credit service for proper transaction tracking
-            const refundReason = isLateCancellation ? "user_cancellation" : "user_cancellation";
-            const refundDescription = `Refund for cancelled booking: ${template.name} (${refundMultiplier * 100}% refund)`;
+            const refundReason = args.cancelledBy === "business" ? "business_cancellation" : "user_cancellation";
+            const refundPercentage = args.cancelledBy === "business" ? 100 : (isLateCancellation ? 50 : 100);
+            const refundDescription = `Refund for cancelled booking: ${template.name} (${refundPercentage}% refund)`;
 
             const { newBalance } = await creditService.addCredits(ctx, {
                 userId: booking.userId,
-                amount: refundAmount,
+                amount: refundAmountInCredits,
                 type: "refund",
                 reason: refundReason,
                 description: refundDescription,
@@ -846,9 +875,6 @@ export const bookingService = {
                 classInstanceId: booking.classInstanceId,
                 bookingId: booking._id,
             });
-
-        } else {
-
         }
 
 

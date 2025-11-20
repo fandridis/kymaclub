@@ -84,8 +84,8 @@ export const markNoShows = internalMutation({
             if (now > noShowCutoff) {
                 await ctx.db.patch(booking._id, {
                     status: "no_show",
+                    refundAmount: 0, // No refund for no-shows (standard policy)
                     updatedAt: now,
-                    // Note: No refund for no-shows (standard policy)
                 });
 
                 // Decrease booked count since they didn't attend

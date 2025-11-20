@@ -66,6 +66,10 @@ export async function createTestClassTemplate(
         tags?: string[];
         color?: string;
         primaryCategory?: string;
+        bookingWindow?: {
+            minHours?: number;
+            maxHours?: number;
+        };
     } = {}
 ) {
     return await t.mutation(internal.testFunctions.createTestClassTemplate, {

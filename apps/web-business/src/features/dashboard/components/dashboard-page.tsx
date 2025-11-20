@@ -73,6 +73,7 @@ export default function DashboardPage() {
             helper: t('routes.dashboard.vsYesterday'),
             icon: <CalendarCheck />,
             iconColor: "emerald" as const,
+            borderColor: "emerald" as const,
         },
         {
             title: t('routes.dashboard.monthlyVisits'),
@@ -82,6 +83,7 @@ export default function DashboardPage() {
             helper: t('routes.dashboard.vsLastMonth'),
             icon: <LineChart />,
             iconColor: "sky" as const,
+            borderColor: "sky" as const,
         },
         {
             title: t('routes.dashboard.monthlyRevenue'),
@@ -91,6 +93,7 @@ export default function DashboardPage() {
             helper: t('routes.dashboard.vsLastMonth'),
             icon: <CreditCard />,
             iconColor: "amber" as const,
+            borderColor: "amber" as const,
         },
         {
             title: t('routes.dashboard.attendanceRate'),
@@ -100,6 +103,7 @@ export default function DashboardPage() {
             helper: t('routes.dashboard.last100Classes'),
             icon: <Activity />,
             iconColor: "sky" as const,
+            borderColor: "rose" as const,
         },
     ] : [];
 
@@ -146,6 +150,7 @@ export default function DashboardPage() {
                         helper={stat.helper}
                         icon={stat.icon}
                         iconColor={stat.iconColor}
+                        borderColor={stat.borderColor}
                     />
                 ))}
             </div>

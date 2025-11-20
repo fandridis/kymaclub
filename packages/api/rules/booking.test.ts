@@ -27,8 +27,9 @@ const createMockBooking = (overrides: Partial<Doc<"bookings">> = {}): Doc<"booki
   status: "pending",
   originalPrice: 2000,
   finalPrice: 2000,
-  creditsUsed: 40,
   creditTransactionId: "txn123",
+  platformFeeRate: 0.2,
+  refundAmount: 0,
   userSnapshot: {
     name: "Test User",
     email: "test@example.com"

@@ -212,7 +212,7 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
                 {/* Images Section */}
                 <div className="space-y-2">
                     <h4 className="text-sm font-medium">{t('routes.templates.templateCard.templateImages')} ({imageStorageIds.length}/4)</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 gap-2">
                         {imageStorageIds.length > 0 ? (
                             imageStorageIds.map((sid) => {
                                 const url = storageIdToUrl.get(sid as unknown as string) ?? null;

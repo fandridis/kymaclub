@@ -13,7 +13,9 @@ import { mutationWithTriggers } from "../triggers";
 
 export const createClassTemplateArgs = v.object({
     template: v.object({
-        ...omit(classTemplatesFields, ['businessId', 'createdAt', 'createdBy', 'isActive'])
+        ...omit(classTemplatesFields, ['businessId', 'createdAt', 'createdBy', 'isActive']),
+        // Make cancellationWindowHours optional with default of 12 hours
+        cancellationWindowHours: v.optional(v.number()),
     })
 });
 export type CreateClassTemplateArgs = Infer<typeof createClassTemplateArgs>;

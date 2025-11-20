@@ -10,6 +10,7 @@ interface MinimalStatCardProps {
     helper: string
     icon: React.ReactElement
     iconColor?: "emerald" | "sky" | "amber" | "rose"
+    borderColor?: "emerald" | "sky" | "amber" | "rose"
     className?: string
 }
 
@@ -21,6 +22,7 @@ export function MinimalStatCard({
     helper,
     icon,
     iconColor = "sky",
+    borderColor,
     className
 }: MinimalStatCardProps) {
     const changeToneClass = changeTone === "negative" ? "text-rose-600" : "text-emerald-600"
@@ -33,9 +35,26 @@ export function MinimalStatCard({
         rose: "bg-rose-100 text-rose-600",
     }
 
+    // Border colors
+    const borderClasses = {
+        emerald: "border-emerald-200",
+        sky: "border-sky-200",
+        amber: "border-amber-200",
+        rose: "border-rose-200",
+    }
+
+    // Metric text colors
+    const metricTextClasses = {
+        emerald: "text-emerald-950",
+        sky: "text-sky-950",
+        amber: "text-amber-950",
+        rose: "text-rose-950",
+    }
+
     return (
         <div className={cn(
-            "p-6 rounded-2xl border bg-card border-border shadow-sm hover:shadow-md transition-shadow",
+            "p-6 rounded-2xl border bg-card shadow-sm hover:shadow-md transition-shadow",
+            borderColor ? borderClasses[borderColor] : "border-border",
             className
         )}>
             {/* Title/Label - Most Prominent */}
@@ -58,7 +77,10 @@ export function MinimalStatCard({
 
             {/* Value - Large but Secondary */}
             <div className="mb-4">
-                <div className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-2">
+                <div className={cn(
+                    "text-3xl md:text-4xl font-bold tracking-tight mb-2",
+                    borderColor ? metricTextClasses[borderColor] : "text-foreground"
+                )}>
                     {value}
                 </div>
                 <div className="text-xs text-muted-foreground font-medium">

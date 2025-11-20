@@ -792,7 +792,7 @@ export function ClassDetailsModalScreen() {
                                                     )}
                                                 </View>
                                                 <Text style={styles.bookingHistoryCredits}>
-                                                    {booking.creditsUsed} credits
+                                                    {booking.finalPrice / 100} credits
                                                 </Text>
                                             </View>
                                         ))}

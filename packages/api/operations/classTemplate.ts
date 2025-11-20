@@ -29,7 +29,10 @@ const prepareCreateTemplate = (args: CreateClassTemplateArgs): CreateClassTempla
         ...(t.description !== undefined && { description: throwIfError(classValidations.validateDescription(t.description), 'description') }),
         ...(t.tags !== undefined && { tags: throwIfError(classValidations.validateTags(t.tags), 'tags') }),
         ...(t.bookingWindow !== undefined && { bookingWindow: throwIfError(classValidations.validateBookingWindow(t.bookingWindow), 'bookingWindow') }),
-        ...(t.cancellationWindowHours !== undefined && { cancellationWindowHours: throwIfError(classValidations.validateCancellationWindowHours(t.cancellationWindowHours), 'cancellationWindowHours') }),
+        // Default cancellationWindowHours to 12 hours if not provided
+        cancellationWindowHours: t.cancellationWindowHours !== undefined
+            ? throwIfError(classValidations.validateCancellationWindowHours(t.cancellationWindowHours), 'cancellationWindowHours')
+            : 12,
         ...(t.waitlistCapacity !== undefined && { waitlistCapacity: throwIfError(classValidations.validateWaitlistCapacity(t.waitlistCapacity!), 'waitlistCapacity') }),
         ...(t.discountRules !== undefined && { discountRules: throwIfError(classValidations.validateDiscountRules(t.discountRules), 'discountRules') }),
         ...(t.primaryCategory !== undefined && { primaryCategory: throwIfError(classValidations.validatePrimaryCategory(t.primaryCategory), 'primaryCategory') }),

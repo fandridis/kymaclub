@@ -17,7 +17,7 @@ function calculatePercentageChange(current: number, previous: number): Compariso
     // If previous is 0 but current has value, it's a 100% increase
     return { change: 100, isPositive: true };
   }
-  
+
   const percentageChange = ((current - previous) / previous) * 100;
   return {
     change: Math.round(percentageChange * 10) / 10, // Round to 1 decimal place
@@ -51,7 +51,7 @@ async function getMonthEarningsData(
   // Parse month format
   const monthRegex = /^(\d{4})-(\d{2})$/;
   const monthMatch = month.match(monthRegex);
-  
+
   if (!monthMatch) {
     return {
       totalGrossEarnings: 0,
@@ -64,7 +64,7 @@ async function getMonthEarningsData(
 
   const year = parseInt(monthMatch[1]);
   const monthNum = parseInt(monthMatch[2]);
-  
+
   if (monthNum < 1 || monthNum > 12) {
     return {
       totalGrossEarnings: 0,
@@ -78,9 +78,9 @@ async function getMonthEarningsData(
   // Calculate month start and end timestamps (UTC)
   const monthStart = new Date(year, monthNum - 1, 1).getTime();
   const monthEnd = new Date(year, monthNum, 1).getTime();
-  
-  // Query completed bookings for the business within the month
-  const completedBookings = await ctx.db
+
+  // Query all bookings for the business within the month (not just completed)
+  const allBookings = await ctx.db
     .query("bookings")
     .withIndex("by_business_created", (q: any) =>
       q.eq("businessId", businessId)
@@ -88,30 +88,58 @@ async function getMonthEarningsData(
     )
     .filter((q: any) => q.and(
       q.lt(q.field("createdAt"), monthEnd),
-      q.eq(q.field("status"), "completed"),
       q.neq(q.field("deleted"), true)
     ))
     .order("desc")
     .collect();
 
-  // Calculate earnings with proper business logic
-  const totalGrossEarnings = completedBookings.reduce(
-    (sum: number, booking: any) => sum + booking.finalPrice, 
-    0
-  );
+  // Filter to only include reconciled bookings (completed, no_show, or cancelled with revenue)
+  // This excludes pending bookings (unearned revenue) per accrual accounting principles
+  // Calculate earnings per booking using platformFeeRate
+  const bookingsWithRevenue: any[] = [];
+  let totalGrossEarnings = 0;
+  let totalNetEarnings = 0;
+  let totalSystemCut = 0;
 
-  // Apply 20% system cut
-  const systemCutRate = 0.20;
-  const totalSystemCut = Math.round(totalGrossEarnings * systemCutRate);
-  const totalNetEarnings = totalGrossEarnings - totalSystemCut;
-  const totalBookings = completedBookings.length;
+  for (const booking of allBookings) {
+    const refundAmount = booking.refundAmount ?? 0;
+    const netRevenue = booking.finalPrice - refundAmount;
+    const status = booking.status;
+
+    // Check if booking is reconciled (should be included in earnings)
+    // - completed: always include (service delivered)
+    // - no_show: always include (service delivered, customer didn't attend)
+    // - cancelled_by_consumer: only include if has revenue (late cancellation)
+    // - cancelled_by_business: only include if has revenue (fees apply)
+    // - pending: exclude (not yet earned, can still be cancelled)
+    const isReconciled =
+      status === "completed" ||
+      status === "no_show" ||
+      (status === "cancelled_by_consumer" && netRevenue > 0) ||
+      (status === "cancelled_by_business" && netRevenue > 0);
+
+    if (isReconciled) {
+      // Get platform fee rate (default to 0.20 for legacy bookings)
+      const platformFeeRate = booking.platformFeeRate ?? 0.20;
+
+      // Calculate business earnings and system cut for this booking
+      const businessEarnings = Math.round(netRevenue * (1 - platformFeeRate));
+      const systemCut = Math.round(netRevenue * platformFeeRate);
+
+      totalGrossEarnings += netRevenue;
+      totalNetEarnings += businessEarnings;
+      totalSystemCut += systemCut;
+
+      bookingsWithRevenue.push(booking);
+    }
+  }
 
   return {
     totalGrossEarnings,
     totalNetEarnings,
     totalSystemCut,
-    totalBookings,
-    bookings: completedBookings
+    totalBookings: bookingsWithRevenue.length,
+    bookings: bookingsWithRevenue
   };
 }
 
@@ -119,18 +147,28 @@ async function getMonthEarningsData(
  * Comprehensive earnings query for business dashboard with month-over-month comparison
  * 
  * Business Rules Applied:
- * - CR-003: 20% system cut on all transactions
- * - Only completed bookings count toward earnings
+ * - Only includes reconciled bookings (accrual accounting principle):
+ *   - Completed bookings: 100% revenue (service delivered, no refund)
+ *   - No-show bookings: 100% revenue (service delivered, customer didn't attend, no refund)
+ *   - Late cancellations: 50% revenue (50% refund, partial revenue retained)
+ *   - Early cancellations: 0% revenue (100% refund, excluded from earnings)
+ *   - Business cancellations with revenue: included (fees apply)
+ *   - Business cancellations with full refund: excluded (0% revenue)
+ *   - Pending bookings: excluded (not yet earned, can still be cancelled)
+ * - Platform fee rate per booking (from business settings, default 0.20)
+ * - Net revenue = finalPrice - refundAmount
+ * - Business earnings = netRevenue * (1 - platformFeeRate)
+ * - System cut = netRevenue * platformFeeRate
  * - Supports month filtering in YYYY-MM format
  * - Efficient queries using database indexes
  * 
  * Returns earnings data with proper business calculations:
- * - Gross earnings: Sum of all finalPrice for completed bookings (in cents)
- * - Net earnings: Gross * 0.8 (what business actually receives, in cents)
- * - System cut: Gross * 0.2 (platform fee, in cents)
- * - Detailed booking list for CSV export and table display
+ * - Gross earnings: Sum of netRevenue for reconciled bookings (in cents)
+ * - Net earnings: Sum of businessEarnings per booking (what business actually receives, in cents)
+ * - System cut: Sum of platform fees per booking (in cents)
+ * - Detailed booking list for CSV export and table display (only reconciled bookings)
  * - Month-over-month comparison data for dashboard indicators
- * - All-time earnings total from business creation to selected month
+ * - All-time earnings total from business creation to selected month (only reconciled bookings)
  */
 export const getMonthlyEarnings = query({
   args: {
@@ -140,7 +178,7 @@ export const getMonthlyEarnings = query({
   handler: async (ctx, args) => {
     // Authenticate and validate business access
     const user = await getAuthenticatedUserOrThrow(ctx);
-    
+
     // Validate user belongs to the requested business
     if (user.businessId !== args.businessId) {
       throw new ConvexError({
@@ -152,7 +190,7 @@ export const getMonthlyEarnings = query({
     // Parse and validate month format
     const monthRegex = /^(\d{4})-(\d{2})$/;
     const monthMatch = args.month.match(monthRegex);
-    
+
     if (!monthMatch) {
       throw new ConvexError({
         message: "Invalid month format. Use YYYY-MM (e.g., '2024-01')",
@@ -163,7 +201,7 @@ export const getMonthlyEarnings = query({
 
     const year = parseInt(monthMatch[1]);
     const month = parseInt(monthMatch[2]);
-    
+
     // Validate month range
     if (month < 1 || month > 12) {
       throw new ConvexError({
@@ -175,15 +213,15 @@ export const getMonthlyEarnings = query({
 
     // Get current month earnings data
     const currentMonthData = await getMonthEarningsData(ctx, args.businessId, args.month);
-    
+
     // Calculate previous month string
     const prevMonth = month === 1 ? 12 : month - 1;
     const prevYear = month === 1 ? year - 1 : year;
     const previousMonthString = `${prevYear}-${prevMonth.toString().padStart(2, '0')}`;
-    
+
     // Get previous month earnings data for comparison
     const previousMonthData = await getMonthEarningsData(ctx, args.businessId, previousMonthString);
-    
+
     // Get business creation date for all-time earnings calculation
     const business = await ctx.db.get(args.businessId);
     if (!business) {
@@ -192,11 +230,11 @@ export const getMonthlyEarnings = query({
         code: "NOT_FOUND"
       });
     }
-    
+
     // Calculate all-time earnings (from business creation to end of selected month)
     const allTimeStart = business.createdAt;
     const selectedMonthEnd = new Date(year, month, 1).getTime(); // Start of next month
-    
+
     const allTimeBookings = await ctx.db
       .query("bookings")
       .withIndex("by_business_created", (q) =>
@@ -205,27 +243,44 @@ export const getMonthlyEarnings = query({
       )
       .filter((q) => q.and(
         q.lt(q.field("createdAt"), selectedMonthEnd),
-        q.eq(q.field("status"), "completed"),
         q.neq(q.field("deleted"), true)
       ))
       .collect();
-    
-    const allTimeGrossEarnings = allTimeBookings.reduce(
-      (sum, booking) => sum + booking.finalPrice, 
-      0
-    );
-    const systemCutRate = 0.20;
-    const allTimeNetEarnings = allTimeGrossEarnings - Math.round(allTimeGrossEarnings * systemCutRate);
-    
+
+    // Calculate all-time earnings using reconciled bookings only
+    let allTimeGrossEarnings = 0;
+    let allTimeNetEarnings = 0;
+
+    for (const booking of allTimeBookings) {
+      const refundAmount = booking.refundAmount ?? 0;
+      const netRevenue = booking.finalPrice - refundAmount;
+      const status = booking.status;
+
+      // Only include reconciled bookings (same logic as getMonthEarningsData)
+      const isReconciled =
+        status === "completed" ||
+        status === "no_show" ||
+        (status === "cancelled_by_consumer" && netRevenue > 0) ||
+        (status === "cancelled_by_business" && netRevenue > 0);
+
+      if (isReconciled) {
+        const platformFeeRate = booking.platformFeeRate ?? 0.20;
+        const businessEarnings = Math.round(netRevenue * (1 - platformFeeRate));
+
+        allTimeGrossEarnings += netRevenue;
+        allTimeNetEarnings += businessEarnings;
+      }
+    }
+
     // Calculate comparison metrics
     const currentAvgPrice = calculateAveragePrice(currentMonthData.totalNetEarnings, currentMonthData.totalBookings);
     const previousAvgPrice = calculateAveragePrice(previousMonthData.totalNetEarnings, previousMonthData.totalBookings);
-    
+
     // Calculate percentage changes for comparison indicators
     const bookingsComparison = calculatePercentageChange(currentMonthData.totalBookings, previousMonthData.totalBookings);
     const earningsComparison = calculatePercentageChange(currentMonthData.totalNetEarnings, previousMonthData.totalNetEarnings);
     const avgPriceComparison = calculatePercentageChange(currentAvgPrice, previousAvgPrice);
-    
+
     // For all-time comparison, compare current month's contribution to previous month's contribution
     // Get previous month's all-time total to see the change
     const prevMonthEnd = new Date(prevYear, prevMonth, 1).getTime();
@@ -237,19 +292,37 @@ export const getMonthlyEarnings = query({
       )
       .filter((q) => q.and(
         q.lt(q.field("createdAt"), prevMonthEnd),
-        q.eq(q.field("status"), "completed"),
         q.neq(q.field("deleted"), true)
       ))
       .collect();
-    
-    const prevAllTimeGrossEarnings = prevAllTimeBookings.reduce(
-      (sum, booking) => sum + booking.finalPrice, 
-      0
-    );
-    const prevAllTimeNetEarnings = prevAllTimeGrossEarnings - Math.round(prevAllTimeGrossEarnings * systemCutRate);
-    
+
+    // Calculate previous month's all-time earnings using reconciled bookings only
+    let prevAllTimeGrossEarnings = 0;
+    let prevAllTimeNetEarnings = 0;
+
+    for (const booking of prevAllTimeBookings) {
+      const refundAmount = booking.refundAmount ?? 0;
+      const netRevenue = booking.finalPrice - refundAmount;
+      const status = booking.status;
+
+      // Only include reconciled bookings (same logic as getMonthEarningsData)
+      const isReconciled =
+        status === "completed" ||
+        status === "no_show" ||
+        (status === "cancelled_by_consumer" && netRevenue > 0) ||
+        (status === "cancelled_by_business" && netRevenue > 0);
+
+      if (isReconciled) {
+        const platformFeeRate = booking.platformFeeRate ?? 0.20;
+        const businessEarnings = Math.round(netRevenue * (1 - platformFeeRate));
+
+        prevAllTimeGrossEarnings += netRevenue;
+        prevAllTimeNetEarnings += businessEarnings;
+      }
+    }
+
     const allTimeComparison = calculatePercentageChange(allTimeNetEarnings, prevAllTimeNetEarnings);
-    
+
     // Prepare comparison data for frontend
     const comparisonData = {
       bookings: bookingsComparison,
@@ -265,14 +338,14 @@ export const getMonthlyEarnings = query({
       totalNetEarnings: currentMonthData.totalNetEarnings,
       totalSystemCut: currentMonthData.totalSystemCut,
       totalBookings: currentMonthData.totalBookings,
-      
+
       // All-time earnings data
       allTimeNetEarnings,
       allTimeGrossEarnings,
-      
+
       // Month-over-month comparison data for dashboard indicators
       comparison: comparisonData,
-      
+
       // Additional context for debugging/analysis
       previousMonth: {
         month: previousMonthString,
@@ -280,17 +353,19 @@ export const getMonthlyEarnings = query({
         totalNetEarnings: previousMonthData.totalNetEarnings,
         avgPrice: previousAvgPrice
       },
-      
+
       currentMonth: {
         month: args.month,
         avgPrice: currentAvgPrice
       },
-      
+
       // Detailed booking list for CSV export and table display
       bookings: (currentMonthData.bookings || []).map(booking => ({
         _id: booking._id,
         status: booking.status,
         finalPrice: booking.finalPrice,
+        refundAmount: booking.refundAmount ?? undefined,
+        platformFeeRate: booking.platformFeeRate ?? 0.20,
         userSnapshot: booking.userSnapshot || undefined,
         classInstanceSnapshot: booking.classInstanceSnapshot || undefined,
         createdAt: booking.createdAt,
@@ -311,7 +386,7 @@ export const getEarningsSummary = query({
   handler: async (ctx, args) => {
     // Authenticate and validate business access
     const user = await getAuthenticatedUserOrThrow(ctx);
-    
+
     if (user.businessId !== args.businessId) {
       throw new ConvexError({
         message: "Access denied: User does not belong to this business",
@@ -330,13 +405,13 @@ export const getEarningsSummary = query({
 
     // Get earnings for each month by implementing the logic directly
     const monthlyEarnings = [];
-    
+
     for (const month of args.months) {
       try {
         // Parse month format - reuse validation logic
         const monthRegex = /^(\d{4})-(\d{2})$/;
         const monthMatch = month.match(monthRegex);
-        
+
         if (!monthMatch) {
           console.warn(`Skipping invalid month format: ${month}`);
           continue;
@@ -344,7 +419,7 @@ export const getEarningsSummary = query({
 
         const year = parseInt(monthMatch[1]);
         const monthNum = parseInt(monthMatch[2]);
-        
+
         if (monthNum < 1 || monthNum > 12) {
           console.warn(`Skipping invalid month number: ${monthNum}`);
           continue;
@@ -353,8 +428,8 @@ export const getEarningsSummary = query({
         // Calculate month timestamps
         const monthStart = new Date(year, monthNum - 1, 1).getTime();
         const monthEnd = new Date(year, monthNum, 1).getTime();
-        
-        // Query bookings for this month
+
+        // Query all bookings for this month (not just completed)
         const monthBookings = await ctx.db
           .query("bookings")
           .withIndex("by_business_created", (q) =>
@@ -363,21 +438,31 @@ export const getEarningsSummary = query({
           )
           .filter((q) => q.and(
             q.lt(q.field("createdAt"), monthEnd),
-            q.eq(q.field("status"), "completed"),
             q.neq(q.field("deleted"), true)
           ))
           .collect();
 
-        // Calculate earnings (finalPrice now in cents)
-        const totalGrossEarnings = monthBookings.reduce(
-          (sum, booking) => sum + booking.finalPrice, 
-          0
-        );
+        // Calculate earnings using revenue-based calculation
+        let totalGrossEarnings = 0;
+        let totalNetEarnings = 0;
+        let totalSystemCut = 0;
+        let totalBookings = 0;
 
-        const systemCutRate = 0.20;
-        const totalSystemCut = Math.round(totalGrossEarnings * systemCutRate);
-        const totalNetEarnings = totalGrossEarnings - totalSystemCut;
-        const totalBookings = monthBookings.length;
+        for (const booking of monthBookings) {
+          const refundAmount = booking.refundAmount ?? 0;
+          const netRevenue = booking.finalPrice - refundAmount;
+
+          if (netRevenue > 0) {
+            const platformFeeRate = booking.platformFeeRate ?? 0.20;
+            const businessEarnings = Math.round(netRevenue * (1 - platformFeeRate));
+            const systemCut = Math.round(netRevenue * platformFeeRate);
+
+            totalGrossEarnings += netRevenue;
+            totalNetEarnings += businessEarnings;
+            totalSystemCut += systemCut;
+            totalBookings++;
+          }
+        }
 
         monthlyEarnings.push({
           month,
@@ -410,7 +495,7 @@ export const getYearlyEarnings = query({
   handler: async (ctx, args) => {
     // Authenticate and validate business access
     const user = await getAuthenticatedUserOrThrow(ctx);
-    
+
     if (user.businessId !== args.businessId) {
       throw new ConvexError({
         message: "Access denied: User does not belong to this business",
@@ -432,7 +517,7 @@ export const getYearlyEarnings = query({
     const yearStart = new Date(args.year, 0, 1).getTime(); // January 1st
     const yearEnd = new Date(args.year + 1, 0, 1).getTime(); // Next January 1st
 
-    // Query all completed bookings for the year
+    // Query all bookings for the year (not just completed)
     const yearlyBookings = await ctx.db
       .query("bookings")
       .withIndex("by_business_created", (q) =>
@@ -441,21 +526,31 @@ export const getYearlyEarnings = query({
       )
       .filter((q) => q.and(
         q.lt(q.field("createdAt"), yearEnd),
-        q.eq(q.field("status"), "completed"),
         q.neq(q.field("deleted"), true)
       ))
       .collect();
 
-    // Calculate yearly totals (finalPrice now in cents)
-    const totalGrossEarnings = yearlyBookings.reduce(
-      (sum, booking) => sum + booking.finalPrice, 
-      0
-    );
+    // Calculate yearly totals using revenue-based calculation
+    let totalGrossEarnings = 0;
+    let totalNetEarnings = 0;
+    let totalSystemCut = 0;
+    let totalBookings = 0;
 
-    const systemCutRate = 0.20;
-    const totalSystemCut = Math.round(totalGrossEarnings * systemCutRate);
-    const totalNetEarnings = totalGrossEarnings - totalSystemCut;
-    const totalBookings = yearlyBookings.length;
+    for (const booking of yearlyBookings) {
+      const refundAmount = booking.refundAmount ?? 0;
+      const netRevenue = booking.finalPrice - refundAmount;
+
+      if (netRevenue > 0) {
+        const platformFeeRate = booking.platformFeeRate ?? 0.20;
+        const businessEarnings = Math.round(netRevenue * (1 - platformFeeRate));
+        const systemCut = Math.round(netRevenue * platformFeeRate);
+
+        totalGrossEarnings += netRevenue;
+        totalNetEarnings += businessEarnings;
+        totalSystemCut += systemCut;
+        totalBookings++;
+      }
+    }
 
     return {
       year: args.year,

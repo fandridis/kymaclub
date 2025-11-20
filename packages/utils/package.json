@@ -21,6 +21,7 @@
     "./crypto-utils": "./src/crypto-utils.ts",
     "./colors": "./src/colors.ts",
     "./credits": "./src/credits.ts",
+    "./bookings": "./src/bookings.ts",
     "./exploreFilters": "./src/exploreFilters.ts"
   }
 }

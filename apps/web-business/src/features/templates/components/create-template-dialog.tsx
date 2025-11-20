@@ -277,7 +277,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                 } : undefined,
                 cancellationWindowHours: data.enableRefundPolicy && data.cancellationWindowHours
                     ? parseInt(data.cancellationWindowHours)
-                    : 0,
+                    : undefined,
                 tags: data.tags.length > 0 ? data.tags : undefined,
                 color: data.color,
                 discountRules: discountRules.length > 0 ? discountRules.map(rule => ({

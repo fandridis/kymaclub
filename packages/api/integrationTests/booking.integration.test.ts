@@ -70,7 +70,7 @@ describe('Booking System Integration Tests', () => {
             expect(booking.status).toBe("pending");
             expect(booking.originalPrice).toBe(500); // Now stored in cents (500 cents = 5 credits)
             expect(booking.finalPrice).toBe(500);    // Now stored in cents (500 cents = 5 credits)
-            expect(booking.creditsUsed).toBe(5);    // Still credits (500 cents / 100 = 5 credits)
+            expect(booking.finalPrice / 100).toBe(5);    // Credits used = finalPrice / 100 (500 cents / 100 = 5 credits)
 
             // Verify user's credit balance
             const balance = await asUser.query(api.queries.credits.getUserBalance, {
