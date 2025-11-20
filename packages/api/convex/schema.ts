@@ -67,7 +67,7 @@ export const usersFields = {
   hasBusinessOnboarded: v.optional(v.boolean()),
   hasConsumerOnboarded: v.optional(v.boolean()),
 
-  role: v.optional(v.union(v.literal("admin"), v.literal("user"))),
+  role: v.optional(v.union(v.literal("admin"), v.literal("user"), v.literal("internal"))),
 
   // Signup source tracking (for business authorization)
   signupSource: v.optional(v.union(

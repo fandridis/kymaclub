@@ -1,0 +1,69 @@
+import type { TemplateColorType } from "@repo/utils/colors";
+
+type TemplateColorMap = Record<TemplateColorType, {
+    default: string;
+    defaultHex: string;
+    background: string;
+    backgroundHex: string;
+    text: string;
+    border: string;
+}>;
+
+export const TEMPLATE_COLORS_MAP = {
+    green: {
+        default: 'bg-green-500',
+        defaultHex: '#10B981',
+        background: 'bg-green-100',
+        backgroundHex: '#dcfce7',
+        text: "text-green-950",
+        border: "border-green-200",
+    },
+    yellow: {
+        default: 'bg-yellow-500',
+        defaultHex: '#F59E0B',
+        background: 'bg-yellow-100',
+        backgroundHex: '#fef9c3',
+        text: "text-yellow-950",
+        border: "border-yellow-200",
+    },
+    red: {
+        default: 'bg-red-500',
+        defaultHex: '#EF4444',
+        background: 'bg-red-100',
+        backgroundHex: '#fee2e2',
+        text: "text-red-950",
+        border: "border-red-200",
+    },
+    blue: {
+        default: 'bg-blue-500',
+        defaultHex: '#3B82F6',
+        background: 'bg-blue-100',
+        backgroundHex: '#e0f2fe',
+        text: "text-blue-950",
+        border: "border-blue-200",
+    },
+    purple: {
+        default: 'bg-purple-500',
+        defaultHex: '#8B5CF6',
+        background: 'bg-purple-100',
+        backgroundHex: '#f3e8ff',
+        text: "text-purple-950",
+        border: "border-purple-200",
+    },
+    orange: {
+        default: 'bg-orange-500',
+        defaultHex: '#F97316',
+        background: 'bg-orange-100',
+        backgroundHex: '#ffedd5',
+        text: "text-orange-950",
+        border: "border-orange-200",
+    },
+    pink: {
+        default: 'bg-pink-500',
+        defaultHex: '#EC4899',
+        background: 'bg-pink-100',
+        backgroundHex: '#ffe4e6',
+        text: "text-pink-950",
+        border: "border-pink-200",
+    },
+} as const satisfies TemplateColorMap;
