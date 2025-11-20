@@ -1,6 +1,7 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { DiamondIcon } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../theme';
 import { useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
@@ -23,30 +24,42 @@ export function CreditsBadge({ creditBalance }: CreditsBadgeProps) {
             accessibilityRole="button"
             onPress={handlePress}
             activeOpacity={0.85}
-            style={styles.creditsBadge}
+            style={styles.creditsBadgeContainer}
         >
-            <DiamondIcon size={18} color={theme.colors.emerald[950]} />
+            <LinearGradient
+                colors={['#10b981', '#8b5cf6', '#f97316']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.creditsBadgeGradient}
+        >
+                <View style={styles.creditsBadgeContent}>
+                    <DiamondIcon size={18} color={theme.colors.zinc[50]} />
             <Text style={styles.creditsBadgeText}>{creditBalance || 0}</Text>
+                </View>
+            </LinearGradient>
         </TouchableOpacity>
     );
 }
 
 const styles = StyleSheet.create({
-    creditsBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: theme.colors.emerald[100],
-        borderRadius: 6,
+    creditsBadgeContainer: {
+        borderRadius: 20,
+        overflow: 'hidden',
+    },
+    creditsBadgeGradient: {
+        borderRadius: 20,
         paddingVertical: 6,
         paddingHorizontal: 8,
+    },
+    creditsBadgeContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
         gap: 3,
-        borderWidth: 1,
-        borderColor: theme.colors.emerald[200],
     },
     creditsBadgeText: {
         fontSize: theme.fontSize.base,
         fontWeight: theme.fontWeight.semibold,
-        color: theme.colors.emerald[950],
+        color: theme.colors.zinc[50],
     },
 });
 

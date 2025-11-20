@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     messagesButton: {
         paddingVertical: 6,
         paddingHorizontal: 8,
-        borderRadius: 6,
+        borderRadius: 20,
         backgroundColor: theme.colors.zinc[100],
         alignItems: 'center',
         justifyContent: 'center',

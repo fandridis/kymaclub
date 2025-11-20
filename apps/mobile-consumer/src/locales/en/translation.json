@@ -614,11 +614,10 @@
         "instructor": "Instructor",
         "venue": "Venue",
         "free": "Free",
-        "startsIn": "starts in {{time}}",
-        "startsSoon": "starts soon",
+        "startsIn": "Starts in {{time}}",
+        "startsNow": "Starts now",
         "inHours": "In {{hours}}h {{minutes}}m",
-        "inMinutes": "In {{minutes}}m",
-        "startingSoon": "Starting soon"
+        "inMinutes": "In {{minutes}}m"
     },
     "messages": {
         "title": "Messages",

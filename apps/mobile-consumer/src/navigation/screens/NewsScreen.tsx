@@ -1,10 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Dimensions, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MapPinIcon, StarIcon, UserIcon, DiamondIcon, ClockIcon } from 'lucide-react-native';
 import { useQuery, useMutation, useConvexAuth } from 'convex/react';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { useNavigation, NavigationProp, useFocusEffect } from '@react-navigation/native';
 import { api } from '@repo/api/convex/_generated/api';
 import { useTypedTranslation } from '../../i18n/typed';
 import { theme } from '../../theme';
@@ -21,8 +21,8 @@ import { CreditsBadge } from '../../components/CreditsBadge';
 import { ProfileIconButton } from '../../components/ProfileIconButton';
 import { MessagesIconButton } from '../../components/MessagesIconButton';
 import { FloatingNavButtons } from '../../components/FloatingNavButtons';
+import { StartsInBadge } from '../../components/news/StartsInBadge';
 
-const now = new Date();
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -99,6 +99,23 @@ export function NewsScreen() {
     const navigation = useNavigation<NavigationProp<RootStackParamListWithNestedTabs>>();
     const { user } = useCurrentUser();
     const userCity = user?.activeCitySlug;
+
+    const [now, setNow] = useState(new Date());
+
+    // Update "now" when the screen comes into focus to refresh list filtering
+    useFocusEffect(
+        React.useCallback(() => {
+            setNow(new Date());
+
+            // Also set up a slow interval to refresh the list occasionally (e.g. every 5 minutes)
+            // so classes that pass their start time eventually get filtered out
+            const timer = setInterval(() => {
+                setNow(new Date());
+            }, 10 * 60 * 1000);
+
+            return () => clearInterval(timer);
+        }, [])
+    );
 
     const endOfToday = useMemo(() => {
         const end = new Date(now);
@@ -298,10 +315,6 @@ export function NewsScreen() {
         return instancesData
             .slice(0, 10)
             .map(instance => {
-                const timeUntilStartMs = instance.startTime - now.getTime();
-                const timeUntilStartHours = Math.floor(timeUntilStartMs / (1000 * 60 * 60));
-                const timeUntilStartMinutes = Math.floor((timeUntilStartMs % (1000 * 60 * 60)) / (1000 * 60));
-
                 // Simplified image URL logic
                 const imageUrl = instance.templateImageId
                     ? combinedStorageIdToUrl.get(instance.templateImageId)
@@ -309,42 +322,23 @@ export function NewsScreen() {
                         ? combinedStorageIdToUrl.get(instance.venueImageId)
                         : null;
 
-                let timeDisplay = '';
-                let timeUntilStartHoursRaw: number | null = null;
-                let timeUntilStartMinutesRaw: number | null = null;
-                let isStartingSoon = false;
-
-                if (timeUntilStartHours > 0) {
-                    timeDisplay = t('news.inHours', { hours: timeUntilStartHours, minutes: timeUntilStartMinutes });
-                    timeUntilStartHoursRaw = timeUntilStartHours;
-                    timeUntilStartMinutesRaw = timeUntilStartMinutes;
-                } else if (timeUntilStartMinutes > 0) {
-                    timeDisplay = t('news.inMinutes', { minutes: timeUntilStartMinutes });
-                    timeUntilStartMinutesRaw = timeUntilStartMinutes;
-                } else {
-                    timeDisplay = t('news.startingSoon');
-                    isStartingSoon = true;
-                }
-
                 return {
                     id: instance._id,
                     title: instance.name || t('news.class'),
-                    subtitle: timeDisplay,
-                    timeUntilStartHours: timeUntilStartHoursRaw,
-                    timeUntilStartMinutes: timeUntilStartMinutesRaw,
-                    isStartingSoon,
+                    subtitle: instance.instructor
+                        ? t('news.withInstructor', { instructor: instance.instructor })
+                        : instance.venueName || undefined,
                     originalPrice: `${centsToCredits(instance.pricing.originalPrice)}`,
                     discountedPrice: `${centsToCredits(instance.pricing.finalPrice)}`,
                     discountPercentage: instance.pricing.discountPercentage > 0 ? `${Math.round(instance.pricing.discountPercentage * 100)}%` : null,
                     venueName: instance.venueName,
                     venueCity: instance.venueCity,
-                    instructor: instance.instructor,
                     imageUrl,
                     startTime: instance.startTime,
                     classInstanceId: instance._id,
                 };
             });
-    }, [happeningTodayInstances, now, combinedStorageIdToUrl, t]);
+    }, [happeningTodayInstances, combinedStorageIdToUrl, t]);
 
     // Get new venues for VenueCard
     const newVenuesForCards = useMemo(() => {
@@ -405,7 +399,7 @@ export function NewsScreen() {
 
     if (isInitialLoading) {
         return (
-            <SafeAreaView style={styles.container}>
+            <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
                 <TabScreenHeader
                     renderLeftSide={() => <ProfileIconButton />}
                     renderRightSide={() => (
@@ -425,7 +419,7 @@ export function NewsScreen() {
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <TabScreenHeader
                 renderLeftSide={() => <ProfileIconButton />}
                 renderRightSide={() => (
@@ -443,7 +437,7 @@ export function NewsScreen() {
                 contentContainerStyle={styles.scrollContent}
             >
                 {/* Featured Carousel Section */}
-                <View style={styles.section}>
+                <View style={styles.firstSection}>
                     <FeaturedCarousel />
                 </View>
 
@@ -530,43 +524,17 @@ export function NewsScreen() {
                             {happeningTodayClasses.map((item) => {
                                 const discountBadge = item.discountPercentage ? `-${item.discountPercentage}` : null;
 
-                                const subtitleText = item.instructor
-                                    ? t('news.withInstructor', { instructor: item.instructor })
-                                    : item.venueName || undefined;
 
-                                const startTime = new Date(item.startTime).toLocaleTimeString('en-US', {
-                                    hour: 'numeric',
-                                    minute: '2-digit',
-                                    hour12: true,
-                                });
-
-                                let startsInText: string | null = null;
-                                if (item.timeUntilStartHours !== null && item.timeUntilStartHours !== undefined) {
-                                    const timeStr = t('news.inHours', { hours: item.timeUntilStartHours, minutes: item.timeUntilStartMinutes || 0 });
-                                    startsInText = t('news.startsIn', { time: timeStr });
-                                } else if (item.timeUntilStartMinutes !== null && item.timeUntilStartMinutes !== undefined) {
-                                    const timeStr = t('news.inMinutes', { minutes: item.timeUntilStartMinutes });
-                                    startsInText = t('news.startsIn', { time: timeStr });
-                                } else if (item.isStartingSoon) {
-                                    startsInText = t('news.startsSoon');
-                                }
 
                                 return (
                                     <NewsClassCard
                                         key={item.id}
                                         title={item.title}
-                                        subtitle={subtitleText}
+                                        subtitle={item.subtitle}
                                         imageUrl={item.imageUrl}
-                                        renderTopLeft={() => {
-                                            if (!startsInText) return null;
-                                            return (
-                                                <View style={styles.startsInPill}>
-                                                    <Text style={styles.startsInPillText} numberOfLines={1}>
-                                                        {startsInText}
-                                                    </Text>
-                                                </View>
-                                            );
-                                        }}
+                                        renderTopLeft={() => (
+                                            <StartsInBadge startTime={item.startTime} />
+                                        )}
                                         renderTopRight={() => {
                                             if (!discountBadge) {
                                                 return null;
@@ -607,7 +575,11 @@ export function NewsScreen() {
                                                         style={styles.newsClassCardFooterText}
                                                         numberOfLines={1}
                                                     >
-                                                        {startTime}
+                                                        {new Date(item.startTime).toLocaleTimeString('en-US', {
+                                                            hour: 'numeric',
+                                                            minute: '2-digit',
+                                                            hour12: true,
+                                                        })}
                                                     </Text>
                                                 </View>
                                                 {item.venueCity ? (
@@ -700,10 +672,14 @@ const styles = StyleSheet.create({
         marginTop: -6
     },
     scrollContent: {
-        paddingBottom: 80, // Extra padding for floating buttons
+        paddingBottom: 100, // Extra padding to allow scrolling over floating buttons
     },
     section: {
         marginVertical: 16,
+    },
+    firstSection: {
+        marginTop: 0,
+        marginBottom: 16,
     },
     sectionTitle: {
         fontSize: 16,

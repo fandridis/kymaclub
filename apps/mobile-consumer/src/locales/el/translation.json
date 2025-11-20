@@ -615,10 +615,9 @@
         "venue": "Χώρος",
         "free": "Δωρεάν",
         "startsIn": "Έναρξη σε {{time}}",
-        "startsSoon": "ξεκινά σύντομα",
+        "startsNow": "Ξεκινά τώρα",
         "inHours": "{{hours}}ω {{minutes}}λ",
-        "inMinutes": "{{minutes}}λ",
-        "startingSoon": "Ξεκινά σύντομα"
+        "inMinutes": "{{minutes}}λ"
     },
     "messages": {
         "title": "Μηνύματα",

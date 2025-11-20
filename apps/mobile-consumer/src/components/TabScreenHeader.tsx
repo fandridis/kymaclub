@@ -53,9 +53,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 12,
-    paddingTop: 16,
+    paddingTop: 0,
     paddingBottom: 12,
-    backgroundColor: theme.colors.zinc[50],
+    backgroundColor: 'transparent',
   },
   titleContainer: {
     flex: 1,

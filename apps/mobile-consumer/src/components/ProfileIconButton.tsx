@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
   profileButton: {
     paddingVertical: 6,
     paddingHorizontal: 8,
-    borderRadius: 6,
+    borderRadius: 20,
     backgroundColor: theme.colors.zinc[100],
     alignItems: 'center',
     justifyContent: 'center',
