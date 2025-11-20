@@ -1068,7 +1068,11 @@ export default defineSchema({
     // 🎯 DISCOUNT OPTIMIZATION - only fetch instances with discount rules
     .index("by_status_deleted_hasDiscountRules_start_time", ["status", "deleted", "hasDiscountRules", "startTime"])
     // 🏁 CLASS COMPLETION OPTIMIZATION - efficient queries for classes that have ended
-    .index("by_status_deleted_end_time", ["status", "deleted", "endTime"]),
+    .index("by_status_deleted_end_time", ["status", "deleted", "endTime"])
+    // 🔍 INTERNAL ADMIN SORTING INDEXES - for efficient sorting in admin panel
+    .index("by_deleted_start_time", ["deleted", "startTime"])
+    .index("by_deleted_price", ["deleted", "price"])
+    .index("by_deleted_capacity", ["deleted", "capacity"]),
 
   /** 
    * Bookings - customer reservations for class instances (simplified)

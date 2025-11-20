@@ -47,3 +47,18 @@ export async function getAuthenticatedUserAndBusinessOrThrow(ctx: MutationCtx | 
     const business = await getBusinessOrThrow(ctx, user.businessId);
     return { user, business };
 }
+
+/**
+ * Require that the user has internal or admin role
+ * Throws an error if the user is not authenticated or doesn't have the required role
+ */
+export async function requireInternalUserOrThrow(ctx: MutationCtx | QueryCtx) {
+    const user = await getAuthenticatedUserOrThrow(ctx);
+    if (user.role !== "internal" && user.role !== "admin") {
+        throw new ConvexError({
+            message: "This action requires internal or admin access",
+            code: ERROR_CODES.UNAUTHORIZED,
+        });
+    }
+    return user;
+}

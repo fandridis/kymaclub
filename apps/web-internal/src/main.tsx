@@ -13,7 +13,7 @@ const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 // Import the generated route tree
 import { routeTree } from './routeTree.gen'
 import { ErrorBoundary } from "./components/error-boundary";
-import { SpinningCircles } from "./components/spinning-circles";
+import { SciFiLoader } from "./components/sci-fi-loader";
 import { useCurrentUser } from "./hooks/use-current-user";
 
 // Create a new router instance
@@ -38,14 +38,16 @@ createRoot(document.getElementById("root")!).render(
   </StrictMode>,
 );
 
+import { SciFiBackground } from "./components/ui/sci-fi-background";
+
 function InnerApp() {
   const { user, isLoading } = useCurrentUser()
 
   if (isLoading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center">
-        <SpinningCircles />
-      </div>
+      <SciFiBackground className="flex items-center justify-center">
+        <SciFiLoader fullScreen={true} />
+      </SciFiBackground>
     )
   }
 

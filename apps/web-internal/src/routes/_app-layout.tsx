@@ -1,8 +1,9 @@
-import { SpinningCircles } from '@/components/spinning-circles';
+import { SciFiLoader } from '@/components/sci-fi-loader';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { createFileRoute, Link, Outlet, redirect } from '@tanstack/react-router';
 import { useAuthActions } from '@convex-dev/auth/react';
-import { Button } from '@/components/ui/button';
+import { AdminButton } from '@/components/admin-button';
+import { SciFiBackground } from '@/components/ui/sci-fi-background';
 
 export const Route = createFileRoute('/_app-layout')({
     component: RouteComponent,
@@ -14,38 +15,15 @@ function RouteComponent() {
 
     if (isLoading) {
         return (
-            <div className="h-screen w-screen flex items-center justify-center">
-                <SpinningCircles />
-            </div>
+            <SciFiBackground className="flex items-center justify-center">
+                <SciFiLoader fullScreen={true} />
+            </SciFiBackground>
         )
     }
 
     if (user === null || user?.role !== "internal") {
         return (
-            <div className="h-screen w-screen flex items-center justify-center bg-black relative overflow-hidden">
-                {/* Animated grid background */}
-                <div className="absolute inset-0 opacity-20">
-                    <div className="absolute inset-0" style={{
-                        backgroundImage: `
-                            linear-gradient(cyan 1px, transparent 1px),
-                            linear-gradient(90deg, cyan 1px, transparent 1px)
-                        `,
-                        backgroundSize: '50px 50px',
-                        animation: 'gridMove 20s linear infinite'
-                    }} />
-                </div>
-
-                {/* Glitch overlay effect */}
-                <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute inset-0 bg-cyan-500/5 animate-pulse" style={{
-                        clipPath: 'polygon(0 0, 100% 0, 100% 35%, 0 35%)',
-                        animation: 'glitch1 1.5s infinite'
-                    }} />
-                    <div className="absolute inset-0 bg-green-500/5 animate-pulse" style={{
-                        clipPath: 'polygon(0 65%, 100% 65%, 100% 100%, 0 100%)',
-                        animation: 'glitch2 1.5s infinite 0.2s'
-                    }} />
-                </div>
+            <SciFiBackground className="flex items-center justify-center">
 
                 <div className="relative z-10 text-center px-8 max-w-4xl">
                     {/* Terminal-style header */}
@@ -144,28 +122,7 @@ function RouteComponent() {
                     )}
                 </div>
 
-                {/* Add keyframe animations */}
-                <style>{`
-                    @keyframes gridMove {
-                        0% { transform: translate(0, 0); }
-                        100% { transform: translate(50px, 50px); }
-                    }
-                    @keyframes glitch1 {
-                        0%, 100% { transform: translate(0); }
-                        20% { transform: translate(-2px, 2px); }
-                        40% { transform: translate(-2px, -2px); }
-                        60% { transform: translate(2px, 2px); }
-                        80% { transform: translate(2px, -2px); }
-                    }
-                    @keyframes glitch2 {
-                        0%, 100% { transform: translate(0); }
-                        20% { transform: translate(2px, -2px); }
-                        40% { transform: translate(2px, 2px); }
-                        60% { transform: translate(-2px, -2px); }
-                        80% { transform: translate(-2px, 2px); }
-                    }
-                `}</style>
-            </div>
+            </SciFiBackground>
         )
     }
 
@@ -175,18 +132,23 @@ function RouteComponent() {
     };
 
     return (
-        <div className="min-h-screen">
-            <header className="border-b bg-background">
-                <div className="container mx-auto px-4 py-3 flex justify-end">
-                    <Button
-                        variant="outline"
-                        onClick={handleLogout}
-                    >
-                        Logout
-                    </Button>
-                </div>
-            </header>
-            <Outlet />
-        </div>
+        <SciFiBackground>
+
+            <div className="relative z-10">
+                <header className="border-b border-cyan-500/30 bg-black/50 backdrop-blur-sm">
+                    <div className="container mx-auto px-4 py-3 flex justify-end">
+                        <AdminButton
+                            variant="destructive"
+                            size="sm"
+                            onClick={handleLogout}
+                        >
+                            logout
+                        </AdminButton>
+                    </div>
+                </header>
+                <Outlet />
+            </div>
+
+        </SciFiBackground>
     )
 }

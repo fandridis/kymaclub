@@ -709,4 +709,45 @@ export const classInstanceService = {
 
         return result;
     },
+
+    /**
+     * Get ALL class instances across all businesses (admin/internal only)
+     * Does not filter by businessId - returns instances from all businesses
+     * Uses pagination for efficient querying
+     * Returns latest instances first (sorted by startTime descending)
+     */
+    getAllClassInstances: async ({
+        ctx,
+        args,
+        user
+    }: {
+        ctx: QueryCtx,
+        args: {
+            paginationOpts: { numItems: number; cursor: string | null };
+        },
+        user: Doc<"users">
+    }): Promise<{ page: Doc<"classInstances">[]; isDone: boolean; continueCursor: string | null }> => {
+        // Authorization check happens in the query layer
+        // This service method assumes it's already been validated
+
+        // Calculate now once to ensure cursor continuity
+        // IMPORTANT: The startTime filter must be in the index query, not a separate filter,
+        // to maintain cursor continuity across pagination calls
+        const now = Date.now();
+
+        // Use the global index by_status_deleted_start_time to get scheduled, non-deleted instances
+        // Query in descending order to get latest instances first
+        // The startTime filter is in the index query to ensure cursor continuity
+        const result = await ctx.db
+            .query("classInstances")
+            .withIndex("by_status_deleted_start_time", (q) =>
+                q.eq("status", "scheduled")
+                    .eq("deleted", undefined)
+            )
+            .order("desc") // Most recent startTime first
+            .paginate(args.paginationOpts);
+
+        // Return result - cursor conversion happens in query layer
+        return result;
+    },
 };

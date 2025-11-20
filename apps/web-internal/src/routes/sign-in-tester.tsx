@@ -1,8 +1,9 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useState, useEffect } from "react";
-import { SpinningCircles } from '@/components/spinning-circles';
+import { SciFiLoader } from '@/components/sci-fi-loader';
 import { useCurrentUser } from '@/hooks/use-current-user';
+import { AdminButton } from '@/components/admin-button';
 
 export const Route = createFileRoute('/sign-in-tester')({
     component: RouteComponent,
@@ -34,7 +35,7 @@ function RouteComponent() {
     if (isLoading || user?.role === "internal") {
         return (
             <div className="h-screen w-screen flex items-center justify-center bg-black">
-                <SpinningCircles />
+                <SciFiLoader fullScreen={true} />
             </div>
         )
     }
@@ -209,17 +210,15 @@ export function SignInTesterForm() {
                     )}
 
                     {/* Submit button */}
-                    <button
+                    <AdminButton
                         type="submit"
+                        variant="primary"
+                        size="xl"
                         disabled={submitting}
-                        className="w-full group relative px-8 py-4 bg-gradient-to-r from-cyan-500/20 to-green-500/20 border-2 border-cyan-500 font-mono text-cyan-400 text-lg tracking-wider uppercase transition-all duration-300 hover:border-green-400 hover:text-green-400 hover:shadow-[0_0_30px_rgba(34,197,94,0.5)] hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                        className="w-full"
                     >
-                        <span className="relative z-10">
-                            {submitting ? '[ AUTHENTICATING... ]' : '[ INITIATE LOGIN ]'}
-                        </span>
-                        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-green-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        <div className="absolute -inset-1 bg-cyan-500/20 blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    </button>
+                        {submitting ? 'authenticating...' : 'initiate login'}
+                    </AdminButton>
                 </form>
 
                 {/* Footer terminal text */}

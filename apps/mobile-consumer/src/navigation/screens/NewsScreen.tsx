@@ -669,7 +669,6 @@ const styles = StyleSheet.create({
     },
     scrollContainer: {
         flex: 1,
-        marginTop: -6
     },
     scrollContent: {
         paddingBottom: 100, // Extra padding to allow scrolling over floating buttons

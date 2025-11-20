@@ -14,6 +14,7 @@ import { Route as HealthRouteImport } from './routes/health'
 import { Route as AppLayoutRouteImport } from './routes/_app-layout'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppLayoutDashboardRouteImport } from './routes/_app-layout/dashboard'
+import { Route as AppLayoutDashboardClassesRouteImport } from './routes/_app-layout/dashboard/classes'
 
 const SignInTesterRoute = SignInTesterRouteImport.update({
   id: '/sign-in-tester',
@@ -39,18 +40,26 @@ const AppLayoutDashboardRoute = AppLayoutDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AppLayoutRoute,
 } as any)
+const AppLayoutDashboardClassesRoute =
+  AppLayoutDashboardClassesRouteImport.update({
+    id: '/classes',
+    path: '/classes',
+    getParentRoute: () => AppLayoutDashboardRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
   '/sign-in-tester': typeof SignInTesterRoute
-  '/dashboard': typeof AppLayoutDashboardRoute
+  '/dashboard': typeof AppLayoutDashboardRouteWithChildren
+  '/dashboard/classes': typeof AppLayoutDashboardClassesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
   '/sign-in-tester': typeof SignInTesterRoute
-  '/dashboard': typeof AppLayoutDashboardRoute
+  '/dashboard': typeof AppLayoutDashboardRouteWithChildren
+  '/dashboard/classes': typeof AppLayoutDashboardClassesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -58,13 +67,19 @@ export interface FileRoutesById {
   '/_app-layout': typeof AppLayoutRouteWithChildren
   '/health': typeof HealthRoute
   '/sign-in-tester': typeof SignInTesterRoute
-  '/_app-layout/dashboard': typeof AppLayoutDashboardRoute
+  '/_app-layout/dashboard': typeof AppLayoutDashboardRouteWithChildren
+  '/_app-layout/dashboard/classes': typeof AppLayoutDashboardClassesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/health' | '/sign-in-tester' | '/dashboard'
+  fullPaths:
+    | '/'
+    | '/health'
+    | '/sign-in-tester'
+    | '/dashboard'
+    | '/dashboard/classes'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/health' | '/sign-in-tester' | '/dashboard'
+  to: '/' | '/health' | '/sign-in-tester' | '/dashboard' | '/dashboard/classes'
   id:
     | '__root__'
     | '/'
@@ -72,6 +87,7 @@ export interface FileRouteTypes {
     | '/health'
     | '/sign-in-tester'
     | '/_app-layout/dashboard'
+    | '/_app-layout/dashboard/classes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -118,15 +134,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLayoutDashboardRouteImport
       parentRoute: typeof AppLayoutRoute
     }
+    '/_app-layout/dashboard/classes': {
+      id: '/_app-layout/dashboard/classes'
+      path: '/classes'
+      fullPath: '/dashboard/classes'
+      preLoaderRoute: typeof AppLayoutDashboardClassesRouteImport
+      parentRoute: typeof AppLayoutDashboardRoute
+    }
   }
 }
 
+interface AppLayoutDashboardRouteChildren {
+  AppLayoutDashboardClassesRoute: typeof AppLayoutDashboardClassesRoute
+}
+
+const AppLayoutDashboardRouteChildren: AppLayoutDashboardRouteChildren = {
+  AppLayoutDashboardClassesRoute: AppLayoutDashboardClassesRoute,
+}
+
+const AppLayoutDashboardRouteWithChildren =
+  AppLayoutDashboardRoute._addFileChildren(AppLayoutDashboardRouteChildren)
+
 interface AppLayoutRouteChildren {
-  AppLayoutDashboardRoute: typeof AppLayoutDashboardRoute
+  AppLayoutDashboardRoute: typeof AppLayoutDashboardRouteWithChildren
 }
 
 const AppLayoutRouteChildren: AppLayoutRouteChildren = {
-  AppLayoutDashboardRoute: AppLayoutDashboardRoute,
+  AppLayoutDashboardRoute: AppLayoutDashboardRouteWithChildren,
 }
 
 const AppLayoutRouteWithChildren = AppLayoutRoute._addFileChildren(

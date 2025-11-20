@@ -1,6 +1,6 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "kymaclub-web-admin",
+	"name": "kymaclub-web-internal",
 	"main": "worker/index.ts",
 	"compatibility_date": "2025-07-15",
 	"compatibility_flags": [
@@ -16,7 +16,7 @@
 	"upload_source_maps": true,
 	"routes": [
 		{
-			"pattern": "admin.kymaclub.com",
+			"pattern": "internal.kymaclub.com",
 			"custom_domain": true
 		}
 	],

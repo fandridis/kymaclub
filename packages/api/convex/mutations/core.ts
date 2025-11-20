@@ -201,7 +201,7 @@ export const updateUserCity = mutationWithTriggers({
     args: updateUserCityArgs,
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
-        
+
         // Validate city
         const validationResult = coreValidations.validateCitySelection(args.city);
         if (!validationResult.success) {
@@ -222,7 +222,7 @@ export const updateUserCity = mutationWithTriggers({
 });
 
 /***************************************************************
- * Authorize Business Email (Admin Only)
+ * Authorize Business Email (Internal Users Only)
  ***************************************************************/
 export const authorizeBusinessEmailArgs = v.object({
     email: v.string(),
@@ -236,10 +236,10 @@ export const authorizeBusinessEmail = mutation({
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
 
-        // Only admins can authorize emails
-        if (user.role !== "admin") {
+        // Only internal users can authorize emails
+        if (user.role !== "internal") {
             throw new ConvexError({
-                message: "Only administrators can authorize business accounts",
+                message: "Only internal users can authorize business emails",
                 code: ERROR_CODES.UNAUTHORIZED,
             });
         }
