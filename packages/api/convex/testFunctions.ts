@@ -218,7 +218,6 @@ export const createTestClassTemplate = internalMutation({
                 maxHours: 168
             },
             cancellationWindowHours: 12,
-            deleted: false,
             createdAt: Date.now(),
             createdBy: args.userId,
         });

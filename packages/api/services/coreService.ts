@@ -45,7 +45,6 @@ export const coreService = {
             primaryCategory: cleanArgs.venue.primaryCategory,
             citySlug: cleanArgs.venue.citySlug,
             isActive: true,
-            deleted: false,
             createdAt: Date.now(),
             createdBy: user._id,
         });

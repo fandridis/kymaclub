@@ -1040,7 +1040,9 @@ export default defineSchema({
     .index("by_venue", ["venueId"])
     .index("by_venue_deleted", ["venueId", "deleted"])
     .index("by_business_deleted", ["businessId", "deleted"])
-    .index("by_business_deleted_active", ["businessId", "deleted", "isActive"]),
+    .index("by_business_deleted_active", ["businessId", "deleted", "isActive"])
+    // 🔍 INTERNAL ADMIN INDEXES - for efficient dashboard queries
+    .index("by_deleted", ["deleted"]),
 
   /** 
    * Class instances - actual scheduled classes

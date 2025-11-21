@@ -23,15 +23,13 @@ describe('Class Template Operations', () => {
                 cancellationWindowHours: 24,
                 waitlistCapacity: 5,
                 venueId: 'venue123' as any,
-                level: 'beginner',
-                equipment: ['mat', 'blocks'],
                 primaryCategory: 'wellness_center',
             }
         };
 
         it('should prepare valid template data', () => {
             const result = classTemplateOperations.prepareCreateTemplate(validTemplateArgs);
-            
+
             expect(result.name).toBe('Morning Yoga');
             expect(result.instructor).toBe('Maria Pappas');
             expect(result.duration).toBe(60);
@@ -50,7 +48,7 @@ describe('Class Template Operations', () => {
                     instructor: '  John Smith  '
                 }
             };
-            
+
             const result = classTemplateOperations.prepareCreateTemplate(args);
             expect(result.name).toBe('Evening Pilates');
             expect(result.instructor).toBe('John Smith');
@@ -64,7 +62,7 @@ describe('Class Template Operations', () => {
                     name: ''
                 }
             };
-            
+
             expect(() => classTemplateOperations.prepareCreateTemplate(args))
                 .toThrow(ConvexError);
         });
@@ -77,7 +75,7 @@ describe('Class Template Operations', () => {
                     instructor: ''
                 }
             };
-            
+
             expect(() => classTemplateOperations.prepareCreateTemplate(args))
                 .toThrow(ConvexError);
         });
@@ -90,7 +88,7 @@ describe('Class Template Operations', () => {
                     duration: 0
                 }
             };
-            
+
             expect(() => classTemplateOperations.prepareCreateTemplate(args))
                 .toThrow(ConvexError);
         });
@@ -103,7 +101,7 @@ describe('Class Template Operations', () => {
                     capacity: -5
                 }
             };
-            
+
             expect(() => classTemplateOperations.prepareCreateTemplate(args))
                 .toThrow(ConvexError);
         });
@@ -116,7 +114,7 @@ describe('Class Template Operations', () => {
                     price: 50 // Below minimum of 100
                 }
             };
-            
+
             expect(() => classTemplateOperations.prepareCreateTemplate(args))
                 .toThrow(ConvexError);
         });
@@ -132,9 +130,9 @@ describe('Class Template Operations', () => {
                     venueId: 'venue123' as any
                 }
             };
-            
+
             const result = classTemplateOperations.prepareCreateTemplate(minimalArgs);
-            
+
             expect(result.name).toBe('Simple Class');
             expect(result.instructor).toBe('Teacher');
             expect(result.description).toBeUndefined();
@@ -150,7 +148,7 @@ describe('Class Template Operations', () => {
                     bookingWindow: { minHours: 10, maxHours: 5 } // Invalid: max < min
                 }
             };
-            
+
             expect(() => classTemplateOperations.prepareCreateTemplate(args))
                 .toThrow(ConvexError);
         });
@@ -163,7 +161,7 @@ describe('Class Template Operations', () => {
                     waitlistCapacity: -1 // Invalid: negative
                 }
             };
-            
+
             expect(() => classTemplateOperations.prepareCreateTemplate(args))
                 .toThrow(ConvexError);
         });
@@ -175,9 +173,9 @@ describe('Class Template Operations', () => {
                 name: 'Updated Class',
                 capacity: 25
             };
-            
+
             const result = classTemplateOperations.prepareUpdateTemplate(updates);
-            
+
             expect(result.name).toBe('Updated Class');
             expect(result.capacity).toBe(25);
             expect(result.instructor).toBeUndefined(); // Not included in update
@@ -188,16 +186,16 @@ describe('Class Template Operations', () => {
                 name: '', // Invalid empty name
                 capacity: 25
             };
-            
+
             expect(() => classTemplateOperations.prepareUpdateTemplate(updates))
                 .toThrow(ConvexError);
         });
 
         it('should handle empty update', () => {
             const updates: UpdateClassTemplateArgs['template'] = {};
-            
+
             const result = classTemplateOperations.prepareUpdateTemplate(updates);
-            
+
             expect(Object.keys(result)).toHaveLength(0);
         });
 
@@ -210,9 +208,9 @@ describe('Class Template Operations', () => {
                 price: 800, // 8 euros in cents
                 bookingWindow: { minHours: 1, maxHours: 72 }
             };
-            
+
             const result = classTemplateOperations.prepareUpdateTemplate(updates);
-            
+
             expect(result.name).toBe('Valid Name');
             expect(result.instructor).toBe('Valid Instructor');
             expect(result.duration).toBe(90);
@@ -225,11 +223,10 @@ describe('Class Template Operations', () => {
     describe('createDefaultTemplate', () => {
         it('should create default template with correct properties', () => {
             const result = classTemplateOperations.createDefaultTemplate(mockBusinessId, mockUserId);
-            
+
             expect(result.businessId).toBe(mockBusinessId);
             expect(result.isActive).toBe(true);
             expect(result.allowWaitlist).toBe(false);
-            expect(result.deleted).toBe(false);
             expect(result.createdBy).toBe(mockUserId);
             expect(typeof result.createdAt).toBe('number');
             expect(result.createdAt).toBeGreaterThan(0);
@@ -239,7 +236,7 @@ describe('Class Template Operations', () => {
             const before = Date.now();
             const result = classTemplateOperations.createDefaultTemplate(mockBusinessId, mockUserId);
             const after = Date.now();
-            
+
             expect(result.createdAt).toBeGreaterThanOrEqual(before);
             expect(result.createdAt).toBeLessThanOrEqual(after);
         });
@@ -258,20 +255,12 @@ describe('Class Template Operations', () => {
             capacity: 20,
             price: 500, // 5 euros in cents
             venueId: 'venue123' as any,
-            instructorId: 'instructor123' as any,
-            classTypeId: 'type123' as any,
             color: '#3B82F6',
             isActive: true,
-            equipment: ['mat'],
-            level: 'beginner',
             tags: ['yoga'],
-            bookingWindow: { openDays: 7, closeDays: 0 },
-            cancellationPolicy: {
-                allowCancellation: true,
-                cancelBeforeHours: 24,
-                refundPercentage: 100
-            },
-            waitlistEnabled: false,
+            bookingWindow: { minHours: 2, maxHours: 168 },
+            cancellationWindowHours: 24,
+            allowWaitlist: false,
             imageStorageIds: [],
             createdAt: Date.now(),
             createdBy: mockUserId,
@@ -281,7 +270,7 @@ describe('Class Template Operations', () => {
 
         it('should validate complete template', () => {
             const result = classTemplateOperations.validateTemplateForInstanceCreation(validTemplate);
-            
+
             expect(result.isValid).toBe(true);
             expect(result.missingFields).toHaveLength(0);
         });
@@ -289,7 +278,7 @@ describe('Class Template Operations', () => {
         it('should detect missing name', () => {
             const template = { ...validTemplate, name: '' };
             const result = classTemplateOperations.validateTemplateForInstanceCreation(template);
-            
+
             expect(result.isValid).toBe(false);
             expect(result.missingFields).toContain('name');
         });
@@ -297,7 +286,7 @@ describe('Class Template Operations', () => {
         it('should detect missing instructor', () => {
             const template = { ...validTemplate, instructor: '   ' };
             const result = classTemplateOperations.validateTemplateForInstanceCreation(template);
-            
+
             expect(result.isValid).toBe(false);
             expect(result.missingFields).toContain('instructor');
         });
@@ -305,7 +294,7 @@ describe('Class Template Operations', () => {
         it('should detect invalid duration', () => {
             const template = { ...validTemplate, duration: 0 };
             const result = classTemplateOperations.validateTemplateForInstanceCreation(template);
-            
+
             expect(result.isValid).toBe(false);
             expect(result.missingFields).toContain('duration');
         });
@@ -313,7 +302,7 @@ describe('Class Template Operations', () => {
         it('should detect invalid capacity', () => {
             const template = { ...validTemplate, capacity: -1 };
             const result = classTemplateOperations.validateTemplateForInstanceCreation(template);
-            
+
             expect(result.isValid).toBe(false);
             expect(result.missingFields).toContain('capacity');
         });
@@ -321,7 +310,7 @@ describe('Class Template Operations', () => {
         it('should detect missing price euros', () => {
             const template = { ...validTemplate, price: undefined as any };
             const result = classTemplateOperations.validateTemplateForInstanceCreation(template);
-            
+
             expect(result.isValid).toBe(false);
             expect(result.missingFields).toContain('price');
         });
@@ -352,7 +341,7 @@ describe('Class Template Operations', () => {
                 price: undefined as any
             };
             const result = classTemplateOperations.validateTemplateForInstanceCreation(template);
-            
+
             expect(result.isValid).toBe(false);
             expect(result.missingFields).toHaveLength(5);
             expect(result.missingFields).toContain('name');
@@ -365,7 +354,7 @@ describe('Class Template Operations', () => {
         it('should accept zero price euros', () => {
             const template = { ...validTemplate, price: 0 };
             const result = classTemplateOperations.validateTemplateForInstanceCreation(template);
-            
+
             expect(result.isValid).toBe(true); // Zero price is acceptable for instance creation (free classes)
             expect(result.missingFields).not.toContain('price');
         });
@@ -373,7 +362,7 @@ describe('Class Template Operations', () => {
         it('should reject negative price euros', () => {
             const template = { ...validTemplate, price: -1 };
             const result = classTemplateOperations.validateTemplateForInstanceCreation(template);
-            
+
             expect(result.isValid).toBe(false);
             expect(result.missingFields).toContain('price');
         });

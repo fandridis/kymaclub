@@ -164,7 +164,6 @@ export const createDefaultVenue = (
     return {
         businessId,
         isActive: true,
-        deleted: false,
         createdAt: Date.now(),
         createdBy: userId,
     };

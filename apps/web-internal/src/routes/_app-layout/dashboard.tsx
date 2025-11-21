@@ -111,6 +111,24 @@ function Dashboard() {
                         secondaryMetricValue = metrics.classes.completedLastMonth;
                         secondaryMetricType = 'number';
                         secondaryMetricLabel = 'COMPLETED LAST MONTH';
+                    } else if (section.id === 'class-templates' && metrics) {
+                        mainMetricValue = formatNumber(metrics.templates.total);
+                        mainMetricLabel = 'total templates';
+                        secondaryMetricValue = metrics.templates.createdLastMonth;
+                        secondaryMetricType = 'number';
+                        secondaryMetricLabel = 'CREATED LAST MONTH';
+                    } else if (section.id === 'businesses' && metrics) {
+                        mainMetricValue = formatNumber(metrics.businesses.activeCount);
+                        mainMetricLabel = 'active businesses';
+                        secondaryMetricValue = metrics.businesses.joinedLastMonth;
+                        secondaryMetricType = 'number';
+                        secondaryMetricLabel = 'JOINED LAST MONTH';
+                    } else if (section.id === 'venues' && metrics) {
+                        mainMetricValue = formatNumber(metrics.venues.activeCount);
+                        mainMetricLabel = 'active venues';
+                        secondaryMetricValue = metrics.venues.createdLastMonth;
+                        secondaryMetricType = 'number';
+                        secondaryMetricLabel = 'CREATED LAST MONTH';
                     }
 
                     const colors = getSciFiColors(section.color);

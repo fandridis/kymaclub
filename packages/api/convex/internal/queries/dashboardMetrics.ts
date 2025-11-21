@@ -4,7 +4,7 @@ import { requireInternalUserOrThrow } from "../../utils";
 
 /**
  * Get dashboard metrics for internal admin panel
- * Returns key metrics for consumers, bookings, and classes
+ * Returns key metrics for consumers, bookings, classes, templates, businesses, and venues
  */
 export const getDashboardMetrics = query({
     args: {},
@@ -20,6 +20,18 @@ export const getDashboardMetrics = query({
         classes: v.object({
             currentlyScheduled: v.number(),
             completedLastMonth: v.number(),
+        }),
+        templates: v.object({
+            total: v.number(),
+            createdLastMonth: v.number(),
+        }),
+        businesses: v.object({
+            activeCount: v.number(),
+            joinedLastMonth: v.number(),
+        }),
+        venues: v.object({
+            activeCount: v.number(),
+            createdLastMonth: v.number(),
         }),
     }),
     handler: async (ctx) => {
@@ -241,6 +253,88 @@ export const getDashboardMetrics = query({
 
         const completedLastMonth = completedClassesLastMonth.length;
 
+        // 6. Templates metrics
+        // Total templates: deleted=undefined
+        // Use index by_deleted for efficient querying
+        const allTemplates = await ctx.db
+            .query("classTemplates")
+            .withIndex("by_deleted", (q) => q.eq("deleted", undefined))
+            .collect();
+
+        const totalTemplates = allTemplates.length;
+
+        // Templates created last month: deleted=undefined, _creationTime within last month
+        // Use index by_deleted and filter by _creationTime (system field, can't be indexed)
+        const templatesCreatedLastMonth = await ctx.db
+            .query("classTemplates")
+            .withIndex("by_deleted", (q) => q.eq("deleted", undefined))
+            .filter((q) =>
+                q.and(
+                    q.gte(q.field("_creationTime"), lastMonthStart),
+                    q.lte(q.field("_creationTime"), lastMonthEnd)
+                )
+            )
+            .collect();
+
+        const createdLastMonth = templatesCreatedLastMonth.length;
+
+        // 7. Businesses metrics
+        // Active businesses: businesses that have at least one completed class instance in the last 90 days
+        // Use index by_status_deleted_end_time to get completed classes in last 90 days
+        // Note: ninetyDaysAgo is already defined above for consumers query
+        const completedClassesLast90Days = await ctx.db
+            .query("classInstances")
+            .withIndex("by_status_deleted_end_time", (q) =>
+                q
+                    .eq("status", "completed")
+                    .eq("deleted", undefined)
+                    .gte("endTime", ninetyDaysAgo)
+            )
+            .collect();
+
+        // Get unique businessIds from completed classes
+        const activeBusinessIds = new Set(completedClassesLast90Days.map(instance => instance.businessId));
+        const activeBusinessCount = activeBusinessIds.size;
+
+        // Businesses joined last month: _creationTime within last month
+        const businessesJoinedLastMonth = await ctx.db
+            .query("businesses")
+            .filter((q) =>
+                q.and(
+                    q.eq(q.field("deleted"), undefined),
+                    q.gte(q.field("_creationTime"), lastMonthStart),
+                    q.lte(q.field("_creationTime"), lastMonthEnd)
+                )
+            )
+            .collect();
+
+        const joinedLastMonth = businessesJoinedLastMonth.length;
+
+        // 8. Venues metrics
+        // Active venues: deleted=undefined
+        // Use index by_deleted for efficient querying
+        const activeVenues = await ctx.db
+            .query("venues")
+            .withIndex("by_deleted", (q) => q.eq("deleted", undefined))
+            .collect();
+
+        const activeVenuesCount = activeVenues.length;
+
+        // Venues created last month: deleted=undefined, _creationTime within last month
+        // Use index by_deleted and filter by _creationTime (system field, can't be indexed)
+        const venuesCreatedLastMonth = await ctx.db
+            .query("venues")
+            .withIndex("by_deleted", (q) => q.eq("deleted", undefined))
+            .filter((q) =>
+                q.and(
+                    q.gte(q.field("_creationTime"), lastMonthStart),
+                    q.lte(q.field("_creationTime"), lastMonthEnd)
+                )
+            )
+            .collect();
+
+        const venuesCreatedLastMonthCount = venuesCreatedLastMonth.length;
+
         return {
             consumers: {
                 activeCount,
@@ -253,6 +347,18 @@ export const getDashboardMetrics = query({
             classes: {
                 currentlyScheduled,
                 completedLastMonth,
+            },
+            templates: {
+                total: totalTemplates,
+                createdLastMonth,
+            },
+            businesses: {
+                activeCount: activeBusinessCount,
+                joinedLastMonth,
+            },
+            venues: {
+                activeCount: activeVenuesCount,
+                createdLastMonth: venuesCreatedLastMonthCount,
             },
         };
     },

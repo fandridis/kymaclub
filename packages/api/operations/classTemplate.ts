@@ -95,7 +95,6 @@ const createDefaultTemplate = (
         businessId,
         isActive: true,
         allowWaitlist: false,
-        deleted: false,
         createdBy: userId,
         createdAt: Date.now(),
     };

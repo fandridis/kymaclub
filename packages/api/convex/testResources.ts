@@ -113,7 +113,6 @@ export const classTemplate = {
         },
     ],
     createdAt: Date.now(),
-    deleted: false,
 } satisfies Omit<Doc<"classTemplates">, "_id" | "_creationTime" | "businessId" | "venueId" | "createdBy">;
 
 export const classInstance = {
