@@ -134,6 +134,9 @@ function RouteComponent() {
 
     const location = useLocation();
     const isOnClassesPage = location.pathname === '/classes';
+    const isOnBookingsPage = location.pathname === '/bookings';
+
+    const shouldHaveBackButton = isOnClassesPage || isOnBookingsPage;
 
     return (
         <SciFiBackground>
@@ -141,7 +144,7 @@ function RouteComponent() {
             <div className="relative z-10">
                 <header className="border-b border-cyan-500/30 bg-black/50 backdrop-blur-sm">
                     <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-                        {isOnClassesPage && (
+                        {shouldHaveBackButton && (
                             <Link
                                 to="/dashboard"
                                 className="inline-flex items-center gap-2 text-cyan-400/80 hover:text-cyan-400 transition-colors group font-mono text-xs tracking-wider uppercase"

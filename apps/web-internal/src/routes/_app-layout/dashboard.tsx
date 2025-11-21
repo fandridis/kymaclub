@@ -154,6 +154,20 @@ function Dashboard() {
                         );
                     }
 
+                    if (section.id === 'bookings') {
+                        return (
+                            <Link
+                                key={section.id}
+                                to="/bookings"
+                                className="block h-full"
+                            >
+                                <SciFiMetricCard
+                                    {...cardProps}
+                                />
+                            </Link>
+                        );
+                    }
+
                     return (
                         <SciFiMetricCard
                             key={section.id}

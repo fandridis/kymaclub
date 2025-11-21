@@ -15,6 +15,7 @@ import { Route as AppLayoutRouteImport } from './routes/_app-layout'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppLayoutDashboardRouteImport } from './routes/_app-layout/dashboard'
 import { Route as AppLayoutClassesRouteImport } from './routes/_app-layout/classes'
+import { Route as AppLayoutBookingsRouteImport } from './routes/_app-layout/bookings'
 
 const SignInTesterRoute = SignInTesterRouteImport.update({
   id: '/sign-in-tester',
@@ -45,11 +46,17 @@ const AppLayoutClassesRoute = AppLayoutClassesRouteImport.update({
   path: '/classes',
   getParentRoute: () => AppLayoutRoute,
 } as any)
+const AppLayoutBookingsRoute = AppLayoutBookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
+  getParentRoute: () => AppLayoutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
   '/sign-in-tester': typeof SignInTesterRoute
+  '/bookings': typeof AppLayoutBookingsRoute
   '/classes': typeof AppLayoutClassesRoute
   '/dashboard': typeof AppLayoutDashboardRoute
 }
@@ -57,6 +64,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
   '/sign-in-tester': typeof SignInTesterRoute
+  '/bookings': typeof AppLayoutBookingsRoute
   '/classes': typeof AppLayoutClassesRoute
   '/dashboard': typeof AppLayoutDashboardRoute
 }
@@ -66,20 +74,34 @@ export interface FileRoutesById {
   '/_app-layout': typeof AppLayoutRouteWithChildren
   '/health': typeof HealthRoute
   '/sign-in-tester': typeof SignInTesterRoute
+  '/_app-layout/bookings': typeof AppLayoutBookingsRoute
   '/_app-layout/classes': typeof AppLayoutClassesRoute
   '/_app-layout/dashboard': typeof AppLayoutDashboardRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/health' | '/sign-in-tester' | '/classes' | '/dashboard'
+  fullPaths:
+    | '/'
+    | '/health'
+    | '/sign-in-tester'
+    | '/bookings'
+    | '/classes'
+    | '/dashboard'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/health' | '/sign-in-tester' | '/classes' | '/dashboard'
+  to:
+    | '/'
+    | '/health'
+    | '/sign-in-tester'
+    | '/bookings'
+    | '/classes'
+    | '/dashboard'
   id:
     | '__root__'
     | '/'
     | '/_app-layout'
     | '/health'
     | '/sign-in-tester'
+    | '/_app-layout/bookings'
     | '/_app-layout/classes'
     | '/_app-layout/dashboard'
   fileRoutesById: FileRoutesById
@@ -135,15 +157,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLayoutClassesRouteImport
       parentRoute: typeof AppLayoutRoute
     }
+    '/_app-layout/bookings': {
+      id: '/_app-layout/bookings'
+      path: '/bookings'
+      fullPath: '/bookings'
+      preLoaderRoute: typeof AppLayoutBookingsRouteImport
+      parentRoute: typeof AppLayoutRoute
+    }
   }
 }
 
 interface AppLayoutRouteChildren {
+  AppLayoutBookingsRoute: typeof AppLayoutBookingsRoute
   AppLayoutClassesRoute: typeof AppLayoutClassesRoute
   AppLayoutDashboardRoute: typeof AppLayoutDashboardRoute
 }
 
 const AppLayoutRouteChildren: AppLayoutRouteChildren = {
+  AppLayoutBookingsRoute: AppLayoutBookingsRoute,
   AppLayoutClassesRoute: AppLayoutClassesRoute,
   AppLayoutDashboardRoute: AppLayoutDashboardRoute,
 }
