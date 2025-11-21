@@ -98,13 +98,19 @@ function Dashboard() {
                         mainMetricLabel = 'active consumers';
                         secondaryMetricValue = metrics.consumers.signupsLastMonth;
                         secondaryMetricType = 'number';
-                        secondaryMetricLabel = 'Last Month';
+                        secondaryMetricLabel = 'SIGNUPS LAST MONTH';
                     } else if (section.id === 'bookings' && metrics) {
                         mainMetricValue = formatNumber(metrics.bookings.thisMonth);
                         mainMetricLabel = 'bookings this month';
                         secondaryMetricValue = metrics.bookings.changeFromLastMonth;
                         secondaryMetricType = 'percentage';
                         secondaryMetricLabel = 'VS LAST MONTH';
+                    } else if (section.id === 'class-instances' && metrics) {
+                        mainMetricValue = formatNumber(metrics.classes.currentlyScheduled);
+                        mainMetricLabel = 'currently scheduled classes';
+                        secondaryMetricValue = metrics.classes.completedLastMonth;
+                        secondaryMetricType = 'number';
+                        secondaryMetricLabel = 'COMPLETED LAST MONTH';
                     }
 
                     const colors = getSciFiColors(section.color);

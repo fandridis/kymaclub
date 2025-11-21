@@ -4,7 +4,7 @@ import { requireInternalUserOrThrow } from "../../utils";
 
 /**
  * Get dashboard metrics for internal admin panel
- * Returns key metrics for consumers and bookings
+ * Returns key metrics for consumers, bookings, and classes
  */
 export const getDashboardMetrics = query({
     args: {},
@@ -16,6 +16,10 @@ export const getDashboardMetrics = query({
         bookings: v.object({
             thisMonth: v.number(),
             changeFromLastMonth: v.number(), // Percentage change (can be negative)
+        }),
+        classes: v.object({
+            currentlyScheduled: v.number(),
+            completedLastMonth: v.number(),
         }),
     }),
     handler: async (ctx) => {
@@ -206,6 +210,37 @@ export const getDashboardMetrics = query({
         }
         // If both are 0, changeFromLastMonth stays 0
 
+        // 5. Classes metrics
+        // Currently scheduled classes: status="scheduled", deleted=undefined, startTime >= now
+        // Use index by_status_deleted_start_time for efficient querying
+        const scheduledClasses = await ctx.db
+            .query("classInstances")
+            .withIndex("by_status_deleted_start_time", (q) =>
+                q
+                    .eq("status", "scheduled")
+                    .eq("deleted", undefined)
+                    .gte("startTime", now)
+            )
+            .collect();
+
+        const currentlyScheduled = scheduledClasses.length;
+
+        // Completed classes last month: status="completed", deleted=undefined, endTime within last month
+        // Use index by_status_deleted_end_time for efficient querying
+        // Use .gte() in index query and .filter() with .lte() for upper bound (following codebase pattern)
+        const completedClassesLastMonth = await ctx.db
+            .query("classInstances")
+            .withIndex("by_status_deleted_end_time", (q) =>
+                q
+                    .eq("status", "completed")
+                    .eq("deleted", undefined)
+                    .gte("endTime", lastMonthStart)
+            )
+            .filter((q) => q.lte(q.field("endTime"), lastMonthEnd))
+            .collect();
+
+        const completedLastMonth = completedClassesLastMonth.length;
+
         return {
             consumers: {
                 activeCount,
@@ -214,6 +249,10 @@ export const getDashboardMetrics = query({
             bookings: {
                 thisMonth: thisMonthCount,
                 changeFromLastMonth: Math.round(changeFromLastMonth * 100) / 100, // Round to 2 decimal places
+            },
+            classes: {
+                currentlyScheduled,
+                completedLastMonth,
             },
         };
     },
