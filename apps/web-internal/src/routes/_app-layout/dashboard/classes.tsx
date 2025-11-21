@@ -7,6 +7,11 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookOpen, Calendar, MapPin, Users, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
 import { useCallback, useState } from 'react';
+import { useQuery } from "convex/react";
+import { api } from "@repo/api/convex/_generated/api";
+import { MetricCard } from '@/components/dashboard/MetricCard';
+import { ClassesTrendChart } from '@/components/dashboard/ClassesTrendChart';
+import { SciFiCard } from "@/components/sci-fi-card";
 
 export const Route = createFileRoute('/_app-layout/dashboard/classes')({
     component: ClassesPage,
@@ -17,6 +22,7 @@ type SortBy = "latest" | "most_expensive" | "capacity";
 function ClassesPage() {
     const [sortBy, setSortBy] = useState<SortBy>("latest");
     const { results: classInstances, loadMore, status } = useClassInstances(10, sortBy);
+    const metrics = useQuery(api.internal.queries.classInstances.getClassInstancesMetric);
 
     const instances = classInstances || [];
     const hasMore = status === "CanLoadMore";
@@ -49,25 +55,46 @@ function ClassesPage() {
                 </div>
             </div>
 
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div className="space-y-6">
+                    <MetricCard
+                        label="Total Class Instances"
+                        value={metrics?.classInstances.value ?? 0}
+                        diff={metrics?.classInstances.diff}
+                        color='pink'
+                    />
+                    <MetricCard
+                        label="New Sign-ups"
+                        value={metrics?.newSignups.value ?? 0}
+                        diff={metrics?.newSignups.diff}
+                        color='yellow'
+                    />
+                </div>
+                <div className="lg:col-span-2">
+                    <ClassesTrendChart data={metrics?.trend ?? []} />
+                </div>
+            </div>
+
             {/* Sort Tabs */}
             <div className="mb-6">
                 <Tabs value={sortBy} onValueChange={(value) => setSortBy(value as SortBy)}>
-                    <TabsList className="bg-purple-500/10 border border-purple-500/30 font-mono">
+                    <TabsList className="bg-purple-500/20 border-2 border-purple-500/50 font-mono p-1">
                         <TabsTrigger
                             value="latest"
-                            className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-400 text-purple-400/60"
+                            className="data-[state=active]:bg-purple-500 data-[state=active]:text-white text-purple-300 hover:text-purple-100 hover:bg-purple-500/30 transition-all"
                         >
                             {'>'} LATEST
                         </TabsTrigger>
                         <TabsTrigger
                             value="most_expensive"
-                            className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-400 text-purple-400/60"
+                            className="data-[state=active]:bg-purple-500 data-[state=active]:text-white text-purple-300 hover:text-purple-100 hover:bg-purple-500/30 transition-all"
                         >
                             {'>'} MOST EXPENSIVE
                         </TabsTrigger>
                         <TabsTrigger
                             value="capacity"
-                            className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-400 text-purple-400/60"
+                            className="data-[state=active]:bg-purple-500 data-[state=active]:text-white text-purple-300 hover:text-purple-100 hover:bg-purple-500/30 transition-all"
                         >
                             {'>'} CAPACITY
                         </TabsTrigger>
@@ -136,32 +163,32 @@ function ClassInstanceCard({ instance }: ClassInstanceCardProps) {
     const availableSpots = capacity - instance.bookedCount;
 
     return (
-        <Card className="border-purple-500/30 bg-purple-500/10 hover:border-purple-400 hover:bg-purple-500/20 transition-all">
-            <CardContent className="p-4">
+        <SciFiCard color="purple" hoverEffect={true} className="overflow-hidden">
+            <CardContent className="p-6 relative z-10">
                 <div className="flex items-center gap-4">
                     {/* Icon */}
-                    <div className="flex-shrink-0">
-                        <BookOpen className="w-5 h-5 text-purple-400" />
+                    <div className="flex-shrink-0 p-2 rounded-lg bg-purple-500/20 border border-purple-500/50 shadow-[0_0_10px_rgba(168,85,247,0.2)]">
+                        <BookOpen className="w-5 h-5 text-purple-300" />
                     </div>
 
                     {/* Main content - compact horizontal layout */}
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-1.5">
-                            <h3 className="text-purple-400 font-mono font-semibold text-sm truncate">
+                            <h3 className="text-purple-200 font-mono font-bold text-base truncate tracking-wide drop-shadow-[0_0_5px_rgba(168,85,247,0.5)]">
                                 {instance.name || instance.templateSnapshot?.name || 'Unnamed Class'}
                             </h3>
                         </div>
-                        <div className="flex items-center gap-4 flex-wrap text-xs">
-                            <div className="flex items-center gap-1.5 text-purple-300/80">
-                                <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                        <div className="flex items-center gap-4 flex-wrap text-sm">
+                            <div className="flex items-center gap-1.5 text-purple-300 font-medium">
+                                <Calendar className="w-4 h-4 flex-shrink-0" />
                                 <span className="font-mono">
                                     {format(startDate, 'MMM dd')} • {format(startDate, 'HH:mm')}-{format(endDate, 'HH:mm')}
                                 </span>
                             </div>
 
                             {instance.venueSnapshot && (
-                                <div className="flex items-center gap-1.5 text-purple-300/80">
-                                    <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                                <div className="flex items-center gap-1.5 text-purple-300 font-medium">
+                                    <MapPin className="w-4 h-4 flex-shrink-0" />
                                     <span className="font-mono truncate max-w-[200px]">
                                         {instance.venueSnapshot.name}
                                         {instance.venueSnapshot.address?.city && (
@@ -171,12 +198,12 @@ function ClassInstanceCard({ instance }: ClassInstanceCardProps) {
                                 </div>
                             )}
 
-                            <div className="flex items-center gap-1.5 text-purple-300/80">
-                                <Users className="w-3.5 h-3.5 flex-shrink-0" />
+                            <div className="flex items-center gap-1.5 text-purple-300 font-medium">
+                                <Users className="w-4 h-4 flex-shrink-0" />
                                 <span className="font-mono">
                                     {instance.bookedCount}/{capacity}
                                     {availableSpots > 0 && (
-                                        <span className="text-green-400 ml-1">
+                                        <span className="text-green-400 ml-1 font-bold drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">
                                             ({availableSpots})
                                         </span>
                                     )}
@@ -184,8 +211,8 @@ function ClassInstanceCard({ instance }: ClassInstanceCardProps) {
                             </div>
 
                             {instance.price !== undefined && instance.price !== null && (
-                                <div className="flex items-center gap-1.5 text-purple-300/80">
-                                    <DollarSign className="w-3.5 h-3.5 flex-shrink-0" />
+                                <div className="flex items-center gap-1.5 text-purple-300 font-medium">
+                                    <DollarSign className="w-4 h-4 flex-shrink-0" />
                                     <span className="font-mono">
                                         ${(instance.price / 100).toFixed(2)}
                                     </span>
@@ -195,12 +222,11 @@ function ClassInstanceCard({ instance }: ClassInstanceCardProps) {
                     </div>
 
                     {/* ID - compact */}
-                    <div className="flex-shrink-0 text-purple-400/40 text-xs font-mono hidden md:block">
+                    <div className="flex-shrink-0 text-purple-400/60 text-xs font-mono hidden md:block border border-purple-500/30 px-2 py-1 rounded bg-purple-500/10">
                         {instance._id.slice(-8)}
                     </div>
                 </div>
             </CardContent>
-        </Card>
+        </SciFiCard>
     );
 }
-

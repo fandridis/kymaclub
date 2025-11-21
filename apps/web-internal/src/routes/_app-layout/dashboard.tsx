@@ -1,5 +1,6 @@
 import { createFileRoute, Link, Outlet, redirect, useLocation } from '@tanstack/react-router';
 import { SciFiLoader } from '@/components/sci-fi-loader';
+import { SciFiCard, SciFiColor, getSciFiColors } from '@/components/sci-fi-card';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { Building2, Users, MapPin, BookOpen, Calendar, Zap, LucideIcon } from 'lucide-react';
@@ -12,7 +13,7 @@ interface DashboardSection {
     id: string;
     title: string;
     code: string;
-    color: 'cyan' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink';
+    color: SciFiColor;
     icon: LucideIcon;
 }
 
@@ -20,7 +21,7 @@ const sections: DashboardSection[] = [
     { id: 'businesses', title: 'BUSINESSES', code: '0x425553494E455353', color: 'cyan', icon: Building2 },
     { id: 'consumers', title: 'CONSUMERS', code: '0x434F4E53554D4552', color: 'green', icon: Users },
     { id: 'venues', title: 'VENUES', code: '0x56454E554553', color: 'yellow', icon: MapPin },
-    { id: 'classes', title: 'CLASSES', code: '0x434C4153534553', color: 'purple', icon: BookOpen },
+    { id: 'class-instances', title: 'CLASSES', code: '0x434C4153534553', color: 'purple', icon: BookOpen },
     { id: 'bookings', title: 'BOOKINGS', code: '0x424F4F4B494E4753', color: 'orange', icon: Calendar },
     { id: 'actions', title: 'ACTIONS', code: '0x414354494F4E53', color: 'pink', icon: Zap },
 ];
@@ -50,59 +51,7 @@ function Dashboard() {
 
     const userName = user.name || user.email || "Admin";
 
-    const getColorClasses = (color: DashboardSection['color']) => {
-        const colors = {
-            cyan: {
-                border: 'border-cyan-500',
-                text: 'text-cyan-400',
-                bg: 'bg-cyan-500/10',
-                hover: 'hover:border-cyan-400 hover:bg-cyan-500/20',
-                glow: 'shadow-[0_0_20px_rgba(6,182,212,0.3)]',
-                hoverGlow: 'hover:shadow-[0_0_30px_rgba(6,182,212,0.5)]',
-            },
-            green: {
-                border: 'border-green-500',
-                text: 'text-green-400',
-                bg: 'bg-green-500/10',
-                hover: 'hover:border-green-400 hover:bg-green-500/20',
-                glow: 'shadow-[0_0_20px_rgba(34,197,94,0.3)]',
-                hoverGlow: 'hover:shadow-[0_0_30px_rgba(34,197,94,0.5)]',
-            },
-            yellow: {
-                border: 'border-yellow-500',
-                text: 'text-yellow-400',
-                bg: 'bg-yellow-500/10',
-                hover: 'hover:border-yellow-400 hover:bg-yellow-500/20',
-                glow: 'shadow-[0_0_20px_rgba(234,179,8,0.3)]',
-                hoverGlow: 'hover:shadow-[0_0_30px_rgba(234,179,8,0.5)]',
-            },
-            purple: {
-                border: 'border-purple-500',
-                text: 'text-purple-400',
-                bg: 'bg-purple-500/10',
-                hover: 'hover:border-purple-400 hover:bg-purple-500/20',
-                glow: 'shadow-[0_0_20px_rgba(168,85,247,0.3)]',
-                hoverGlow: 'hover:shadow-[0_0_30px_rgba(168,85,247,0.5)]',
-            },
-            orange: {
-                border: 'border-orange-500',
-                text: 'text-orange-400',
-                bg: 'bg-orange-500/10',
-                hover: 'hover:border-orange-400 hover:bg-orange-500/20',
-                glow: 'shadow-[0_0_20px_rgba(251,146,60,0.3)]',
-                hoverGlow: 'hover:shadow-[0_0_30px_rgba(251,146,60,0.5)]',
-            },
-            pink: {
-                border: 'border-pink-500',
-                text: 'text-pink-400',
-                bg: 'bg-pink-500/10',
-                hover: 'hover:border-pink-400 hover:bg-pink-500/20',
-                glow: 'shadow-[0_0_20px_rgba(236,72,153,0.3)]',
-                hoverGlow: 'hover:shadow-[0_0_30px_rgba(236,72,153,0.5)]',
-            },
-        };
-        return colors[color];
-    };
+
 
     return (
         <div className="container mx-auto px-4 py-8">
@@ -127,51 +76,50 @@ function Dashboard() {
             {/* Dashboard Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {sections.map((section) => {
-                    const colors = getColorClasses(section.color);
-                    const className = `group relative ${colors.bg} ${colors.border} border-2 p-6 font-mono transition-all duration-300 ${colors.hover} ${colors.glow} ${colors.hoverGlow} backdrop-blur-sm`;
+                    const colors = getSciFiColors(section.color);
+                    const CardContent = (
+                        <div className="flex flex-col h-full justify-between p-2">
+                            <div>
+                                <div className="flex items-center justify-between mb-4">
+                                    {/* Icon Opacity is likely intended to be 100%, so we leave it alone */}
+                                    <section.icon className={`${colors.text} w-8 h-8`} />
 
-                    if (section.id === 'classes') {
+                                    {/* Target text: Base opacity 30, changes to 50 on group hover */}
+                                    <div className={`${colors.text} opacity-30 group-hover:opacity-70 text-[10px] font-mono`}>
+                                        {'[ID: ' + section.id.toUpperCase() + ']'}
+                                    </div>
+                                </div>
+                                <div className={`${colors.text} text-xl md:text-2xl font-black mb-2 tracking-wider`}>
+                                    {section.title}
+                                </div>
+
+                                {/* Target text: Base opacity 30, changes to 50 on group hover */}
+                                <div className={`${colors.text} opacity-30 group-hover:opacity-70 text-xs tracking-wider mb-4`}>
+                                    {section.code}
+                                </div>
+                                <div className="flex items-center gap-2 text-xs">
+                                    {/* Target text: Base opacity 30, changes to 50 on group hover */}
+                                    <span className={`${colors.text} opacity-30 group-hover:opacity-70`}>{'>'}</span>
+
+                                    <span className={`${colors.text} animate-pulse`}>█</span>
+
+                                    {/* Target text: Base opacity 30, changes to 50 on group hover */}
+                                    <span className={`${colors.text} opacity-30 group-hover:opacity-70`}>Access module...</span>
+                                </div>
+                            </div>
+                        </div>
+                    );
+
+                    if (section.id === 'class-instances') {
                         return (
                             <Link
                                 key={section.id}
                                 to="/dashboard/classes"
-                                className={className}
+                                className="block h-full"
                             >
-                                {/* Corner brackets */}
-                                <div className={`absolute top-2 left-2 ${colors.text} text-xs`}>
-                                    {'┌─'}
-                                </div>
-                                <div className={`absolute top-2 right-2 ${colors.text} text-xs`}>
-                                    {'─┐'}
-                                </div>
-                                <div className={`absolute bottom-2 left-2 ${colors.text} text-xs`}>
-                                    {'└─'}
-                                </div>
-                                <div className={`absolute bottom-2 right-2 ${colors.text} text-xs`}>
-                                    {'─┘'}
-                                </div>
-
-                                {/* Content */}
-                                <div className="relative z-10">
-                                    <div className="mb-4">
-                                        <section.icon className={`w-12 h-12 ${colors.text}`} strokeWidth={1.5} />
-                                    </div>
-                                    <div className={`${colors.text} text-xl md:text-2xl font-black mb-2 tracking-wider`}>
-                                        {section.title}
-                                    </div>
-                                    <div className={`${colors.text}/60 text-xs tracking-wider mb-4`}>
-                                        {section.code}
-                                    </div>
-                                    <div className="flex items-center gap-2 text-xs">
-                                        <span className={`${colors.text}/40`}>{'>'}</span>
-                                        <span className={`${colors.text} animate-pulse`}>█</span>
-                                        <span className={`${colors.text}/60`}>Access module...</span>
-                                    </div>
-                                </div>
-
-                                {/* Hover effect overlay */}
-                                <div className={`absolute inset-0 ${colors.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-                                <div className={`absolute -inset-1 ${colors.bg.replace('/10', '/20')} blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                                <SciFiCard color={section.color} className="h-full p-8 group" hoverEffect={true}>
+                                    {CardContent}
+                                </SciFiCard>
                             </Link>
                         );
                     }
@@ -179,46 +127,15 @@ function Dashboard() {
                     return (
                         <button
                             key={section.id}
-                            className={className}
+                            className="block w-full h-full text-left"
                         >
-                            {/* Corner brackets */}
-                            <div className={`absolute top-2 left-2 ${colors.text} text-xs`}>
-                                {'┌─'}
-                            </div>
-                            <div className={`absolute top-2 right-2 ${colors.text} text-xs`}>
-                                {'─┐'}
-                            </div>
-                            <div className={`absolute bottom-2 left-2 ${colors.text} text-xs`}>
-                                {'└─'}
-                            </div>
-                            <div className={`absolute bottom-2 right-2 ${colors.text} text-xs`}>
-                                {'─┘'}
-                            </div>
-
-                            {/* Content */}
-                            <div className="relative z-10">
-                                <div className="mb-4">
-                                    <section.icon className={`w-12 h-12 ${colors.text}`} strokeWidth={1.5} />
-                                </div>
-                                <div className={`${colors.text} text-xl md:text-2xl font-black mb-2 tracking-wider`}>
-                                    {section.title}
-                                </div>
-                                <div className={`${colors.text}/60 text-xs tracking-wider mb-4`}>
-                                    {section.code}
-                                </div>
-                                <div className="flex items-center gap-2 text-xs">
-                                    <span className={`${colors.text}/40`}>{'>'}</span>
-                                    <span className={`${colors.text} animate-pulse`}>█</span>
-                                    <span className={`${colors.text}/60`}>Access module...</span>
-                                </div>
-                            </div>
-
-                            {/* Hover effect overlay */}
-                            <div className={`absolute inset-0 ${colors.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-                            <div className={`absolute -inset-1 ${colors.bg.replace('/10', '/20')} blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                            <SciFiCard color={section.color} className="h-full p-8 group" hoverEffect={true}>
+                                {CardContent}
+                            </SciFiCard>
                         </button>
                     );
-                })}
+                })
+                }
             </div>
 
             {/* Footer stats */}
@@ -268,6 +185,6 @@ function Dashboard() {
 
             {/* Render child routes */}
             <Outlet />
-        </div>
+        </div >
     );
 }
