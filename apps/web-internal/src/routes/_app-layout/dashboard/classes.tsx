@@ -4,12 +4,12 @@ import { SciFiListLoader } from '@/components/sci-fi-list-loader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BookOpen, Calendar, MapPin, Users, DollarSign } from 'lucide-react';
+import { BookOpen, Calendar, MapPin, Users, Euro } from 'lucide-react';
 import { format } from 'date-fns';
 import { useCallback, useState } from 'react';
 import { useQuery } from "convex/react";
 import { api } from "@repo/api/convex/_generated/api";
-import { MetricCard } from '@/components/dashboard/MetricCard';
+import { SciFiMetricCard } from '@/components/sci-fi-metric-card';
 import { ClassesTrendChart } from '@/components/dashboard/ClassesTrendChart';
 import { SciFiCard } from "@/components/sci-fi-card";
 
@@ -35,6 +35,8 @@ function ClassesPage() {
         }
     }, [status, isLoadingMore, loadMore]);
 
+    console.log(metrics);
+
     return (
         <div className="container mx-auto px-4 py-8">
             {/* Header */}
@@ -57,17 +59,19 @@ function ClassesPage() {
 
             {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <div className="space-y-6">
-                    <MetricCard
-                        label="Total Class Instances"
-                        value={metrics?.classInstances.value ?? 0}
-                        diff={metrics?.classInstances.diff}
+                <div className="space-y-6 flex flex-col">
+                    <SciFiMetricCard
+                        mainMetric={metrics?.scheduledClasses.value ?? 0}
+                        mainMetricLabel="Scheduled Classes"
+                        secondaryMetricValue={metrics?.scheduledClasses.diff}
+                        secondaryMetricType="percentage"
+                        secondaryMetricLabel="VS LAST MONTH"
                         color='pink'
                     />
-                    <MetricCard
-                        label="New Sign-ups"
-                        value={metrics?.newSignups.value ?? 0}
-                        diff={metrics?.newSignups.diff}
+                    <SciFiMetricCard
+                        mainMetric={`€${((metrics?.averageClassCost.value ?? 0) / 100).toFixed(2)}`}
+                        mainMetricLabel="Average Class Cost"
+                        secondaryMetricLabel="LAST 100 CLASSES"
                         color='yellow'
                     />
                 </div>
@@ -75,6 +79,7 @@ function ClassesPage() {
                     <ClassesTrendChart data={metrics?.trend ?? []} />
                 </div>
             </div>
+
 
             {/* Sort Tabs */}
             <div className="mb-6">
@@ -103,51 +108,57 @@ function ClassesPage() {
             </div>
 
             {/* Classes List */}
-            {isLoading ? (
-                <SciFiListLoader count={5} cardHeight="h-30" />
-            ) : instances.length === 0 ? (
-                <Card className="border-purple-500/30 bg-purple-500/10">
-                    <CardContent className="p-6 text-center">
-                        <div className="text-purple-400 font-mono text-sm">
-                            {'> No class instances found'}
-                        </div>
-                    </CardContent>
-                </Card>
-            ) : (
-                <div className="space-y-2 mb-6">
-                    {instances.map((instance) => (
-                        <ClassInstanceCard key={instance._id} instance={instance} />
-                    ))}
-                </div>
-            )}
+            {
+                isLoading ? (
+                    <SciFiListLoader count={5} cardHeight="h-30" />
+                ) : instances.length === 0 ? (
+                    <Card className="border-purple-500/30 bg-purple-500/10">
+                        <CardContent className="p-6 text-center">
+                            <div className="text-purple-400 font-mono text-sm">
+                                {'> No class instances found'}
+                            </div>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <div className="space-y-2 mb-6">
+                        {instances.map((instance) => (
+                            <ClassInstanceCard key={instance._id} instance={instance} />
+                        ))}
+                    </div>
+                )
+            }
 
             {/* Load More Button */}
-            {hasMore && (
-                <div className="flex justify-center mt-6">
-                    <Button
-                        onClick={handleLoadMore}
-                        disabled={status !== "CanLoadMore"}
-                        className="font-mono border-2 border-purple-500 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 hover:border-purple-400 text-sm py-2 px-4"
-                    >
-                        {isLoadingMore ? (
-                            <>
-                                <span className="animate-pulse">█</span>
-                                <span className="ml-2">Loading...</span>
-                            </>
-                        ) : (
-                            <>
-                                {'>'} LOAD MORE
-                            </>
-                        )}
-                    </Button>
-                </div>
-            )}
+            {
+                hasMore && (
+                    <div className="flex justify-center mt-6">
+                        <Button
+                            onClick={handleLoadMore}
+                            disabled={status !== "CanLoadMore"}
+                            className="font-mono border-2 border-purple-500 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 hover:border-purple-400 text-sm py-2 px-4"
+                        >
+                            {isLoadingMore ? (
+                                <>
+                                    <span className="animate-pulse">█</span>
+                                    <span className="ml-2">Loading...</span>
+                                </>
+                            ) : (
+                                <>
+                                    {'>'} LOAD MORE
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                )
+            }
 
-            {!hasMore && instances.length > 0 && (
-                <div className="text-center mt-6 text-purple-400/60 text-xs font-mono">
-                    {'> All class instances loaded'}
-                </div>
-            )}
+            {
+                !hasMore && instances.length > 0 && (
+                    <div className="text-center mt-6 text-purple-400/60 text-xs font-mono">
+                        {'> All class instances loaded'}
+                    </div>
+                )
+            }
         </div>
     );
 }
@@ -212,9 +223,9 @@ function ClassInstanceCard({ instance }: ClassInstanceCardProps) {
 
                             {instance.price !== undefined && instance.price !== null && (
                                 <div className="flex items-center gap-1.5 text-purple-300 font-medium">
-                                    <DollarSign className="w-4 h-4 flex-shrink-0" />
+                                    <Euro className="w-4 h-4 flex-shrink-0" />
                                     <span className="font-mono">
-                                        ${(instance.price / 100).toFixed(2)}
+                                        €{(instance.price / 100).toFixed(2)}
                                     </span>
                                 </div>
                             )}

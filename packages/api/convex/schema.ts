@@ -1091,7 +1091,9 @@ export default defineSchema({
     .index("by_user_status_created", ["userId", "status", "createdAt"])
     .index("by_class_instance_status", ["classInstanceId", "status"])
     .index("by_user_status_start_time", ["userId", "status", "classInstanceSnapshot.startTime"])
-    .index("by_status_deleted_start_time", ["status", "deleted", "classInstanceSnapshot.startTime"]),
+    .index("by_status_deleted_start_time", ["status", "deleted", "classInstanceSnapshot.startTime"])
+    // 🔍 DASHBOARD METRICS INDEX - for efficient booking queries by status, deleted, and bookedAt
+    .index("by_status_deleted_bookedAt", ["status", "deleted", "bookedAt"]),
 
   /**
    * Enhanced Credit Transactions - One record per credit operation (includes purchases)

@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, TrendingDown, DollarSign, Calendar, Users } from "lucide-react"
+import { DollarSign, Calendar, Users } from "lucide-react"
 
 const metrics = [
     {
@@ -38,15 +38,16 @@ export function MetricsCards() {
                         <metric.icon className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-card-foreground">{metric.value}</div>
-                        <div className="flex items-center space-x-1 text-xs">
-                            {metric.trend === "up" ? (
-                                <TrendingUp className="h-3 w-3 text-primary" />
-                            ) : (
-                                <TrendingDown className="h-3 w-3 text-destructive" />
-                            )}
-                            <span className={metric.trend === "up" ? "text-primary" : "text-destructive"}>{metric.change}</span>
-                            <span className="text-muted-foreground">{metric.description}</span>
+                        <div className="flex items-baseline gap-4">
+                            <div className="text-2xl font-bold text-card-foreground">{metric.value}</div>
+                            <div className="flex flex-col">
+                                <span className={`text-sm font-medium ${metric.trend === "up" ? "text-primary" : "text-destructive"}`}>
+                                    {metric.change}
+                                </span>
+                                <span className="text-[10px] uppercase tracking-wider text-muted-foreground opacity-70">
+                                    VS LAST YEAR
+                                </span>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>

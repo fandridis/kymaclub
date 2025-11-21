@@ -76,28 +76,47 @@ export const getClassInstancesMetric = query({
         const currentMonthStart = startOfMonth(now).getTime();
         const currentMonthEnd = endOfMonth(now).getTime();
 
-        const lastYearSameMonthStart = startOfMonth(subYears(now, 1)).getTime();
-        const lastYearSameMonthEnd = endOfMonth(subYears(now, 1)).getTime();
+        const lastMonthStart = startOfMonth(subMonths(now, 1)).getTime();
+        const lastMonthEnd = endOfMonth(subMonths(now, 1)).getTime();
 
         // 2. Helper to count in range
-        const countInRange = async (tableName: "classInstances" | "users", start: number, end: number) => {
+        const countScheduledInRange = async (start: number, end: number) => {
             return (await ctx.db
-                .query(tableName)
-                .withIndex("by_creation_time", (q) =>
-                    q.gte("_creationTime", start).lte("_creationTime", end)
+                .query("classInstances")
+                .withIndex("by_deleted_start_time", (q) =>
+                    q.eq("deleted", undefined).gte("startTime", start).lte("startTime", end)
                 )
+                .filter((q) => q.eq(q.field("status"), "scheduled"))
                 .collect()).length;
         };
 
         // 3. Fetch Metrics
 
-        // Class Instances
-        const classInstancesCurrentMonth = await countInRange("classInstances", currentMonthStart, currentMonthEnd);
-        const classInstancesLastYear = await countInRange("classInstances", lastYearSameMonthStart, lastYearSameMonthEnd);
+        // Scheduled Classes
+        const scheduledClassesCurrentMonth = await countScheduledInRange(currentMonthStart, currentMonthEnd);
+        const scheduledClassesLastMonth = await countScheduledInRange(lastMonthStart, lastMonthEnd);
 
-        // Users (Sign-ups)
-        const usersCurrentMonth = await countInRange("users", currentMonthStart, currentMonthEnd);
-        const usersLastYear = await countInRange("users", lastYearSameMonthStart, lastYearSameMonthEnd);
+        // Average Class Cost (Last 100 classes)
+        const last100Classes = await ctx.db
+            .query("classInstances")
+            .withIndex("by_deleted_start_time", (q) =>
+                q.eq("deleted", undefined)
+            )
+            .order("desc")
+            .take(100);
+
+        let totalCost = 0;
+        let classesWithPrice = 0;
+
+        for (const instance of last100Classes) {
+            if (instance.price !== undefined && instance.price !== null) {
+                totalCost += instance.price;
+                classesWithPrice++;
+            }
+        }
+
+        const averageCost = classesWithPrice > 0 ? totalCost / classesWithPrice : 0;
+
 
         // 4. Calculate Trends (Last 12 months)
         const trendData = [];
@@ -107,7 +126,7 @@ export const getClassInstancesMetric = query({
             const monthEnd = endOfMonth(date).getTime();
             const monthLabel = format(date, "MMM"); // e.g., "Jan", "Feb"
 
-            const count = await countInRange("classInstances", monthStart, monthEnd);
+            const count = await countScheduledInRange(monthStart, monthEnd);
 
             trendData.push({
                 month: monthLabel,
@@ -122,15 +141,14 @@ export const getClassInstancesMetric = query({
         };
 
         return {
-            classInstances: {
-                value: classInstancesCurrentMonth,
-                diff: calculateDiff(classInstancesCurrentMonth, classInstancesLastYear),
-                label: "Total Class Instances",
+            scheduledClasses: {
+                value: scheduledClassesCurrentMonth,
+                diff: calculateDiff(scheduledClassesCurrentMonth, scheduledClassesLastMonth),
+                label: "Scheduled Classes",
             },
-            newSignups: {
-                value: usersCurrentMonth,
-                diff: calculateDiff(usersCurrentMonth, usersLastYear),
-                label: "New Sign-ups",
+            averageClassCost: {
+                value: averageCost,
+                label: "Average Class Cost",
             },
             trend: trendData,
         };

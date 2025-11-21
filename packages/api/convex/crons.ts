@@ -112,7 +112,7 @@ export const markNoShows = internalMutation({
  * Mark Classes Completed Internal Mutation
  * 
  * Efficiently finds and marks completed classes by:
- * 1. Only checking classes from the last 3 days (optimization)
+ * 1. Only checking classes from the last day (optimization)
  * 2. Only processing scheduled classes
  * 3. Checking if 2 hours have passed since class end
  */
@@ -122,11 +122,11 @@ export const markClassesCompleted = internalMutation({
     handler: async (ctx, args) => {
         const now = Date.now();
         const GRACE_PERIOD_MS = 2 * 60 * 60 * 1000; // 2 hours after class end
-        const THREE_DAYS_AGO = now - (3 * 24 * 60 * 60 * 1000); // Only check last 3 days for efficiency
+        const ONE_DAY_AGO = now - (1 * 24 * 60 * 60 * 1000); // Only check last day for efficiency
 
-        console.log(`[Class Completion Cron] Marking completed classes from the last 3 days`);
+        console.log(`[Class Completion Cron] Marking completed classes from the last day`);
 
-        // Get all scheduled classes from the last 3 days using efficient compound index
+        // Get all scheduled classes from the last day using efficient compound index
         // This avoids scanning the entire classInstances table by leveraging the index
         const recentClasses = await ctx.db
             .query("classInstances")
@@ -134,7 +134,7 @@ export const markClassesCompleted = internalMutation({
                 q
                     .eq("status", "scheduled")
                     .eq("deleted", undefined)
-                    .gt("endTime", THREE_DAYS_AGO)
+                    .gt("endTime", ONE_DAY_AGO)
             )
             .collect();
 

@@ -1,9 +1,12 @@
 import { createFileRoute, Link, Outlet, redirect, useLocation } from '@tanstack/react-router';
 import { SciFiLoader } from '@/components/sci-fi-loader';
-import { SciFiCard, SciFiColor, getSciFiColors } from '@/components/sci-fi-card';
+import { SciFiMetricCard } from '@/components/sci-fi-metric-card';
+import { SciFiColor, getSciFiColors } from '@/components/sci-fi-card';
 import { useCurrentUser } from '@/hooks/use-current-user';
-import { useAuthActions } from '@convex-dev/auth/react';
-import { Building2, Users, MapPin, BookOpen, Calendar, Zap, LucideIcon } from 'lucide-react';
+import { Building2, Users, MapPin, BookOpen, Calendar, FileText, LucideIcon } from 'lucide-react';
+import { useQuery } from 'convex/react';
+import { api } from '@repo/api/convex/_generated/api';
+import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_app-layout/dashboard')({
     component: Dashboard,
@@ -22,13 +25,14 @@ const sections: DashboardSection[] = [
     { id: 'consumers', title: 'CONSUMERS', code: '0x434F4E53554D4552', color: 'green', icon: Users },
     { id: 'venues', title: 'VENUES', code: '0x56454E554553', color: 'yellow', icon: MapPin },
     { id: 'class-instances', title: 'CLASSES', code: '0x434C4153534553', color: 'purple', icon: BookOpen },
-    { id: 'bookings', title: 'BOOKINGS', code: '0x424F4F4B494E4753', color: 'orange', icon: Calendar },
-    { id: 'actions', title: 'ACTIONS', code: '0x414354494F4E53', color: 'pink', icon: Zap },
+    { id: 'class-templates', title: 'TEMPLATES', code: '0x54454D504C41544553', color: 'orange', icon: FileText },
+    { id: 'bookings', title: 'BOOKINGS', code: '0x424F4F4B494E4753', color: 'pink', icon: Calendar },
 ];
 
 function Dashboard() {
     const { user, isLoading } = useCurrentUser();
     const location = useLocation();
+    const metrics = useQuery(api.internal.queries.dashboardMetrics.getDashboardMetrics);
 
     // If we're on a child route, only render the outlet
     if (location.pathname !== '/dashboard') {
@@ -74,41 +78,49 @@ function Dashboard() {
             </div>
 
             {/* Dashboard Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                 {sections.map((section) => {
+                    // Format numbers with commas
+                    const formatNumber = (num: number | undefined) => {
+                        if (num === undefined) return '...';
+                        return num.toLocaleString();
+                    };
+
+                    // Get main and secondary metrics for specific sections
+                    let mainMetricValue: string | number = '...';
+                    let mainMetricLabel: string = 'LOADING...';
+                    let secondaryMetricValue: number | undefined = undefined;
+                    let secondaryMetricType: 'number' | 'percentage' | undefined = undefined;
+                    let secondaryMetricLabel: string | undefined = undefined;
+
+                    if (section.id === 'consumers' && metrics) {
+                        mainMetricValue = formatNumber(metrics.consumers.activeCount);
+                        mainMetricLabel = 'active consumers';
+                        secondaryMetricValue = metrics.consumers.signupsLastMonth;
+                        secondaryMetricType = 'number';
+                        secondaryMetricLabel = 'Last Month';
+                    } else if (section.id === 'bookings' && metrics) {
+                        mainMetricValue = formatNumber(metrics.bookings.thisMonth);
+                        mainMetricLabel = 'bookings this month';
+                        secondaryMetricValue = metrics.bookings.changeFromLastMonth;
+                        secondaryMetricType = 'percentage';
+                        secondaryMetricLabel = 'VS LAST MONTH';
+                    }
+
                     const colors = getSciFiColors(section.color);
-                    const CardContent = (
-                        <div className="flex flex-col h-full justify-between p-2">
-                            <div>
-                                <div className="flex items-center justify-between mb-4">
-                                    {/* Icon Opacity is likely intended to be 100%, so we leave it alone */}
-                                    <section.icon className={`${colors.text} w-8 h-8`} />
-
-                                    {/* Target text: Base opacity 30, changes to 50 on group hover */}
-                                    <div className={`${colors.text} opacity-30 group-hover:opacity-70 text-[10px] font-mono`}>
-                                        {'[ID: ' + section.id.toUpperCase() + ']'}
-                                    </div>
-                                </div>
-                                <div className={`${colors.text} text-xl md:text-2xl font-black mb-2 tracking-wider`}>
-                                    {section.title}
-                                </div>
-
-                                {/* Target text: Base opacity 30, changes to 50 on group hover */}
-                                <div className={`${colors.text} opacity-30 group-hover:opacity-70 text-xs tracking-wider mb-4`}>
-                                    {section.code}
-                                </div>
-                                <div className="flex items-center gap-2 text-xs">
-                                    {/* Target text: Base opacity 30, changes to 50 on group hover */}
-                                    <span className={`${colors.text} opacity-30 group-hover:opacity-70`}>{'>'}</span>
-
-                                    <span className={`${colors.text} animate-pulse`}>█</span>
-
-                                    {/* Target text: Base opacity 30, changes to 50 on group hover */}
-                                    <span className={`${colors.text} opacity-30 group-hover:opacity-70`}>Access module...</span>
-                                </div>
-                            </div>
-                        </div>
-                    );
+                    const cardProps = {
+                        mainMetric: mainMetricValue,
+                        mainMetricLabel,
+                        color: section.color,
+                        icon: section.icon,
+                        dataTitle: section.title,
+                        renderFooter: () => (
+                            <span className={cn("font-mono text-xs", colors.text)}>ONLINE</span>
+                        ),
+                        secondaryMetricValue,
+                        secondaryMetricType,
+                        secondaryMetricLabel,
+                    };
 
                     if (section.id === 'class-instances') {
                         return (
@@ -117,22 +129,18 @@ function Dashboard() {
                                 to="/dashboard/classes"
                                 className="block h-full"
                             >
-                                <SciFiCard color={section.color} className="h-full p-8 group" hoverEffect={true}>
-                                    {CardContent}
-                                </SciFiCard>
+                                <SciFiMetricCard
+                                    {...cardProps}
+                                />
                             </Link>
                         );
                     }
 
                     return (
-                        <button
+                        <SciFiMetricCard
                             key={section.id}
-                            className="block w-full h-full text-left"
-                        >
-                            <SciFiCard color={section.color} className="h-full p-8 group" hoverEffect={true}>
-                                {CardContent}
-                            </SciFiCard>
-                        </button>
+                            {...cardProps}
+                        />
                     );
                 })
                 }
