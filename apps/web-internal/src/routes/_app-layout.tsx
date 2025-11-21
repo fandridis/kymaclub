@@ -1,9 +1,10 @@
 import { SciFiLoader } from '@/components/sci-fi-loader';
 import { useCurrentUser } from '@/hooks/use-current-user';
-import { createFileRoute, Link, Outlet, redirect } from '@tanstack/react-router';
+import { createFileRoute, Link, Outlet, redirect, useLocation } from '@tanstack/react-router';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { AdminButton } from '@/components/admin-button';
 import { SciFiBackground } from '@/components/ui/sci-fi-background';
+import { ArrowLeft } from 'lucide-react';
 
 export const Route = createFileRoute('/_app-layout')({
     component: RouteComponent,
@@ -131,12 +132,25 @@ function RouteComponent() {
         window.location.href = '/sign-in-tester';
     };
 
+    const location = useLocation();
+    const isOnClassesPage = location.pathname === '/dashboard/classes';
+
     return (
         <SciFiBackground>
 
             <div className="relative z-10">
                 <header className="border-b border-cyan-500/30 bg-black/50 backdrop-blur-sm">
-                    <div className="container mx-auto px-4 py-3 flex justify-end">
+                    <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+                        {isOnClassesPage && (
+                            <Link
+                                to="/dashboard"
+                                className="inline-flex items-center gap-2 text-cyan-400/80 hover:text-cyan-400 transition-colors group font-mono text-xs tracking-wider uppercase"
+                            >
+                                <ArrowLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
+                                <span className='text-lg'>BACK</span>
+                            </Link>
+                        )}
+                        {!isOnClassesPage && <div />}
                         <AdminButton
                             variant="destructive"
                             size="sm"
