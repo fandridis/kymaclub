@@ -133,7 +133,7 @@ function RouteComponent() {
     };
 
     const location = useLocation();
-    const isOnClassesPage = location.pathname === '/dashboard/classes';
+    const isOnClassesPage = location.pathname === '/classes';
 
     return (
         <SciFiBackground>
@@ -150,7 +150,7 @@ function RouteComponent() {
                                 <span className='text-lg'>BACK</span>
                             </Link>
                         )}
-                        {!isOnClassesPage && <div />}
+                        <div className="flex-1" />
                         <AdminButton
                             variant="destructive"
                             size="sm"

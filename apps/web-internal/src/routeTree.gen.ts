@@ -14,7 +14,7 @@ import { Route as HealthRouteImport } from './routes/health'
 import { Route as AppLayoutRouteImport } from './routes/_app-layout'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppLayoutDashboardRouteImport } from './routes/_app-layout/dashboard'
-import { Route as AppLayoutDashboardClassesRouteImport } from './routes/_app-layout/dashboard/classes'
+import { Route as AppLayoutClassesRouteImport } from './routes/_app-layout/classes'
 
 const SignInTesterRoute = SignInTesterRouteImport.update({
   id: '/sign-in-tester',
@@ -40,26 +40,25 @@ const AppLayoutDashboardRoute = AppLayoutDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AppLayoutRoute,
 } as any)
-const AppLayoutDashboardClassesRoute =
-  AppLayoutDashboardClassesRouteImport.update({
-    id: '/classes',
-    path: '/classes',
-    getParentRoute: () => AppLayoutDashboardRoute,
-  } as any)
+const AppLayoutClassesRoute = AppLayoutClassesRouteImport.update({
+  id: '/classes',
+  path: '/classes',
+  getParentRoute: () => AppLayoutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
   '/sign-in-tester': typeof SignInTesterRoute
-  '/dashboard': typeof AppLayoutDashboardRouteWithChildren
-  '/dashboard/classes': typeof AppLayoutDashboardClassesRoute
+  '/classes': typeof AppLayoutClassesRoute
+  '/dashboard': typeof AppLayoutDashboardRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
   '/sign-in-tester': typeof SignInTesterRoute
-  '/dashboard': typeof AppLayoutDashboardRouteWithChildren
-  '/dashboard/classes': typeof AppLayoutDashboardClassesRoute
+  '/classes': typeof AppLayoutClassesRoute
+  '/dashboard': typeof AppLayoutDashboardRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -67,27 +66,22 @@ export interface FileRoutesById {
   '/_app-layout': typeof AppLayoutRouteWithChildren
   '/health': typeof HealthRoute
   '/sign-in-tester': typeof SignInTesterRoute
-  '/_app-layout/dashboard': typeof AppLayoutDashboardRouteWithChildren
-  '/_app-layout/dashboard/classes': typeof AppLayoutDashboardClassesRoute
+  '/_app-layout/classes': typeof AppLayoutClassesRoute
+  '/_app-layout/dashboard': typeof AppLayoutDashboardRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/health'
-    | '/sign-in-tester'
-    | '/dashboard'
-    | '/dashboard/classes'
+  fullPaths: '/' | '/health' | '/sign-in-tester' | '/classes' | '/dashboard'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/health' | '/sign-in-tester' | '/dashboard' | '/dashboard/classes'
+  to: '/' | '/health' | '/sign-in-tester' | '/classes' | '/dashboard'
   id:
     | '__root__'
     | '/'
     | '/_app-layout'
     | '/health'
     | '/sign-in-tester'
+    | '/_app-layout/classes'
     | '/_app-layout/dashboard'
-    | '/_app-layout/dashboard/classes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -134,33 +128,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLayoutDashboardRouteImport
       parentRoute: typeof AppLayoutRoute
     }
-    '/_app-layout/dashboard/classes': {
-      id: '/_app-layout/dashboard/classes'
+    '/_app-layout/classes': {
+      id: '/_app-layout/classes'
       path: '/classes'
-      fullPath: '/dashboard/classes'
-      preLoaderRoute: typeof AppLayoutDashboardClassesRouteImport
-      parentRoute: typeof AppLayoutDashboardRoute
+      fullPath: '/classes'
+      preLoaderRoute: typeof AppLayoutClassesRouteImport
+      parentRoute: typeof AppLayoutRoute
     }
   }
 }
 
-interface AppLayoutDashboardRouteChildren {
-  AppLayoutDashboardClassesRoute: typeof AppLayoutDashboardClassesRoute
-}
-
-const AppLayoutDashboardRouteChildren: AppLayoutDashboardRouteChildren = {
-  AppLayoutDashboardClassesRoute: AppLayoutDashboardClassesRoute,
-}
-
-const AppLayoutDashboardRouteWithChildren =
-  AppLayoutDashboardRoute._addFileChildren(AppLayoutDashboardRouteChildren)
-
 interface AppLayoutRouteChildren {
-  AppLayoutDashboardRoute: typeof AppLayoutDashboardRouteWithChildren
+  AppLayoutClassesRoute: typeof AppLayoutClassesRoute
+  AppLayoutDashboardRoute: typeof AppLayoutDashboardRoute
 }
 
 const AppLayoutRouteChildren: AppLayoutRouteChildren = {
-  AppLayoutDashboardRoute: AppLayoutDashboardRouteWithChildren,
+  AppLayoutClassesRoute: AppLayoutClassesRoute,
+  AppLayoutDashboardRoute: AppLayoutDashboardRoute,
 }
 
 const AppLayoutRouteWithChildren = AppLayoutRoute._addFileChildren(

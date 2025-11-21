@@ -13,7 +13,7 @@ import { SciFiMetricCard } from '@/components/sci-fi-metric-card';
 import { ClassesTrendChart } from '@/components/dashboard/ClassesTrendChart';
 import { SciFiCard } from "@/components/sci-fi-card";
 
-export const Route = createFileRoute('/_app-layout/dashboard/classes')({
+export const Route = createFileRoute('/_app-layout/classes')({
     component: ClassesPage,
 });
 
@@ -101,7 +101,7 @@ function ClassesPage() {
                             value="capacity"
                             className="data-[state=active]:bg-purple-500 data-[state=active]:text-white text-purple-300 hover:text-purple-100 hover:bg-purple-500/30 transition-all"
                         >
-                            {'>'} CAPACITY
+                            {'>'} BY CAPACITY
                         </TabsTrigger>
                     </TabsList>
                 </Tabs>
@@ -241,3 +241,4 @@ function ClassInstanceCard({ instance }: ClassInstanceCardProps) {
         </SciFiCard>
     );
 }
+

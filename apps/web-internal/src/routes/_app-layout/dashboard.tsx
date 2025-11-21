@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet, redirect, useLocation } from '@tanstack/react-router';
+import { createFileRoute, Link, Outlet, redirect } from '@tanstack/react-router';
 import { SciFiLoader } from '@/components/sci-fi-loader';
 import { SciFiMetricCard } from '@/components/sci-fi-metric-card';
 import { SciFiColor, getSciFiColors } from '@/components/sci-fi-card';
@@ -31,13 +31,7 @@ const sections: DashboardSection[] = [
 
 function Dashboard() {
     const { user, isLoading } = useCurrentUser();
-    const location = useLocation();
     const metrics = useQuery(api.internal.queries.dashboardMetrics.getDashboardMetrics);
-
-    // If we're on a child route, only render the outlet
-    if (location.pathname !== '/dashboard') {
-        return <Outlet />;
-    }
 
     if (isLoading) {
         return <SciFiLoader fullScreen={false} />
@@ -150,7 +144,7 @@ function Dashboard() {
                         return (
                             <Link
                                 key={section.id}
-                                to="/dashboard/classes"
+                                to="/classes"
                                 className="block h-full"
                             >
                                 <SciFiMetricCard
