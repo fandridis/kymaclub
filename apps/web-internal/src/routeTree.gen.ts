@@ -16,6 +16,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppLayoutDashboardRouteImport } from './routes/_app-layout/dashboard'
 import { Route as AppLayoutClassesRouteImport } from './routes/_app-layout/classes'
 import { Route as AppLayoutBookingsRouteImport } from './routes/_app-layout/bookings'
+import { Route as AppLayoutConsumersUserIdRouteImport } from './routes/_app-layout/consumers.$userId'
+import { Route as AppLayoutBusinessesBusinessIdRouteImport } from './routes/_app-layout/businesses.$businessId'
 
 const SignInTesterRoute = SignInTesterRouteImport.update({
   id: '/sign-in-tester',
@@ -51,6 +53,18 @@ const AppLayoutBookingsRoute = AppLayoutBookingsRouteImport.update({
   path: '/bookings',
   getParentRoute: () => AppLayoutRoute,
 } as any)
+const AppLayoutConsumersUserIdRoute =
+  AppLayoutConsumersUserIdRouteImport.update({
+    id: '/consumers/$userId',
+    path: '/consumers/$userId',
+    getParentRoute: () => AppLayoutRoute,
+  } as any)
+const AppLayoutBusinessesBusinessIdRoute =
+  AppLayoutBusinessesBusinessIdRouteImport.update({
+    id: '/businesses/$businessId',
+    path: '/businesses/$businessId',
+    getParentRoute: () => AppLayoutRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -59,6 +73,8 @@ export interface FileRoutesByFullPath {
   '/bookings': typeof AppLayoutBookingsRoute
   '/classes': typeof AppLayoutClassesRoute
   '/dashboard': typeof AppLayoutDashboardRoute
+  '/businesses/$businessId': typeof AppLayoutBusinessesBusinessIdRoute
+  '/consumers/$userId': typeof AppLayoutConsumersUserIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -67,6 +83,8 @@ export interface FileRoutesByTo {
   '/bookings': typeof AppLayoutBookingsRoute
   '/classes': typeof AppLayoutClassesRoute
   '/dashboard': typeof AppLayoutDashboardRoute
+  '/businesses/$businessId': typeof AppLayoutBusinessesBusinessIdRoute
+  '/consumers/$userId': typeof AppLayoutConsumersUserIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -77,6 +95,8 @@ export interface FileRoutesById {
   '/_app-layout/bookings': typeof AppLayoutBookingsRoute
   '/_app-layout/classes': typeof AppLayoutClassesRoute
   '/_app-layout/dashboard': typeof AppLayoutDashboardRoute
+  '/_app-layout/businesses/$businessId': typeof AppLayoutBusinessesBusinessIdRoute
+  '/_app-layout/consumers/$userId': typeof AppLayoutConsumersUserIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -87,6 +107,8 @@ export interface FileRouteTypes {
     | '/bookings'
     | '/classes'
     | '/dashboard'
+    | '/businesses/$businessId'
+    | '/consumers/$userId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -95,6 +117,8 @@ export interface FileRouteTypes {
     | '/bookings'
     | '/classes'
     | '/dashboard'
+    | '/businesses/$businessId'
+    | '/consumers/$userId'
   id:
     | '__root__'
     | '/'
@@ -104,6 +128,8 @@ export interface FileRouteTypes {
     | '/_app-layout/bookings'
     | '/_app-layout/classes'
     | '/_app-layout/dashboard'
+    | '/_app-layout/businesses/$businessId'
+    | '/_app-layout/consumers/$userId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -164,6 +190,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLayoutBookingsRouteImport
       parentRoute: typeof AppLayoutRoute
     }
+    '/_app-layout/consumers/$userId': {
+      id: '/_app-layout/consumers/$userId'
+      path: '/consumers/$userId'
+      fullPath: '/consumers/$userId'
+      preLoaderRoute: typeof AppLayoutConsumersUserIdRouteImport
+      parentRoute: typeof AppLayoutRoute
+    }
+    '/_app-layout/businesses/$businessId': {
+      id: '/_app-layout/businesses/$businessId'
+      path: '/businesses/$businessId'
+      fullPath: '/businesses/$businessId'
+      preLoaderRoute: typeof AppLayoutBusinessesBusinessIdRouteImport
+      parentRoute: typeof AppLayoutRoute
+    }
   }
 }
 
@@ -171,12 +211,16 @@ interface AppLayoutRouteChildren {
   AppLayoutBookingsRoute: typeof AppLayoutBookingsRoute
   AppLayoutClassesRoute: typeof AppLayoutClassesRoute
   AppLayoutDashboardRoute: typeof AppLayoutDashboardRoute
+  AppLayoutBusinessesBusinessIdRoute: typeof AppLayoutBusinessesBusinessIdRoute
+  AppLayoutConsumersUserIdRoute: typeof AppLayoutConsumersUserIdRoute
 }
 
 const AppLayoutRouteChildren: AppLayoutRouteChildren = {
   AppLayoutBookingsRoute: AppLayoutBookingsRoute,
   AppLayoutClassesRoute: AppLayoutClassesRoute,
   AppLayoutDashboardRoute: AppLayoutDashboardRoute,
+  AppLayoutBusinessesBusinessIdRoute: AppLayoutBusinessesBusinessIdRoute,
+  AppLayoutConsumersUserIdRoute: AppLayoutConsumersUserIdRoute,
 }
 
 const AppLayoutRouteWithChildren = AppLayoutRoute._addFileChildren(

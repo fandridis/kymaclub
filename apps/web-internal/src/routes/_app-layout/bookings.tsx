@@ -89,28 +89,28 @@ function BookingsPage() {
             {/* Status Tabs */}
             <div className="mb-6">
                 <Tabs value={status} onValueChange={(value) => setStatus(value as BookingStatus)}>
-                    <TabsList className="bg-pink-500/20 border-2 border-pink-500/50 font-mono p-1">
+                    <TabsList className="bg-cyan-500/20 border-2 border-cyan-500/50 font-mono p-1">
                         <TabsTrigger
                             value="latest"
-                            className="data-[state=active]:bg-pink-500 data-[state=active]:text-white text-pink-300 hover:text-pink-100 hover:bg-pink-500/30 transition-all"
+                            className="data-[state=active]:bg-cyan-500 data-[state=active]:text-white text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/30 transition-all"
                         >
                             {'>'} LATEST
                         </TabsTrigger>
                         <TabsTrigger
                             value="cancelled_by_consumer"
-                            className="data-[state=active]:bg-pink-500 data-[state=active]:text-white text-pink-300 hover:text-pink-100 hover:bg-pink-500/30 transition-all"
+                            className="data-[state=active]:bg-cyan-500 data-[state=active]:text-white text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/30 transition-all"
                         >
                             {'>'} CANCELLED BY USER
                         </TabsTrigger>
                         <TabsTrigger
                             value="cancelled_by_business"
-                            className="data-[state=active]:bg-pink-500 data-[state=active]:text-white text-pink-300 hover:text-pink-100 hover:bg-pink-500/30 transition-all"
+                            className="data-[state=active]:bg-cyan-500 data-[state=active]:text-white text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/30 transition-all"
                         >
                             {'>'} CANCELLED BY BUSINESS
                         </TabsTrigger>
                         <TabsTrigger
                             value="no_show"
-                            className="data-[state=active]:bg-pink-500 data-[state=active]:text-white text-pink-300 hover:text-pink-100 hover:bg-pink-500/30 transition-all"
+                            className="data-[state=active]:bg-cyan-500 data-[state=active]:text-white text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/30 transition-all"
                         >
                             {'>'} NO SHOWS
                         </TabsTrigger>
@@ -121,11 +121,11 @@ function BookingsPage() {
             {/* Bookings List */}
             {
                 isLoading ? (
-                    <SciFiListLoader count={5} cardHeight="h-30" />
+                    <SciFiListLoader count={5} cardHeight="h-30" colorTheme="cyan" />
                 ) : bookingList.length === 0 ? (
-                    <Card className="border-pink-500/30 bg-pink-500/10">
+                    <Card className="border-cyan-500/30 bg-cyan-500/10">
                         <CardContent className="p-6 text-center">
-                            <div className="text-pink-400 font-mono text-sm">
+                            <div className="text-cyan-400 font-mono text-sm">
                                 {'> No bookings found'}
                             </div>
                         </CardContent>
@@ -146,7 +146,7 @@ function BookingsPage() {
                         <Button
                             onClick={handleLoadMore}
                             disabled={queryStatus !== "CanLoadMore"}
-                            className="font-mono border-2 border-pink-500 bg-pink-500/10 text-pink-400 hover:bg-pink-500/20 hover:border-pink-400 text-sm py-2 px-4"
+                            className="font-mono border-2 border-cyan-500 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 hover:border-cyan-400 text-sm py-2 px-4"
                         >
                             {isLoadingMore ? (
                                 <>
@@ -165,7 +165,7 @@ function BookingsPage() {
 
             {
                 !hasMore && bookingList.length > 0 && (
-                    <div className="text-center mt-6 text-pink-400/60 text-xs font-mono">
+                    <div className="text-center mt-6 text-cyan-400/60 text-xs font-mono">
                         {'> All bookings loaded'}
                     </div>
                 )
@@ -238,18 +238,18 @@ function BookingCard({ booking }: BookingCardProps) {
     };
 
     return (
-        <SciFiCard color="pink" hoverEffect={true} className="overflow-hidden">
+        <SciFiCard color="cyan" hoverEffect={true} className="overflow-hidden">
             <CardContent className="p-6 relative z-10">
                 <div className="flex items-center gap-4">
                     {/* Icon */}
-                    <div className="flex-shrink-0 p-2 rounded-lg bg-pink-500/20 border border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.2)]">
+                    <div className="flex-shrink-0 p-2 rounded-lg bg-cyan-500/20 border border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
                         {getStatusIcon()}
                     </div>
 
                     {/* Main content - compact horizontal layout */}
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-1.5">
-                            <h3 className="text-pink-200 font-mono font-bold text-base truncate tracking-wide drop-shadow-[0_0_5px_rgba(236,72,153,0.5)]">
+                            <h3 className="text-cyan-200 font-mono font-bold text-base truncate tracking-wide drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]">
                                 {booking.classInstanceSnapshot?.name || 'Unnamed Class'}
                             </h3>
                             <span className={`text-xs font-mono px-2 py-0.5 rounded border ${getStatusColor(status)} border-current/30`}>
@@ -258,7 +258,7 @@ function BookingCard({ booking }: BookingCardProps) {
                         </div>
                         <div className="flex items-center gap-4 flex-wrap text-sm">
                             {startTime && (
-                                <div className="flex items-center gap-1.5 text-pink-300 font-medium">
+                                <div className="flex items-center gap-1.5 text-cyan-300 font-medium">
                                     <Calendar className="w-4 h-4 flex-shrink-0" />
                                     <span className="font-mono">
                                         {format(startTime, 'MMM dd')}
@@ -270,7 +270,7 @@ function BookingCard({ booking }: BookingCardProps) {
                             )}
 
                             {booking.venueSnapshot?.name && (
-                                <div className="flex items-center gap-1.5 text-pink-300 font-medium">
+                                <div className="flex items-center gap-1.5 text-cyan-300 font-medium">
                                     <MapPin className="w-4 h-4 flex-shrink-0" />
                                     <span className="font-mono truncate max-w-[200px]">
                                         {booking.venueSnapshot.name}
@@ -279,7 +279,7 @@ function BookingCard({ booking }: BookingCardProps) {
                             )}
 
                             {booking.userSnapshot && (
-                                <div className="flex items-center gap-1.5 text-pink-300 font-medium">
+                                <div className="flex items-center gap-1.5 text-cyan-300 font-medium">
                                     <User className="w-4 h-4 flex-shrink-0" />
                                     <span className="font-mono truncate max-w-[200px]">
                                         {booking.userSnapshot.name || booking.userSnapshot.email || 'Unknown User'}
@@ -288,7 +288,7 @@ function BookingCard({ booking }: BookingCardProps) {
                             )}
 
                             {booking.finalPrice !== undefined && booking.finalPrice !== null && (
-                                <div className="flex items-center gap-1.5 text-pink-300 font-medium">
+                                <div className="flex items-center gap-1.5 text-cyan-300 font-medium">
                                     <Euro className="w-4 h-4 flex-shrink-0" />
                                     <span className="font-mono">
                                         €{(booking.finalPrice / 100).toFixed(2)}
@@ -296,7 +296,7 @@ function BookingCard({ booking }: BookingCardProps) {
                                 </div>
                             )}
 
-                            <div className="flex items-center gap-1.5 text-pink-300/60 font-medium text-xs">
+                            <div className="flex items-center gap-1.5 text-cyan-300/60 font-medium text-xs">
                                 <span className="font-mono">
                                     Booked: {format(bookedAt, 'MMM dd, HH:mm')}
                                 </span>
@@ -305,7 +305,7 @@ function BookingCard({ booking }: BookingCardProps) {
                     </div>
 
                     {/* ID - compact */}
-                    <div className="flex-shrink-0 text-pink-400/60 text-xs font-mono hidden md:block border border-pink-500/30 px-2 py-1 rounded bg-pink-500/10">
+                    <div className="flex-shrink-0 text-cyan-400/60 text-xs font-mono hidden md:block border border-cyan-500/30 px-2 py-1 rounded bg-cyan-500/10">
                         {booking._id.slice(-8)}
                     </div>
                 </div>

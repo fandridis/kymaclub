@@ -26,9 +26,9 @@ export const SciFiLoader = ({ fullScreen = false, lines = DEFAULT_LINES }: SciFi
         if (absoluteActiveIndex >= lines.length - 1) return;
 
         const timings = [
-            1500,   // First visible line: 1 second
-            2000,   // Second visible line: 1.5 seconds
-            1500,   // Third visible line: 1.5 seconds, then scroll
+            1200,   // First visible line: 1 second
+            1500,   // Second visible line: 1.5 seconds
+            1200,   // Third visible line: 1.5 seconds, then scroll
         ];
 
         const timing = timings[activeIndex] || 1500;

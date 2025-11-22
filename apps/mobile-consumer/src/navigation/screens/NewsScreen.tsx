@@ -99,19 +99,15 @@ export function NewsScreen() {
     const navigation = useNavigation<NavigationProp<RootStackParamListWithNestedTabs>>();
     const { user } = useCurrentUser();
     const userCity = user?.activeCitySlug;
-
     const [now, setNow] = useState(new Date());
 
-    // Update "now" when the screen comes into focus to refresh list filtering
+    // Set up a slow interval to refresh the list occasionally (every 5 minutes)
+    // so classes that pass their start time eventually get filtered out
     useFocusEffect(
         React.useCallback(() => {
-            setNow(new Date());
-
-            // Also set up a slow interval to refresh the list occasionally (e.g. every 5 minutes)
-            // so classes that pass their start time eventually get filtered out
             const timer = setInterval(() => {
                 setNow(new Date());
-            }, 10 * 60 * 1000);
+            }, 5 * 60 * 1000);
 
             return () => clearInterval(timer);
         }, [])

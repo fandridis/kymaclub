@@ -464,6 +464,9 @@ export const bookingsFields = {
   // Optional Cancel reason
   cancelReason: v.optional(v.string()),
 
+  // Searchable ID for partial ID search (e.g. "F4D...")
+  searchableId: v.optional(v.string()),
+
   // Simple pricing tracking (links to credit ledger)
   originalPrice: v.number(),           // Template price in cents (before any discount)  
   finalPrice: v.number(),             // What they actually paid in cents (creditsUsed = finalPrice / 100)
@@ -1000,13 +1003,34 @@ export default defineSchema({
    */
   users: defineTable(usersFields)
     .index("email", ["email"])
-    .index("by_active_city_slug", ["activeCitySlug"]),
+    .index("by_active_city_slug", ["activeCitySlug"])
+    .searchIndex("search_name", {
+      searchField: "name",
+      filterFields: ["role"],
+    })
+    .searchIndex("search_email", {
+      searchField: "email",
+      filterFields: ["role"],
+    })
+    .searchIndex("search_phone", {
+      searchField: "phone",
+      filterFields: ["role"],
+    }),
 
   /** 
    * Business that the user belongs to - created on onboarding
    */
   businesses: defineTable(businessesFields)
-    .index("by_email", ["email"]),
+    .index("by_email", ["email"])
+    .searchIndex("search_name", {
+      searchField: "name",
+    })
+    .searchIndex("search_email", {
+      searchField: "email",
+    })
+    .searchIndex("search_phone", {
+      searchField: "phone",
+    }),
 
   /**
   * Authorized business emails - whitelist for new business account creation
@@ -1029,7 +1053,11 @@ export default defineSchema({
     .index("by_city_slug", ["citySlug"])
     .index("by_deleted", ["deleted"])
     // 🆕 PERFORMANCE INDEXES FOR DELETED ITEM FILTERING
-    .index("by_business_deleted", ["businessId", "deleted"]),
+    .index("by_business_deleted", ["businessId", "deleted"])
+    .searchIndex("search_name", {
+      searchField: "name",
+      filterFields: ["businessId", "citySlug"],
+    }),
 
   /** 
    * Class templates - blueprints for creating class instances
@@ -1042,7 +1070,11 @@ export default defineSchema({
     .index("by_business_deleted", ["businessId", "deleted"])
     .index("by_business_deleted_active", ["businessId", "deleted", "isActive"])
     // 🔍 INTERNAL ADMIN INDEXES - for efficient dashboard queries
-    .index("by_deleted", ["deleted"]),
+    .index("by_deleted", ["deleted"])
+    .searchIndex("search_name", {
+      searchField: "name",
+      filterFields: ["businessId"],
+    }),
 
   /** 
    * Class instances - actual scheduled classes
@@ -1074,7 +1106,11 @@ export default defineSchema({
     // 🔍 INTERNAL ADMIN SORTING INDEXES - for efficient sorting in admin panel
     .index("by_deleted_start_time", ["deleted", "startTime"])
     .index("by_deleted_price", ["deleted", "price"])
-    .index("by_deleted_capacity", ["deleted", "capacity"]),
+    .index("by_deleted_capacity", ["deleted", "capacity"])
+    .searchIndex("search_template_name", {
+      searchField: "templateSnapshot.name",
+      filterFields: ["businessId", "citySlug"],
+    }),
 
   /** 
    * Bookings - customer reservations for class instances (simplified)
@@ -1095,7 +1131,10 @@ export default defineSchema({
     .index("by_user_status_start_time", ["userId", "status", "classInstanceSnapshot.startTime"])
     .index("by_status_deleted_start_time", ["status", "deleted", "classInstanceSnapshot.startTime"])
     // 🔍 DASHBOARD METRICS INDEX - for efficient booking queries by status, deleted, and bookedAt
-    .index("by_status_deleted_bookedAt", ["status", "deleted", "bookedAt"]),
+    .index("by_status_deleted_bookedAt", ["status", "deleted", "bookedAt"])
+    .searchIndex("search_id", {
+      searchField: "searchableId",
+    }),
 
   /**
    * Enhanced Credit Transactions - One record per credit operation (includes purchases)

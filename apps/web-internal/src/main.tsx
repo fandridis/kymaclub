@@ -41,7 +41,7 @@ createRoot(document.getElementById("root")!).render(
 import { SciFiBackground } from "./components/ui/sci-fi-background";
 
 function InnerApp() {
-  const { user, isLoading } = useCurrentUser()
+  const { isLoading } = useCurrentUser()
 
   if (isLoading) {
     return (
