@@ -66,15 +66,15 @@ export function CommandMenu() {
                     {search === "" && (
                         <CommandGroup heading="Suggestions">
                             <CommandItem value="dashboard" onSelect={() => runCommand(() => navigate({ to: "/dashboard" }))}>
-                                <Calendar className="mr-2 h-4 w-4" />
+                                <Calendar className="mr-2 h-5 w-5" />
                                 <span>Dashboard</span>
                             </CommandItem>
                             <CommandItem value="businesses" onSelect={() => runCommand(() => navigate({ to: "/businesses" } as any))}>
-                                <Building2 className="mr-2 h-4 w-4" />
+                                <Building2 className="mr-2 h-5 w-5" />
                                 <span>Businesses</span>
                             </CommandItem>
                             <CommandItem value="bookings" onSelect={() => runCommand(() => navigate({ to: "/bookings" }))}>
-                                <Ticket className="mr-2 h-4 w-4" />
+                                <Ticket className="mr-2 h-5 w-5" />
                                 <span>Bookings</span>
                             </CommandItem>
                         </CommandGroup>
@@ -91,10 +91,10 @@ export function CommandMenu() {
                                             value={business._id}
                                             onSelect={() => runCommand(() => navigate({ to: `/businesses/${business._id}` } as any))}
                                         >
-                                            <Building2 className="mr-2 h-4 w-4" />
+                                            <Building2 className="mr-2 h-5 w-5" />
                                             <span>{business.name}</span>
                                             {business.matchType && (
-                                                <span className="ml-auto text-xs text-cyan-500/50">
+                                                <span className="ml-auto text-sm text-cyan-500/50">
                                                     Matched by {business.matchType}
                                                 </span>
                                             )}
@@ -111,10 +111,10 @@ export function CommandMenu() {
                                             value={consumer._id}
                                             onSelect={() => runCommand(() => navigate({ to: `/consumers/${consumer._id}` } as any))}
                                         >
-                                            <Users className="mr-2 h-4 w-4" />
+                                            <Users className="mr-2 h-5 w-5" />
                                             <span>{consumer.name || consumer.email}</span>
                                             {consumer.matchType && (
-                                                <span className="ml-auto text-xs text-cyan-500/50">
+                                                <span className="ml-auto text-sm text-cyan-500/50">
                                                     Matched by {consumer.matchType}
                                                 </span>
                                             )}
