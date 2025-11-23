@@ -26,7 +26,15 @@ const TestEmailProvider: EmailConfig = {
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
     (() => {
-      console.log("Initializing Password provider with reset:", ResendOTPPasswordReset);
+      const key = process.env.AUTH_RESEND_KEY;
+      console.log("AUTH_RESEND_KEY check:", key ? `Present (starts with ${key.substring(0, 4)}...)` : "MISSING");
+
+      if (!ResendOTPPasswordReset) {
+        console.error("CRITICAL: ResendOTPPasswordReset is undefined");
+        throw new Error("ResendOTPPasswordReset is undefined. Check module exports and circular dependencies.");
+      }
+
+      console.log("Initializing Password provider with reset config:", JSON.stringify(ResendOTPPasswordReset, null, 2));
       return Password({ reset: ResendOTPPasswordReset });
     })(),
     GitHub,
