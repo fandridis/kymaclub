@@ -42,6 +42,7 @@
   },
   "exports": {
     "./types/booking": "./types/booking.ts",
+    "./types/credit": "./types/credit.ts",
     "./types/notification": "./types/notification.ts",
     "./operations/payments": "./operations/payments.ts",
     "./utils/deep-linking": "./utils/deep-linking.ts",

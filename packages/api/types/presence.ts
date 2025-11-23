@@ -1,9 +1,6 @@
-import { Infer, v } from "convex/values";
-import { userPresenceFields } from "../convex/schema";
+import { Doc } from "../convex/_generated/dataModel";
 
-const userPresenceFieldObject = v.object(userPresenceFields);
-
-export type UserPresence = Infer<typeof userPresenceFieldObject>;
+export type UserPresence = Doc<"userPresence">;
 
 // Presence status types
 export type PresenceAppState = UserPresence['appState'];

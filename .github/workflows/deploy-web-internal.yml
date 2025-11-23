@@ -1,0 +1,57 @@
+name: Deploy Web Internal to Production
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web-internal/**'
+      - 'packages/api/**'
+      - 'packages/utils/**'
+      - 'packages/ui/**'
+      - 'pnpm-lock.yaml'
+      - 'package.json'
+      - 'turbo.json'
+
+jobs:
+  deploy:
+    name: Deploy to internal.kymaclub.com
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web-internal
+        run: |
+          cd apps/web-internal
+          echo "Current build script:"
+          cat package.json | grep -A 1 '"build"'
+          pnpm run build
+        env:
+          VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL }}
+
+      - name: Deploy to Cloudflare Workers
+        run: |
+          cd apps/web-internal
+          npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deployment summary
+        run: |
+          echo "✅ Web internal app deployed successfully to https://internal.kymaclub.com"
+

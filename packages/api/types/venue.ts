@@ -1,7 +1,4 @@
-import { Infer, v } from "convex/values";
-import { venuesFields } from "../convex/schema";
+import { Doc } from "../convex/_generated/dataModel";
 
-const venueFieldObject = v.object(venuesFields);
-
-export type Venue = Infer<typeof venueFieldObject>;
+export type Venue = Doc<"venues">;
 export type VenuePrimaryCategory = Venue['primaryCategory'];

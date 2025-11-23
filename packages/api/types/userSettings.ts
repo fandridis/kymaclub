@@ -1,7 +1,4 @@
-import { Infer, v } from "convex/values";
-import { userSettingsFields } from "../convex/schema";
+import { Doc } from "../convex/_generated/dataModel";
 
-const userSettingsFieldObject = v.object(userSettingsFields);
-
-export type UserSettings = Infer<typeof userSettingsFieldObject>;
+export type UserSettings = Doc<"userSettings">;
 export type UserSettingsNotifications = NonNullable<UserSettings['notifications']>;

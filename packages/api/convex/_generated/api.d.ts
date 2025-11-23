@@ -17,6 +17,7 @@ import type * as crons from "../crons.js";
 import type * as http from "../http.js";
 import type * as internal_queries_bookings from "../internal/queries/bookings.js";
 import type * as internal_queries_classInstances from "../internal/queries/classInstances.js";
+import type * as internal_queries_consumers from "../internal/queries/consumers.js";
 import type * as internal_queries_dashboardMetrics from "../internal/queries/dashboardMetrics.js";
 import type * as internal_queries_search from "../internal/queries/search.js";
 import type * as mutations_bookings from "../mutations/bookings.js";
@@ -83,6 +84,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   "internal/queries/bookings": typeof internal_queries_bookings;
   "internal/queries/classInstances": typeof internal_queries_classInstances;
+  "internal/queries/consumers": typeof internal_queries_consumers;
   "internal/queries/dashboardMetrics": typeof internal_queries_dashboardMetrics;
   "internal/queries/search": typeof internal_queries_search;
   "mutations/bookings": typeof mutations_bookings;

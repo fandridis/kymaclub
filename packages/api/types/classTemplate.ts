@@ -1,6 +1,3 @@
-import { Infer, v } from "convex/values";
-import { classTemplatesFields } from "../convex/schema";
+import { Doc } from "../convex/_generated/dataModel";
 
-const classTemplateFieldObject = v.object(classTemplatesFields);
-
-export type ClassTemplate = Infer<typeof classTemplateFieldObject>;
+export type ClassTemplate = Doc<"classTemplates">;

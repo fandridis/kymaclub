@@ -1,6 +1,3 @@
-import { Infer, v } from "convex/values";
-import { businessSettingsFields } from "../convex/schema";
+import { Doc } from "../convex/_generated/dataModel";
 
-const businessSettingsFieldObject = v.object(businessSettingsFields);
-
-export type BusinessSettings = Infer<typeof businessSettingsFieldObject>;
+export type BusinessSettings = Doc<"businessSettings">;

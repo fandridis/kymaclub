@@ -1,8 +1,5 @@
-import { Infer, v } from "convex/values";
-import { usersFields } from "../convex/schema";
+import { Doc } from "../convex/_generated/dataModel";
 
-const userFieldObject = v.object(usersFields);
-
-export type User = Infer<typeof userFieldObject>;
+export type User = Doc<"users">;
 export type UserBusinessRole = User['businessRole'];
 export type UserRole = User['role'];

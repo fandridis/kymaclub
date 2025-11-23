@@ -1,6 +1,3 @@
-import { Infer, v } from "convex/values";
-import { systemSettingsFields } from "../convex/schema";
+import { Doc } from "../convex/_generated/dataModel";
 
-const systemSettingFieldObject = v.object(systemSettingsFields);
-
-export type SystemSetting = Infer<typeof systemSettingFieldObject>;
+export type SystemSetting = Doc<"systemSettings">;

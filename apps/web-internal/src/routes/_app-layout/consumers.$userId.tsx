@@ -19,6 +19,8 @@ import {
     UserX
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { Booking, BookingStatus } from '@repo/api/types/booking';
+import { CreditTransaction, CreditTransactionType, CreditTransactionStatus } from '@repo/api/types/credit';
 
 export const Route = createFileRoute('/_app-layout/consumers/$userId')({
     component: ConsumerDetailPage,
@@ -162,20 +164,7 @@ function ConsumerDetailPage() {
 }
 
 function BookingsList({ bookings }: {
-    bookings?: Array<{
-        _id: string;
-        status: "pending" | "completed" | "cancelled_by_consumer" | "cancelled_by_business" | "no_show";
-        bookedAt: number;
-        finalPrice: number;
-        classInstanceSnapshot?: {
-            name: string;
-            startTime: number;
-            endTime?: number;
-        };
-        venueSnapshot?: {
-            name: string;
-        };
-    }>
+    bookings?: Array<Booking>
 }) {
     if (!bookings || bookings.length === 0) {
         return (
@@ -206,6 +195,7 @@ function BookingsList({ bookings }: {
                             return <CheckCircle2 className="w-4 h-4 text-green-400" />;
                         case "cancelled_by_consumer":
                         case "cancelled_by_business":
+                        case "cancelled_by_business_rebookable":
                             return <XCircle className="w-4 h-4 text-yellow-400" />;
                         case "no_show":
                             return <UserX className="w-4 h-4 text-red-400" />;
@@ -222,6 +212,8 @@ function BookingsList({ bookings }: {
                             return "CANCELLED BY USER";
                         case "cancelled_by_business":
                             return "CANCELLED BY BUSINESS";
+                        case "cancelled_by_business_rebookable":
+                            return "CANCELLED (REBOOKABLE)";
                         case "no_show":
                             return "NO SHOW";
                         default:
@@ -235,6 +227,7 @@ function BookingsList({ bookings }: {
                             return "text-green-400";
                         case "cancelled_by_consumer":
                         case "cancelled_by_business":
+                        case "cancelled_by_business_rebookable":
                             return "text-yellow-400";
                         case "no_show":
                             return "text-red-400";
@@ -305,14 +298,7 @@ function BookingsList({ bookings }: {
 }
 
 function TransactionsList({ transactions }: {
-    transactions?: Array<{
-        _id: string;
-        type: "purchase" | "gift" | "spend" | "refund";
-        amount: number;
-        createdAt: number;
-        description: string;
-        status: "completed" | "pending" | "failed";
-    }>
+    transactions?: Array<CreditTransaction>
 }) {
     if (!transactions || transactions.length === 0) {
         return (
@@ -345,6 +331,22 @@ function TransactionsList({ transactions }: {
                     }
                 };
 
+                const getStatusColor = () => {
+                    switch (transaction.status) {
+                        case "completed":
+                            return "text-green-400 border-green-500/30";
+                        case "pending":
+                            return "text-yellow-400 border-yellow-500/30";
+                        case "failed":
+                        case "canceled":
+                            return "text-red-400 border-red-500/30";
+                        case "refunded":
+                            return "text-cyan-400 border-cyan-500/30";
+                        default:
+                            return "text-green-400 border-green-500/30"; // Default to completed/green if undefined
+                    }
+                };
+
                 return (
                     <SciFiCard key={transaction._id} color="cyan" hoverEffect={true} className="overflow-hidden">
                         <CardContent className="p-6 relative z-10">
@@ -358,7 +360,7 @@ function TransactionsList({ transactions }: {
                                             {transaction.description}
                                         </h3>
                                         <span className={`text-xs font-mono px-2 py-0.5 rounded border ${getTypeColor()} border-current/30`}>
-                                            {transaction.type.toUpperCase()}
+                                            {transaction.type?.toUpperCase()}
                                         </span>
                                         <span className={`text-xs font-mono px-2 py-0.5 rounded border ${isPositive ? 'text-green-400 border-green-500/30' : 'text-yellow-400 border-yellow-500/30'}`}>
                                             {isPositive ? '+' : ''}{transaction.amount / 100} credits
@@ -371,8 +373,8 @@ function TransactionsList({ transactions }: {
                                                 {format(createdAt, 'MMM dd, yyyy HH:mm')}
                                             </span>
                                         </div>
-                                        <span className={`text-xs font-mono px-2 py-0.5 rounded border ${transaction.status === 'completed' ? 'text-green-400 border-green-500/30' : transaction.status === 'pending' ? 'text-yellow-400 border-yellow-500/30' : 'text-red-400 border-red-500/30'}`}>
-                                            {transaction.status.toUpperCase()}
+                                        <span className={`text-xs font-mono px-2 py-0.5 rounded border ${getStatusColor()}`}>
+                                            {(transaction.status || 'COMPLETED').toUpperCase()}
                                         </span>
                                     </div>
                                 </div>
