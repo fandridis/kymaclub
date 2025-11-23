@@ -25,7 +25,10 @@ const TestEmailProvider: EmailConfig = {
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
-    Password({ reset: ResendOTPPasswordReset }),
+    (() => {
+      console.log("Initializing Password provider with reset:", ResendOTPPasswordReset);
+      return Password({ reset: ResendOTPPasswordReset });
+    })(),
     GitHub,
     ResendOTP,
     ...(process.env.NODE_ENV === "test" || process.env.ENABLE_TEST_AUTH === "true"
