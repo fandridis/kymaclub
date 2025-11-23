@@ -95,10 +95,13 @@ function RouteComponent() {
     )
 }
 
+import { PasswordReset } from '@/components/auth/password-reset';
+
 export function SignInTesterForm() {
     const { signIn } = useAuthActions();
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [mode, setMode] = useState<"signIn" | "reset">("signIn");
     const { user } = useCurrentUser();
 
     // Check if user is admin after successful login
@@ -117,6 +120,10 @@ export function SignInTesterForm() {
         const interval = setInterval(checkAdminStatus, 500);
         return () => clearInterval(interval);
     }, [user]);
+
+    if (mode === "reset") {
+        return <PasswordReset onCancel={() => setMode("signIn")} />;
+    }
 
     return (
         <div className="w-full space-y-8">
@@ -182,12 +189,20 @@ export function SignInTesterForm() {
                         />
                     </div>
 
-                    {/* Password field */}
                     <div className="space-y-2">
-                        <label htmlFor="password" className="text-cyan-400 text-sm flex items-center gap-2">
-                            <span>{'>'}</span>
-                            <span>PASSWORD</span>
-                        </label>
+                        <div className="flex justify-between items-center">
+                            <label htmlFor="password" className="text-cyan-400 text-sm flex items-center gap-2">
+                                <span>{'>'}</span>
+                                <span>PASSWORD</span>
+                            </label>
+                            <button
+                                type="button"
+                                onClick={() => setMode("reset")}
+                                className="text-cyan-400/50 hover:text-cyan-400 text-xs font-mono transition-colors"
+                            >
+                                FORGOT_PASSWORD?
+                            </button>
+                        </div>
                         <input
                             id="password"
                             name="password"
