@@ -29,12 +29,18 @@ const formatDateHeader = (date: Date): string => {
     const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const tomorrowOnly = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
 
+    const monthDay = date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric'
+    });
+
     if (dateOnly.getTime() === todayOnly.getTime()) {
-        return 'Today';
+        return `Today, ${monthDay}`;
     } else if (dateOnly.getTime() === tomorrowOnly.getTime()) {
-        return 'Tomorrow';
+        return `Tomorrow, ${monthDay}`;
     } else {
         return date.toLocaleDateString('en-US', {
+            weekday: 'long',
             month: 'short',
             day: 'numeric'
         });
@@ -98,12 +104,14 @@ export function VenueClassInstancesScreen() {
 
     // Render function for individual class items
     const renderClassItem = useCallback((classInstance: VenueClassInstance) => (
-        <ClassCard
-            classInstance={classInstance as any}
-            onPress={(classInstance) =>
-                navigation.navigate('ClassDetailsModal', { classInstance })
-            }
-        />
+        <View style={{ paddingHorizontal: 20 }}>
+            <ClassCard
+                classInstance={classInstance as any}
+                onPress={(classInstance) =>
+                    navigation.navigate('ClassDetailsModal', { classInstance })
+                }
+            />
+        </View>
     ), [navigation]);
 
     const handleBackPress = () => {

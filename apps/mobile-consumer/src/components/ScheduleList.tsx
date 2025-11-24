@@ -112,22 +112,23 @@ export function ScheduleList<T>({
 const styles = StyleSheet.create({
   stickyDateHeader: {
     backgroundColor: '#ffffff',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    marginBottom: 6, // Gap between header and items
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 4,
     },
-    shadowOpacity: 0.03,
-    shadowRadius: 1,
-    elevation: 1,
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
   },
   dateHeaderText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: theme.colors.zinc[600],
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontSize: 15,
+    fontWeight: '700',
+    color: theme.colors.zinc[500],
+    letterSpacing: -0.3,
+    textAlign: 'center',
   },
 });
