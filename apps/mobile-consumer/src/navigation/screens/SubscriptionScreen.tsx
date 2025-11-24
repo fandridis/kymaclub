@@ -172,7 +172,7 @@ export function SubscriptionScreen() {
                         try {
                             console.log('Cancelling subscription...');
                             await cancelSubscription({});
-                            console.log('Subscription cancelled!!!');
+                            console.log('Subscription cancelled!');
                             Alert.alert(t('subscription.subscriptionCancelled'), t('subscription.cancelSuccess'));
                         } catch (error) {
                             console.error('Error canceling subscription:', error);

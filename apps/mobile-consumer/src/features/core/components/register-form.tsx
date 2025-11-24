@@ -138,7 +138,10 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
             style={styles.container}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <ScrollView contentContainerStyle={styles.scrollContainer}>
+            <ScrollView
+                contentContainerStyle={styles.scrollContainer}
+                keyboardShouldPersistTaps="handled"
+            >
                 <View style={styles.formContainer}>
                     {step === "email" ? (
                         <>
@@ -158,6 +161,8 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
                                     autoCapitalize="none"
                                     autoComplete="email"
                                     editable={!submitting && !checkingUser}
+                                    returnKeyType="go"
+                                    onSubmitEditing={handleSendCode}
                                 />
                             </View>
 
@@ -200,6 +205,8 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
                                     keyboardType="number-pad"
                                     maxLength={6}
                                     editable={!submitting}
+                                    returnKeyType="go"
+                                    onSubmitEditing={handleVerifyCode}
                                 />
                             </View>
 

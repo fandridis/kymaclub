@@ -142,12 +142,15 @@ export function SignInForm({ onBack }: SignInFormProps = {}) {
             style={styles.container}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <ScrollView contentContainerStyle={styles.scrollContainer}>
+            <ScrollView
+                contentContainerStyle={styles.scrollContainer}
+                keyboardShouldPersistTaps="handled"
+            >
                 <View style={styles.formContainer}>
                     {step === "signIn" ? (
                         <>
                             <View style={styles.headerContainer}>
-                                <Text style={styles.title}>{t('auth.signIn.title')}</Text>
+                                <Text style={styles.title}>{t('auth.signIn.title')}!!!</Text>
                                 <Text style={styles.subtitle}>{t('auth.signIn.subtitle')}</Text>
                             </View>
 
@@ -162,6 +165,8 @@ export function SignInForm({ onBack }: SignInFormProps = {}) {
                                     autoCapitalize="none"
                                     autoComplete="email"
                                     editable={!submitting && !checkingUser}
+                                    returnKeyType="go"
+                                    onSubmitEditing={handleSendCode}
                                 />
                             </View>
 
@@ -206,6 +211,8 @@ export function SignInForm({ onBack }: SignInFormProps = {}) {
                                     keyboardType="number-pad"
                                     maxLength={6}
                                     editable={!submitting}
+                                    returnKeyType="go"
+                                    onSubmitEditing={handleVerifyCode}
                                 />
                             </View>
 

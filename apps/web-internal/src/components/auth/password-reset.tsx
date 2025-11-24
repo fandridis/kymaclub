@@ -11,7 +11,7 @@ export function PasswordReset({ onCancel }: { onCancel: () => void }) {
     return step === "forgot" ? (
         <div className="space-y-8">
             <div className="text-center font-mono">
-                <h2 className="text-3xl font-bold text-cyan-400 mb-2">RESET PASSWORD II</h2>
+                <h2 className="text-3xl font-bold text-cyan-400 mb-2">RESET PASSWORD</h2>
                 <p className="text-cyan-400/70 text-sm">Enter your email to receive a reset code</p>
             </div>
 

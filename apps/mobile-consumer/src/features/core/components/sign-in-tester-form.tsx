@@ -24,6 +24,7 @@ export function SignInTesterForm() {
     const [submitting, setSubmitting] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const passwordInputRef = React.useRef<TextInput>(null);
 
     const handleSignIn = async () => {
         if (!email.trim()) {
@@ -67,7 +68,10 @@ export function SignInTesterForm() {
             style={styles.container}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <ScrollView contentContainerStyle={styles.scrollContainer}>
+            <ScrollView
+                contentContainerStyle={styles.scrollContainer}
+                keyboardShouldPersistTaps="handled"
+            >
                 <View style={styles.formContainer}>
                     <View style={styles.headerContainer}>
                         <Text style={styles.title}>Welcome to KymaClub</Text>
@@ -85,12 +89,16 @@ export function SignInTesterForm() {
                             autoCapitalize="none"
                             autoComplete="email"
                             editable={!submitting}
+                            returnKeyType="next"
+                            onSubmitEditing={() => passwordInputRef.current?.focus()}
+                            blurOnSubmit={false}
                         />
                     </View>
 
                     <View style={styles.inputContainer}>
                         <Text style={styles.label}>Password</Text>
                         <TextInput
+                            ref={passwordInputRef}
                             style={styles.input}
                             value={password}
                             onChangeText={setPassword}
@@ -99,6 +107,8 @@ export function SignInTesterForm() {
                             autoCapitalize="none"
                             autoComplete="password"
                             editable={!submitting}
+                            returnKeyType="go"
+                            onSubmitEditing={handleSignIn}
                         />
                     </View>
 
