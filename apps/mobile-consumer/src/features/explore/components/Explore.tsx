@@ -174,7 +174,7 @@ export function Explore() {
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
             <TabScreenHeader
                 renderLeftSide={() => (
                     <TouchableOpacity

@@ -415,7 +415,7 @@ export function NewsScreen() {
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={styles.container} edges={['top', 'left', 'bottom', 'right',]}>
             <TabScreenHeader
                 renderLeftSide={() => <ProfileIconButton />}
                 renderRightSide={() => (

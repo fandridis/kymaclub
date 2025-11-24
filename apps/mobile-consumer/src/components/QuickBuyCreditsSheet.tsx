@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import { useAction } from 'convex/react';
 import { DiamondIcon } from 'lucide-react-native';
@@ -95,88 +96,92 @@ export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyC
         backgroundStyle={styles.sheetBackground}
         handleIndicatorStyle={styles.sheetHandle}
         style={styles.sheetContainer}
+        activeOffsetX={[-999, 999]}
+        activeOffsetY={[-5, 5]}
       >
         <BottomSheetView style={styles.sheetContent}>
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <Text style={styles.sheetTitle}>{t('credits.buyCredits')}</Text>
-            <Text style={styles.sheetSubtitle}>
-              {t('credits.topUpCredits')}
-            </Text>
-
+          <SafeAreaView edges={['bottom']} style={styles.safeArea}>
             <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.cardsContainer}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
             >
-              {packsForDisplay.map(pack => {
-                const isSelected = pack.credits === selectedCredits;
+              <Text style={styles.sheetTitle}>{t('credits.buyCredits')}</Text>
+              <Text style={styles.sheetSubtitle}>
+                {t('credits.topUpCredits')}
+              </Text>
 
-                return (
-                  <TouchableOpacity
-                    key={pack.credits}
-                    style={[
-                      styles.creditCard,
-                      isSelected && styles.creditCardSelected,
-                      isProcessing && styles.creditCardDisabled
-                    ]}
-                    onPress={() => !isProcessing && handlePackSelect(pack.credits)}
-                    activeOpacity={0.85}
-                    disabled={isProcessing}
-                  >
-                    <View style={styles.cardHeader}>
-                      <DiamondIcon size={24} color={theme.colors.emerald[500]} />
-                    </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.cardsContainer}
+              >
+                {packsForDisplay.map(pack => {
+                  const isSelected = pack.credits === selectedCredits;
 
-                    <Text style={styles.cardCredits}>{pack.credits}</Text>
-                    <Text style={styles.cardPrice}>{formatCurrency(pack.price)}</Text>
-
-                    <View
+                  return (
+                    <TouchableOpacity
+                      key={pack.credits}
                       style={[
-                        styles.badge,
-                        pack.isDiscounted ? styles.badgeDiscount : styles.badgeNeutral,
+                        styles.creditCard,
+                        isSelected && styles.creditCardSelected,
+                        isProcessing && styles.creditCardDisabled
                       ]}
+                      onPress={() => !isProcessing && handlePackSelect(pack.credits)}
+                      activeOpacity={0.85}
+                      disabled={isProcessing}
                     >
-                      <Text
+                      <View style={styles.cardHeader}>
+                        <DiamondIcon size={24} color={theme.colors.emerald[500]} />
+                      </View>
+
+                      <Text style={styles.cardCredits}>{pack.credits}</Text>
+                      <Text style={styles.cardPrice}>{formatCurrency(pack.price)}</Text>
+
+                      <View
                         style={[
-                          styles.badgeText,
-                          pack.isDiscounted ? styles.badgeTextDiscount : styles.badgeTextNeutral,
+                          styles.badge,
+                          pack.isDiscounted ? styles.badgeDiscount : styles.badgeNeutral,
                         ]}
                       >
-                        {pack.badgeLabel}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
+                        <Text
+                          style={[
+                            styles.badgeText,
+                            pack.isDiscounted ? styles.badgeTextDiscount : styles.badgeTextNeutral,
+                          ]}
+                        >
+                          {pack.badgeLabel}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              <Text style={styles.finePrint}>
+                {t('credits.creditsValid')}
+              </Text>
             </ScrollView>
 
-            <Text style={styles.finePrint}>
-              {t('credits.creditsValid')}
-            </Text>
-          </ScrollView>
-
-          <TouchableOpacity
-            style={[styles.buyButton, isProcessing && styles.buyButtonDisabled]}
-            onPress={handlePurchase}
-            activeOpacity={0.85}
-            disabled={isProcessing}
-          >
-            {isProcessing ? (
-              <View style={styles.buttonContent}>
-                <ActivityIndicator size="small" color="#fff" />
-                <Text style={[styles.buyButtonText, styles.buttonTextWithSpinner]}>
-                  {t('credits.processing')}
+            <TouchableOpacity
+              style={[styles.buyButton, isProcessing && styles.buyButtonDisabled]}
+              onPress={handlePurchase}
+              activeOpacity={0.85}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <View style={styles.buttonContent}>
+                  <ActivityIndicator size="small" color="#fff" />
+                  <Text style={[styles.buyButtonText, styles.buttonTextWithSpinner]}>
+                    {t('credits.processing')}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.buyButtonText}>
+                  {t('credits.buyNow')}
                 </Text>
-              </View>
-            ) : (
-              <Text style={styles.buyButtonText}>
-                {t('credits.buyNow')}
-              </Text>
-            )}
-          </TouchableOpacity>
+              )}
+            </TouchableOpacity>
+          </SafeAreaView>
         </BottomSheetView>
       </BottomSheetModal>
     );
@@ -323,5 +328,8 @@ const styles = StyleSheet.create({
   },
   buttonTextWithSpinner: {
     marginLeft: theme.spacing.xs,
+  },
+  safeArea: {
+    flex: 1,
   },
 });

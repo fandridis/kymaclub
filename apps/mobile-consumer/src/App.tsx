@@ -102,16 +102,16 @@ export function App() {
       <ConvexProvider client={convex}>
         <ConvexAuthProvider client={convex} storage={convexAuthStorage}>
           <ConvexQueryCacheProvider expiration={60 * 1000}>
-            <DeepLinkGuard>
+            <SafeAreaProvider>
               <ActionSheetProvider>
-                <SafeAreaProvider>
+                <DeepLinkGuard>
                   <InnerApp
                     theme={theme}
                     onReady={() => { SplashScreen.hideAsync() }}
                   />
-                </SafeAreaProvider>
+                </DeepLinkGuard>
               </ActionSheetProvider>
-            </DeepLinkGuard>
+            </SafeAreaProvider>
           </ConvexQueryCacheProvider>
         </ConvexAuthProvider>
       </ConvexProvider>
