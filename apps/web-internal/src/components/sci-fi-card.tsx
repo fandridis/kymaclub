@@ -2,17 +2,27 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ReactNode } from "react";
 
-export type SciFiColor = 'cyan' | 'green' | 'purple' | 'yellow' | 'orange' | 'pink';
+export type SciFiColor = 'zinc' | 'cyan' | 'green' | 'purple' | 'yellow' | 'orange' | 'pink';
 
 interface SciFiCardProps {
     children: ReactNode;
     className?: string;
     color?: SciFiColor;
     hoverEffect?: boolean;
+    disableGlow?: boolean;
 }
 
 export const getSciFiColors = (color: SciFiColor) => {
     const colors = {
+        zinc: {
+            border: 'border-zinc-500',
+            text: 'text-zinc-400',
+            bg: 'bg-zinc-500/10',
+            glow: 'shadow-[0_0_20px_rgba(156,163,175,0.3)]',
+            hover: 'hover:border-zinc-400 hover:bg-zinc-500/20 hover:shadow-[0_0_30px_rgba(156,163,175,0.4)]',
+            badge: 'text-zinc-400 border-zinc-500/30 bg-zinc-500/10',
+            corner: 'text-zinc-500',
+        },
         cyan: {
             border: 'border-cyan-500',
             text: 'text-cyan-400',
@@ -71,16 +81,25 @@ export const getSciFiColors = (color: SciFiColor) => {
     return colors[color];
 };
 
-export function SciFiCard({ children, className, color = 'purple', hoverEffect = true }: SciFiCardProps) {
+export function SciFiCard({ children, className, color = 'purple', hoverEffect = true, disableGlow = false }: SciFiCardProps) {
     const styles = getSciFiColors(color);
+
+    // Remove shadow and background hover effects if glow is disabled
+    const hoverStyles = disableGlow && hoverEffect
+        ? styles.hover
+            .replace(/hover:shadow-\[[^\]]+\]/g, '')
+            .replace(/hover:bg-[^\s]+/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
+        : hoverEffect ? styles.hover : undefined;
 
     return (
         <Card className={cn(
             "relative border-2 overflow-hidden transition-all duration-300 backdrop-blur-sm group",
             styles.bg,
             styles.border,
-            styles.glow,
-            hoverEffect && styles.hover,
+            !disableGlow && styles.glow,
+            hoverStyles,
             className
         )}>
             {/* Corner brackets */}
@@ -95,7 +114,7 @@ export function SciFiCard({ children, className, color = 'purple', hoverEffect =
             </div>
 
             {/* Hover glow effect overlay */}
-            {hoverEffect && (
+            {hoverEffect && !disableGlow && (
                 <div className={cn(
                     "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none",
                     styles.bg.replace('/10', '/5')

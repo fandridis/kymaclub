@@ -1,11 +1,23 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
+import { useMutation } from 'convex/react';
 import { useConsumerDetail } from '@/hooks/use-consumer-detail';
 import { SciFiLoader } from '@/components/sci-fi-loader';
 import { SciFiMetricCard } from '@/components/sci-fi-metric-card';
 import { SciFiCard } from '@/components/sci-fi-card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
+import { SciFiButton } from '@/components/sci-fi-button';
+import { Input } from '@/components/ui/input';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import {
     User,
     Mail,
@@ -16,11 +28,14 @@ import {
     CreditCard,
     CheckCircle2,
     XCircle,
-    UserX
+    UserX,
+    Gift
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Booking, BookingStatus } from '@repo/api/types/booking';
 import { CreditTransaction, CreditTransactionType, CreditTransactionStatus } from '@repo/api/types/credit';
+import { api, internal } from '@repo/api/convex/_generated/api';
+import { Id } from '@repo/api/convex/_generated/dataModel';
 
 export const Route = createFileRoute('/_app-layout/consumers/$userId')({
     component: ConsumerDetailPage,
@@ -30,6 +45,12 @@ function ConsumerDetailPage() {
     const { userId } = Route.useParams();
     const { data, isLoading } = useConsumerDetail(userId);
     const [activeTab, setActiveTab] = useState<'bookings' | 'transactions'>('bookings');
+    const [giftDialogOpen, setGiftDialogOpen] = useState(false);
+    const [giftAmount, setGiftAmount] = useState('');
+    const [giftDescription, setGiftDescription] = useState('');
+    const [isGifting, setIsGifting] = useState(false);
+    // @ts-expect-error - API types need regeneration after adding internal/mutations/credits
+    const giftCredits = useMutation(internal["internal/mutations/credits"].giftCredits);
 
     if (isLoading) {
         return (
@@ -74,7 +95,7 @@ function ConsumerDetailPage() {
             </div>
 
             {/* User Details */}
-            <SciFiCard color="cyan" className="p-6 mb-6">
+            <SciFiCard className="p-6 mb-6" color="cyan" disableGlow>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex items-center gap-3">
                         <User className="w-5 h-5 text-cyan-400" />
@@ -108,6 +129,106 @@ function ConsumerDetailPage() {
                             </div>
                         </div>
                     )}
+                </div>
+                <div className="mt-4 flex justify-end">
+                    <Dialog open={giftDialogOpen} onOpenChange={setGiftDialogOpen}>
+                        <DialogTrigger asChild>
+                            <SciFiButton
+                                color="green"
+                                variant="outline"
+                                size="md"
+                            >
+                                <Gift className="w-4 h-4 inline mr-2" />
+                                GIFT CREDITS
+                            </SciFiButton>
+                        </DialogTrigger>
+                        <DialogContent className="bg-black/90 border-2 border-cyan-500/70 text-cyan-50">
+                            <DialogHeader>
+                                <DialogTitle className="text-green-400 font-mono">
+                                    {'>'} GIFT CREDITS
+                                </DialogTitle>
+                                <DialogDescription className="text-cyan-400/80 font-mono text-xs">
+                                    Add credits to this user's account
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                    <label className="text-cyan-400/80 text-xs font-mono">
+                                        AMOUNT (credits)
+                                    </label>
+                                    <Input
+                                        type="number"
+                                        min="1"
+                                        max="100"
+                                        step="1"
+                                        value={giftAmount}
+                                        onChange={(e) => setGiftAmount(e.target.value)}
+                                        placeholder="Enter credit amount (1-100)"
+                                        className="font-mono"
+                                        disabled={isGifting}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-cyan-400/80 text-xs font-mono">
+                                        DESCRIPTION (optional)
+                                    </label>
+                                    <Input
+                                        type="text"
+                                        value={giftDescription}
+                                        onChange={(e) => setGiftDescription(e.target.value)}
+                                        placeholder="Reason for gifting credits"
+                                        className="font-mono"
+                                        disabled={isGifting}
+                                    />
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <SciFiButton
+                                    color="zinc"
+                                    variant="outline"
+                                    size="md"
+                                    onClick={() => {
+                                        setGiftDialogOpen(false);
+                                        setGiftAmount('');
+                                        setGiftDescription('');
+                                    }}
+                                    disabled={isGifting}
+                                >
+                                    CANCEL
+                                </SciFiButton>
+                                <SciFiButton
+                                    variant="default"
+                                    size="md"
+                                    onClick={async () => {
+                                        const amount = parseFloat(giftAmount);
+                                        if (!amount || amount < 1 || amount > 100) {
+                                            alert('Please enter a valid credit amount between 1 and 100');
+                                            return;
+                                        }
+                                        setIsGifting(true);
+                                        try {
+                                            await giftCredits({
+                                                userId: userId as Id<"users">,
+                                                amount,
+                                                description: giftDescription || undefined,
+                                            });
+                                            setGiftDialogOpen(false);
+                                            setGiftAmount('');
+                                            setGiftDescription('');
+                                        } catch (error) {
+                                            console.error('Failed to gift credits:', error);
+                                            alert(`Failed to gift credits: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                                        } finally {
+                                            setIsGifting(false);
+                                        }
+                                    }}
+                                    disabled={isGifting || !giftAmount || parseFloat(giftAmount) < 1 || parseFloat(giftAmount) > 100}
+                                >
+                                    {isGifting ? 'GIFTING...' : 'GIFT CREDITS'}
+                                </SciFiButton>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </SciFiCard>
 
@@ -297,8 +418,16 @@ function BookingsList({ bookings }: {
     );
 }
 
+type EnrichedCreditTransaction = CreditTransaction & {
+    giftGiver?: {
+        _id: Id<"users">;
+        name?: string;
+        email?: string;
+    };
+};
+
 function TransactionsList({ transactions }: {
-    transactions?: Array<CreditTransaction>
+    transactions?: Array<EnrichedCreditTransaction>
 }) {
     if (!transactions || transactions.length === 0) {
         return (
@@ -363,7 +492,7 @@ function TransactionsList({ transactions }: {
                                             {transaction.type?.toUpperCase()}
                                         </span>
                                         <span className={`text-xs font-mono px-2 py-0.5 rounded border ${isPositive ? 'text-green-400 border-green-500/30' : 'text-yellow-400 border-yellow-500/30'}`}>
-                                            {isPositive ? '+' : ''}{transaction.amount / 100} credits
+                                            {isPositive ? '+' : ''}{transaction.amount} credits
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-4 flex-wrap text-sm">
@@ -373,6 +502,21 @@ function TransactionsList({ transactions }: {
                                                 {format(createdAt, 'MMM dd, yyyy HH:mm')}
                                             </span>
                                         </div>
+                                        {transaction.type === "gift" && transaction.giftGiver && (
+                                            <div className="flex items-center gap-1.5 text-cyan-300 font-medium">
+                                                <User className="w-4 h-4 flex-shrink-0" />
+                                                <span className="font-mono text-xs">
+                                                    Gifted by: {transaction.giftGiver.name || transaction.giftGiver.email || 'Unknown'}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {transaction.reason && (
+                                            <div className="flex items-center gap-1.5 text-cyan-300/80 font-medium">
+                                                <span className="font-mono text-xs">
+                                                    Reason: {transaction.reason.replace(/_/g, ' ').toUpperCase()}
+                                                </span>
+                                            </div>
+                                        )}
                                         <span className={`text-xs font-mono px-2 py-0.5 rounded border ${getStatusColor()}`}>
                                             {(transaction.status || 'COMPLETED').toUpperCase()}
                                         </span>

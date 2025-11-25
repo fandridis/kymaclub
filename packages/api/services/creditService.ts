@@ -38,12 +38,14 @@ export const creditService = {
       priceInCents?: number;
       currency?: string;
       status?: "pending" | "completed" | "failed" | "canceled" | "refunded";
+      // Admin who initiated the gift (for tracking purposes)
+      initiatedBy?: Id<"users">;
     }
   ): Promise<{ newBalance: number; transactionId: Id<"creditTransactions"> }> => {
     const {
       userId, amount, type, reason, description, externalRef, businessId, venueId,
       classTemplateId, classInstanceId, bookingId, stripePaymentIntentId,
-      stripeCheckoutSessionId, packageName, priceInCents, currency, status
+      stripeCheckoutSessionId, packageName, priceInCents, currency, status, initiatedBy
     } = args;
 
     // Validate amount is positive
@@ -95,7 +97,7 @@ export const creditService = {
       status: status || "completed", // Default to completed for non-purchase transactions
       completedAt: status === "completed" || !status ? Date.now() : undefined,
       createdAt: Date.now(),
-      createdBy: userId
+      createdBy: initiatedBy ?? userId // Use initiator if provided (for admin gifts), otherwise recipient
     });
 
     return { newBalance, transactionId };

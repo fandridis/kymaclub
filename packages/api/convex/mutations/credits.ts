@@ -3,35 +3,6 @@ import { mutation, internalMutation } from "../_generated/server";
 import { creditService } from "../../services/creditService";
 
 /**
- * Gift credits to a user (admin function)
- */
-export const giftCredits = mutation({
-  args: v.object({
-    userId: v.id("users"),
-    amount: v.number(),
-    description: v.optional(v.string()),
-  }),
-  handler: async (ctx, args) => {
-    const { userId, amount, description = `Gift of ${amount} credits` } = args;
-
-    const result = await creditService.addCredits(ctx, {
-      userId,
-      amount,
-      type: "gift",
-      reason: "admin_gift",
-      description,
-    });
-
-    return {
-      success: true,
-      transactionId: result.transactionId,
-      newBalance: result.newBalance,
-      message: `Successfully gifted ${amount} credits. New balance: ${result.newBalance}`,
-    };
-  },
-});
-
-/**
  * Purchase credits (user function)
  */
 export const purchaseCredits = mutation({
@@ -168,7 +139,7 @@ export const updateCreditTransactionPaymentIntent = internalMutation({
       stripePaymentIntentId,
       updatedAt: Date.now(),
     });
-    
+
     return transactionId;
   },
 });

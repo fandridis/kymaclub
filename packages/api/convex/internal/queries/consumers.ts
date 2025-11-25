@@ -30,6 +30,16 @@ export const getConsumerDetails = query({
                 .take(100), // Limit to last 100 transactions
         ]);
 
+        // Fetch user information for gift transactions (createdBy field)
+        const giftTransactions = transactions.filter(t => t.type === "gift" && t.createdBy);
+        const giftGiverIds = [...new Set(giftTransactions.map(t => t.createdBy).filter((id): id is NonNullable<typeof id> => Boolean(id)))];
+        const giftGivers = await Promise.all(
+            giftGiverIds.map(userId => ctx.db.get(userId))
+        );
+        const giftGiversMap = new Map(
+            giftGivers.filter((user): user is NonNullable<typeof user> => user !== null).map(user => [user._id, user])
+        );
+
         // Calculate metrics
         const now = new Date();
         const currentMonthStart = startOfMonth(now).getTime();
@@ -79,10 +89,26 @@ export const getConsumerDetails = query({
                 .then(r => r.length),
         ]);
 
+        // Enrich transactions with gift giver info
+        const enrichedTransactions = transactions.map(transaction => {
+            if (transaction.type === "gift" && transaction.createdBy) {
+                const giftGiver = giftGiversMap.get(transaction.createdBy);
+                return {
+                    ...transaction,
+                    giftGiver: giftGiver ? {
+                        _id: giftGiver._id,
+                        name: giftGiver.name ?? undefined,
+                        email: giftGiver.email ?? undefined,
+                    } : undefined,
+                };
+            }
+            return transaction;
+        });
+
         return {
             user,
             bookings,
-            transactions,
+            transactions: enrichedTransactions,
             metrics: {
                 bookingsThisMonth: countBookingsThisMonth,
                 cancelledBookings: countCancelledByConsumer + countCancelledByBusiness,
