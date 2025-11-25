@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation } from "../../_generated/server";
 import { creditService } from "../../../services/creditService";
 import { requireInternalUserOrThrow } from "../../utils";
+import { internal } from "../../_generated/api";
 
 /**
  * Gift credits to a user (internal admin function)
@@ -33,6 +34,29 @@ export const giftCredits = mutation({
             description,
             initiatedBy: adminUser._id, // Track which admin initiated the gift
         });
+
+        // Send push notification to the user
+        try {
+            await ctx.runMutation(internal.mutations.pushNotifications.sendPushNotification, {
+                to: userId,
+                notification: {
+                    title: "Credits Gifted",
+                    body: `You have been gifted ${amount} credits from KymaClub!`,
+                    data: {
+                        type: "credit_gift",
+                        transactionId: result.transactionId,
+                        amount,
+                        newBalance: result.newBalance,
+                    },
+                    sound: "default",
+                    priority: "high" as const,
+                    channelId: "credits",
+                },
+            });
+        } catch (error) {
+            // Log error but don't fail the credit gifting operation
+            console.error("Failed to send push notification for credit gift:", error);
+        }
 
         return {
             success: true,
