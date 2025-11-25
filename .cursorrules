@@ -1,0 +1,232 @@
+# Orcavo Project Rules
+
+## Project Overview
+This is "KymaClub" - a fitness class booking platform. It's a pnpm monorepo with:
+- `apps/mobile-consumer` - Expo/React Native consumer app
+- `apps/web-business` - Vite + React business dashboard
+- `apps/web-internal` - Internal admin dashboard
+- `apps/web-landing` - Marketing landing page (React Router)
+- `packages/api` - Convex backend (queries, mutations, actions)
+- `packages/utils` - Shared TypeScript utilities
+- `packages/ui` - Shared React components
+
+## Tech Stack
+- **Runtime:** Node.js 18+, pnpm 9
+- **Frontend:** React 19, TypeScript 5.8+
+- **Backend:** Convex (serverless database + functions)
+- **Mobile:** Expo SDK 54, React Native 0.81
+- **Web Routing:** TanStack Router (business/internal), React Router (landing)
+- **Styling:** Tailwind CSS v4, shadcn/ui components
+- **Forms:** react-hook-form + Zod v4
+- **State:** Zustand, Convex reactive queries
+- **i18n:** i18next + react-i18next
+- **Testing:** Vitest (unit), Playwright (E2E), convex-test (Convex), Maestro (mobile)
+
+## Code Style & Conventions
+
+### TypeScript
+- Strict mode enabled - no `any` types unless absolutely necessary
+- Use `Id<"tableName">` from Convex for document IDs, not `string`
+- Prefer `as const` for string literals in unions
+- Always define explicit return types for exported functions
+
+### React Components
+- Functional components only, no class components
+- Use `function ComponentName()` syntax, not arrow functions for components
+- Props interfaces: `interface ComponentNameProps { ... }`
+- Prefer composition over prop drilling
+- Use `cn()` from `@/lib/utils` for className merging
+
+### File Naming
+- Components: `PascalCase.tsx` (e.g., `BookingCard.tsx`)
+- Hooks: `use-kebab-case.ts` or `useCamelCase.ts` (both exist, prefer kebab for new)
+- Utils/helpers: `kebab-case.ts`
+- Convex functions: `camelCase.ts`
+
+### Imports
+- Use `@/` alias for src-relative imports in web apps
+- Use `@repo/api`, `@repo/utils`, `@repo/ui` for package imports
+- Group imports: external → internal packages → relative
+
+## Convex Backend Patterns
+
+### Package Organization
+```
+packages/api/
+├── convex/
+│   ├── queries/        # Public query functions
+│   ├── mutations/      # Public mutation functions
+│   ├── actions/        # Actions (external API calls)
+│   ├── internal/       # Internal functions (not exposed to clients)
+│   └── schema.ts       # Database schema
+├── services/           # Business logic (reusable across functions)
+├── operations/         # Pure business logic (calculations, transformations)
+├── rules/              # Business rules and constraints (can user do X?)
+├── types/              # Shared TypeScript types (derived from schema)
+├── utils/              # Helper functions
+└── validations/        # Shared validation logic
+```
+
+### Operations vs Rules vs Services
+- **operations/** - Pure functions for calculations and data transformations (e.g., pricing, discounts)
+- **rules/** - Business rule checks that return boolean/throw errors (e.g., `canBookClass`, `validateActiveBookingsLimit`)
+- **services/** - Orchestration layer that combines operations, rules, and database access
+
+### Function Syntax (ALWAYS use this format)
+```typescript
+import { query, mutation } from "./_generated/server";
+import { v } from "convex/values";
+
+export const myFunction = query({
+  args: { id: v.id("users") },
+  returns: v.object({ name: v.string() }),
+  handler: async (ctx, args) => {
+    // implementation
+  },
+});
+```
+
+### Database Patterns
+- **Soft delete:** Use `deleted`, `deletedAt`, `deletedBy` fields (never hard delete)
+- **Audit fields:** Include `createdAt`, `createdBy`, `updatedAt`, `updatedBy`
+- **Indexes:** Name format `by_field1_field2` - include all fields in name
+- **No `.filter()`:** Always first use indexes with `.withIndex()` for queries, filter if necessary.
+
+### Args Pattern (Reuse Schema Fields)
+When defining function args that match document shapes, reuse `xxFields` from schema with `omit()` and `partial()` helpers from `convex-helpers`:
+```typescript
+import { omit, partial } from "convex-helpers/validators";
+import { classTemplatesFields } from "../schema";
+
+// Create: omit auto-generated fields
+export const createClassTemplateArgs = v.object({
+  template: v.object({
+    ...omit(classTemplatesFields, ['businessId', 'createdAt', 'createdBy', 'isActive']),
+  })
+});
+
+// Update: use partial for optional fields
+export const updateClassTemplateArgs = v.object({
+  templateId: v.id("classTemplates"),
+  template: v.object({
+    ...partial(classTemplatesFields)
+  })
+});
+```
+
+### Types Pattern (Derive from Schema)
+Reusable types live in `packages/api/types/`. Don't recreate types - derive them from schema:
+```typescript
+// types/credit.ts - Derive from Doc type
+import { Doc } from "../convex/_generated/dataModel";
+
+export type CreditTransaction = Doc<"creditTransactions">;
+export type CreditTransactionType = CreditTransaction['type'];
+export type CreditTransactionReason = CreditTransaction['reason'];
+
+// types/classDiscount.ts - Derive from schema fields
+import { Infer, v } from "convex/values";
+import { classDiscountRuleFields } from "../convex/schema";
+
+const classDiscountRuleFieldObject = v.object(classDiscountRuleFields);
+export type ClassDiscountRule = Infer<typeof classDiscountRuleFieldObject>;
+export type ClassDiscountRuleConditionType = ClassDiscountRule['condition']['type'];
+```
+
+### Service Pattern
+Business logic lives in `packages/api/services/`. Functions in `queries/` and `mutations/` should be thin wrappers:
+```typescript
+// queries/bookings.ts
+export const getBooking = query({
+  args: { bookingId: v.id("bookings") },
+  handler: async (ctx, args) => {
+    return bookingService.getBooking({ ctx, ...args });
+  },
+});
+```
+
+## Mobile App (Expo/React Native)
+
+### Navigation
+- Uses React Navigation v7 (native-stack, bottom-tabs)
+- Screens in `src/navigation/` directory
+- Type-safe navigation with `RootStackParamList`
+
+### Styling
+- No Tailwind (NativeWind not used) - use StyleSheet.create or inline styles
+- Theme constants from `src/theme.ts`
+- Use Reanimated for animations
+
+### Key Libraries
+- `@gorhom/bottom-sheet` for bottom sheets
+- `expo-image` for optimized images
+- `lucide-react-native` for icons
+- `react-native-mmkv` for fast local storage
+
+### Testing (Maestro)
+- Test files in `apps/mobile-consumer/maestro-tests/`
+- YAML-based E2E tests
+- Run with `maestro test` from the mobile app directory
+
+## Web Apps (Business/Internal)
+
+### Routing (TanStack Router)
+- File-based routing in `src/routes/`
+- Route tree auto-generated in `routeTree.gen.ts`
+- Use `Link` component, not `<a>` tags
+
+### UI Components (shadcn/ui)
+- Components in `src/components/ui/`
+- Use CVA (class-variance-authority) for variants
+- Always use semantic color tokens (e.g., `bg-primary`, not `bg-blue-500`)
+
+### Forms
+```typescript
+const form = useForm<FormData>({
+  resolver: zodResolver(formSchema),
+  defaultValues: { ... },
+});
+```
+
+### Data Fetching
+```typescript
+// Use Convex hooks
+const data = useQuery(api.queries.bookings.list, { venueId });
+const mutate = useMutation(api.mutations.bookings.create);
+```
+
+## Testing
+
+### Convex Tests (Vitest + convex-test)
+```typescript
+import { convexTest } from "convex-test";
+import schema from "./schema";
+import { api } from "./_generated/api";
+
+test("booking flow", async () => {
+  const t = convexTest(schema);
+  // ... test implementation
+});
+```
+
+### E2E Tests (Playwright)
+- Test files in `tests/` directory
+- Use Page Object Model pattern
+- Run with `pnpm test` in app directory
+
+## Common Gotchas
+
+1. **Convex reactivity:** Queries auto-update. Don't manually refetch.
+2. **Zod v4:** Use `z.input<typeof schema>` for form types, `z.output<>` for validated
+3. **TanStack Router:** Route params are strings - parse IDs appropriately
+4. **Tailwind v4:** Uses new CSS-first config, check `@theme` imports
+5. **Auth:** Uses `@convex-dev/auth` - check `getAuthUserId(ctx)` for current user
+
+## Before Making Changes
+
+1. Check existing patterns in similar files
+2. Look for services that might already handle the logic
+3. Ensure indexes exist for any new query patterns
+4. Add i18n keys for user-facing strings
+5. Consider mobile + web implications for API changes
+
