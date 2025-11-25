@@ -40,6 +40,31 @@ crons.interval(
     {}
 );
 
+/**
+ * Permanently Delete Soft-Deleted Users - Runs daily
+ * 
+ * GDPR-compliant data cleanup that runs after a 7-day grace period.
+ * 
+ * For users where deleted: true and deletedAt > 7 days ago:
+ * 1. Deletes personal data (profile images from storage)
+ * 2. Reassigns historical records to DELETED_USER placeholder:
+ *    - Bookings (maintains business booking history)
+ *    - Venue reviews (maintains review history)
+ *    - Chat threads (maintains conversation history for businesses)
+ *    - Credit transactions (maintains audit trail)
+ *    - Subscriptions (maintains billing history)
+ * 3. Updates snapshots to show "Deleted User" instead of real names
+ * 4. Deletes ephemeral data (user settings, presence)
+ * 5. Deletes all auth records (sessions, accounts, tokens, etc.)
+ * 6. Deletes the user document itself
+ */
+crons.interval(
+    "permanently-delete-users",
+    { hours: 24 },
+    internal.crons.permanentlyDeleteUsers,
+    {}
+);
+
 
 /**
  * Mark No-Shows Internal Mutation
@@ -317,5 +342,295 @@ export const getNoShowStats = internalQuery({
     },
 });
 
+
+/**
+ * System placeholder email for deleted users.
+ * Records referencing deleted users will be reassigned to this placeholder
+ * to maintain referential integrity while anonymizing the data.
+ */
+const DELETED_USER_EMAIL = "deleted@system.internal";
+
+/**
+ * Permanently Delete Soft-Deleted Users Internal Mutation
+ * 
+ * GDPR-compliant user data deletion that runs after a 7-day grace period.
+ * 
+ * This mutation:
+ * 1. Finds users with deleted: true and deletedAt > 7 days ago
+ * 2. Deletes personal data (profile images)
+ * 3. Reassigns historical records (bookings, reviews, transactions) to a 
+ *    DELETED_USER placeholder to maintain referential integrity
+ * 4. Updates snapshots to show "Deleted User" instead of real names
+ * 5. Deletes ephemeral data (settings, presence)
+ * 6. Deletes all auth-related records (sessions, accounts, tokens, etc.)
+ * 7. Deletes the user document itself
+ */
+export const permanentlyDeleteUsers = internalMutation({
+    args: {},
+    returns: v.null(),
+    handler: async (ctx) => {
+        const now = Date.now();
+        const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+        const deletionCutoff = now - SEVEN_DAYS_MS;
+
+        console.log(`[User Deletion Cron] Looking for users deleted before ${new Date(deletionCutoff).toISOString()}`);
+
+        // Find all users who have been soft-deleted for more than 7 days
+        const deletedUsers = await ctx.db
+            .query("users")
+            .withIndex("by_deleted_deletedAt", (q) =>
+                q.eq("deleted", true)
+            )
+            .filter((q) =>
+                q.and(
+                    q.neq(q.field("deletedAt"), undefined),
+                    q.lt(q.field("deletedAt"), deletionCutoff)
+                )
+            )
+            .collect();
+
+        console.log(`[User Deletion Cron] Found ${deletedUsers.length} users to permanently delete`);
+
+        if (deletedUsers.length === 0) {
+            return null;
+        }
+
+        // Get or create the DELETED_USER placeholder for reassigning records
+        let deletedPlaceholder = await ctx.db
+            .query("users")
+            .withIndex("email", (q) => q.eq("email", DELETED_USER_EMAIL))
+            .first();
+
+        if (!deletedPlaceholder) {
+            console.log("[User Deletion Cron] Creating DELETED_USER placeholder");
+            const placeholderId = await ctx.db.insert("users", {
+                email: DELETED_USER_EMAIL,
+                name: "Deleted User",
+                // No other fields needed - this is a system placeholder
+            });
+            deletedPlaceholder = await ctx.db.get(placeholderId);
+        }
+
+        if (!deletedPlaceholder) {
+            console.error("[User Deletion Cron] Could not create DELETED_USER placeholder!");
+            return null;
+        }
+
+        // Anonymized snapshot data for reassigned records
+        const deletedUserSnapshot = {
+            name: "Deleted User",
+            email: undefined,
+            phone: undefined,
+        };
+
+        let deletedCount = 0;
+
+        for (const user of deletedUsers) {
+            try {
+                console.log(`[User Deletion Cron] Processing user ${user._id}...`);
+
+                // ============================================================
+                // PHASE 1: Delete personal data (profile images)
+                // ============================================================
+                if (user.consumerProfileImageStorageId) {
+                    try {
+                        await ctx.storage.delete(user.consumerProfileImageStorageId);
+                        console.log(`[User Deletion Cron] Deleted profile image for user ${user._id}`);
+                    } catch (storageError) {
+                        console.warn(`[User Deletion Cron] Failed to delete profile image for user ${user._id}:`, storageError);
+                        // Continue even if storage deletion fails
+                    }
+                }
+
+                // ============================================================
+                // PHASE 2: Reassign historical records to DELETED_USER
+                // These records maintain business history while anonymizing user data
+                // ============================================================
+
+                // 2a. Reassign bookings (maintains business booking history)
+                const userBookings = await ctx.db
+                    .query("bookings")
+                    .withIndex("by_user", (q) => q.eq("userId", user._id))
+                    .collect();
+
+                for (const booking of userBookings) {
+                    await ctx.db.patch(booking._id, {
+                        userId: deletedPlaceholder._id,
+                        userSnapshot: deletedUserSnapshot,
+                        updatedAt: now,
+                    });
+                }
+                console.log(`[User Deletion Cron] Reassigned ${userBookings.length} bookings`);
+
+                // 2b. Reassign venue reviews (maintains review history)
+                const userReviews = await ctx.db
+                    .query("venueReviews")
+                    .withIndex("by_user", (q) => q.eq("userId", user._id))
+                    .collect();
+
+                for (const review of userReviews) {
+                    await ctx.db.patch(review._id, {
+                        userId: deletedPlaceholder._id,
+                        userSnapshot: { name: "Deleted User", email: undefined },
+                        updatedAt: now,
+                    });
+                }
+                console.log(`[User Deletion Cron] Reassigned ${userReviews.length} venue reviews`);
+
+                // 2c. Reassign chat message threads (maintains conversation history for businesses)
+                const userThreads = await ctx.db
+                    .query("chatMessageThreads")
+                    .withIndex("by_user", (q) => q.eq("userId", user._id))
+                    .collect();
+
+                for (const thread of userThreads) {
+                    await ctx.db.patch(thread._id, {
+                        userId: deletedPlaceholder._id,
+                        userSnapshot: deletedUserSnapshot,
+                        updatedAt: now,
+                    });
+                }
+                console.log(`[User Deletion Cron] Reassigned ${userThreads.length} chat threads`);
+
+                // 2d. Reassign credit transactions (maintains audit trail)
+                const userTransactions = await ctx.db
+                    .query("creditTransactions")
+                    .withIndex("by_user", (q) => q.eq("userId", user._id))
+                    .collect();
+
+                for (const tx of userTransactions) {
+                    await ctx.db.patch(tx._id, {
+                        userId: deletedPlaceholder._id,
+                        updatedAt: now,
+                    });
+                }
+                console.log(`[User Deletion Cron] Reassigned ${userTransactions.length} credit transactions`);
+
+                // 2e. Reassign subscriptions (maintains billing history for auditing)
+                const userSubscriptions = await ctx.db
+                    .query("subscriptions")
+                    .withIndex("by_user", (q) => q.eq("userId", user._id))
+                    .collect();
+
+                for (const sub of userSubscriptions) {
+                    await ctx.db.patch(sub._id, {
+                        userId: deletedPlaceholder._id,
+                        updatedAt: now,
+                    });
+                }
+                console.log(`[User Deletion Cron] Reassigned ${userSubscriptions.length} subscriptions`);
+
+                // ============================================================
+                // PHASE 3: Delete ephemeral/personal data
+                // These records serve no purpose without the user
+                // ============================================================
+
+                // 3a. Delete user settings (personal preferences)
+                const userSettings = await ctx.db
+                    .query("userSettings")
+                    .withIndex("by_user", (q) => q.eq("userId", user._id))
+                    .first();
+
+                if (userSettings) {
+                    await ctx.db.delete(userSettings._id);
+                    console.log(`[User Deletion Cron] Deleted user settings`);
+                }
+
+                // 3b. Delete user presence (ephemeral real-time data)
+                const userPresence = await ctx.db
+                    .query("userPresence")
+                    .withIndex("by_user", (q) => q.eq("userId", user._id))
+                    .first();
+
+                if (userPresence) {
+                    await ctx.db.delete(userPresence._id);
+                    console.log(`[User Deletion Cron] Deleted user presence`);
+                }
+
+                // ============================================================
+                // PHASE 4: Delete all auth-related records
+                // ============================================================
+
+                const [authSessions, authAccounts] = await Promise.all([
+                    ctx.db
+                        .query('authSessions')
+                        .withIndex('userId', (q) => q.eq('userId', user._id))
+                        .collect(),
+                    ctx.db
+                        .query('authAccounts')
+                        .withIndex('userId', (q) => q.eq('userId', user._id))
+                        .collect(),
+                ]);
+
+                // Get related auth data (refresh tokens, verification codes, verifiers)
+                const authRefreshTokens: Array<{ _id: any }> = [];
+                const authVerificationCodes: Array<{ _id: any }> = [];
+                const authVerifiers: Array<{ _id: any }> = [];
+
+                // Get refresh tokens and verifiers for all sessions
+                for (const session of authSessions) {
+                    const [sessionTokens, sessionVerifiers] = await Promise.all([
+                        ctx.db
+                            .query('authRefreshTokens')
+                            .withIndex('sessionId', (q) => q.eq('sessionId', session._id))
+                            .collect(),
+                        ctx.db
+                            .query('authVerifiers')
+                            .withIndex('sessionId', (q) => q.eq('sessionId', session._id))
+                            .collect(),
+                    ]);
+                    authRefreshTokens.push(...sessionTokens);
+                    authVerifiers.push(...sessionVerifiers);
+                }
+
+                // Get verification codes for all accounts
+                for (const account of authAccounts) {
+                    const accountCodes = await ctx.db
+                        .query('authVerificationCodes')
+                        .withIndex('accountId', (q) => q.eq('accountId', account._id))
+                        .collect();
+                    authVerificationCodes.push(...accountCodes);
+                }
+
+                // Delete all auth-related records
+                const authDeletePromises: Array<Promise<void>> = [];
+
+                for (const session of authSessions) {
+                    authDeletePromises.push(ctx.db.delete(session._id));
+                }
+                for (const account of authAccounts) {
+                    authDeletePromises.push(ctx.db.delete(account._id));
+                }
+                for (const token of authRefreshTokens) {
+                    authDeletePromises.push(ctx.db.delete(token._id));
+                }
+                for (const code of authVerificationCodes) {
+                    authDeletePromises.push(ctx.db.delete(code._id));
+                }
+                for (const verifier of authVerifiers) {
+                    authDeletePromises.push(ctx.db.delete(verifier._id));
+                }
+
+                await Promise.all(authDeletePromises);
+                console.log(`[User Deletion Cron] Deleted ${authSessions.length} sessions, ${authAccounts.length} accounts, ${authRefreshTokens.length} tokens, ${authVerificationCodes.length} codes, ${authVerifiers.length} verifiers`);
+
+                // ============================================================
+                // PHASE 5: Delete the user document itself
+                // ============================================================
+                await ctx.db.delete(user._id);
+
+                deletedCount++;
+                console.log(`[User Deletion Cron] Successfully deleted user ${user._id}`);
+
+            } catch (error) {
+                console.error(`[User Deletion Cron] Failed to delete user ${user._id}:`, error);
+                // Continue with next user even if one fails
+            }
+        }
+
+        console.log(`[User Deletion Cron] Permanently deleted ${deletedCount}/${deletedUsers.length} users`);
+        return null;
+    },
+});
 
 export default crons;

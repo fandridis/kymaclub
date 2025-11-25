@@ -40,9 +40,19 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
         try {
             await onConfirm();
             // Modal will be closed by parent or navigation will happen
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Delete account error:', error);
-            Alert.alert(t('common.error'), t('errors.somethingWentWrong'));
+
+            // Check for active subscription error
+            const errorData = (error as { data?: { code?: string } })?.data;
+            if (errorData?.code === 'ACTIVE_SUBSCRIPTION_EXISTS') {
+                Alert.alert(
+                    t('common.error'),
+                    t('settings.account.activeSubscriptionError')
+                );
+            } else {
+                Alert.alert(t('common.error'), t('errors.somethingWentWrong'));
+            }
             setIsSubmitting(false);
         }
     };

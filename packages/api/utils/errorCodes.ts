@@ -110,6 +110,9 @@ export const ERROR_CODES = {
 
     // Venue Errors
     VENUE_NOT_FOUND: 'VENUE_NOT_FOUND',
+
+    // User Account Errors
+    ACTIVE_SUBSCRIPTION_EXISTS: 'ACTIVE_SUBSCRIPTION_EXISTS',
 } as const;
 
 // Type for error codes

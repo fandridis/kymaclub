@@ -1,6 +1,74 @@
 import { v } from "convex/values";
-import { mutation, internalMutation } from "../_generated/server";
-import { Id } from "../_generated/dataModel";
+import { mutation, internalMutation, MutationCtx } from "../_generated/server";
+import { Id, Doc } from "../_generated/dataModel";
+
+/***************************************************************
+ * HELPER FUNCTIONS
+ ***************************************************************/
+
+/**
+ * Get active subscription for a user
+ * 
+ * Returns the user's subscription if it exists and is in an active billing state
+ * (active, trialing, or past_due). Returns null if no active subscription found.
+ * 
+ * Note: A subscription with cancelAtPeriodEnd: true is still considered "active"
+ * because it will continue until the end of the billing period.
+ * 
+ * @param ctx - Mutation context
+ * @param userId - User ID to check
+ * @returns The subscription document or null
+ */
+export async function getActiveSubscriptionByUserId(
+  ctx: MutationCtx,
+  userId: Id<"users">
+): Promise<Doc<"subscriptions"> | null> {
+  // Check for active billing states
+  const activeStatuses = ["active", "trialing", "past_due"] as const;
+
+  for (const status of activeStatuses) {
+    const subscription = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_user_status", (q) =>
+        q.eq("userId", userId).eq("status", status)
+      )
+      .first();
+
+    if (subscription) {
+      return subscription;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Check if user has a subscription that will renew
+ * 
+ * Returns true if the user has an active subscription that will auto-renew
+ * (i.e., NOT marked for cancellation at period end).
+ * 
+ * Use this to determine if a user can delete their account.
+ * Users with cancelAtPeriodEnd: true have already cancelled and can delete.
+ * 
+ * @param ctx - Mutation context
+ * @param userId - User ID to check
+ * @returns true if user has a renewing subscription, false otherwise
+ */
+export async function hasRenewingSubscription(
+  ctx: MutationCtx,
+  userId: Id<"users">
+): Promise<boolean> {
+  const subscription = await getActiveSubscriptionByUserId(ctx, userId);
+
+  if (!subscription) {
+    return false;
+  }
+
+  // If cancelAtPeriodEnd is true, the subscription won't renew
+  // so user can safely delete their account
+  return subscription.cancelAtPeriodEnd !== true;
+}
 
 /**
  * Create subscription record in database

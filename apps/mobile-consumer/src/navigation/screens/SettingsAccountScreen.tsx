@@ -8,16 +8,29 @@ import { StackScreenHeader } from '../../components/StackScreenHeader';
 import { useTypedTranslation } from '../../i18n/typed';
 import { useLogout } from '../../hooks/useLogout';
 import { DeleteAccountModal } from '../../components/DeleteAccountModal';
+import { CommonActions, NavigationProp, useNavigation } from '@react-navigation/native';
+import { RootStackParamList } from '..';
 
 export function SettingsAccountScreen() {
+    const navigation = useNavigation<NavigationProp<RootStackParamList>>();
     const { t } = useTypedTranslation();
     const deleteUser = useMutation(api.mutations.users.deleteUser);
     const logout = useLogout();
     const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
 
     const handleDeleteAccount = async () => {
+        // 1. Soft delete the user (marks for permanent deletion in 7 days)
         await deleteUser();
-        await logout();
+
+        // 2. Logout and navigate to landing
+        await logout(() => {
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: "Landing" }],
+                })
+            );
+        });
     };
 
     return (

@@ -3,11 +3,10 @@ import { Resend as ResendAPI } from "resend";
 import { generateOTP6 } from "@repo/utils/crypto-utils";
 import { createOTPEmail } from "../emails/templates";
 
-console.log("Evaluating ResendOTPPasswordReset module");
 export const ResendOTPPasswordReset = Email({
     id: "resend-otp-password-reset",
     apiKey: process.env.AUTH_RESEND_KEY,
-    maxAge: 60 * 15, // 15 minutes
+    maxAge: 60 * 60 * 24, // 24 hours
     generateVerificationToken() {
         return generateOTP6();
     },

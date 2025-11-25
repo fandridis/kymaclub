@@ -182,6 +182,7 @@
             "deletePlaceholder": "Delete account",
             "deleteButton": "Delete Account",
             "deleteTimelineInfo": "Your account will be deactivated immediately and marked for deletion. We'll permanently remove all data in 7 days unless you register again with the same email during that period.",
+            "activeSubscriptionError": "Please cancel your subscription before deleting your account. You can manage your subscription in your profile settings.",
             "comingSoon": "Account management coming soon"
         },
         "language": {

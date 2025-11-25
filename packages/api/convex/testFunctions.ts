@@ -1,5 +1,4 @@
 import { v } from "convex/values"
-import { ConvexHttpClient } from "convex/browser";
 import { internalMutation, internalQuery, internalAction, mutation } from "./_generated/server";
 import { getAuthenticatedUserAndBusinessOrThrow } from "./utils";
 import { creditService } from "../services/creditService";

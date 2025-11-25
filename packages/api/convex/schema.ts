@@ -996,7 +996,13 @@ export const subscriptionEventsFields = {
  * Database schema
  ***************************************************************/
 export default defineSchema({
-  ...authTables,
+  // Spread auth tables individually with custom indexes for user deletion
+  authSessions: authTables.authSessions,
+  authAccounts: authTables.authAccounts.index('userId', ['userId']),
+  authRefreshTokens: authTables.authRefreshTokens,
+  authVerificationCodes: authTables.authVerificationCodes,
+  authVerifiers: authTables.authVerifiers.index('sessionId', ['sessionId']),
+  authRateLimits: authTables.authRateLimits,
 
   /** 
    * Users that register to the system
@@ -1004,6 +1010,7 @@ export default defineSchema({
   users: defineTable(usersFields)
     .index("email", ["email"])
     .index("by_active_city_slug", ["activeCitySlug"])
+    .index("by_deleted_deletedAt", ["deleted", "deletedAt"])
     .searchIndex("search_name", {
       searchField: "name",
       filterFields: ["role"],
