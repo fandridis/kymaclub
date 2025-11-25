@@ -24,6 +24,7 @@ import { DeepLinkGuard, usePendingDeepLink } from './features/core/components/de
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useTypedTranslation } from './i18n/typed';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
@@ -296,69 +297,71 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
 
   // Render navigation - it handles auth state internally
   return (
-    <GestureHandlerRootView>
-      <NavigationContainer
-        ref={navigationRef}
-        theme={theme}
-        linking={{
-          enabled: true,
-          prefixes: ['kymaclub://', 'https://kymaclub.com', 'https://*.kymaclub.com'],
-          config: {
-            screens: {
-              Landing: 'welcome',
-              SignInModal: 'signin',
-              CreateAccountModal: 'signup',
-              News: 'news',
-              Explore: 'explore',
-              Bookings: 'bookings',
-              Messages: 'messages',
-              Conversation: {
-                path: 'chat/:threadId',
-                parse: {
-                  threadId: (id: string) => id,
-                  venueName: (v: string) => decodeURIComponent(v.replace(/\+/g, ' ')),
-                  venueImage: (v: string) => v,
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <BottomSheetModalProvider>
+        <NavigationContainer
+          ref={navigationRef}
+          theme={theme}
+          linking={{
+            enabled: true,
+            prefixes: ['kymaclub://', 'https://kymaclub.com', 'https://*.kymaclub.com'],
+            config: {
+              screens: {
+                Landing: 'welcome',
+                SignInModal: 'signin',
+                CreateAccountModal: 'signup',
+                News: 'news',
+                Explore: 'explore',
+                Bookings: 'bookings',
+                Messages: 'messages',
+                Conversation: {
+                  path: 'chat/:threadId',
+                  parse: {
+                    threadId: (id: string) => id,
+                    venueName: (v: string) => decodeURIComponent(v.replace(/\+/g, ' ')),
+                    venueImage: (v: string) => v,
+                  },
                 },
-              },
-              // Modal screens with parameters
-              ClassDetailsModal: {
-                path: 'class/:classInstanceId',
-                parse: {
-                  classInstanceId: (id: string) => id,
+                // Modal screens with parameters
+                ClassDetailsModal: {
+                  path: 'class/:classInstanceId',
+                  parse: {
+                    classInstanceId: (id: string) => id,
+                  },
                 },
-              },
-              VenueDetailsScreen: {
-                path: 'venue/:venueId',
-                parse: {
-                  venueId: (id: string) => id,
+                VenueDetailsScreen: {
+                  path: 'venue/:venueId',
+                  parse: {
+                    venueId: (id: string) => id,
+                  },
                 },
-              },
-              // Settings screens
-              SettingsProfile: 'settings/profile',
-              SettingsNotifications: 'settings/notifications',
-              SettingsSubscription: 'settings/subscription',
-              SettingsAccount: 'settings/account',
-              // Payment result screens
-              PaymentSuccess: {
-                path: 'payment/success',
-                parse: {
-                  session_id: (session_id: string) => session_id,
-                  type: (type: string) => type as 'subscription' | 'purchase',
+                // Settings screens
+                SettingsProfile: 'settings/profile',
+                SettingsNotifications: 'settings/notifications',
+                SettingsSubscription: 'settings/subscription',
+                SettingsAccount: 'settings/account',
+                // Payment result screens
+                PaymentSuccess: {
+                  path: 'payment/success',
+                  parse: {
+                    session_id: (session_id: string) => session_id,
+                    type: (type: string) => type as 'subscription' | 'purchase',
+                  },
                 },
-              },
-              PaymentCancel: {
-                path: 'payment/cancel',
-                parse: {
-                  type: (type: string) => type as 'subscription' | 'purchase',
+                PaymentCancel: {
+                  path: 'payment/cancel',
+                  parse: {
+                    type: (type: string) => type as 'subscription' | 'purchase',
+                  },
                 },
               },
             },
-          },
-        }}
-        onReady={() => { }}
-      >
-        <RootNavigator />
-      </NavigationContainer>
+          }}
+          onReady={() => { }}
+        >
+          <RootNavigator />
+        </NavigationContainer>
+      </BottomSheetModalProvider>
     </GestureHandlerRootView>
   );
 }

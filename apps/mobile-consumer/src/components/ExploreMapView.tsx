@@ -1,17 +1,16 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps';
 import { StyleSheet, View, Text, ActivityIndicator, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
 import { StarIcon, X } from 'lucide-react-native';
 import { useTypedTranslation } from '../i18n/typed';
 import { Image } from 'expo-image';
-import { BlurView } from 'expo-blur';
 import { Doc } from '@repo/api/convex/_generated/dataModel';
 import { calculateDistance } from '../utils/location';
 import { getVenueCategoryDisplay } from '@repo/utils/constants';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -41,7 +40,9 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
   const { t } = useTypedTranslation();
   const navigation = useNavigation();
   const [selectedVenue, setSelectedVenue] = useState<VenueWithCoordinate | null>(null);
-  const [isSheetVisible, setIsSheetVisible] = useState(false);
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
+  const sheetSnapPoints = useMemo(() => ['45%', '85%'], []);
+  const insets = useSafeAreaInsets();
 
   // Early return if required props are missing
   if (!storageIdToUrl || !venues) {
@@ -51,11 +52,6 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
       </View>
     );
   }
-
-  // Shared values for animations
-  const translateY = useSharedValue(300);
-  const opacity = useSharedValue(0);
-  const gestureTranslateY = useSharedValue(0);
 
   // Transform venues to include coordinates and other needed properties
   const venuesWithCoordinates = useMemo((): VenueWithCoordinate[] => {
@@ -140,59 +136,29 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
   // Handle marker press
   const handleMarkerPress = useCallback((venue: VenueWithCoordinate) => {
     setSelectedVenue(venue);
-    if (!isSheetVisible) {
-      setIsSheetVisible(true);
-      translateY.value = withTiming(0, { duration: 300 });
-      opacity.value = withTiming(1, { duration: 300 });
-    }
-  }, [isSheetVisible, translateY, opacity]);
+    bottomSheetRef.current?.present();
+  }, []);
 
   // Handle sheet close
   const handleCloseSheet = useCallback(() => {
-    translateY.value = withTiming(300, { duration: 250 });
-    opacity.value = withTiming(0, { duration: 250 });
-    gestureTranslateY.value = withTiming(0, { duration: 250 });
+    bottomSheetRef.current?.dismiss();
+  }, []);
 
-    // Use setTimeout to hide after animation completes
-    setTimeout(() => {
-      setIsSheetVisible(false);
-      setSelectedVenue(null);
-      onCloseSheet?.(); // Call external callback if provided
-    }, 250);
-  }, [translateY, opacity, gestureTranslateY, onCloseSheet]);
+  const handleSheetDismiss = useCallback(() => {
+    setSelectedVenue(null);
+    onCloseSheet?.();
+  }, [onCloseSheet]);
 
   // Auto-close sheet when venues change (filters applied)
   useEffect(() => {
-    if (isSheetVisible && selectedVenue) {
+    if (selectedVenue) {
       // Check if the selected venue still exists in the filtered venues
       const stillExists = venues.some(v => v._id === selectedVenue._id);
       if (!stillExists) {
         handleCloseSheet();
       }
     }
-  }, [venues, isSheetVisible, selectedVenue, handleCloseSheet]);
-
-  // Create pan gesture with new API - disabled swipe to close
-  const panGesture = useMemo(() =>
-    Gesture.Pan()
-      .activeOffsetY(10)
-      .failOffsetY(-10)
-      .onChange((event) => {
-        // Disable gesture translation - no movement allowed
-        gestureTranslateY.value = 0;
-      })
-      .onFinalize(() => {
-        // No action on gesture end - sheet stays in place
-        gestureTranslateY.value = 0;
-      }),
-    []
-  );
-
-  // Animated style for the floating sheet
-  const animatedSheetStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
-  }));
+  }, [venues, selectedVenue, handleCloseSheet]);
 
   const formatDistance = (distance: number) => {
     if (distance < 1) {
@@ -232,19 +198,18 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
       </MapView>
 
       {/* Floating Venue Sheet */}
-      {isSheetVisible && selectedVenue && (
-        <GestureDetector gesture={panGesture}>
-          <Animated.View
-            style={[
-              styles.floatingSheet,
-              animatedSheetStyle
-            ]}
-          >
-            <BlurView
-              intensity={30}
-              tint='light'
-              style={styles.blurContainer}
-            >
+      <BottomSheetModal
+        ref={bottomSheetRef}
+        index={0}
+        snapPoints={sheetSnapPoints}
+        onDismiss={handleSheetDismiss}
+        backgroundStyle={styles.sheetBackground}
+        handleIndicatorStyle={styles.sheetHandle}
+        enablePanDownToClose
+      >
+        <BottomSheetView style={[styles.sheetContent, { paddingBottom: 24 + insets.bottom }]}>
+          {selectedVenue && (
+            <>
               {/* Close button */}
               <TouchableOpacity style={styles.closeButton} onPress={handleCloseSheet}>
                 <X size={18} color="#666" />
@@ -256,6 +221,10 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
               </View>
 
               <Text style={styles.businessType}>{selectedVenue.type}</Text>
+
+              {typeof selectedVenue.distance === 'number' && (
+                <Text style={styles.distanceText}>{formatDistance(selectedVenue.distance)}</Text>
+              )}
 
               {selectedVenue.rating && (
                 <View style={styles.ratingContainer}>
@@ -276,14 +245,15 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
                   showsHorizontalScrollIndicator={false}
                   style={styles.imageScrollView}
                   contentContainerStyle={styles.imageScrollContent}
+                  nestedScrollEnabled
                 >
-                  {selectedVenue.imageUrls.slice(0, 4).map((imageUrl, index) => (
+                  {selectedVenue.imageUrls.slice(0, 4).map((imageUrl, index, array) => (
                     <Image
                       key={index}
                       source={{ uri: imageUrl }}
                       style={[
                         styles.galleryImage,
-                        index === selectedVenue.imageUrls.length - 1 ? {} : styles.galleryImageSpacing
+                        index === array.length - 1 ? {} : styles.galleryImageSpacing
                       ]}
                       contentFit="cover"
                       transition={300}
@@ -295,15 +265,6 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
 
               <View style={styles.divider} />
 
-              {/* Location details */}
-              {/* <View style={styles.locationContainer}>
-                <MapPinIcon size={14} color="#666" />
-                <Text style={styles.address}>{selectedVenue.address}</Text>
-                <Text style={styles.distance}>
-                  • {t('explore.distance', { distance: formatDistance(selectedVenue.distance) })}
-                </Text>
-              </View> */}
-
               {/* See Studio Button */}
               <TouchableOpacity
                 style={styles.seeStudioButton}
@@ -312,10 +273,10 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
               >
                 <Text style={styles.seeStudioButtonText}>See Studio</Text>
               </TouchableOpacity>
-            </BlurView>
-          </Animated.View>
-        </GestureDetector>
-      )}
+            </>
+          )}
+        </BottomSheetView>
+      </BottomSheetModal>
     </View>
   );
 }
@@ -327,34 +288,20 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
   },
-  floatingSheet: {
-    position: 'absolute',
-    bottom: 60,
-    left: 16,
-    right: 16,
+  sheetBackground: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 30,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    backgroundColor: 'rgba(255, 255, 255, 0.80)',
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 15,
-    zIndex: 1000,
-    maxHeight: 500,
-    overflow: 'hidden',
   },
-  blurContainer: {
+  sheetHandle: {
+    backgroundColor: '#d4d4d8',
+    width: 60,
+  },
+  sheetContent: {
     flex: 1,
     paddingHorizontal: 24,
     paddingVertical: 16,
-    paddingBottom: 20,
-    opacity: 0.99,
-    // backgroundColor: 'white',
+    paddingBottom: 24,
   },
-
   closeButton: {
     position: 'absolute',
     top: 12,
@@ -374,6 +321,11 @@ const styles = StyleSheet.create({
   },
   businessType: {
     fontSize: 14,
+    color: '#666',
+    marginBottom: 12,
+  },
+  distanceText: {
+    fontSize: 13,
     color: '#666',
     marginBottom: 12,
   },
@@ -411,21 +363,6 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#E0E0E0',
     //  marginVertical: 16,
-  },
-  locationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  address: {
-    fontSize: 14,
-    color: '#666',
-    flex: 1,
-  },
-  distance: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
   },
   seeStudioButton: {
     backgroundColor: '#ff4747',

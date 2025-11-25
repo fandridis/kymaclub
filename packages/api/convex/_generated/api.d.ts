@@ -44,7 +44,6 @@ import type * as queries_core from "../queries/core.js";
 import type * as queries_credits from "../queries/credits.js";
 import type * as queries_dashboard from "../queries/dashboard.js";
 import type * as queries_earnings from "../queries/earnings.js";
-import type * as queries_explore from "../queries/explore.js";
 import type * as queries_notifications from "../queries/notifications.js";
 import type * as queries_payments from "../queries/payments.js";
 import type * as queries_presence from "../queries/presence.js";
@@ -112,7 +111,6 @@ declare const fullApi: ApiFromModules<{
   "queries/credits": typeof queries_credits;
   "queries/dashboard": typeof queries_dashboard;
   "queries/earnings": typeof queries_earnings;
-  "queries/explore": typeof queries_explore;
   "queries/notifications": typeof queries_notifications;
   "queries/payments": typeof queries_payments;
   "queries/presence": typeof queries_presence;

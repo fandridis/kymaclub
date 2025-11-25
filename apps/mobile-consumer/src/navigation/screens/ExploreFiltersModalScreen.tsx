@@ -3,12 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { X, SlidersHorizontalIcon } from 'lucide-react-native';
-import { useQuery } from 'convex/react';
-import Slider from '@react-native-community/slider';
 
 import { useTypedTranslation } from '../../i18n/typed';
 import { theme } from '../../theme';
-import { api } from '@repo/api/convex/_generated/api';
 import {
   EXPLORE_CATEGORY_FILTERS,
   ExploreCategoryId,
@@ -33,32 +30,22 @@ export function ExploreFiltersModalScreen() {
 
   const filters = useExploreFiltersStore((state) => state.filters);
   const setCategories = useExploreFiltersStore((state) => state.setCategories);
-  const setDistanceKm = useExploreFiltersStore((state) => state.setDistanceKm);
   const initialFiltersRef = useRef({
     categories: [...filters.categories],
-    distanceKm: filters.distanceKm,
   });
 
-  const exploreFilterData = useQuery(api.queries.explore.getExploreFilters, {});
-
-  const availableCategories = useMemo(() => {
-    if (exploreFilterData?.categories?.length) {
-      const filtered = exploreFilterData.categories
-        .filter((category) => isExploreCategoryId(category.id))
-        .map((category) => ({ id: category.id as ExploreCategoryId, label: category.label }));
-
-      if (filtered.length > 0) {
-        return filtered;
-      }
-    }
-
-    return EXPLORE_CATEGORY_FILTERS.map(({ id, label }) => ({ id, label }));
-  }, [exploreFilterData]);
+  const availableCategories = useMemo(
+    () =>
+      EXPLORE_CATEGORY_FILTERS.filter(({ id }) => isExploreCategoryId(id)).map(({ id, label }) => ({
+        id,
+        label,
+      })),
+    [],
+  );
 
   const [selectedCategories, setSelectedCategories] = useState<ExploreCategoryId[]>(
     filters.categories.filter(isExploreCategoryId)
   );
-  const [selectedDistanceKm, setSelectedDistanceKm] = useState<number>(filters.distanceKm ?? 0);
 
   const closeModal = useCallback(() => {
     navigation.goBack();
@@ -66,13 +53,11 @@ export function ExploreFiltersModalScreen() {
 
   const handleApply = useCallback(() => {
     setCategories(selectedCategories);
-    setDistanceKm(selectedDistanceKm);
     navigation.goBack();
-  }, [navigation, selectedCategories, selectedDistanceKm, setCategories, setDistanceKm]);
+  }, [navigation, selectedCategories, setCategories]);
 
   const handleClear = useCallback(() => {
     setSelectedCategories([]);
-    setSelectedDistanceKm(0);
   }, []);
 
   const toggleCategory = useCallback((categoryId: ExploreCategoryId) => {
@@ -84,12 +69,10 @@ export function ExploreFiltersModalScreen() {
   }, []);
 
   const hasSelectedCategories = selectedCategories.length > 0;
-  const hasAppliedFilters = hasSelectedCategories || selectedDistanceKm > 0;
+  const hasAppliedFilters = hasSelectedCategories;
   const hasChanges = useMemo(
-    () =>
-      !areCategoryArraysEqual(selectedCategories, initialFiltersRef.current.categories) ||
-      selectedDistanceKm !== initialFiltersRef.current.distanceKm,
-    [selectedCategories, selectedDistanceKm]
+    () => !areCategoryArraysEqual(selectedCategories, initialFiltersRef.current.categories),
+    [selectedCategories]
   );
 
   return (
@@ -139,31 +122,6 @@ export function ExploreFiltersModalScreen() {
           </View>
         </View>
 
-        <View style={styles.section}>
-          <View style={styles.distanceHeader}>
-            <Text style={styles.sectionTitle}>{t('explore.distance')}</Text>
-            <Text style={styles.distanceValue}>
-              {selectedDistanceKm > 0
-                ? t('explore.distanceWithin', { distance: selectedDistanceKm })
-                : t('explore.distanceAny')}
-            </Text>
-          </View>
-          <Slider
-            style={styles.slider}
-            minimumValue={0}
-            maximumValue={50}
-            step={1}
-            value={selectedDistanceKm}
-            onValueChange={setSelectedDistanceKm}
-            minimumTrackTintColor={theme.colors.emerald[500]}
-            maximumTrackTintColor={theme.colors.zinc[200]}
-            thumbTintColor={theme.colors.emerald[600]}
-          />
-          <View style={styles.sliderLabels}>
-            <Text style={styles.sliderLabelText}>0 km</Text>
-            <Text style={styles.sliderLabelText}>50 km</Text>
-          </View>
-        </View>
       </ScrollView>
 
       <View style={styles.footer}>
@@ -242,16 +200,6 @@ const styles = StyleSheet.create({
     fontWeight: theme.fontWeight.semibold,
     color: theme.colors.zinc[700],
   },
-  distanceHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  distanceValue: {
-    fontSize: 14,
-    fontWeight: theme.fontWeight.medium,
-    color: theme.colors.zinc[500],
-  },
   chipsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -276,19 +224,6 @@ const styles = StyleSheet.create({
   },
   chipLabelSelected: {
     color: theme.colors.zinc[50],
-  },
-  slider: {
-    width: '100%',
-    height: 40,
-  },
-  sliderLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  sliderLabelText: {
-    fontSize: 12,
-    color: theme.colors.zinc[400],
-    fontWeight: theme.fontWeight.medium,
   },
   footer: {
     padding: 20,

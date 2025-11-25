@@ -24,8 +24,6 @@ export function CommandMenu() {
         query: debouncedSearch,
     });
 
-    console.log('results: ', results)
-
     React.useEffect(() => {
         const down = (e: KeyboardEvent) => {
             if (e.key === "k" && (e.metaKey || e.ctrlKey)) {

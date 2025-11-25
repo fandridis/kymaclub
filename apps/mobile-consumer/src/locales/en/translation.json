@@ -176,6 +176,12 @@
             "dataDescription": "Manage your data and storage",
             "deleteAccount": "Delete Account",
             "deleteDescription": "Permanently delete your account",
+            "deleteConfirmationTitle": "Delete Account",
+            "deleteConfirmationWarning": "This action cannot be undone. All your data, bookings, and credits will be permanently removed.",
+            "deleteInstruction": "Please type <bold>{{text}}</bold> to confirm.",
+            "deletePlaceholder": "Delete account",
+            "deleteButton": "Delete Account",
+            "deleteTimelineInfo": "Your account will be deactivated immediately and marked for deletion. We'll permanently remove all data in 7 days unless you register again with the same email during that period.",
             "comingSoon": "Account management coming soon"
         },
         "language": {

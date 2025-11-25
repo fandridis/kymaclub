@@ -20,8 +20,7 @@ export const ClassesSection = memo<ClassesSectionProps>(({ filters, userLocation
     const stableFilters = useMemo(() => ({
         searchQuery: filters.searchQuery,
         categories: filters.categories,
-        distanceKm: filters.distanceKm,
-    }), [filters.searchQuery, filters.categories, filters.distanceKm]);
+    }), [filters.searchQuery, filters.categories]);
 
     return (
         <View style={{ flex: 1 }}>

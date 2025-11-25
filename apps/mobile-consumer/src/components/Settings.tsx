@@ -54,6 +54,7 @@ interface SettingsRowProps {
     titleStyle?: any;
     icon?: LucideIcon;
     iconColor?: string;
+    variant?: 'default' | 'destructive';
 }
 
 export function SettingsRow({
@@ -66,7 +67,8 @@ export function SettingsRow({
     style,
     titleStyle,
     icon: Icon,
-    iconColor
+    iconColor,
+    variant = 'default'
 }: SettingsRowProps) {
     // Logic:
     // onPress exists => show chevron, row is pressable
@@ -75,6 +77,7 @@ export function SettingsRow({
 
     const showChevron = !!onPress;
     const isRowPressable = !!onPress && !disabled;
+    const isDestructive = variant === 'destructive';
 
     const rightSideContent = (
         <>
@@ -114,6 +117,7 @@ export function SettingsRow({
                     <Text style={[
                         styles.settingsRowTitle,
                         disabled && styles.disabledText,
+                        isDestructive && styles.destructiveText,
                         titleStyle
                     ]}>
                         {title}
@@ -247,5 +251,8 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         marginHorizontal: 16,
         lineHeight: 20,
+    },
+    destructiveText: {
+        color: '#dc2626', // red-600
     },
 });

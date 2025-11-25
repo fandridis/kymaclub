@@ -19,7 +19,7 @@ import { useProfileImageModeration } from '../../hooks/useProfileImageModeration
 import { StackScreenHeader } from '../../components/StackScreenHeader';
 import { MembershipCard } from '../../components/MembershipCard';
 import { QuickBuyCreditsSheet } from '../../components/QuickBuyCreditsSheet';
-import { BottomSheetModal, BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { RootStackParamList } from '../index';
 import { CommonActions } from "@react-navigation/native";
 import { useLogout } from '../../hooks/useLogout';
@@ -287,147 +287,146 @@ export function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <BottomSheetModalProvider>
-        <StackScreenHeader title={t('settings.title')} />
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+      <StackScreenHeader title={t('settings.title')} />
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
 
-          {/* New Header Design */}
-          <View style={styles.headerSection}>
-            <Text style={styles.greeting}>Hi {user?.name?.split(' ')[0] || 'there'}!</Text>
-            <View style={styles.avatarRow}>
-              <TouchableOpacity
-                style={styles.avatarContainer}
-                onPress={handleAvatarPress}
-                disabled={status !== "idle"}
-              >
-                {profileImageUrl ? (
-                  <Image source={{ uri: profileImageUrl }} style={styles.avatar} />
-                ) : (
-                  <View style={styles.avatarPlaceholder}>
-                    <CameraIcon
-                      size={24}
-                      color={theme.colors.zinc[400]}
-                    />
-                  </View>
-                )}
-              </TouchableOpacity>
+        {/* New Header Design */}
+        <View style={styles.headerSection}>
+          <Text style={styles.greeting}>Hi {user?.name?.split(' ')[0] || 'there'}!</Text>
+          <View style={styles.avatarRow}>
+            <TouchableOpacity
+              style={styles.avatarContainer}
+              onPress={handleAvatarPress}
+              disabled={status !== "idle"}
+            >
+              {profileImageUrl ? (
+                <Image source={{ uri: profileImageUrl }} style={styles.avatar} />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <CameraIcon
+                    size={24}
+                    color={theme.colors.zinc[400]}
+                  />
+                </View>
+              )}
+            </TouchableOpacity>
 
-            </View>
           </View>
+        </View>
 
-          {/* Profile Image Moderation Alerts - Full Width */}
-          {isPending && (
-            <View style={styles.pendingNotice}>
-              <Text style={styles.pendingText}>Your profile image is being reviewed...</Text>
-            </View>
-          )}
+        {/* Profile Image Moderation Alerts - Full Width */}
+        {isPending && (
+          <View style={styles.pendingNotice}>
+            <Text style={styles.pendingText}>Your profile image is being reviewed...</Text>
+          </View>
+        )}
 
-          {statusMessage && isRejected && (
-            <View style={styles.rejectionNotice}>
-              <Text style={styles.rejectionText}>{statusMessage}</Text>
-              <TouchableOpacity
-                style={styles.dismissButton}
-                onPress={async () => {
-                  try {
-                    await removeProfileImage({});
-                  } catch (error) {
-                    console.error('Error dismissing image:', error);
-                    Alert.alert('Error', 'Failed to dismiss image. Please try again.');
-                  }
-                }}
-              >
-                <Text style={styles.dismissButtonText}>Dismiss</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Membership Card */}
-          <MembershipCard
-            creditBalance={creditBalance?.balance ?? 0}
-            expiringCredits={expiringCredits?.expiringCredits}
-            daysUntilExpiry={expiringCredits?.daysUntilExpiry}
-            subscriptionStatus={subscriptionCopy.membershipCardStatus}
-            subscription={subscription}
-          />
-
-          {/* Manage Credits Section */}
-          <SettingsHeader title={t('credits.manageCredits')} />
-          <SettingsGroup>
-            <SettingsRow
-              title={t('subscription.title')}
-              renderSubtitle={() => {
-                const isActive = subscription?.status === 'active';
-                const isCanceling = Boolean(subscription?.cancelAtPeriodEnd);
-                const isPaused = subscription?.status === 'unpaid' || subscription?.status === 'past_due';
-
-                if (isActive && !isCanceling) {
-                  return (
-                    <View style={styles.subtitleRow}>
-                      <View style={[styles.statusDot, styles.statusDotActive]} />
-                      <Text style={styles.subtitleText}>
-                        {t('subscription.creditsPerMonth', { credits: subscription.creditAmount })}
-                      </Text>
-                    </View>
-                  );
-                } else if (isPaused || isCanceling) {
-                  return (
-                    <View style={styles.subtitleRow}>
-                      <View style={[styles.statusDot, styles.statusDotInactive]} />
-                      <Text style={styles.subtitleText}>{t('subscription.paused')}</Text>
-                    </View>
-                  );
-                } else {
-                  return (
-                    <View style={styles.subtitleRow}>
-                      <View style={[styles.statusDot, styles.statusDotInactive]} />
-                      <Text style={styles.subtitleText}>{t('subscription.inactive')}</Text>
-                    </View>
-                  );
+        {statusMessage && isRejected && (
+          <View style={styles.rejectionNotice}>
+            <Text style={styles.rejectionText}>{statusMessage}</Text>
+            <TouchableOpacity
+              style={styles.dismissButton}
+              onPress={async () => {
+                try {
+                  await removeProfileImage({});
+                } catch (error) {
+                  console.error('Error dismissing image:', error);
+                  Alert.alert('Error', 'Failed to dismiss image. Please try again.');
                 }
               }}
-              renderRightSide={() => {
-                const isActive = subscription?.status === 'active';
-                const isCanceling = Boolean(subscription?.cancelAtPeriodEnd);
-                const isPaused = subscription?.status === 'unpaid' || subscription?.status === 'past_due';
+            >
+              <Text style={styles.dismissButtonText}>Dismiss</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-                let buttonText = t('settings.subscription.startSubscription');
-                if (isActive && !isCanceling) {
-                  buttonText = t('common.update');
-                } else if (isPaused || isCanceling) {
-                  buttonText = t('subscription.resume');
-                }
+        {/* Membership Card */}
+        <MembershipCard
+          creditBalance={creditBalance?.balance ?? 0}
+          expiringCredits={expiringCredits?.expiringCredits}
+          daysUntilExpiry={expiringCredits?.daysUntilExpiry}
+          subscriptionStatus={subscriptionCopy.membershipCardStatus}
+          subscription={subscription}
+        />
 
+        {/* Manage Credits Section */}
+        <SettingsHeader title={t('credits.manageCredits')} />
+        <SettingsGroup>
+          <SettingsRow
+            title={t('subscription.title')}
+            renderSubtitle={() => {
+              const isActive = subscription?.status === 'active';
+              const isCanceling = Boolean(subscription?.cancelAtPeriodEnd);
+              const isPaused = subscription?.status === 'unpaid' || subscription?.status === 'past_due';
+
+              if (isActive && !isCanceling) {
                 return (
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={() => navigation.navigate('Subscription' as never)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.actionButtonText}>{buttonText}</Text>
-                  </TouchableOpacity>
+                  <View style={styles.subtitleRow}>
+                    <View style={[styles.statusDot, styles.statusDotActive]} />
+                    <Text style={styles.subtitleText}>
+                      {t('subscription.creditsPerMonth', { credits: subscription.creditAmount })}
+                    </Text>
+                  </View>
                 );
-              }}
-            />
-            <SettingsRow
-              title={t('credits.quickBuy')}
-              subtitle={t('credits.quickBuySubtitle')}
-              renderRightSide={() => (
+              } else if (isPaused || isCanceling) {
+                return (
+                  <View style={styles.subtitleRow}>
+                    <View style={[styles.statusDot, styles.statusDotInactive]} />
+                    <Text style={styles.subtitleText}>{t('subscription.paused')}</Text>
+                  </View>
+                );
+              } else {
+                return (
+                  <View style={styles.subtitleRow}>
+                    <View style={[styles.statusDot, styles.statusDotInactive]} />
+                    <Text style={styles.subtitleText}>{t('subscription.inactive')}</Text>
+                  </View>
+                );
+              }
+            }}
+            renderRightSide={() => {
+              const isActive = subscription?.status === 'active';
+              const isCanceling = Boolean(subscription?.cancelAtPeriodEnd);
+              const isPaused = subscription?.status === 'unpaid' || subscription?.status === 'past_due';
+
+              let buttonText = t('settings.subscription.startSubscription');
+              if (isActive && !isCanceling) {
+                buttonText = t('common.update');
+              } else if (isPaused || isCanceling) {
+                buttonText = t('subscription.resume');
+              }
+
+              return (
                 <TouchableOpacity
                   style={styles.actionButton}
-                  onPress={handleOpenCreditsSheet}
+                  onPress={() => navigation.navigate('Subscription' as never)}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.actionButtonText}>{t('credits.buyCreditsButton')}</Text>
+                  <Text style={styles.actionButtonText}>{buttonText}</Text>
                 </TouchableOpacity>
-              )}
-            />
-          </SettingsGroup>
+              );
+            }}
+          />
+          <SettingsRow
+            title={t('credits.quickBuy')}
+            subtitle={t('credits.quickBuySubtitle')}
+            renderRightSide={() => (
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleOpenCreditsSheet}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.actionButtonText}>{t('credits.buyCreditsButton')}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </SettingsGroup>
 
-          {/* Statistics
+        {/* Statistics
           <View style={styles.statsCard}>
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
@@ -442,67 +441,66 @@ export function SettingsScreen() {
             </View>
           </View> */}
 
-          {/* Settings Navigation */}
-          <SettingsHeader title={t('settings.title')} />
-          <SettingsGroup>
-            <SettingsRow
-              title={t('bookings.myBookings')}
-              subtitle={t('bookings.myBookingsSubtitle')}
-              onPress={() => navigation.navigate('Bookings' as never)}
-              icon={TicketIcon}
-            />
-            <SettingsRow
-              title={t('settings.city.title')}
-              subtitle={cityLabel || t('settings.city.notSet')}
-              onPress={() => navigation.navigate('CitySelection' as never)}
-              icon={MapPinIcon}
-            />
-            <SettingsRow
-              title={t('settings.account.appLanguage')}
-              subtitle={getLanguageDisplay(i18n.language)}
-              onPress={() => navigation.navigate('LanguageSelection' as never)}
-              icon={LanguagesIcon}
-            />
-            <SettingsRow
-              title={t('settings.notifications.title')}
-              subtitle={t('settings.notifications.notificationsSubtitle')}
-              onPress={() => navigation.navigate('SettingsNotifications')}
-              icon={BellIcon}
-            />
-            <SettingsRow
-              title={t('settings.account.accountSettings')}
-              subtitle={t('settings.account.accountSettingsSubtitle')}
-              onPress={() => navigation.navigate('SettingsAccount')}
-              icon={ShieldIcon}
-            />
-          </SettingsGroup>
+        {/* Settings Navigation */}
+        <SettingsHeader title={t('settings.title')} />
+        <SettingsGroup>
+          <SettingsRow
+            title={t('bookings.myBookings')}
+            subtitle={t('bookings.myBookingsSubtitle')}
+            onPress={() => navigation.navigate('Bookings' as never)}
+            icon={TicketIcon}
+          />
+          <SettingsRow
+            title={t('settings.city.title')}
+            subtitle={cityLabel || t('settings.city.notSet')}
+            onPress={() => navigation.navigate('CitySelection' as never)}
+            icon={MapPinIcon}
+          />
+          <SettingsRow
+            title={t('settings.account.appLanguage')}
+            subtitle={getLanguageDisplay(i18n.language)}
+            onPress={() => navigation.navigate('LanguageSelection' as never)}
+            icon={LanguagesIcon}
+          />
+          <SettingsRow
+            title={t('settings.notifications.title')}
+            subtitle={t('settings.notifications.notificationsSubtitle')}
+            onPress={() => navigation.navigate('SettingsNotifications')}
+            icon={BellIcon}
+          />
+          <SettingsRow
+            title={t('settings.account.accountSettings')}
+            subtitle={t('settings.account.accountSettingsSubtitle')}
+            onPress={() => navigation.navigate('SettingsAccount')}
+            icon={ShieldIcon}
+          />
+        </SettingsGroup>
 
-          {/* Account Actions */}
-          <SettingsHeader title={t('settings.account.title')} />
-          <SettingsGroup>
-            <TouchableOpacity
-              style={styles.logoutRow}
-              onPress={handleLogout}
-            >
-              <View style={styles.logoutContent}>
-                <View style={styles.logoutIconContainer}>
-                  <LogOutIcon
-                    size={20}
-                    color={theme.colors.rose[500]}
-                  />
-                </View>
-                <Text style={styles.logoutText}>{t('auth.signOut')}</Text>
+        {/* Account Actions */}
+        <SettingsHeader title={t('settings.account.title')} />
+        <SettingsGroup>
+          <TouchableOpacity
+            style={styles.logoutRow}
+            onPress={handleLogout}
+          >
+            <View style={styles.logoutContent}>
+              <View style={styles.logoutIconContainer}>
+                <LogOutIcon
+                  size={20}
+                  color={theme.colors.rose[500]}
+                />
               </View>
-            </TouchableOpacity>
-          </SettingsGroup>
-        </ScrollView>
+              <Text style={styles.logoutText}>{t('auth.signOut')}</Text>
+            </View>
+          </TouchableOpacity>
+        </SettingsGroup>
+      </ScrollView>
 
-        <QuickBuyCreditsSheet
-          ref={creditsSheetRef}
-          snapPoints={creditsSnapPoints}
-          onChange={handleSheetChange}
-        />
-      </BottomSheetModalProvider>
+      <QuickBuyCreditsSheet
+        ref={creditsSheetRef}
+        snapPoints={creditsSnapPoints}
+        onChange={handleSheetChange}
+      />
     </SafeAreaView>
   );
 }

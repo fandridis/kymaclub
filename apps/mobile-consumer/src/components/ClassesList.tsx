@@ -18,7 +18,6 @@ interface ClassesListProps {
   searchFilters: {
     searchQuery: string;
     categories: ExploreCategoryId[];
-    distanceKm: number;
   };
   userLocation: Location.LocationObject | null;
 }

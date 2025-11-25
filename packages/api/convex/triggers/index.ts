@@ -7,9 +7,7 @@ import { classInstanceRules } from "../../rules/classInstance";
 import { classInstanceOperations } from "../../operations/classInstance";
 import { venueRules } from "../../rules/venue";
 import { creditService } from "../../services/creditService";
-import { notificationService } from "../../services/notificationService";
 import { reviewsService } from "../../services/reviewsService";
-import { format } from "date-fns";
 
 const triggers = new Triggers<DataModel>();
 

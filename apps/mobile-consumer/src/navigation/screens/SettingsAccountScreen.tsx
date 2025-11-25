@@ -1,12 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useMutation } from 'convex/react';
+import { api } from '@repo/api/convex/_generated/api';
 import { SettingsGroup, SettingsHeader, SettingsRow } from '../../components/Settings';
 import { StackScreenHeader } from '../../components/StackScreenHeader';
 import { useTypedTranslation } from '../../i18n/typed';
+import { useLogout } from '../../hooks/useLogout';
+import { DeleteAccountModal } from '../../components/DeleteAccountModal';
 
 export function SettingsAccountScreen() {
     const { t } = useTypedTranslation();
+    const deleteUser = useMutation(api.mutations.users.deleteUser);
+    const logout = useLogout();
+    const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+
+    const handleDeleteAccount = async () => {
+        await deleteUser();
+        await logout();
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -28,12 +40,16 @@ export function SettingsAccountScreen() {
                             // TODO: Navigate to data screen
                         }}
                     />
+                </SettingsGroup>
+
+                <View style={{ height: 24 }} />
+
+                <SettingsGroup>
                     <SettingsRow
                         title={t('settings.account.deleteAccount')}
                         subtitle={t('settings.account.deleteDescription')}
-                        onPress={() => {
-                            // TODO: Navigate to delete account screen
-                        }}
+                        onPress={() => setIsDeleteModalVisible(true)}
+                        variant="destructive"
                     />
                 </SettingsGroup>
 
@@ -41,6 +57,12 @@ export function SettingsAccountScreen() {
                     {t('settings.account.comingSoon')}
                 </Text>
             </View>
+
+            <DeleteAccountModal
+                isVisible={isDeleteModalVisible}
+                onClose={() => setIsDeleteModalVisible(false)}
+                onConfirm={handleDeleteAccount}
+            />
         </SafeAreaView>
     );
 }

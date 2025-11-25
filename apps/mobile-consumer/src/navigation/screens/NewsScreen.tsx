@@ -497,16 +497,7 @@ export function NewsScreen() {
                             ))}
                         </ScrollView>
                     </View>
-                ) : (
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>{t('news.yourSchedule')}</Text>
-                        <NoUpcomingClassesMessage
-                            onExplorePress={handleExplorePress}
-                            titleText={t('news.noUpcomingClasses.title')}
-                            exploreButtonText={t('news.noUpcomingClasses.exploreButton')}
-                        />
-                    </View>
-                )}
+                ) : null}
 
                 {/* Happening Today Section */}
                 {happeningTodayClasses.length > 0 && (

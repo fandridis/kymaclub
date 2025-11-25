@@ -70,6 +70,17 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         return;
       }
 
+      // Check if user was previously deleted and reactivate if necessary
+      if (user.deleted) {
+        console.log("[auth] Deleted user detected - reactivating account", { userId: args.userId });
+        await typedCtx.db.patch(args.userId, {
+          deleted: undefined,
+          deletedAt: undefined,
+          deletedBy: undefined,
+        });
+        console.log("[auth] Account reactivated successfully");
+      }
+
       // Check if user was just created (within last 10 seconds)
       // This tells us if this is a new signup vs returning user
       const isNewSignup = user._creationTime && (Date.now() - user._creationTime) < 10000;
