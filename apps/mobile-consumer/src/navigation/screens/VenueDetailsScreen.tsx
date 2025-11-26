@@ -57,11 +57,13 @@ function AmenitiesSection({ venue }: { venue: any }) {
         return translated;
     };
 
+    const hasAmenities = venue?.amenities && Object.values(venue.amenities).some(enabled => enabled);
+
     return (
         <View style={styles.section}>
             <Text style={[styles.sectionTitle, styles.amenitiesTitle]}>{t('venues.amenities')}</Text>
             <View style={styles.tagContainer}>
-                {venue?.amenities ? Object.entries(venue.amenities)
+                {hasAmenities ? Object.entries(venue.amenities)
                     .filter(([_, enabled]) => enabled)
                     .map(([amenity]) => {
                         const IconComponent = amenitiesIconsMap[amenity];
@@ -77,12 +79,7 @@ function AmenitiesSection({ venue }: { venue: any }) {
                             </View>
                         );
                     }) : (
-                    <>
-                        <View style={styles.tag}><Text style={styles.tagText}>Parking</Text></View>
-                        <View style={styles.tag}><Text style={styles.tagText}>Locker Rooms</Text></View>
-                        <View style={styles.tag}><Text style={styles.tagText}>WiFi</Text></View>
-                        <View style={styles.tag}><Text style={styles.tagText}>Water Station</Text></View>
-                    </>
+                    <Text style={styles.descriptionText}>{t('venues.noAmenitiesFound')}</Text>
                 )}
             </View>
         </View>
@@ -515,107 +512,110 @@ export function VenueDetailsScreen() {
             <Divider />
 
             {/* Upcoming Section */}
-            {upcomingVenueClasses && upcomingVenueClasses.length > 0 && (
-                <>
-                    <View style={styles.section}>
-                        <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>{t('venues.upcomingClasses')}</Text>
-                            <TouchableOpacity
-                                onPress={() => {
-                                    navigation.navigate('VenueClassInstancesModal', {
-                                        venueId,
-                                        venueName: venue?.name || t('venues.venue')
-                                    });
-                                }}
-                                activeOpacity={0.7}
-                            >
-                                <Text style={styles.seeAllButton}>{t('venues.seeAll')}</Text>
-                            </TouchableOpacity>
-                        </View>
-                        <View style={styles.carouselContainer}>
-                            <Carousel
-                                loop={false}
-                                width={CAROUSEL_ITEM_WIDTH + ITEM_GAP}
-                                height={UPCOMING_CAROUSEL_HEIGHT}
-                                data={[...(upcomingVenueClasses || []), { type: 'seeMore' }]}
-                                scrollAnimationDuration={500}
-                                style={styles.carousel}
-                                snapEnabled
-                                renderItem={({ item }) => {
-                                    if ('type' in item && item.type === 'seeMore') {
-                                        return (
-                                            <TouchableOpacity
-                                                style={[styles.baseCarouselCard, styles.upcomingCarouselCard, styles.seeMoreCard]}
-                                                onPress={() => {
-                                                    navigation.navigate('VenueClassInstancesModal', {
-                                                        venueId,
-                                                        venueName: venue?.name || t('venues.venue')
-                                                    });
-                                                }}
-                                                activeOpacity={0.7}
-                                            >
-                                                <View style={styles.seeMoreCardContent}>
-                                                    <Text style={styles.seeMoreText}>{t('venues.seeMore')}</Text>
-                                                    <Text style={styles.seeMoreSubtext}>{t('venues.viewAllClasses')}</Text>
-                                                </View>
-                                            </TouchableOpacity>
-                                        );
-                                    }
+            <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>{t('venues.upcomingClasses')}</Text>
+                    {upcomingVenueClasses && upcomingVenueClasses.length > 0 && (
+                        <TouchableOpacity
+                            onPress={() => {
+                                navigation.navigate('VenueClassInstancesModal', {
+                                    venueId,
+                                    venueName: venue?.name || t('venues.venue')
+                                });
+                            }}
+                            activeOpacity={0.7}
+                        >
+                            <Text style={styles.seeAllButton}>{t('venues.seeAll')}</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
 
-                                    // Type assertion: item is a class instance at this point
-                                    const classItem = item as any;
-
+                {upcomingVenueClasses && upcomingVenueClasses.length > 0 ? (
+                    <View style={styles.carouselContainer}>
+                        <Carousel
+                            loop={false}
+                            width={CAROUSEL_ITEM_WIDTH + ITEM_GAP}
+                            height={UPCOMING_CAROUSEL_HEIGHT}
+                            data={[...(upcomingVenueClasses || []), { type: 'seeMore' }]}
+                            scrollAnimationDuration={500}
+                            style={styles.carousel}
+                            snapEnabled
+                            renderItem={({ item }) => {
+                                if ('type' in item && item.type === 'seeMore') {
                                     return (
                                         <TouchableOpacity
-                                            style={[
-                                                styles.baseCarouselCard,
-                                                styles.upcomingCarouselCard,
-                                                classItem.isBookedByUser && styles.bookedCarouselCard
-                                            ]}
+                                            style={[styles.baseCarouselCard, styles.upcomingCarouselCard, styles.seeMoreCard]}
                                             onPress={() => {
-                                                navigation.navigate('ClassDetailsModal', {
-                                                    classInstance: classItem.classInstance
+                                                navigation.navigate('VenueClassInstancesModal', {
+                                                    venueId,
+                                                    venueName: venue?.name || t('venues.venue')
                                                 });
                                             }}
                                             activeOpacity={0.7}
                                         >
-                                            <View style={styles.upcomingCardContent}>
-                                                <Text style={styles.upcomingDate} numberOfLines={1}>
-                                                    {classItem.date}
-                                                </Text>
-                                                <Text style={styles.upcomingTime}>
-                                                    {classItem.timeRange}
-                                                </Text>
-                                                <Text style={styles.upcomingClassName} numberOfLines={2}>
-                                                    {classItem.name}
-                                                </Text>
-                                                <View style={styles.upcomingSpotsContainer}>
-                                                    {classItem.isBookedByUser ? (
-                                                        <View style={styles.bookedBadge}>
-                                                            <CheckCircleIcon size={12} color={theme.colors.emerald[950]} strokeWidth={2} />
-                                                            <Text style={styles.bookedText}>{t('venues.alreadyBooked')}</Text>
-                                                        </View>
-                                                    ) : (
-                                                        <Text style={styles.upcomingSpotsText}>
-                                                            {t('venues.spotsAvailable', { count: classItem.spotsLeft })}
-                                                        </Text>
-                                                    )}
-                                                </View>
+                                            <View style={styles.seeMoreCardContent}>
+                                                <Text style={styles.seeMoreText}>{t('venues.seeMore')}</Text>
+                                                <Text style={styles.seeMoreSubtext}>{t('venues.viewAllClasses')}</Text>
                                             </View>
                                         </TouchableOpacity>
                                     );
-                                }}
-                                onConfigurePanGesture={(gestureChain) => {
-                                    gestureChain
-                                        .activeOffsetX([-10, 10])
-                                        .failOffsetY([-15, 15]);
-                                }}
-                            />
-                        </View>
+                                }
+
+                                // Type assertion: item is a class instance at this point
+                                const classItem = item as any;
+
+                                return (
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.baseCarouselCard,
+                                            styles.upcomingCarouselCard,
+                                            classItem.isBookedByUser && styles.bookedCarouselCard
+                                        ]}
+                                        onPress={() => {
+                                            navigation.navigate('ClassDetailsModal', {
+                                                classInstance: classItem.classInstance
+                                            });
+                                        }}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={styles.upcomingCardContent}>
+                                            <Text style={styles.upcomingDate} numberOfLines={1}>
+                                                {classItem.date}
+                                            </Text>
+                                            <Text style={styles.upcomingTime}>
+                                                {classItem.timeRange}
+                                            </Text>
+                                            <Text style={styles.upcomingClassName} numberOfLines={2}>
+                                                {classItem.name}
+                                            </Text>
+                                            <View style={styles.upcomingSpotsContainer}>
+                                                {classItem.isBookedByUser ? (
+                                                    <View style={styles.bookedBadge}>
+                                                        <CheckCircleIcon size={12} color={theme.colors.emerald[950]} strokeWidth={2} />
+                                                        <Text style={styles.bookedText}>{t('venues.alreadyBooked')}</Text>
+                                                    </View>
+                                                ) : (
+                                                    <Text style={styles.upcomingSpotsText}>
+                                                        {t('venues.spotsAvailable', { count: classItem.spotsLeft })}
+                                                    </Text>
+                                                )}
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            }}
+                            onConfigurePanGesture={(gestureChain) => {
+                                gestureChain
+                                    .activeOffsetX([-10, 10])
+                                    .failOffsetY([-15, 15]);
+                            }}
+                        />
                     </View>
-                    <Divider />
-                </>
-            )}
+                ) : (
+                    <Text style={styles.descriptionText}>{t('venues.noUpcomingClassesFound')}</Text>
+                )}
+            </View>
+            <Divider />
 
             {/* Reviews Section */}
             <ReviewsSection

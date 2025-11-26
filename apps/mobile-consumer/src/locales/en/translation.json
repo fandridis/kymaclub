@@ -488,7 +488,9 @@
         "getDirections": "Get Directions",
         "amenityShowers": "Showers",
         "amenityAccessible": "Accessible",
-        "amenityMats": "Mats"
+        "amenityMats": "Mats",
+        "noAmenitiesFound": "No amenities found",
+        "noUpcomingClassesFound": "No upcoming classes found"
     },
     "explore": {
         "title": "Explore",

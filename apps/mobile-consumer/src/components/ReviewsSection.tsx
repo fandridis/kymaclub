@@ -47,39 +47,39 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
 
   return (
     <View>
-      {/* Section Title */}
+      {/* Section Title & Write Review Button */}
       <View style={styles.titleContainer}>
         <Text style={styles.sectionTitle}>{t('reviews.ratingAndReviews')}</Text>
+
+        {/* Write Review Button */}
+        <TouchableOpacity
+          style={[styles.writeReviewButton, !isEligible && styles.writeReviewButtonDisabled]}
+          onPress={handleWriteReviewPress}
+          activeOpacity={0.7}
+        >
+          {!isEligible ? (
+            <CheckIcon size={14} color={theme.colors.zinc[700]} />
+          ) : (
+            <PenIcon size={14} color={theme.colors.zinc[700]} />
+          )}
+          <Text style={[styles.writeReviewText, !isEligible && styles.writeReviewTextDisabled]}>
+            {!isEligible && userReview ? t('reviews.reviewedRecently') : t('reviews.writeReview')}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Rating Summary */}
       <View style={styles.summaryContainer}>
         <View style={styles.ratingRow}>
-          <View style={styles.ratingInfo}>
-            <Text style={styles.averageRating}>
-              {ratingsSummary.averageRating.toFixed(1)}
-            </Text>
+          <Text style={styles.averageRating}>
+            {ratingsSummary.averageRating.toFixed(1)}
+          </Text>
+          <View style={styles.starsContainer}>
             <StarRating rating={Math.floor(ratingsSummary.averageRating)} size={20} />
             <Text style={styles.reviewCount}>
               {ratingsSummary.totalReviews} {ratingsSummary.totalReviews === 1 ? t('reviews.review') : t('reviews.reviews')}
             </Text>
           </View>
-
-          {/* Write Review Button */}
-          <TouchableOpacity
-            style={[styles.writeReviewButton, !isEligible && styles.writeReviewButtonDisabled]}
-            onPress={handleWriteReviewPress}
-            activeOpacity={0.7}
-          >
-            {!isEligible ? (
-              <CheckIcon size={16} color={theme.colors.zinc[700]} />
-            ) : (
-              <PenIcon size={16} color={theme.colors.zinc[700]} />
-            )}
-            <Text style={[styles.writeReviewText, !isEligible && styles.writeReviewTextDisabled]}>
-              {!isEligible && userReview ? t('reviews.reviewedRecently') : t('reviews.writeReview')}
-            </Text>
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -119,7 +119,10 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   sectionTitle: {
     fontSize: 20,
@@ -132,32 +135,32 @@ const styles = StyleSheet.create({
   },
   ratingRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 12,
   },
-  ratingInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  starsContainer: {
+    gap: 2,
   },
   averageRating: {
-    fontSize: 24,
+    fontSize: 36,
     fontWeight: '700',
     color: theme.colors.zinc[900],
+    lineHeight: 40,
   },
   reviewCount: {
     fontSize: 14,
-    color: theme.colors.zinc[600],
+    color: theme.colors.zinc[500],
     fontWeight: '500',
   },
   writeReviewButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
     backgroundColor: theme.colors.zinc[100],
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: theme.colors.zinc[200],
   },
@@ -166,9 +169,9 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.zinc[100],
   },
   writeReviewText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
-    color: theme.colors.zinc[700],
+    color: theme.colors.zinc[900],
   },
   writeReviewTextDisabled: {
     color: theme.colors.zinc[400],
