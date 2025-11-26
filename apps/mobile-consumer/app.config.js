@@ -63,8 +63,9 @@ export default ({ config }) => ({
     [
       "expo-splash-screen",
       {
-        backgroundColor: "#ffffff",
-        image: "./assets/splash-icon.png",
+        backgroundColor: "#8B5CF6",
+        image: "./assets/splash.png",
+        imageWidth: 200,
       },
     ],
     [
@@ -77,7 +78,7 @@ export default ({ config }) => ({
     "expo-audio",
   ],
   androidStatusBar: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#8B5CF6",
   },
   extra: {
     ...config.extra,

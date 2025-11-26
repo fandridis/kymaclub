@@ -285,14 +285,9 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
     );
   }
 
-  // Show loading screen while determining auth state
+  // Keep splash screen visible while determining auth state
   if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#667eea" />
-        <Text style={styles.loadingText}>Loading KymaClub...</Text>
-      </View>
-    );
+    return null;
   }
 
   // Render navigation - it handles auth state internally
