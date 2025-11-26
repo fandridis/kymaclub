@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, Linking } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Image } from 'expo-image';
 import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
@@ -98,6 +98,8 @@ export function VenueDetailsScreen() {
     const [distanceLabel, setDistanceLabel] = useState<string | null>(null);
     const [isHeaderWhite, setIsHeaderWhite] = useState(false);
     const [headerOpacity, setHeaderOpacity] = useState(0);
+    const { bottom: bottomInset } = useSafeAreaInsets();
+    const contentBottomPadding = bottomInset + 24;
 
     // Fetch full venue data
     const venue = useQuery(api.queries.venues.getVenueById, {
@@ -256,6 +258,9 @@ export function VenueDetailsScreen() {
     const venuePhone = venue?.phone;
     const venueWebsite = venue?.website;
     const venueEmail = venue?.email;
+    const showPhone = Boolean(venuePhone);
+    const showEmail = Boolean(venueEmail);
+    const showWebsite = Boolean(venueWebsite);
 
     const handlePhonePress = () => {
         if (venuePhone) {
@@ -435,6 +440,7 @@ export function VenueDetailsScreen() {
             showsVerticalScrollIndicator={false}
             onScroll={handleScroll}
             scrollEventThrottle={16}
+            contentContainerStyle={[styles.contentContainer, { paddingBottom: contentBottomPadding }]}
         >
             {renderHeaderSection()}
 
@@ -625,10 +631,7 @@ export function VenueDetailsScreen() {
 
                 <View style={styles.contactContainer}>
                     {/* Address */}
-                    <View style={[
-                        styles.contactItemRow,
-                        !venuePhone && !venueEmail && !venueWebsite && styles.contactItemRowLast
-                    ]}>
+                    <View style={styles.contactItemRow}>
                         <View style={styles.contactIconContainer}>
                             <MapPinIcon size={18} color={theme.colors.emerald[600]} />
                         </View>
@@ -639,11 +642,12 @@ export function VenueDetailsScreen() {
                     </View>
 
                     {/* Phone */}
-                    {venuePhone && (
-                        <TouchableOpacity style={[
-                            styles.contactItemRow,
-                            !venueEmail && !venueWebsite && styles.contactItemRowLast
-                        ]} onPress={handlePhonePress} activeOpacity={0.7}>
+                    {showPhone && (
+                        <TouchableOpacity
+                            style={styles.contactItemRow}
+                            onPress={handlePhonePress}
+                            activeOpacity={0.7}
+                        >
                             <View style={styles.contactIconContainer}>
                                 <PhoneIcon size={18} color={theme.colors.emerald[600]} />
                             </View>
@@ -655,11 +659,12 @@ export function VenueDetailsScreen() {
                     )}
 
                     {/* Email */}
-                    {venueEmail && (
-                        <TouchableOpacity style={[
-                            styles.contactItemRow,
-                            !venueWebsite && styles.contactItemRowLast
-                        ]} onPress={handleEmailPress} activeOpacity={0.7}>
+                    {showEmail && (
+                        <TouchableOpacity
+                            style={styles.contactItemRow}
+                            onPress={handleEmailPress}
+                            activeOpacity={0.7}
+                        >
                             <View style={styles.contactIconContainer}>
                                 <MailIcon size={18} color={theme.colors.emerald[600]} />
                             </View>
@@ -671,8 +676,12 @@ export function VenueDetailsScreen() {
                     )}
 
                     {/* Website */}
-                    {venueWebsite && (
-                        <TouchableOpacity style={[styles.contactItemRow, styles.contactItemRowLast]} onPress={handleWebsitePress} activeOpacity={0.7}>
+                    {showWebsite && (
+                        <TouchableOpacity
+                            style={styles.contactItemRow}
+                            onPress={handleWebsitePress}
+                            activeOpacity={0.7}
+                        >
                             <View style={styles.contactIconContainer}>
                                 <GlobeIcon size={18} color={theme.colors.emerald[600]} />
                             </View>
@@ -682,17 +691,23 @@ export function VenueDetailsScreen() {
                             </View>
                         </TouchableOpacity>
                     )}
-                </View>
 
-                {/* Message Venue Button */}
-                <TouchableOpacity
-                    style={styles.contactMessageButton}
-                    onPress={handleMessageVenue}
-                    activeOpacity={0.8}
-                >
-                    <MessageCircleIcon size={20} color={theme.colors.zinc[50]} />
-                    <Text style={styles.contactMessageText}>{t('venues.messageVenue')}</Text>
-                </TouchableOpacity>
+                    {/* Message venue - less prominent, inside contact card */}
+                    {/* Message venue */}
+                    <TouchableOpacity
+                        style={[styles.contactItemRow, { borderBottomWidth: 0 }]}
+                        onPress={handleMessageVenue}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.contactIconContainer}>
+                            <MessageCircleIcon size={18} color={theme.colors.emerald[600]} />
+                        </View>
+                        <View style={styles.contactContent}>
+                            <Text style={styles.contactLabel}>{t('venues.message')}</Text>
+                            <Text style={[styles.contactText, styles.contactLink]}>{t('venues.chatWithVenue')}</Text>
+                        </View>
+                    </TouchableOpacity>
+                </View>
             </View>
 
         </ScrollView>
@@ -782,6 +797,9 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         backgroundColor: theme.colors.zinc[50],
+    },
+    contentContainer: {
+        paddingBottom: 24,
     },
     section: {
         paddingHorizontal: 20,
@@ -1262,9 +1280,6 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: theme.colors.zinc[100],
     },
-    contactItemRowLast: {
-        borderBottomWidth: 0,
-    },
     contactIconContainer: {
         width: 40,
         height: 40,
@@ -1294,31 +1309,7 @@ const styles = StyleSheet.create({
         color: theme.colors.emerald[600],
         fontWeight: '600',
     },
-    contactMessageButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: theme.colors.emerald[600],
-        borderRadius: 12,
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-        marginTop: 8,
-        marginBottom: 24,
-        gap: 10,
-        shadowColor: theme.colors.emerald[600],
-        shadowOffset: {
-            width: 0,
-            height: 4,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 6,
-    },
-    contactMessageText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: theme.colors.zinc[50],
-    },
+
     venueStatsRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',

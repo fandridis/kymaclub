@@ -11,11 +11,16 @@ import { useTypedTranslation } from '../i18n/typed';
 import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { useCurrentUser } from '../hooks/useCurrentUser';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export function FloatingNavButtons() {
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
     const { t } = useTypedTranslation();
     const { user } = useCurrentUser();
+    const { bottom: bottomInset } = useSafeAreaInsets();
+
+    // Keep the button lifted above the system nav (Android) while preserving iOS safe area
+    const containerBottom = bottomInset + 16;
 
     // Check if there are upcoming bookings
     const userBookings = useQuery(
@@ -34,7 +39,7 @@ export function FloatingNavButtons() {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { bottom: containerBottom }]}>
             {/* Spacer to push content to center when bookings button is visible */}
             {hasUpcomingBookings && <View style={styles.spacer} />}
 
@@ -90,7 +95,6 @@ export function FloatingNavButtons() {
 const styles = StyleSheet.create({
     container: {
         position: 'absolute',
-        bottom: 40,
         left: 20,
         right: 20,
         flexDirection: 'row',
@@ -160,4 +164,3 @@ const styles = StyleSheet.create({
         borderRadius: 27,
     },
 });
-

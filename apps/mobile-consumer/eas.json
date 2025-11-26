@@ -6,20 +6,32 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "IOS_GOOGLE_MAPS_KEY": "$IOS_GOOGLE_MAPS_KEY"
+      }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "IOS_GOOGLE_MAPS_KEY": "$IOS_GOOGLE_MAPS_KEY"
+      }
     },
     "preview-testflight": {
       "distribution": "store",
       "autoIncrement": true,
       "channel": "preview",
-      "extends": "preview"
+      "extends": "preview",
+      "env": {
+        "IOS_GOOGLE_MAPS_KEY": "$IOS_GOOGLE_MAPS_KEY"
+      }
     },
     "production": {
       "distribution": "store",
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "IOS_GOOGLE_MAPS_KEY": "$IOS_GOOGLE_MAPS_KEY"
+      }
     }
   },
   "submit": {

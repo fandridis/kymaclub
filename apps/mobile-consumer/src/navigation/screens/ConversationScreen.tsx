@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { ArrowLeftIcon, SendIcon, MapPinIcon, CalendarIcon } from 'lucide-react-native';
+import { ArrowLeftIcon, SendIcon, MapPinIcon, CalendarIcon, ChevronLeftIcon } from 'lucide-react-native';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { theme } from '../../theme';

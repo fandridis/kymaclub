@@ -480,6 +480,8 @@
         "phone": "Phone",
         "email": "Email",
         "website": "Website",
+        "message": "Message",
+        "chatWithVenue": "Chat with venue",
         "messageVenue": "Message Venue",
         "loadingVenueDetails": "Loading venue details...",
         "viewSchedule": "View Schedule",
@@ -623,8 +625,8 @@
         "free": "Free",
         "startsIn": "Starts in {{time}}",
         "startsNow": "Starts now",
-        "inHours": "In {{hours}}h {{minutes}}m",
-        "inMinutes": "In {{minutes}}m"
+        "inHours": "{{hours}}h {{minutes}}m",
+        "inMinutes": "{{minutes}}m"
     },
     "messages": {
         "title": "Messages",
