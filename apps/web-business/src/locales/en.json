@@ -26,6 +26,7 @@
         "zipCode": "Zip Code",
         "country": "Country",
         "description": "Description",
+        "shortDescription": "Short Description (optional)",
         "price": "Price",
         "capacity": "Capacity",
         "duration": "Duration",

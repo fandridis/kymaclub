@@ -60,6 +60,14 @@ const validateDescription = (description: string): ValidationResult<string> => {
     });
 };
 
+const validateShortDescription = (shortDescription: string): ValidationResult<string> => {
+    return validateStringLength(shortDescription, {
+        fieldName: "Short description",
+        required: false,
+        maxLength: 120
+    });
+};
+
 const validateTags = (tags: string[]): ValidationResult<string[]> => {
     return validateStringArray(tags, {
         fieldName: "Tags",
@@ -234,6 +242,7 @@ export const classValidations = {
     validateName,
     validateInstructor,
     validateDescription,
+    validateShortDescription,
     validateTags,
     validateCapacity,
     validatePrice,

@@ -249,6 +249,7 @@ export const prepareInstanceUpdatesFromTemplateChanges = (
             ...updateIfExists({
                 name: templateChanges.name,
                 description: templateChanges.description,
+                shortDescription: templateChanges.shortDescription,
                 instructor: templateChanges.instructor,
                 primaryCategory: templateChanges.primaryCategory,
                 disableBookings: templateChanges.disableBookings,
@@ -264,6 +265,7 @@ export const prepareInstanceUpdatesFromTemplateChanges = (
                 ...updateIfExists({
                     name: templateChanges.name,
                     description: templateChanges.description,
+                    shortDescription: templateChanges.shortDescription,
                     instructor: templateChanges.instructor,
                     imageStorageIds: templateChanges.imageStorageIds,
                     discountRules: templateChanges.discountRules,
@@ -459,6 +461,7 @@ export const createInstanceFromTemplate = (
 
         name: template.name,
         description: template.description,
+        shortDescription: template.shortDescription,
         instructor: template.instructor,
         capacity: template.capacity,
         price: template.price,
@@ -484,6 +487,7 @@ export const createInstanceFromTemplate = (
         templateSnapshot: {
             name: template.name,
             description: template.description,
+            shortDescription: template.shortDescription,
             instructor: template.instructor,
             imageStorageIds: template.imageStorageIds,
             discountRules: template.discountRules,

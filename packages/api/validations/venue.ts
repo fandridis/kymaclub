@@ -20,6 +20,14 @@ export const validateDescription = (description: string): ValidationResult<strin
     return { success: true, value: trimmed };
 };
 
+export const validateShortDescription = (shortDescription: string): ValidationResult<string> => {
+    const trimmed = shortDescription.trim();
+    if (trimmed.length > 120) {
+        return { success: false, error: "Short description cannot exceed 120 characters" };
+    }
+    return { success: true, value: trimmed };
+};
+
 export const validateCapacity = (capacity: number): ValidationResult<number> => {
     if (!Number.isInteger(capacity) || capacity <= 0) {
         return { success: false, error: "Capacity must be a positive integer" };
@@ -65,6 +73,7 @@ export const validateLongitude = (longitude: number): ValidationResult<number> =
 export const venueValidations = {
     validateName,
     validateDescription,
+    validateShortDescription,
     validateCapacity,
     validateEquipment,
     validateLatitude,

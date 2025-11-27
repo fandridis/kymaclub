@@ -513,6 +513,7 @@ export function ClassDetailsModalScreen() {
     // Calculate derived values
     const className = finalClassInstance.name ?? templateSnapshot?.name ?? t('classes.title');
     const description = finalClassInstance.description ?? templateSnapshot?.description ?? '';
+    const shortDescription = finalClassInstance.shortDescription ?? templateSnapshot?.shortDescription ?? '';
     const instructor = finalClassInstance.instructor ?? templateSnapshot?.instructor ?? 'TBD';
     const capacity = finalClassInstance.capacity ?? 0;
     const price = finalClassInstance.price ?? 0;
@@ -659,10 +660,16 @@ export function ClassDetailsModalScreen() {
                             <Text style={styles.className}>{className}</Text>
 
 
-                            {/* Class Description - Centered, Three Lines */}
-                            <Text style={styles.classDescription} numberOfLines={3}>
-                                {description || t('classes.joinClassDescription', { instructor, businessName })}
-                            </Text>
+                            {/* Class Short Description - Centered */}
+                            {shortDescription ? (
+                                <Text style={styles.classDescription}>
+                                    {shortDescription}
+                                </Text>
+                            ) : (
+                                <Text style={styles.classDescription} numberOfLines={3}>
+                                    {description || t('classes.joinClassDescription', { instructor, businessName })}
+                                </Text>
+                            )}
                         </View>
 
                         {/* Separator */}

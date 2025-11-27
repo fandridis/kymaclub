@@ -203,6 +203,7 @@ export const venuesFields = {
   businessId: v.id("businesses"),
   name: v.string(),
   description: v.optional(v.string()),
+  shortDescription: v.optional(v.string()),
   capacity: v.optional(v.number()),
   email: v.string(),
   phone: v.optional(v.string()),
@@ -275,6 +276,7 @@ export const classTemplatesFields = {
   venueId: v.id("venues"),
   name: v.string(),
   description: v.optional(v.string()),
+  shortDescription: v.optional(v.string()),
   instructor: v.string(),
 
   primaryCategory: v.optional(venueCategoryField),
@@ -333,6 +335,7 @@ export const classInstancesFields = {
   // Overrideable fields from template (if different from template)
   name: v.optional(v.string()),
   description: v.optional(v.string()),
+  shortDescription: v.optional(v.string()),
   instructor: v.optional(v.string()),
   capacity: v.optional(v.number()),
   price: v.optional(v.number()), // Price in business currency (100-10000 IN CENTS, no decimals) - currency from business.currency
@@ -364,6 +367,7 @@ export const classInstancesFields = {
   templateSnapshot: v.object({
     name: v.string(),
     description: v.optional(v.string()),
+    shortDescription: v.optional(v.string()),
     instructor: v.string(),
     imageStorageIds: v.optional(v.array(v.id("_storage"))),
     discountRules: v.optional(v.array(v.object(classDiscountRuleFields))),
@@ -1011,6 +1015,7 @@ export default defineSchema({
     .index("email", ["email"])
     .index("by_active_city_slug", ["activeCitySlug"])
     .index("by_deleted_deletedAt", ["deleted", "deletedAt"])
+    .index("by_business_role", ["businessId", "businessRole"])
     .searchIndex("search_name", {
       searchField: "name",
       filterFields: ["role"],

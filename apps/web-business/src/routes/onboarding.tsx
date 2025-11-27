@@ -19,6 +19,7 @@ import { ConvexError } from 'convex/values';
 import { getAuthState, useAuthStore } from '@/components/stores/auth';
 import { useRedirectGuard } from '@/hooks/use-redirect-guard';
 import { getCityOptions, getVenueCategoryOptions, type VenueCategory } from '@repo/utils/constants';
+import { useTypedTranslation } from '@/lib/typed';
 
 export const Route = createFileRoute('/onboarding')({
     component: Onboarding,
@@ -52,6 +53,7 @@ const onboardingSchema = z.object({
     email: z.string().min(1, "Email is required").email("Please enter a valid email address"),
     phone: z.string().optional(),
     description: z.string().max(2000, "Description must be less than 2000 characters").optional(),
+    shortDescription: z.string().max(120, "Short description must be less than 120 characters").optional(),
 
     // Location details (same as business address)
     address: z.object({
@@ -93,6 +95,7 @@ const onboardingSchema = z.object({
 type FormData = z.infer<typeof onboardingSchema>;
 
 function Onboarding() {
+    const { t } = useTypedTranslation();
     const { signOut } = useAuthActions();
     const { logout } = useAuthStore();
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -116,6 +119,7 @@ function Onboarding() {
             email: '',
             phone: '',
             description: '',
+            shortDescription: '',
             address: {
                 street: '',
                 city: '',
@@ -198,6 +202,7 @@ function Onboarding() {
                     name: data.businessName.trim(),
                     email: data.email.trim(),
                     description: data.description?.trim() || undefined,
+                    shortDescription: data.shortDescription?.trim() || undefined,
                     primaryCategory: data.primaryCategory,
                     address: {
                         street: data.address.street.trim(),
@@ -257,6 +262,26 @@ function Onboarding() {
                                                 <Input
                                                     placeholder="Enter your business name"
                                                     disabled={isSubmitting}
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                {/* Short Description - full width */}
+                                <FormField
+                                    control={form.control}
+                                    name="shortDescription"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>{t('common.shortDescription')}</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    placeholder="A brief 1-3 sentence description (max 120 characters)"
+                                                    disabled={isSubmitting}
+                                                    maxLength={120}
                                                     {...field}
                                                 />
                                             </FormControl>

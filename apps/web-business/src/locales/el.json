@@ -26,6 +26,7 @@
         "zipCode": "Τ.Κ.",
         "country": "Χώρα",
         "description": "Περιγραφή",
+        "shortDescription": "Σύντομη περιγραφή",
         "price": "Τιμή",
         "capacity": "Χωρητικότητα",
         "duration": "Διάρκεια",

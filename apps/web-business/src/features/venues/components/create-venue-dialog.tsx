@@ -27,6 +27,7 @@ const createVenueSchema = z.object({
     name: z.string().min(1, "Venue name is required").max(100),
     email: z.string().min(1, "Email is required"),
     description: z.string().max(2000, "Description must be less than 2000 characters").optional(),
+    shortDescription: z.string().max(120, "Short description must be less than 120 characters").optional(),
     phone: z.string().optional(),
     website: z.string().optional().refine((val) => {
         if (!val) return true;
@@ -118,6 +119,7 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
             name: '',
             email: '',
             description: '',
+            shortDescription: '',
             phone: '',
             website: '',
             primaryCategory: '' as VenueCategory,
@@ -155,6 +157,7 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                 name: venue.name,
                 email: venue.email || '',
                 description: venue.description || '',
+                shortDescription: venue.shortDescription || '',
                 phone: venue.phone || '',
                 website: venue.website || '',
                 primaryCategory: venue.primaryCategory,
@@ -240,6 +243,7 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                 name: data.name.trim(),
                 email: data.email.trim(),
                 description: data.description?.trim(),
+                shortDescription: data.shortDescription?.trim(),
                 phone: data.phone?.trim(),
                 website: data.website?.trim(),
                 primaryCategory: data.primaryCategory,
@@ -340,6 +344,20 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                                                 </FormItem>
                                             )} />
                                         </div>
+
+                                        <FormField control={form.control} name="shortDescription" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>{t('common.shortDescription')}</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        placeholder="A brief 1-3 sentence description (max 120 characters)"
+                                                        maxLength={120}
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
 
                                         <FormField control={form.control} name="description" render={({ field }) => (
                                             <FormItem>

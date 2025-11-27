@@ -218,6 +218,9 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
               {/* Header */}
               <View style={styles.header}>
                 <Text style={styles.venueName}>{selectedVenue.name}</Text>
+                {selectedVenue.shortDescription && (
+                  <Text style={styles.venueShortDescription}>{selectedVenue.shortDescription}</Text>
+                )}
               </View>
 
               <Text style={styles.businessType}>{selectedVenue.type}</Text>
@@ -318,6 +321,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
+  },
+  venueShortDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+    lineHeight: 20,
   },
   businessType: {
     fontSize: 14,

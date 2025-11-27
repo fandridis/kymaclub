@@ -66,6 +66,7 @@ const editInstanceSchema = z.object({
     name: z.string().min(1, "Class name is required"),
     instructor: z.string().min(1, "Instructor name is required"),
     description: z.string().optional(),
+    shortDescription: z.string().max(120, "Short description must be less than 120 characters").optional(),
     tags: z.array(z.string()),
     color: z.string().optional(),
 
@@ -155,6 +156,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
             name: z.string().min(1, t('routes.templates.classNameRequired')),
             instructor: z.string().min(1, t('routes.templates.instructorRequired')),
             description: z.string().optional(),
+            shortDescription: z.string().max(120, "Short description must be less than 120 characters").optional(),
             tags: z.array(z.string()),
             color: z.string().optional(),
             startTime: z.string().min(1, t('routes.calendar.editClass.startTimeRequired')),
@@ -191,6 +193,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
             name: "",
             instructor: "",
             description: "",
+            shortDescription: "",
             tags: [],
             color: TEMPLATE_COLORS.Green,
             startTime: "",
@@ -219,6 +222,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                 name: instance.name || "",
                 instructor: instance.instructor || "",
                 description: instance.description || "",
+                shortDescription: instance.shortDescription || "",
                 tags: instance.tags || [],
                 color: instance.color || TEMPLATE_COLORS.Green,
                 startTime: format(startTimeInBusinessTz, "yyyy-MM-dd'T'HH:mm"),
@@ -287,6 +291,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                     endTime,
                     name: data.name.trim(),
                     description: data.description?.trim(),
+                    shortDescription: data.shortDescription?.trim(),
                     instructor: data.instructor.trim(),
                     capacity: parseInt(data.capacity),
                     price: parseInt(data.price),
@@ -336,6 +341,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                     endTime,
                     name: data.name.trim(),
                     description: data.description?.trim(),
+                    shortDescription: data.shortDescription?.trim(),
                     instructor: data.instructor.trim(),
                     capacity: parseInt(data.capacity),
                     price: parseInt(data.price),
@@ -479,6 +485,20 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                                     </FormItem>
                                                 )} />
                                             </div>
+
+                                            <FormField control={form.control} name="shortDescription" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>{t('common.shortDescription')}</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            placeholder="A brief 1-3 sentence description (max 120 characters)"
+                                                            maxLength={120}
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
 
                                             <FormField control={form.control} name="description" render={({ field }) => (
                                                 <FormItem>

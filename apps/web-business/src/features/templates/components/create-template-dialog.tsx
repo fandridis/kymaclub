@@ -63,6 +63,7 @@ const createTemplateSchema = z.object({
     name: z.string().min(1, "Class name is required"),
     instructor: z.string().min(1, "Instructor name is required"),
     description: z.string().optional(),
+    shortDescription: z.string().max(120, "Short description must be less than 120 characters").optional(),
     tags: z.array(z.string()),
     color: z.string().optional(),
     venueId: z.string().min(1, "Venue is required"),
@@ -132,6 +133,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
             name: z.string().min(1, t('routes.templates.classNameRequired')),
             instructor: z.string().min(1, t('routes.templates.instructorRequired')),
             description: z.string().optional(),
+            shortDescription: z.string().max(120, "Short description must be less than 120 characters").optional(),
             tags: z.array(z.string()),
             color: z.string().optional(),
             venueId: z.string().min(1, t('routes.templates.venueRequired')),
@@ -165,6 +167,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
             name: "",
             instructor: "",
             description: "",
+            shortDescription: "",
             venueId: "",
             tags: [],
             color: TEMPLATE_COLORS.Green,
@@ -198,6 +201,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                 name: classTemplate!.name,
                 instructor: classTemplate!.instructor,
                 description: classTemplate!.description || "",
+                shortDescription: classTemplate!.shortDescription || "",
                 venueId: classTemplate!.venueId || "",
                 tags: classTemplate!.tags || [],
                 color: classTemplate!.color || TEMPLATE_COLORS.Green,
@@ -263,6 +267,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                 venueId: data.venueId as Id<"venues">,
                 primaryCategory: data.primaryCategory as VenueCategory,
                 description: data.description?.trim(),
+                shortDescription: data.shortDescription?.trim(),
                 instructor: data.instructor.trim(),
                 duration: parseInt(data.duration),
                 capacity: parseInt(data.capacity),
@@ -462,6 +467,20 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                         </div>
 
 
+
+                                        <FormField control={form.control} name="shortDescription" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>{t('common.shortDescription')}</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        placeholder="A brief 1-3 sentence description (max 120 characters)"
+                                                        maxLength={120}
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
 
                                         <FormField control={form.control} name="description" render={({ field }) => (
                                             <FormItem>

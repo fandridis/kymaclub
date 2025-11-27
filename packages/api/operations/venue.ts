@@ -112,6 +112,7 @@ export const prepareCreateVenue = (args: CreateVenueArgs): CreateVenueArgs['venu
 
         // Optional fields
         ...(v.description !== undefined && { description: throwIfError(venueValidations.validateDescription(v.description), 'description') }),
+        ...(v.shortDescription !== undefined && { shortDescription: throwIfError(venueValidations.validateShortDescription(v.shortDescription), 'shortDescription') }),
         ...(v.capacity !== undefined && { capacity: throwIfError(venueValidations.validateCapacity(v.capacity), 'capacity') }),
         ...(v.equipment !== undefined && { equipment: throwIfError(venueValidations.validateEquipment(v.equipment), 'equipment') }),
         ...(v.amenities !== undefined && { amenities: v.amenities }),
@@ -284,6 +285,9 @@ export const prepareUpdateVenue = (updates: UpdateVenueArgs, existingVenue: Doc<
     }
     if (v.description !== undefined) {
         cleanVenue.description = throwIfError(venueValidations.validateDescription(v.description), 'description');
+    }
+    if (v.shortDescription !== undefined) {
+        cleanVenue.shortDescription = throwIfError(venueValidations.validateShortDescription(v.shortDescription), 'shortDescription');
     }
     if (v.capacity !== undefined) {
         cleanVenue.capacity = throwIfError(venueValidations.validateCapacity(v.capacity), 'capacity');

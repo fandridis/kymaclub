@@ -27,6 +27,7 @@ const prepareCreateTemplate = (args: CreateClassTemplateArgs): CreateClassTempla
 
         // Optional fields
         ...(t.description !== undefined && { description: throwIfError(classValidations.validateDescription(t.description), 'description') }),
+        ...(t.shortDescription !== undefined && { shortDescription: throwIfError(classValidations.validateShortDescription(t.shortDescription), 'shortDescription') }),
         ...(t.tags !== undefined && { tags: throwIfError(classValidations.validateTags(t.tags), 'tags') }),
         ...(t.bookingWindow !== undefined && { bookingWindow: throwIfError(classValidations.validateBookingWindow(t.bookingWindow), 'bookingWindow') }),
         // Default cancellationWindowHours to 12 hours if not provided
@@ -60,6 +61,7 @@ const prepareUpdateTemplate = (
         ...(t.name !== undefined && { name: cleanName! }),
         ...(t.instructor !== undefined && { instructor: throwIfError(classValidations.validateInstructor(t.instructor), 'instructor') }),
         ...(t.description !== undefined && { description: throwIfError(classValidations.validateDescription(t.description), 'description') }),
+        ...(t.shortDescription !== undefined && { shortDescription: throwIfError(classValidations.validateShortDescription(t.shortDescription), 'shortDescription') }),
         ...(t.tags !== undefined && { tags: throwIfError(classValidations.validateTags(t.tags), 'tags') }),
         ...(t.duration !== undefined && { duration: throwIfError(classValidations.validateDuration(t.duration), 'duration') }),
         ...(t.capacity !== undefined && { capacity: throwIfError(classValidations.validateCapacity(t.capacity), 'capacity') }),
