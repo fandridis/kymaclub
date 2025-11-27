@@ -11,7 +11,7 @@ describe('Notification System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 30
             });
@@ -60,7 +60,7 @@ describe('Notification System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user credits and book class
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 30
             });
@@ -135,7 +135,7 @@ describe('Notification System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 50
             });
@@ -191,7 +191,7 @@ describe('Notification System Integration Tests', () => {
             const { userId } = await initAuth();
             const asUser = testT.withIdentity({ subject: userId });
 
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 5,
                 description: "Welcome bonus for new consumer"
@@ -223,7 +223,7 @@ describe('Notification System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give initial credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 5
             });

@@ -62,7 +62,7 @@ describe('Booking with Discounts Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 50
             });
@@ -147,7 +147,7 @@ describe('Booking with Discounts Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 50
             });
@@ -203,7 +203,7 @@ describe('Booking with Discounts Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 50
             });
@@ -272,7 +272,7 @@ describe('Booking with Discounts Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user enough credits in case discount doesn't work (but discount should make it free)
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 25
             });
@@ -322,7 +322,7 @@ describe('Booking with Discounts Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 30
             });
@@ -366,7 +366,7 @@ describe('Booking with Discounts Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 50
             });
@@ -431,7 +431,7 @@ describe('Booking with Discounts Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 50
             });

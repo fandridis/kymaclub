@@ -25,7 +25,7 @@ describe('Credit System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Gift credits
-            const giftResult = await asUser.mutation(api.mutations.credits.giftCredits, {
+            const giftResult = await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 15,
                 description: "Welcome bonus"
@@ -80,7 +80,7 @@ describe('Credit System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user some credits first
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 10
             });
@@ -112,7 +112,7 @@ describe('Credit System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             await expect(
-                asUser.mutation(api.mutations.credits.giftCredits, {
+                asUser.mutation(api.internal.mutations.credits.giftCredits, {
                     userId: userId,
                     amount: -5
                 })
@@ -126,7 +126,7 @@ describe('Credit System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Gifted 20 credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 20,
                 description: "Welcome gift"
@@ -173,7 +173,7 @@ describe('Credit System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Create multiple transaction types
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 10
             });
@@ -205,7 +205,7 @@ describe('Credit System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Gifted 50 credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 50
             });
@@ -246,7 +246,7 @@ describe('Credit System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // 1. User receives welcome bonus
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 5,
                 description: "Welcome bonus"
@@ -327,7 +327,7 @@ describe('Credit System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Perform various operations
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 15
             });
@@ -361,7 +361,7 @@ describe('Credit System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user initial credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 100
             });

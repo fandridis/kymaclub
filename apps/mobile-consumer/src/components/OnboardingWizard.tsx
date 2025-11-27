@@ -38,7 +38,9 @@ const THEME = {
 
 export default function OnboardingWizard() {
   const navigation = useNavigation();
-  const [onboardingData, setOnboardingData] = useState<OnboardingData>({});
+  const [onboardingData, setOnboardingData] = useState<OnboardingData>({
+    city: CITY_OPTIONS[0]?.value
+  });
   const [currentStep, setCurrentStep] = useState<'name' | 'city'>('name');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const logout = useLogout();
@@ -251,7 +253,7 @@ export default function OnboardingWizard() {
               {isSubmitting ? 'Completing...' : currentStep === 'name' ? 'Next' : 'Get Started'}
             </Text>
           </TouchableOpacity>
-          
+
           {currentStep === 'city' && (
             <TouchableOpacity
               onPress={() => setCurrentStep('name')}

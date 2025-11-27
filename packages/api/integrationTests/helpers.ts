@@ -224,7 +224,7 @@ export async function setupCompleteBookingScenario(
     } = options;
 
     // Give user credits
-    await asUser.mutation(api.mutations.credits.giftCredits, {
+    await asUser.mutation(api.internal.mutations.credits.giftCredits, {
         userId: userId,
         amount: credits
     });

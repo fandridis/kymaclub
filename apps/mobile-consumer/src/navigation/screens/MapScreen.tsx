@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps';
-import { StyleSheet, View, Text, ActivityIndicator, Alert } from 'react-native';
+import { StyleSheet, View, Text, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import * as Location from 'expo-location';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useNavigation } from '@react-navigation/native';
+import { NavigationProp } from '@react-navigation/native';
+import { RootStackParamList } from '../index';
 
 const ATHENS_FALLBACK = {
     latitude: 37.9838,
@@ -92,6 +96,7 @@ export function MapScreen() {
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [selectedMonument, setSelectedMonument] = useState<Monument | null>(null);
+    const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
     // Bottom sheet ref
     const bottomSheetRef = useRef<BottomSheet>(null);
@@ -135,6 +140,17 @@ export function MapScreen() {
         }
     }, []);
 
+    // Handle navigation to business/venue
+    const handleNavigateToBusiness = useCallback(() => {
+        // Close the sheet first
+        bottomSheetRef.current?.close();
+        setSelectedMonument(null);
+
+        // Note: Since monuments don't have venueIds, this is a placeholder
+        // In a real implementation, you would navigate to VenueDetailsScreen with the venueId
+        // navigation.navigate('VenueDetailsScreen', { venueId: selectedMonument?.venueId });
+    }, []);
+
     if (loading) {
         return (
             <View style={styles.centerContainer}>
@@ -153,7 +169,7 @@ export function MapScreen() {
     }
 
     return (
-        <View style={styles.container}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
             <View style={styles.container}>
                 <MapView
                     style={styles.map}
@@ -215,12 +231,20 @@ export function MapScreen() {
                                         <Text style={styles.detailText}>{selectedMonument.ticketPrice}</Text>
                                     </>
                                 )}
+
+                                <TouchableOpacity
+                                    style={styles.viewDetailsButton}
+                                    onPress={handleNavigateToBusiness}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text style={styles.viewDetailsButtonText}>View Details</Text>
+                                </TouchableOpacity>
                             </>
                         )}
                     </BottomSheetView>
                 </BottomSheet>
             </View>
-        </View>
+        </GestureHandlerRootView>
     );
 }
 
@@ -300,6 +324,20 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#666',
         lineHeight: 20,
+    },
+    viewDetailsButton: {
+        backgroundColor: '#FF6B6B',
+        borderRadius: 12,
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        marginTop: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    viewDetailsButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: '600',
     },
 });
 

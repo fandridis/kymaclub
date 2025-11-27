@@ -24,7 +24,7 @@ describe('Booking System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 20
             });
@@ -47,7 +47,7 @@ describe('Booking System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 30
             });
@@ -97,7 +97,7 @@ describe('Booking System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user insufficient credits (class costs 5 credits, give only 4)
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 4 // Class costs 5 credits, insufficient
             });
@@ -116,7 +116,7 @@ describe('Booking System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 30
             });
@@ -175,11 +175,11 @@ describe('Booking System Integration Tests', () => {
             });
 
             // Give both users credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 20
             });
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: user2Id,
                 amount: 20
             });
@@ -205,7 +205,7 @@ describe('Booking System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 30
             });
@@ -273,7 +273,7 @@ describe('Booking System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 40
             });
@@ -334,7 +334,7 @@ describe('Booking System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user credits and book class
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 30
             });
@@ -364,7 +364,7 @@ describe('Booking System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user credits and book class
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 30
             });
@@ -399,7 +399,7 @@ describe('Booking System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 50
             });
@@ -437,7 +437,7 @@ describe('Booking System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 50
             });
@@ -464,7 +464,7 @@ describe('Booking System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 50
             });
@@ -498,7 +498,7 @@ describe('Booking System Integration Tests', () => {
             const asUser = testT.withIdentity({ subject: userId });
 
             // Give user credits
-            await asUser.mutation(api.mutations.credits.giftCredits, {
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
                 amount: 100
             });

@@ -129,9 +129,9 @@ export function BookingsScreen() {
         isLoading,
     } = usePaginatedQuery(
         api.queries.bookings.getCurrentUserBookings,
-        {
+        user ? {
             includeHistory: true,
-        },
+        } : "skip",
         { initialNumItems: INITIAL_BOOKINGS_COUNT }
     );
 

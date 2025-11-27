@@ -439,7 +439,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                                             <SelectValue placeholder={t('routes.templates.selectDuration')} />
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            {getDurationOptions().map((option) => (
+                                                            {getDurationOptions(t).map((option) => (
                                                                 <SelectItem key={option.value} value={option.value}>
                                                                     {option.label}
                                                                 </SelectItem>

@@ -131,7 +131,7 @@ describe("Earnings Integration Tests", () => {
     const asUser = testT.withIdentity({ subject: userId });
 
     // Give user credits
-    await asUser.mutation(api.mutations.credits.giftCredits, {
+    await asUser.mutation(api.internal.mutations.credits.giftCredits, {
       userId,
       amount: 20,
     });
@@ -179,7 +179,7 @@ describe("Earnings Integration Tests", () => {
     const asUser = testT.withIdentity({ subject: userId });
 
     // Give user credits
-    await asUser.mutation(api.mutations.credits.giftCredits, {
+    await asUser.mutation(api.internal.mutations.credits.giftCredits, {
       userId,
       amount: 20,
     });
@@ -226,7 +226,7 @@ describe("Earnings Integration Tests", () => {
     const asUser = testT.withIdentity({ subject: userId });
 
     // Give user credits
-    await asUser.mutation(api.mutations.credits.giftCredits, {
+    await asUser.mutation(api.internal.mutations.credits.giftCredits, {
       userId,
       amount: 20,
     });
@@ -277,7 +277,7 @@ describe("Earnings Integration Tests", () => {
     const asUser = testT.withIdentity({ subject: userId });
 
     // Give user credits
-    await asUser.mutation(api.mutations.credits.giftCredits, {
+    await asUser.mutation(api.internal.mutations.credits.giftCredits, {
       userId,
       amount: 20,
     });
@@ -327,7 +327,7 @@ describe("Earnings Integration Tests", () => {
     const asUser = testT.withIdentity({ subject: userId });
 
     // Give user credits
-    await asUser.mutation(api.mutations.credits.giftCredits, {
+    await asUser.mutation(api.internal.mutations.credits.giftCredits, {
       userId,
       amount: 20,
     });
@@ -380,7 +380,7 @@ describe("Earnings Integration Tests", () => {
     });
 
     // Give user credits
-    await asUser.mutation(api.mutations.credits.giftCredits, {
+    await asUser.mutation(api.internal.mutations.credits.giftCredits, {
       userId,
       amount: 20,
     });

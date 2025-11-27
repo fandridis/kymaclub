@@ -448,7 +448,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                                                 </SelectTrigger>
                                                             </FormControl>
                                                             <SelectContent>
-                                                                {getDurationOptions().map(option => (
+                                                                {getDurationOptions(t).map(option => (
                                                                     <SelectItem key={option.value} value={option.value}>
                                                                         {option.label}
                                                                     </SelectItem>
