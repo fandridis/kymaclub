@@ -312,7 +312,7 @@ export type RootStackParamList = {
   BuyCredits: undefined;
   SettingsNotificationsPreference: {
     notificationType: {
-      key: string;
+      keys: readonly string[];
       title: string;
       description: string;
     };
@@ -373,7 +373,7 @@ export type RootStackParamListWithNestedTabs = {
   BuyCredits: undefined;
   SettingsNotificationsPreference: {
     notificationType: {
-      key: string;
+      keys: readonly string[];
       title: string;
       description: string;
     };

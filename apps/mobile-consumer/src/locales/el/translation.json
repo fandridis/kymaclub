@@ -529,7 +529,6 @@
     },
     "reviews": {
         "title": "Κριτικές",
-        "ratingAndReviews": "Αξιολόγηση & Κριτικές",
         "loadingReviews": "Φόρτωση κριτικών...",
         "review": "κριτική",
         "reviews": "κριτικές",

@@ -50,7 +50,7 @@ function ConsumerDetailPage() {
     const [giftDescription, setGiftDescription] = useState('');
     const [isGifting, setIsGifting] = useState(false);
     // @ts-expect-error - API types need regeneration after adding internal/mutations/credits
-    const giftCredits = useMutation(internal["internal/mutations/credits"].giftCredits);
+    const giftCredits = useMutation(internal.mutations.credits.giftCredits);
 
     if (isLoading) {
         return (

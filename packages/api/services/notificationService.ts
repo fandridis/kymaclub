@@ -7,7 +7,7 @@ import { components, internal } from "../convex/_generated/api";
 import { format } from "date-fns";
 import { PushNotifications } from "@convex-dev/expo-push-notifications";
 import { createNotificationWithDeepLink } from "../utils/deep-linking";
-import { UserSettingsNotifications } from "../types/userSettings";
+import { UserSettingsNotifications, DEFAULT_USER_NOTIFICATION_PREFERENCES } from "../types/userSettings";
 import { NotificationType } from "../types/notification";
 
 /***************************************************************
@@ -328,6 +328,13 @@ export const notificationService = {
             .withIndex("by_user", q => q.eq("userId", user._id))
             .filter(q => q.neq(q.field("deleted"), true))
             .first();
+
+        if (settings?.notifications) {
+            settings.notifications.preferences = {
+                ...DEFAULT_USER_NOTIFICATION_PREFERENCES,
+                ...settings.notifications.preferences,
+            };
+        }
 
         return settings;
     },
@@ -716,6 +723,13 @@ export const notificationService = {
             .filter(q => q.neq(q.field("deleted"), true))
             .first();
 
+        if (userNotificationSettings?.notifications) {
+            userNotificationSettings.notifications.preferences = {
+                ...DEFAULT_USER_NOTIFICATION_PREFERENCES,
+                ...userNotificationSettings.notifications.preferences,
+            };
+        }
+
         if (userNotificationSettings?.notifications?.preferences?.booking_cancelled_by_business?.web) {
 
             // Send web notification to business
@@ -1023,6 +1037,98 @@ export const notificationService = {
             });
         } else {
 
+        }
+
+        return { success: true };
+    },
+
+    /**
+     * Handle credits gifted by admin event
+     */
+    handleCreditsGiftedEvent: async ({
+        ctx,
+        payload,
+    }: {
+        ctx: MutationCtx;
+        payload: {
+            userId: Id<"users">;
+            creditsGifted: number;
+            transactionId: Id<"creditTransactions">;
+            newBalance: number;
+            adminUserId: Id<"users">;
+        };
+    }): Promise<{ success: boolean }> => {
+        const { userId, creditsGifted, transactionId, newBalance, adminUserId } = payload;
+
+        // Fetch user
+        const user = await ctx.db.get(userId);
+
+        if (!user) {
+            throw new ConvexError({
+                message: "User not found",
+                field: "userId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND
+            });
+        }
+
+        // Get user notification settings
+        const userNotificationSettings = await ctx.db
+            .query("userSettings")
+            .withIndex("by_user", q => q.eq("userId", userId))
+            .filter(q => q.neq(q.field("deleted"), true))
+            .first();
+
+        const title = "Credits Gifted";
+        const message = `You have been gifted ${creditsGifted} credits from KymaClub!`;
+
+        // Send web notification if user has opted in (or use defaults if no settings exist)
+        const shouldSendWeb = userNotificationSettings?.notifications?.preferences?.credits_received_admin_gift?.web ?? true;
+
+        if (shouldSendWeb) {
+            // Note: For consumer credit notifications, we don't have a specific business context
+            // For now, let's skip the web notification or find a way to handle consumer-only notifications
+        }
+
+        // Send email notification if user has opted in
+        const shouldSendEmail = userNotificationSettings?.notifications?.preferences?.credits_received_admin_gift?.email ?? true;
+
+        if (shouldSendEmail && process.env.NODE_ENV === "production" && user.email) {
+            try {
+                await ctx.scheduler.runAfter(0, internal.actions.email.sendCreditsReceivedEmail, {
+                    customerEmail: user.email,
+                    customerName: user.name || user.email || "Valued Customer",
+                    creditsReceived: creditsGifted,
+                    planName: "Admin Gift",
+                    isRenewal: false,
+                    totalCredits: newBalance,
+                });
+            } catch (error) {
+                console.error('Error sending credits gifted email notification:', error);
+            }
+        }
+
+        // Send push notification if user has opted in
+        const shouldSendPush = userNotificationSettings?.notifications?.preferences?.credits_received_admin_gift?.push ?? true;
+
+        if (shouldSendPush) {
+            const notificationContent = createNotificationWithDeepLink(
+                'credits_received_admin_gift',
+                title,
+                message,
+                {
+                    additionalData: {
+                        creditsReceived: creditsGifted,
+                        transactionId: transactionId,
+                        newBalance: newBalance,
+                        adminUserId: adminUserId,
+                    }
+                }
+            );
+
+            await pushNotifications.sendPushNotification(ctx, {
+                userId: userId,
+                notification: notificationContent,
+            });
         }
 
         return { success: true };

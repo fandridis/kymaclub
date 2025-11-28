@@ -8,23 +8,14 @@ import { SettingsGroup, SettingsRow } from '../../components/Settings';
 import { StackScreenHeader } from '../../components/StackScreenHeader';
 import { theme } from '../../theme';
 import { useTypedTranslation } from '../../i18n/typed';
-
-const defaultPreferences = {
-    booking_confirmation: { email: false, web: false, push: false },
-    booking_reminder: { email: false, web: false, push: false },
-    class_cancelled: { email: false, web: false, push: false },
-    booking_cancelled_by_business: { email: false, web: false, push: false },
-    payment_receipt: { email: false, web: false, push: false },
-    class_rebookable: { email: false, web: false, push: false },
-    credits_received_subscription: { email: true, web: true, push: true },
-};
+import { DEFAULT_USER_NOTIFICATION_PREFERENCES } from '../../../../../packages/api/types/userSettings';
 
 type NotificationChannels = { email: boolean; web: boolean; push: boolean; };
 
 type RootStackParamList = {
     SettingsNotificationsPreference: {
         notificationType: {
-            key: string;
+            keys: readonly string[];
             title: string;
             description: string;
         };
@@ -44,13 +35,16 @@ export function SettingsNotificationsPreferenceScreen() {
     // Update local state when settings are loaded
     useEffect(() => {
         if (settings?.notifications?.preferences) {
-            const typePreferences = settings.notifications.preferences[notificationType.key as keyof typeof settings.notifications.preferences];
+            // We use the first key to determine the state of the group
+            // In a consistent state, all keys in the group should have the same values
+            const firstKey = notificationType.keys[0];
+            const typePreferences = settings.notifications.preferences[firstKey as keyof typeof settings.notifications.preferences];
             if (typePreferences) {
                 setChannels(typePreferences);
             }
             setGlobalOptOut(settings.notifications.globalOptOut);
         }
-    }, [settings, notificationType.key]);
+    }, [settings, notificationType.keys]);
 
     const handleChannelToggle = async (channel: keyof NotificationChannels, value: boolean) => {
         const newChannels = {
@@ -59,13 +53,20 @@ export function SettingsNotificationsPreferenceScreen() {
         };
         setChannels(newChannels);
 
-        const notificationPreferences = settings?.notifications?.preferences || defaultPreferences;
+        const notificationPreferences = {
+            ...DEFAULT_USER_NOTIFICATION_PREFERENCES,
+            ...settings?.notifications?.preferences
+        };
 
         try {
             const updatedPreferences = {
                 ...notificationPreferences,
-                [notificationType.key]: newChannels
             };
+
+            // Update all keys in the group
+            notificationType.keys.forEach(key => {
+                updatedPreferences[key as keyof typeof updatedPreferences] = newChannels;
+            });
 
             await updateSettings({
                 notifications: {

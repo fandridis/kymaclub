@@ -49,7 +49,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
     <View>
       {/* Section Title & Write Review Button */}
       <View style={styles.titleContainer}>
-        <Text style={styles.sectionTitle}>{t('reviews.ratingAndReviews')}</Text>
+        <Text style={styles.sectionTitle}>{t('reviews.title')}</Text>
 
         {/* Write Review Button */}
         <TouchableOpacity

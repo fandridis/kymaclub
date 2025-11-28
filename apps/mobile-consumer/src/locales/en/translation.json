@@ -533,7 +533,6 @@
     },
     "reviews": {
         "title": "Reviews",
-        "ratingAndReviews": "Rating & Reviews",
         "loadingReviews": "Loading reviews...",
         "review": "review",
         "reviews": "reviews",

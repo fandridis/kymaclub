@@ -129,6 +129,7 @@ export function generateNotificationDeepLink(
       return generateBookingsLink();
 
     case 'credits_received_subscription':
+    case 'credits_received_admin_gift':
       return generateSettingsLink();
 
     default:

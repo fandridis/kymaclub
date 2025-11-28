@@ -10,41 +10,46 @@ export const upsertUserSettingsArgs = v.object({
     notifications: v.optional(v.object({
         globalOptOut: v.boolean(),
         preferences: v.object({
-            booking_confirmation: v.object({
+            booking_confirmation: v.optional(v.object({
                 email: v.boolean(),
                 web: v.boolean(),
                 push: v.boolean(),
-            }),
-            booking_reminder: v.object({
+            })),
+            booking_reminder: v.optional(v.object({
                 email: v.boolean(),
                 web: v.boolean(),
                 push: v.boolean(),
-            }),
-            class_cancelled: v.object({
+            })),
+            class_cancelled: v.optional(v.object({
                 email: v.boolean(),
                 web: v.boolean(),
                 push: v.boolean(),
-            }),
-            class_rebookable: v.object({
+            })),
+            class_rebookable: v.optional(v.object({
                 email: v.boolean(),
                 web: v.boolean(),
                 push: v.boolean(),
-            }),
-            booking_cancelled_by_business: v.object({
+            })),
+            booking_cancelled_by_business: v.optional(v.object({
                 email: v.boolean(),
                 web: v.boolean(),
                 push: v.boolean(),
-            }),
-            payment_receipt: v.object({
+            })),
+            payment_receipt: v.optional(v.object({
                 email: v.boolean(),
                 web: v.boolean(),
                 push: v.boolean(),
-            }),
-            credits_received_subscription: v.object({
+            })),
+            credits_received_subscription: v.optional(v.object({
                 email: v.boolean(),
                 web: v.boolean(),
                 push: v.boolean(),
-            }),
+            })),
+            credits_received_admin_gift: v.optional(v.object({
+                email: v.boolean(),
+                web: v.boolean(),
+                push: v.boolean(),
+            })),
         }),
     })),
     banners: v.optional(v.object({

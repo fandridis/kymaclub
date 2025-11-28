@@ -1,4 +1,5 @@
 import type { MutationCtx, QueryCtx } from "../convex/_generated/server";
+import { DEFAULT_USER_NOTIFICATION_PREFERENCES, UserSettingsNotifications } from "../types/userSettings";
 import type { Doc, Id } from "../convex/_generated/dataModel";
 import { ConvexError } from "convex/values";
 import { ERROR_CODES } from "../utils/errorCodes";
@@ -24,6 +25,13 @@ export const settingsService = {
             .filter(q => q.neq(q.field("deleted"), true))
             .first();
 
+        if (settings?.notifications) {
+            settings.notifications.preferences = {
+                ...DEFAULT_USER_NOTIFICATION_PREFERENCES,
+                ...settings.notifications.preferences,
+            };
+        }
+
         return settings;
     },
 
@@ -37,18 +45,7 @@ export const settingsService = {
     }: {
         ctx: MutationCtx;
         args: {
-            notifications?: {
-                globalOptOut: boolean;
-                preferences: {
-                    booking_confirmation: { email: boolean; web: boolean; push: boolean; };
-                    booking_reminder: { email: boolean; web: boolean; push: boolean; };
-                    class_cancelled: { email: boolean; web: boolean; push: boolean; };
-                    class_rebookable: { email: boolean; web: boolean; push: boolean; };
-                    booking_cancelled_by_business: { email: boolean; web: boolean; push: boolean; };
-                    payment_receipt: { email: boolean; web: boolean; push: boolean; };
-                    credits_received_subscription: { email: boolean; web: boolean; push: boolean; };
-                };
-            };
+            notifications?: UserSettingsNotifications;
             banners?: {
                 welcomeBannerDismissed?: boolean;
             };

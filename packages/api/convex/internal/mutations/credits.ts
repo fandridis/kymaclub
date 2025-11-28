@@ -1,8 +1,8 @@
 import { v } from "convex/values";
 import { mutation } from "../../_generated/server";
 import { creditService } from "../../../services/creditService";
+import { notificationService } from "../../../services/notificationService";
 import { requireInternalUserOrThrow } from "../../utils";
-import { internal } from "../../_generated/api";
 
 /**
  * Gift credits to a user (internal admin function)
@@ -35,27 +35,21 @@ export const giftCredits = mutation({
             initiatedBy: adminUser._id, // Track which admin initiated the gift
         });
 
-        // Send push notification to the user
+        // Send notifications to the user via notificationService
         try {
-            await ctx.runMutation(internal.mutations.pushNotifications.sendPushNotification, {
-                to: userId,
-                notification: {
-                    title: "Credits Gifted",
-                    body: `You have been gifted ${amount} credits from KymaClub!`,
-                    data: {
-                        type: "credit_gift",
-                        transactionId: result.transactionId,
-                        amount,
-                        newBalance: result.newBalance,
-                    },
-                    sound: "default",
-                    priority: "high" as const,
-                    channelId: "credits",
+            await notificationService.handleCreditsGiftedEvent({
+                ctx,
+                payload: {
+                    userId,
+                    creditsGifted: amount,
+                    transactionId: result.transactionId,
+                    newBalance: result.newBalance,
+                    adminUserId: adminUser._id,
                 },
             });
         } catch (error) {
             // Log error but don't fail the credit gifting operation
-            console.error("Failed to send push notification for credit gift:", error);
+            console.error("Failed to send notifications for credit gift:", error);
         }
 
         return {

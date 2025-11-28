@@ -11,7 +11,7 @@ import { StackScreenHeader } from '../../components/StackScreenHeader';
 import { LucideIcon } from 'lucide-react-native';
 import { useTypedTranslation } from '../../i18n/typed';
 
-type ConsumerNotificationType = 'booking_confirmation' | 'booking_reminder' | 'class_cancelled' | 'booking_cancelled_by_business' | 'payment_receipt' | 'class_rebookable' | 'credits_received_subscription';
+type ConsumerNotificationType = 'booking_confirmation' | 'booking_reminder' | 'class_cancelled' | 'booking_cancelled_by_business' | 'payment_receipt' | 'class_rebookable' | 'credits_received_subscription' | 'credits_received_admin_gift';
 
 type NotificationGroup = {
     id: string;
@@ -31,6 +31,7 @@ const defaultPreferences: Record<ConsumerNotificationType, NotificationChannels>
     payment_receipt: { email: false, web: false, push: false },
     class_rebookable: { email: false, web: false, push: false },
     credits_received_subscription: { email: true, web: true, push: true },
+    credits_received_admin_gift: { email: true, web: true, push: true },
 };
 
 export function SettingsNotificationsScreen() {
@@ -60,14 +61,17 @@ export function SettingsNotificationsScreen() {
             title: t('settings.notifications.groups.subscriptions.title'),
             description: t('settings.notifications.groups.subscriptions.description'),
             icon: CreditCard,
-            notificationKeys: ['payment_receipt', 'credits_received_subscription'] as const
+            notificationKeys: ['payment_receipt', 'credits_received_subscription', 'credits_received_admin_gift'] as const
         }
     ], [t]);
 
     // Update local state when settings are loaded
     useEffect(() => {
         if (settings?.notifications?.preferences) {
-            setPreferences(settings.notifications.preferences);
+            setPreferences({
+                ...defaultPreferences,
+                ...settings.notifications.preferences,
+            } as Record<ConsumerNotificationType, NotificationChannels>);
         }
     }, [settings]);
 
@@ -113,7 +117,7 @@ export function SettingsNotificationsScreen() {
         // Navigate with the first notification type from the group
         // The preference screen will handle the individual notification type
         const notificationType = {
-            key: group.notificationKeys[0],
+            keys: group.notificationKeys,
             title: group.title,
             description: group.description
         };
