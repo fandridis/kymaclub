@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps';
-import { StyleSheet, View, Text, ActivityIndicator, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, ActivityIndicator, TouchableOpacity, Dimensions, ScrollView, Platform } from 'react-native';
 import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
 import { StarIcon, X } from 'lucide-react-native';
@@ -168,16 +169,17 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
   };
 
   return (
-    <View style={styles.container}>
-      <MapView
-        style={styles.map}
-        provider={PROVIDER_GOOGLE}
-        initialRegion={mapRegion}
-        showsUserLocation={true}
-        showsMyLocationButton={true}
-        followsUserLocation={false}
-        mapPadding={{ top: 0, right: 10, bottom: 60, left: 0 }}
-      >
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={styles.container}>
+        <MapView
+          style={styles.map}
+          provider={Platform.OS === 'ios' ? PROVIDER_GOOGLE : undefined}
+          initialRegion={mapRegion}
+          showsUserLocation={true}
+          showsMyLocationButton={true}
+          followsUserLocation={false}
+          mapPadding={{ top: 0, right: 10, bottom: 60, left: 0 }}
+        >
         {venuesWithCoordinates.map((venue) => {
           // Use vibrant green for selected marker, brand color for others
           const isSelected = selectedVenue?._id === venue._id;
@@ -278,9 +280,10 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
               </TouchableOpacity>
             </>
           )}
-        </BottomSheetView>
-      </BottomSheetModal>
-    </View>
+          </BottomSheetView>
+        </BottomSheetModal>
+      </View>
+    </GestureHandlerRootView>
   );
 }
 

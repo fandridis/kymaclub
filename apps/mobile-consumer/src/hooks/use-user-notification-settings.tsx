@@ -1,5 +1,4 @@
-import { useMutation } from "convex/react";
-import { useQuery } from "convex-helpers/react/cache";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@repo/api/convex/_generated/api";
 
 export function useUserSettings() {

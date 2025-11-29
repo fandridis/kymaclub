@@ -10,9 +10,8 @@ import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import { Asset } from 'expo-asset';
 import * as SplashScreen from 'expo-splash-screen';
 import * as React from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { ConvexProvider, ConvexReactClient, useMutation } from "convex/react";
-import { ConvexQueryCacheProvider } from "convex-helpers/react/cache";
 import i18n from './i18n';
 import { useEffect, useState } from 'react';
 import { ErrorBoundary } from './components/error-boundary';
@@ -102,18 +101,16 @@ export function App() {
     <ErrorBoundary>
       <ConvexProvider client={convex}>
         <ConvexAuthProvider client={convex} storage={convexAuthStorage}>
-          <ConvexQueryCacheProvider expiration={60 * 1000}>
-            <SafeAreaProvider>
-              <ActionSheetProvider>
-                <DeepLinkGuard>
-                  <InnerApp
-                    theme={theme}
-                    onReady={() => { SplashScreen.hideAsync() }}
-                  />
-                </DeepLinkGuard>
-              </ActionSheetProvider>
-            </SafeAreaProvider>
-          </ConvexQueryCacheProvider>
+          <SafeAreaProvider>
+            <ActionSheetProvider>
+              <DeepLinkGuard>
+                <InnerApp
+                  theme={theme}
+                  onReady={() => { SplashScreen.hideAsync() }}
+                />
+              </DeepLinkGuard>
+            </ActionSheetProvider>
+          </SafeAreaProvider>
         </ConvexAuthProvider>
       </ConvexProvider>
     </ErrorBoundary>

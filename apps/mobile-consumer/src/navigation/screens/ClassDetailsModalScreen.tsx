@@ -16,6 +16,7 @@ import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { centsToCredits } from '@repo/utils/credits';
 import { theme } from '../../theme';
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCancellationInfo, getCancellationMessage, getCancellationTranslations } from '../../utils/cancellationUtils';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
 import { useTypedTranslation } from '../../i18n/typed';
@@ -239,6 +240,7 @@ export function ClassDetailsModalScreen() {
     const [isCancelling, setIsCancelling] = useState(false);
     const [isHeaderWhite, setIsHeaderWhite] = useState(false);
     const [headerOpacity, setHeaderOpacity] = useState(0);
+    const { bottom: bottomInset } = useSafeAreaInsets();
 
     // Fetch classInstance if not provided directly
     const fetchedClassInstance = useQuery(
@@ -523,19 +525,31 @@ export function ClassDetailsModalScreen() {
     const dateFnsLocale = getDateFnsLocale(currentLanguage);
 
     const startTime = new Date(finalClassInstance.startTime);
-    const whenStr = format(startTime, 'eeee, dd MMMM, HH:mm', {
-        in: tz('Europe/Athens'),
-        locale: dateFnsLocale
-    });
+    let whenStr: string;
+    try {
+        whenStr = format(startTime, 'eeee, dd MMMM, HH:mm', {
+            in: tz('Europe/Athens'),
+            locale: dateFnsLocale
+        });
+    } catch (e) {
+        console.warn('Error formatting whenStr:', e);
+        whenStr = format(startTime, 'eeee, dd MMMM, HH:mm', { locale: dateFnsLocale });
+    }
+
     const cancelUntilStr = finalClassInstance.cancellationWindowHours != null
         ? (() => {
             const cancelUntilDate = new Date(
                 finalClassInstance.startTime - finalClassInstance.cancellationWindowHours * 60 * 60 * 1000,
             );
-            return format(cancelUntilDate, 'eeee, dd MMMM, HH:mm', {
-                in: tz('Europe/Athens'),
-                locale: dateFnsLocale
-            });
+            try {
+                return format(cancelUntilDate, 'eeee, dd MMMM, HH:mm', {
+                    in: tz('Europe/Athens'),
+                    locale: dateFnsLocale
+                });
+            } catch (e) {
+                console.warn('Error formatting cancelUntilStr:', e);
+                return format(cancelUntilDate, 'eeee, dd MMMM, HH:mm', { locale: dateFnsLocale });
+            }
         })()
         : null;
     const duration = Math.round((finalClassInstance.endTime - finalClassInstance.startTime) / (1000 * 60));
@@ -788,9 +802,15 @@ export function ClassDetailsModalScreen() {
                                                         {booking.status === "no_show" && t('classes.noShow')}
                                                     </Text>
                                                     <Text style={styles.bookingHistoryDate}>
-                                                        {format(new Date(booking.createdAt), 'MMM d, yyyy \'at\' h:mm a', {
-                                                            in: tz('Europe/Athens')
-                                                        })}
+                                                        {(() => {
+                                                            try {
+                                                                return format(new Date(booking.createdAt), 'MMM d, yyyy \'at\' h:mm a', {
+                                                                    in: tz('Europe/Athens')
+                                                                });
+                                                            } catch (e) {
+                                                                return format(new Date(booking.createdAt), 'MMM d, yyyy \'at\' h:mm a');
+                                                            }
+                                                        })()}
                                                     </Text>
                                                     {booking.cancelReason && (
                                                         <Text style={styles.bookingHistoryReason}>
@@ -813,7 +833,7 @@ export function ClassDetailsModalScreen() {
                     </ScrollView>
 
                     {/* Sticky Button - Book or Already Attending */}
-                    <View style={styles.stickyButtonContainer}>
+                    <View style={[styles.stickyButtonContainer, { bottom: bottomInset + 24 }]}>
                         {existingBooking ? (
                             existingBooking.status === "pending" || existingBooking.status === "completed" ? (
                                 /* Already Attending Container */

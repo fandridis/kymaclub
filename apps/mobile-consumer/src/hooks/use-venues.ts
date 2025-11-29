@@ -1,4 +1,4 @@
-import { useQuery } from "convex-helpers/react/cache";
+import { useQuery } from "convex/react";
 import { api } from "@repo/api/convex/_generated/api";
 
 interface UseVenuesOptions {

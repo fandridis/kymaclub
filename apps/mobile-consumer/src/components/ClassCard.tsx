@@ -243,7 +243,12 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, distance, onPres
 
   const businessName = classInstance.venueSnapshot?.name ?? 'Unknown Venue';
   const startTime = new Date(classInstance.startTime);
-  const startTimeLabel = format(startTime, 'HH:mm', { in: tz(ATHENS_TZ) });
+  let startTimeLabel: string;
+  try {
+    startTimeLabel = format(startTime, 'HH:mm', { in: tz(ATHENS_TZ) });
+  } catch (e) {
+    startTimeLabel = format(startTime, 'HH:mm');
+  }
   const duration = Math.max(0, Math.round((classInstance.endTime - classInstance.startTime) / (1000 * 60)));
   const durationLabel = `${duration} min`;
   const price = classInstance.price;
