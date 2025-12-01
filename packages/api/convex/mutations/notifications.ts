@@ -157,6 +157,21 @@ export const handleSubscriptionCreditsReceivedEvent = internalMutation({
 });
 
 /***************************************************************
+ * Handle Welcome Bonus Event
+ ***************************************************************/
+export const handleWelcomeBonusEvent = internalMutation({
+    args: v.object({
+        payload: v.object({
+            userId: v.id("users"),
+            welcomeCredits: v.number(),
+        }),
+    }),
+    handler: async (ctx, args) => {
+        return await notificationService.handleWelcomeBonusEvent({ ctx, payload: args.payload });
+    },
+});
+
+/***************************************************************
  * Handle Review Approved Event
  ***************************************************************/
 export const handleReviewApprovedEvent = internalMutation({

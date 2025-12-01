@@ -144,6 +144,86 @@ export const sendTestEmail = internalAction({
 });
 
 /**
+ * Send credits gifted email to customer (admin gift)
+ */
+export const sendCreditsGiftedEmail = internalAction({
+    args: v.object({
+        customerEmail: v.string(),
+        customerName: v.string(),
+        creditsGifted: v.number(),
+        totalCredits: v.number(),
+        giftMessage: v.optional(v.string()),
+    }),
+    handler: async (ctx, args) => {
+        try {
+            const result = await emailService.sendCreditsGiftedEmail({
+                ctx,
+                args: {
+                    customerEmail: args.customerEmail,
+                    customerName: args.customerName,
+                    creditsGifted: args.creditsGifted,
+                    totalCredits: args.totalCredits,
+                    giftMessage: args.giftMessage,
+                }
+            });
+
+            return {
+                success: true,
+                emailSent: true,
+                emailId: result.emailId,
+                reason: "Credits gifted email sent successfully"
+            };
+
+        } catch (error) {
+            console.error("Failed to send credits gifted email:", error);
+            return {
+                success: false,
+                emailSent: false,
+                reason: error instanceof Error ? error.message : "Unknown error"
+            };
+        }
+    }
+});
+
+/**
+ * Send welcome email to new consumer
+ */
+export const sendWelcomeEmail = internalAction({
+    args: v.object({
+        customerEmail: v.string(),
+        customerName: v.string(),
+        welcomeCredits: v.number(),
+    }),
+    handler: async (ctx, args) => {
+        try {
+            const result = await emailService.sendWelcomeEmail({
+                ctx,
+                args: {
+                    customerEmail: args.customerEmail,
+                    customerName: args.customerName,
+                    welcomeCredits: args.welcomeCredits,
+                }
+            });
+
+            return {
+                success: true,
+                emailSent: true,
+                emailId: result.emailId,
+                reason: "Welcome email sent successfully"
+            };
+
+        } catch (error) {
+            console.error("Failed to send welcome email:", error);
+            return {
+                success: false,
+                emailSent: false,
+                reason: error instanceof Error ? error.message : "Unknown error"
+            };
+        }
+    }
+});
+
+/**
  * Send credits received email to customer
  */
 export const sendCreditsReceivedEmail = internalAction({
@@ -220,6 +300,49 @@ export const sendReviewNotificationEmail = internalAction({
                 reason: "Email sent successfully",
             };
         } catch (error) {
+            return {
+                success: false,
+                emailSent: false,
+                reason: error instanceof Error ? error.message : "Unknown error",
+            };
+        }
+    }
+});
+
+/**
+ * Send class cancellation email to customer
+ */
+export const sendClassCancellationEmail = internalAction({
+    args: v.object({
+        customerEmail: v.string(),
+        customerName: v.string(),
+        className: v.string(),
+        venueName: v.string(),
+        startTime: v.number(),
+        refundAmount: v.number(),
+    }),
+    handler: async (ctx, args) => {
+        try {
+            const result = await emailService.sendClassCancellationEmail({
+                ctx,
+                args: {
+                    customerEmail: args.customerEmail,
+                    customerName: args.customerName,
+                    className: args.className,
+                    venueName: args.venueName,
+                    startTime: args.startTime,
+                    refundAmount: args.refundAmount,
+                }
+            });
+
+            return {
+                success: true,
+                emailSent: true,
+                emailId: result.emailId,
+                reason: "Class cancellation email sent successfully",
+            };
+        } catch (error) {
+            console.error("Failed to send class cancellation email:", error);
             return {
                 success: false,
                 emailSent: false,

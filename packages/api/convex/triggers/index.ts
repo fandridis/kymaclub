@@ -101,6 +101,14 @@ triggers.register("users", async (ctx, change) => {
             reason: "welcome_bonus",
             description: "Welcome bonus for new consumer",
         });
+
+        // Send welcome email notification
+        await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleWelcomeBonusEvent, {
+            payload: {
+                userId: id,
+                welcomeCredits: 10,
+            },
+        });
     }
 
     // NEW: Profile image moderation trigger

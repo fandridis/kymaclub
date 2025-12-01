@@ -45,6 +45,7 @@ export const giftCredits = mutation({
                     transactionId: result.transactionId,
                     newBalance: result.newBalance,
                     adminUserId: adminUser._id,
+                    giftMessage: args.description,
                 },
             });
         } catch (error) {
