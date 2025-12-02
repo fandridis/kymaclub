@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { Calendar1Icon, ClockIcon, CalendarOffIcon, DiamondIcon, ChevronLeftIcon, CheckCircleIcon, ArrowLeftIcon } from 'lucide-react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Carousel from 'react-native-reanimated-carousel';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
@@ -21,6 +22,8 @@ import { getCancellationInfo, getCancellationMessage, getCancellationTranslation
 import type { Id } from '@repo/api/convex/_generated/dataModel';
 import { useTypedTranslation } from '../../i18n/typed';
 import i18n from '../../i18n';
+import type { Question } from '@repo/api/types/questionnaire';
+import { getEffectiveQuestionnaire } from '@repo/api/operations/questionnaire';
 
 type ClassDetailsRoute = RouteProp<RootStackParamList, 'ClassDetailsModal'>;
 
@@ -269,6 +272,20 @@ export function ClassDetailsModalScreen() {
         finalClassInstance ? { venueId: finalClassInstance.venueId } : "skip"
     );
 
+    // Fetch template to get questionnaire (use public query for consumer access)
+    const template = useQuery(
+        api.queries.classTemplates.getClassTemplateByIdPublic,
+        finalClassInstance ? { templateId: finalClassInstance.templateId } : "skip"
+    );
+
+    // Get effective questionnaire (instance overrides template)
+    const effectiveQuestionnaire = useMemo(() => {
+        return getEffectiveQuestionnaire(
+            template?.questionnaire as Question[] | undefined,
+            finalClassInstance?.questionnaire as Question[] | undefined
+        ) || [];
+    }, [template?.questionnaire, finalClassInstance?.questionnaire]);
+
     // Get image IDs with null-safe access
     const templateSnapshot = finalClassInstance?.templateSnapshot;
     const templateImageIds = templateSnapshot?.imageStorageIds ?? [];
@@ -317,55 +334,6 @@ export function ClassDetailsModalScreen() {
         const templateMarker = '__TIME_PLACEHOLDER__';
         return t('explore.closesIn', { time: templateMarker }).replace(templateMarker, '{{time}}');
     }, [t]);
-
-    // Event handlers
-    const onPress = () => {
-        if (!finalClassInstance) return;
-
-        const finalPrice = discountResult.appliedDiscount ? discountResult.finalPrice : priceCredits;
-        const options = [t('classes.spendCredits', { credits: finalPrice }), t('common.cancel')];
-        const cancelButtonIndex = 1;
-
-        showActionSheetWithOptions({
-            options,
-            cancelButtonIndex,
-        }, async (selectedIndex?: number) => {
-            if (selectedIndex === undefined) return;
-
-            switch (selectedIndex) {
-                case 0: {
-                    if (!user) {
-                        Alert.alert(t('classes.signInRequired'), t('classes.signInRequiredMessage'), [
-                            { text: t('common.cancel'), style: 'cancel' },
-                            { text: t('classes.signIn'), onPress: () => navigation.navigate('SignInModal') }
-                        ]);
-                        return;
-                    }
-
-                    try {
-                        setIsBooking(true);
-                        await bookClass({
-                            classInstanceId: finalClassInstance._id,
-                            description: `Booking for ${className}`,
-                        });
-                        Alert.alert(t('classes.booked'), t('classes.bookedSuccess'));
-                    } catch (err: any) {
-                        const message =
-                            (err?.data && (err.data.message || err.data.code)) ||
-                            err?.message ||
-                            t('classes.bookingFailedMessage');
-                        Alert.alert(t('classes.bookingFailed'), String(message));
-                    } finally {
-                        setIsBooking(false);
-                    }
-                    break;
-                }
-
-                case cancelButtonIndex:
-                    break;
-            }
-        });
-    };
 
     const handleViewTicket = () => {
         if (!existingBooking) return;
@@ -556,6 +524,77 @@ export function ClassDetailsModalScreen() {
     const priceCredits = centsToCredits(price);
     const spotsLeft = Math.max(0, capacity - (finalClassInstance.bookedCount ?? 0));
     const isLoading = (allImageIds.length > 0 && !imageUrlsQuery) || existingBooking === undefined;
+
+    // Book class without questionnaire (direct booking)
+    const handleDirectBooking = useCallback(async () => {
+        if (!finalClassInstance || !user) return;
+
+        const finalPrice = discountResult.appliedDiscount ? discountResult.finalPrice : priceCredits;
+        const options = [t('classes.spendCredits', { credits: finalPrice }), t('common.cancel')];
+        const cancelButtonIndex = 1;
+
+        showActionSheetWithOptions({
+            options,
+            cancelButtonIndex,
+        }, async (selectedIndex?: number) => {
+            if (selectedIndex === undefined) return;
+
+            switch (selectedIndex) {
+                case 0: {
+                    try {
+                        setIsBooking(true);
+                        await bookClass({
+                            classInstanceId: finalClassInstance._id,
+                            description: `Booking for ${className}`,
+                        });
+                        Alert.alert(t('classes.booked'), t('classes.bookedSuccess'));
+                    } catch (err: any) {
+                        const message =
+                            (err?.data && (err.data.message || err.data.code)) ||
+                            err?.message ||
+                            t('classes.bookingFailedMessage');
+                        Alert.alert(t('classes.bookingFailed'), String(message));
+                    } finally {
+                        setIsBooking(false);
+                    }
+                    break;
+                }
+
+                case cancelButtonIndex:
+                    break;
+            }
+        });
+    }, [finalClassInstance, user, discountResult, priceCredits, bookClass, showActionSheetWithOptions, className, t]);
+
+    // Book class with questionnaire answers
+    // Event handlers
+    const onPress = () => {
+        if (!finalClassInstance) return;
+
+        // Check if user is signed in
+        if (!user) {
+            Alert.alert(t('classes.signInRequired'), t('classes.signInRequiredMessage'), [
+                { text: t('common.cancel'), style: 'cancel' },
+                { text: t('classes.signIn'), onPress: () => navigation.navigate('SignInModal') }
+            ]);
+            return;
+        }
+
+        // If there's a questionnaire, navigate to questionnaire modal
+        if (effectiveQuestionnaire.length > 0) {
+            const basePrice = discountResult.appliedDiscount ? discountResult.finalPrice : priceCredits;
+            (navigation as NativeStackNavigationProp<RootStackParamList>).navigate('QuestionnaireModal', {
+                questions: effectiveQuestionnaire,
+                basePrice,
+                className,
+                classInstanceId: finalClassInstance._id,
+            });
+            return;
+        }
+
+        // Otherwise, proceed with direct booking
+        handleDirectBooking();
+    };
 
     return (
         <View style={styles.container}>

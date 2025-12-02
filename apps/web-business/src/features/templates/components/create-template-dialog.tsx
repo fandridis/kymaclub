@@ -39,8 +39,10 @@ import { TEMPLATE_COLORS, TEMPLATE_COLORS_ARRAY } from '@repo/utils/colors';
 import { cn } from '@/lib/utils';
 import { TEMPLATE_COLORS_MAP } from '@/utils/colors';
 import { ClassDiscountRulesForm } from '@/components/class-discount-rules-form';
+import { QuestionnaireBuilder } from '@/components/questionnaire-builder';
 import { VENUE_CATEGORIES, VENUE_CATEGORY_DISPLAY_NAMES, type VenueCategory } from '@repo/utils/constants';
 import { useTypedTranslation } from '@/lib/typed';
+import type { Question } from '@repo/api/types/questionnaire';
 
 // Define the discount rule schema for form validation
 const discountRuleSchema = z.object({
@@ -123,6 +125,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
     const [loading, setLoading] = useState(false);
     const [currentTag, setCurrentTag] = useState("");
     const [discountRules, setDiscountRules] = useState<DiscountRule[]>([]);
+    const [questionnaire, setQuestionnaire] = useState<Question[]>([]);
     const createClassTemplate = useMutation(api.mutations.classTemplates.createClassTemplate);
     const updateClassTemplate = useMutation(api.mutations.classTemplates.updateClassTemplate);
 
@@ -218,8 +221,9 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                 discountRules: classTemplate!.discountRules || [],
                 primaryCategory: (classTemplate!.primaryCategory as VenueCategory) || '' as VenueCategory,
             });
-            // Also update the discount rules state
+            // Also update the discount rules and questionnaire state
             setDiscountRules(classTemplate!.discountRules || []);
+            setQuestionnaire(classTemplate!.questionnaire || []);
         }
     }, [isEditMode, classTemplate, form]);
 
@@ -228,6 +232,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
         setCurrentTag("");
         setLoading(false);
         setDiscountRules([]);
+        setQuestionnaire([]);
         // Re-auto-select venue after reset if only one exists
         if (venues.length === 1 && !isEditMode) {
             form.setValue("venueId", venues[0]!._id);
@@ -291,6 +296,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                     condition: rule.condition,
                     discount: rule.discount,
                 })) : undefined,
+                questionnaire: questionnaire.length > 0 ? questionnaire : undefined,
             };
 
             if (isEditMode) {
@@ -626,6 +632,15 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                                 onChange={setDiscountRules}
                                                 currency="EUR"
                                                 price={parseInt(formData.price)}
+                                            />
+                                        </div>
+
+                                        {/* Pre-booking Questionnaire Section */}
+                                        <div className="space-y-4 mt-8">
+                                            <QuestionnaireBuilder
+                                                questions={questionnaire}
+                                                onChange={setQuestionnaire}
+                                                currency="EUR"
                                             />
                                         </div>
 

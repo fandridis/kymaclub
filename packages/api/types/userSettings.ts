@@ -12,4 +12,5 @@ export const DEFAULT_USER_NOTIFICATION_PREFERENCES: UserSettingsNotifications['p
     payment_receipt: { email: true, web: true, push: true },
     credits_received_subscription: { email: true, web: true, push: true },
     credits_received_admin_gift: { email: true, web: true, push: true },
+    welcome_bonus: { email: true, web: true, push: true },
 };

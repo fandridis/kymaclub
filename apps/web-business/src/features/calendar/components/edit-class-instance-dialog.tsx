@@ -44,7 +44,9 @@ import { TEMPLATE_COLORS, TEMPLATE_COLORS_ARRAY } from '@repo/utils/colors';
 import { cn } from '@/lib/utils';
 import { TEMPLATE_COLORS_MAP } from '@/utils/colors';
 import { ClassDiscountRulesForm } from '@/components/class-discount-rules-form';
+import { QuestionnaireBuilder } from '@/components/questionnaire-builder';
 import { useTypedTranslation } from '@/lib/typed';
+import type { Question } from '@repo/api/types/questionnaire';
 
 // Define the discount rule schema for form validation
 const discountRuleSchema = z.object({
@@ -128,6 +130,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
     const [isSubmittingMultiple, setIsSubmittingMultiple] = useState(false);
     const [currentTag, setCurrentTag] = useState("");
     const [discountRules, setDiscountRules] = useState<DiscountRule[]>([]);
+    const [questionnaire, setQuestionnaire] = useState<Question[]>([]);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [pendingFormData, setPendingFormData] = useState<FormData | null>(null);
     const [applyToAll, setApplyToAll] = useState(false);
@@ -236,8 +239,9 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                 cancellationWindowHours: instance.cancellationWindowHours?.toString() || "2",
                 discountRules: instance.discountRules || [],
             });
-            // Also update the discount rules state
+            // Also update the discount rules and questionnaire state
             setDiscountRules(instance.discountRules || []);
+            setQuestionnaire(instance.questionnaire || []);
         }
     }, [instance, form, businessTimezone]);
 
@@ -245,6 +249,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
         form.reset();
         setCurrentTag("");
         setDiscountRules([]);
+        setQuestionnaire([]);
         setIsSubmittingSingle(false);
         setIsSubmittingMultiple(false);
         setApplyToAll(false);
@@ -310,6 +315,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                         condition: rule.condition,
                         discount: rule.discount,
                     })) : [],
+                    questionnaire: questionnaire.length > 0 ? questionnaire : undefined,
                 }
             });
 
@@ -360,6 +366,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                         condition: rule.condition,
                         discount: rule.discount,
                     })) : [],
+                    questionnaire: questionnaire.length > 0 ? questionnaire : undefined,
                 }
             });
             toast.success(t('routes.calendar.editClass.classesUpdatedSuccess', { count: result.totalUpdated }));
@@ -648,6 +655,15 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                             onChange={setDiscountRules}
                                             currency="EUR"
                                             price={parseInt(formData.price)}
+                                        />
+                                    </div>
+
+                                    {/* Pre-booking Questionnaire Section */}
+                                    <div className="space-y-4 mt-8">
+                                        <QuestionnaireBuilder
+                                            questions={questionnaire}
+                                            onChange={setQuestionnaire}
+                                            currency="EUR"
                                         />
                                     </div>
 

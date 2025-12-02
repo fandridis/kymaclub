@@ -4,12 +4,23 @@ import { getAuthenticatedUserOrThrow } from "../utils";
 import { bookingService } from "../../services/bookingService";
 import { mutationWithTriggers } from "../triggers";
 
+// Questionnaire answer input validator (without feeApplied - will be calculated server-side)
+const questionnaireAnswerInputValidator = v.object({
+  questionId: v.string(),
+  booleanAnswer: v.optional(v.boolean()),
+  singleSelectAnswer: v.optional(v.string()),
+  multiSelectAnswer: v.optional(v.array(v.string())),
+  numberAnswer: v.optional(v.number()),
+  textAnswer: v.optional(v.string()),
+});
 
 // Mutation args validation
 export const bookClassArgs = v.object({
   classInstanceId: v.id("classInstances"),
   idempotencyKey: v.optional(v.string()),
   description: v.optional(v.string()),
+  // Pre-booking questionnaire answers (fees calculated server-side)
+  questionnaireAnswers: v.optional(v.array(questionnaireAnswerInputValidator)),
 });
 export type BookClassArgs = Infer<typeof bookClassArgs>;
 

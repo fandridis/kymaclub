@@ -719,5 +719,22 @@
         "search": "Search",
         "refresh": "Refresh",
         "more": "More options"
+    },
+    "questionnaire": {
+        "preBookingQuestions": "Pre-booking Questions",
+        "yes": "Yes",
+        "no": "No",
+        "enterNumber": "Enter a number",
+        "enterText": "Enter your answer",
+        "feeIfProvided": "Additional fee: {{fee}}",
+        "additionalFees": "Additional fees",
+        "yourAnswers": "Your Answers",
+        "completeBooking": "Complete Your Booking",
+        "pleaseAnswerQuestions": "Please answer the following questions before booking.",
+        "classPrice": "Class price",
+        "total": "Total",
+        "confirmBooking": "Confirm Booking · {{credits}} credits",
+        "booking": "Booking...",
+        "answerRequired": "Please answer all required questions"
     }
 }

@@ -1056,6 +1056,7 @@ export const notificationService = {
             transactionId: Id<"creditTransactions">;
             newBalance: number;
             adminUserId: Id<"users">;
+            giftMessage?: string;
         };
     }): Promise<{ success: boolean }> => {
         const { userId, creditsGifted, transactionId, newBalance, adminUserId } = payload;
@@ -1094,13 +1095,12 @@ export const notificationService = {
 
         if (shouldSendEmail && process.env.NODE_ENV === "production" && user.email) {
             try {
-                await ctx.scheduler.runAfter(0, internal.actions.email.sendCreditsReceivedEmail, {
+                await ctx.scheduler.runAfter(0, internal.actions.email.sendCreditsGiftEmail, {
                     customerEmail: user.email,
                     customerName: user.name || user.email || "Valued Customer",
-                    creditsReceived: creditsGifted,
-                    planName: "Admin Gift",
-                    isRenewal: false,
+                    creditsGifted: creditsGifted,
                     totalCredits: newBalance,
+                    giftMessage: payload.giftMessage,
                 });
             } catch (error) {
                 console.error('Error sending credits gifted email notification:', error);
@@ -1121,6 +1121,81 @@ export const notificationService = {
                         transactionId: transactionId,
                         newBalance: newBalance,
                         adminUserId: adminUserId,
+                    }
+                }
+            );
+
+            await pushNotifications.sendPushNotification(ctx, {
+                userId: userId,
+                notification: notificationContent,
+            });
+        }
+
+        return { success: true };
+    },
+
+    /**
+     * Handle welcome bonus event (new user sign up)
+     */
+    handleWelcomeBonusEvent: async ({
+        ctx,
+        payload,
+    }: {
+        ctx: MutationCtx;
+        payload: {
+            userId: Id<"users">;
+            welcomeCredits: number;
+        };
+    }): Promise<{ success: boolean }> => {
+        const { userId, welcomeCredits } = payload;
+
+        // Fetch user
+        const user = await ctx.db.get(userId);
+
+        if (!user) {
+            throw new ConvexError({
+                message: "User not found",
+                field: "userId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND
+            });
+        }
+
+        // Get user notification settings (may not exist for new users)
+        const userNotificationSettings = await ctx.db
+            .query("userSettings")
+            .withIndex("by_user", q => q.eq("userId", userId))
+            .filter(q => q.neq(q.field("deleted"), true))
+            .first();
+
+        const title = "Welcome to KymaClub!";
+        const message = `You've received ${welcomeCredits} welcome bonus credits!`;
+
+        // Send email notification (default to true for new users)
+        const shouldSendEmail = userNotificationSettings?.notifications?.preferences?.welcome_bonus?.email ?? true;
+
+        if (shouldSendEmail && process.env.NODE_ENV === "production" && user.email) {
+            try {
+                await ctx.scheduler.runAfter(0, internal.actions.email.sendWelcomeEmail, {
+                    customerEmail: user.email,
+                    customerName: user.name || user.email || "Valued Customer",
+                    welcomeCredits: welcomeCredits,
+                });
+            } catch (error) {
+                console.error('Error sending welcome email notification:', error);
+            }
+        }
+
+        // Send push notification (default to true for new users)
+        const shouldSendPush = userNotificationSettings?.notifications?.preferences?.welcome_bonus?.push ?? true;
+
+        if (shouldSendPush) {
+            const notificationContent = createNotificationWithDeepLink(
+                'welcome_bonus',
+                title,
+                message,
+                {
+                    additionalData: {
+                        welcomeCredits: welcomeCredits,
                     }
                 }
             );

@@ -25,6 +25,8 @@ import { CancelBookingDialog } from "./cancel-booking-dialog";
 import { Badge } from "@/components/ui/badge";
 import type { Doc } from "@repo/api/convex/_generated/dataModel";
 import { formatEuros } from "@repo/utils/credits";
+import { QuestionnaireAnswersDisplay } from "@/components/questionnaire-answers-display";
+import type { QuestionnaireAnswers } from "@repo/api/types/questionnaire";
 
 interface ClassBookingsItemProps {
     booking: Doc<"bookings">;
@@ -149,116 +151,132 @@ export function ClassBookingsItem({
         }
     };
 
+    // Cast questionnaireAnswers to the correct type
+    const questionnaireAnswers = booking.questionnaireAnswers as QuestionnaireAnswers | undefined;
+    const hasQuestionnaire = questionnaireAnswers &&
+        questionnaireAnswers.answers &&
+        questionnaireAnswers.answers.length > 0;
+
     return (
         <>
-            <div className={cn("flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between py-3 px-3", className)}>
-                <div className="flex items-center gap-3 flex-1">
-                    {/* Customer Avatar/Icon */}
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
-                        <User className="h-5 w-5 text-muted-foreground" />
-                    </div>
-
-                    {/* Customer Details */}
-                    <div className="flex-1 space-y-1">
-                        <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium leading-none">{customerName}</p>
+            <div className={cn("flex flex-col gap-3 py-3 px-3", className)}>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3 flex-1">
+                        {/* Customer Avatar/Icon */}
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                            <User className="h-5 w-5 text-muted-foreground" />
                         </div>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                                <Mail className="h-3 w-3" />
-                                <span>{booking.userSnapshot?.email}</span>
+
+                        {/* Customer Details */}
+                        <div className="flex-1 space-y-1">
+                            <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium leading-none">{customerName}</p>
                             </div>
-                            {booking.userSnapshot?.phone && (
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
                                 <div className="flex items-center gap-1">
-                                    <Phone className="h-3 w-3" />
-                                    <span>{booking.userSnapshot.phone}</span>
+                                    <Mail className="h-3 w-3" />
+                                    <span>{booking.userSnapshot?.email}</span>
                                 </div>
-                            )}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                            {booking.classInstanceSnapshot?.startTime && (
-                                <>
+                                {booking.userSnapshot?.phone && (
                                     <div className="flex items-center gap-1">
-                                        <Calendar className="h-3 w-3" />
-                                        <span>{formatClassDate(booking.classInstanceSnapshot.startTime)}</span>
+                                        <Phone className="h-3 w-3" />
+                                        <span>{booking.userSnapshot.phone}</span>
                                     </div>
-                                    <div className="flex items-center gap-1">
-                                        <Clock className="h-3 w-3" />
-                                        <span>{formatClassTime(booking.classInstanceSnapshot.startTime, booking.classInstanceSnapshot.endTime)}</span>
-                                    </div>
-                                </>
-                            )}
-                            <div className="flex items-center gap-1">
-                                <Euro className="h-3 w-3" />
-                                <span className="font-medium">{formatEuros(booking.finalPrice / 100)}</span>
+                                )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                                {booking.classInstanceSnapshot?.startTime && (
+                                    <>
+                                        <div className="flex items-center gap-1">
+                                            <Calendar className="h-3 w-3" />
+                                            <span>{formatClassDate(booking.classInstanceSnapshot.startTime)}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <Clock className="h-3 w-3" />
+                                            <span>{formatClassTime(booking.classInstanceSnapshot.startTime, booking.classInstanceSnapshot.endTime)}</span>
+                                        </div>
+                                    </>
+                                )}
+                                <div className="flex items-center gap-1">
+                                    <Euro className="h-3 w-3" />
+                                    <span className="font-medium">{formatEuros(booking.finalPrice / 100)}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-2 sm:shrink-0">
-                    {/* Status Badge */}
-                    <Badge
-                        variant={getStatusVariant(booking.status)}
-                        className="text-xs"
-                    >
-                        {getStatusLabel(booking.status)}
-                    </Badge>
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 sm:shrink-0">
+                        {/* Status Badge */}
+                        <Badge
+                            variant={getStatusVariant(booking.status)}
+                            className="text-xs"
+                        >
+                            {getStatusLabel(booking.status)}
+                        </Badge>
 
-                    {/* More Actions Dropdown - Only show if there are actions */}
-                    {(() => {
-                        const hasActions =
-                            (booking.status === 'pending') || // Can cancel
-                            (booking.status === 'cancelled_by_business'); // Can allow rebooking
+                        {/* More Actions Dropdown - Only show if there are actions */}
+                        {(() => {
+                            const hasActions =
+                                (booking.status === 'pending') || // Can cancel
+                                (booking.status === 'cancelled_by_business'); // Can allow rebooking
 
-                        if (!hasActions) return null;
+                            if (!hasActions) return null;
 
-                        return (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="h-8 w-8 p-0"
-                                        disabled={isCancelling || isAllowingRebook}
-                                    >
-                                        {(isCancelling || isAllowingRebook) ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <MoreVertical className="h-4 w-4" />
+                            return (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8 w-8 p-0"
+                                            disabled={isCancelling || isAllowingRebook}
+                                        >
+                                            {(isCancelling || isAllowingRebook) ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <MoreVertical className="h-4 w-4" />
+                                            )}
+                                            <span className="sr-only">Open menu</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        {/* Only show Cancel Booking for non-cancelled bookings */}
+                                        {booking.status === 'pending' && (
+                                            <DropdownMenuItem
+                                                onClick={() => setShowCancelDialog(true)}
+                                                disabled={isCancelling}
+                                                className="text-destructive focus:text-destructive"
+                                            >
+                                                Cancel Booking
+                                            </DropdownMenuItem>
                                         )}
-                                        <span className="sr-only">Open menu</span>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    {/* Only show Cancel Booking for non-cancelled bookings */}
-                                    {booking.status === 'pending' && (
-                                        <DropdownMenuItem
-                                            onClick={() => setShowCancelDialog(true)}
-                                            disabled={isCancelling}
-                                            className="text-destructive focus:text-destructive"
-                                        >
-                                            Cancel Booking
-                                        </DropdownMenuItem>
-                                    )}
 
-                                    {/* Show Allow Rebooking for business-cancelled bookings */}
-                                    {booking.status === 'cancelled_by_business' && (
-                                        <DropdownMenuItem
-                                            onClick={handleAllowRebooking}
-                                            disabled={isAllowingRebook}
-                                            className="text-blue-600 focus:text-blue-600"
-                                        >
-                                            Allow Rebooking
-                                        </DropdownMenuItem>
-                                    )}
+                                        {/* Show Allow Rebooking for business-cancelled bookings */}
+                                        {booking.status === 'cancelled_by_business' && (
+                                            <DropdownMenuItem
+                                                onClick={handleAllowRebooking}
+                                                disabled={isAllowingRebook}
+                                                className="text-blue-600 focus:text-blue-600"
+                                            >
+                                                Allow Rebooking
+                                            </DropdownMenuItem>
+                                        )}
 
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        );
-                    })()}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            );
+                        })()}
+                    </div>
                 </div>
+
+                {/* Questionnaire Answers - Collapsible section */}
+                {hasQuestionnaire && (
+                    <QuestionnaireAnswersDisplay
+                        questionnaireAnswers={questionnaireAnswers}
+                        className="ml-13"
+                    />
+                )}
             </div>
 
             {/* Cancel Booking Confirmation Dialog */}

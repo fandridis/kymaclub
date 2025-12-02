@@ -146,7 +146,7 @@ export const sendTestEmail = internalAction({
 /**
  * Send credits gifted email to customer (admin gift)
  */
-export const sendCreditsGiftedEmail = internalAction({
+export const sendCreditsGiftEmail = internalAction({
     args: v.object({
         customerEmail: v.string(),
         customerName: v.string(),
@@ -156,7 +156,7 @@ export const sendCreditsGiftedEmail = internalAction({
     }),
     handler: async (ctx, args) => {
         try {
-            const result = await emailService.sendCreditsGiftedEmail({
+            const result = await emailService.sendCreditsGiftEmail({
                 ctx,
                 args: {
                     customerEmail: args.customerEmail,

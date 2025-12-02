@@ -7,6 +7,7 @@ import { SettingsScreen } from './screens/SettingsScreen';
 import { NotFoundScreen } from './screens/NotFoundScreen';
 import { ClassDetailsModalScreen } from './screens/ClassDetailsModalScreen';
 import { BookingTicketModalScreen } from './screens/BookingTicketModalScreen';
+import { QuestionnaireModalScreen } from './screens/QuestionnaireModalScreen';
 import { VenueDetailsScreen } from './screens/VenueDetailsScreen';
 import { VenueClassInstancesScreen } from './screens/VenueClassInstancesScreen';
 import { ExploreFiltersModalScreen } from './screens/ExploreFiltersModalScreen';
@@ -279,6 +280,13 @@ export function RootNavigator() {
             headerShown: false,
           }}
         />
+        <RootStack.Screen
+          name="QuestionnaireModal"
+          component={QuestionnaireModalScreen}
+          options={{
+            headerShown: false,
+          }}
+        />
       </RootStack.Group>
     </RootStack.Navigator>
   );
@@ -337,6 +345,12 @@ export type RootStackParamList = {
   // Modal screens
   BookingTicketModal: {
     booking: import('@repo/api/convex/_generated/dataModel').Doc<"bookings">;
+  };
+  QuestionnaireModal: {
+    questions: import('@repo/api/types/questionnaire').Question[];
+    basePrice: number;
+    className: string;
+    classInstanceId: import('@repo/api/convex/_generated/dataModel').Id<"classInstances">;
   };
   SignInModal: undefined;
   CreateAccountModal: {

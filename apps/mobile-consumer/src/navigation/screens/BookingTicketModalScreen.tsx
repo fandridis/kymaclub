@@ -308,6 +308,53 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
                       {booking.userSnapshot?.name ?? booking.userSnapshot?.name ?? t('ticket.member')}
                     </Text>
                   </View>
+
+                  {/* Questionnaire Answers Section */}
+                  {booking.questionnaireAnswers && booking.questionnaireAnswers.answers.length > 0 && (
+                    <View style={styles.questionnaireSection}>
+                      <Text style={styles.infoLabel}>{t('questionnaire.yourAnswers')}</Text>
+                      {booking.questionnaireAnswers.answers.map((answer, index) => {
+                        const question = booking.questionnaireAnswers?.questionnaire.find(
+                          (q) => q.id === answer.questionId
+                        );
+                        if (!question) return null;
+
+                        let answerText = '';
+                        if (answer.booleanAnswer !== undefined) {
+                          answerText = answer.booleanAnswer ? t('questionnaire.yes') : t('questionnaire.no');
+                        } else if (answer.singleSelectAnswer) {
+                          const option = question.options?.find((o) => o.id === answer.singleSelectAnswer);
+                          answerText = option?.label || answer.singleSelectAnswer;
+                        } else if (answer.multiSelectAnswer && answer.multiSelectAnswer.length > 0) {
+                          answerText = answer.multiSelectAnswer
+                            .map((id) => question.options?.find((o) => o.id === id)?.label || id)
+                            .join(', ');
+                        } else if (answer.numberAnswer !== undefined) {
+                          answerText = String(answer.numberAnswer);
+                        } else if (answer.textAnswer) {
+                          answerText = answer.textAnswer;
+                        }
+
+                        return (
+                          <View key={question.id} style={styles.questionnaireItem}>
+                            <Text style={styles.questionnaireQuestion}>{question.question}</Text>
+                            <Text style={styles.questionnaireAnswer}>{answerText}</Text>
+                            {answer.feeApplied > 0 && (
+                              <Text style={styles.questionnaireFee}>+€{(answer.feeApplied / 100).toFixed(2)}</Text>
+                            )}
+                          </View>
+                        );
+                      })}
+                      {booking.questionnaireAnswers.totalFees > 0 && (
+                        <View style={styles.questionnaireTotalFees}>
+                          <Text style={styles.questionnaireTotalLabel}>{t('questionnaire.additionalFees')}:</Text>
+                          <Text style={styles.questionnaireTotalValue}>
+                            +€{(booking.questionnaireAnswers.totalFees / 100).toFixed(2)}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
                 </View>
               </View>
 
@@ -596,5 +643,54 @@ const styles = StyleSheet.create({
     color: theme.colors.zinc[500],
     textAlign: 'center',
     paddingHorizontal: 24,
+  },
+  // Questionnaire styles
+  questionnaireSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.zinc[200],
+  },
+  questionnaireItem: {
+    marginTop: 8,
+    padding: 12,
+    backgroundColor: theme.colors.zinc[50],
+    borderRadius: 8,
+  },
+  questionnaireQuestion: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: theme.colors.zinc[600],
+    marginBottom: 4,
+  },
+  questionnaireAnswer: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.colors.zinc[800],
+  },
+  questionnaireFee: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.colors.amber[600],
+    marginTop: 4,
+  },
+  questionnaireTotalFees: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.zinc[200],
+  },
+  questionnaireTotalLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: theme.colors.zinc[600],
+  },
+  questionnaireTotalValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.colors.amber[600],
   },
 });

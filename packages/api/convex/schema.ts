@@ -52,6 +52,71 @@ export const classDiscountRuleFields = {
 };
 
 /***************************************************************
+ * Pre-booking Questionnaire Fields
+ * Allows businesses to ask questions during booking with optional fees
+ ***************************************************************/
+
+// Question type union
+export const questionTypeValidator = v.union(
+  v.literal("boolean"),
+  v.literal("single_select"),
+  v.literal("multi_select"),
+  v.literal("number"),
+  v.literal("text")
+);
+
+// Question option (for select types)
+export const questionOptionFields = {
+  id: v.string(),
+  label: v.string(),
+  fee: v.optional(v.number()), // fee in cents if selected
+};
+
+// Question definition
+export const questionFields = {
+  id: v.string(),
+  question: v.string(),
+  type: questionTypeValidator,
+  required: v.boolean(),
+  // For select questions (single_select, multi_select)
+  options: v.optional(v.array(v.object(questionOptionFields))),
+  // For number questions
+  numberConfig: v.optional(v.object({
+    min: v.optional(v.number()),
+    max: v.optional(v.number()),
+    integer: v.optional(v.boolean()),
+    fee: v.optional(v.number()), // flat fee if any number provided
+  })),
+  // For boolean questions
+  booleanConfig: v.optional(v.object({
+    feeOnTrue: v.optional(v.number()), // fee if answered "yes"
+  })),
+  // For text questions
+  textConfig: v.optional(v.object({
+    maxLength: v.optional(v.number()),
+    fee: v.optional(v.number()), // flat fee if any text provided
+  })),
+};
+
+// Question answer (stored with booking)
+export const questionAnswerFields = {
+  questionId: v.string(),
+  booleanAnswer: v.optional(v.boolean()),
+  singleSelectAnswer: v.optional(v.string()), // option id
+  multiSelectAnswer: v.optional(v.array(v.string())), // array of option ids
+  numberAnswer: v.optional(v.number()),
+  textAnswer: v.optional(v.string()),
+  feeApplied: v.number(), // fee in cents for this answer
+};
+
+// Questionnaire answers snapshot (stored in booking)
+export const questionnaireAnswersFields = {
+  questionnaire: v.array(v.object(questionFields)), // snapshot at booking time
+  answers: v.array(v.object(questionAnswerFields)),
+  totalFees: v.number(), // sum of all feeApplied in cents
+};
+
+/***************************************************************
  * Main tables
  ***************************************************************/
 export const usersFields = {
@@ -309,6 +374,9 @@ export const classTemplatesFields = {
   // Image URLS
   imageStorageIds: v.optional(v.array(v.id("_storage"))),
 
+  // Pre-booking questionnaire - questions to ask users when booking
+  questionnaire: v.optional(v.array(v.object(questionFields))),
+
   ...auditFields,
   ...softDeleteFields,
 };
@@ -354,6 +422,9 @@ export const classInstancesFields = {
   // Booking control
   disableBookings: v.optional(v.boolean()), // Default: false (bookings enabled)
 
+  // Pre-booking questionnaire - overrides template questionnaire if set
+  questionnaire: v.optional(v.array(v.object(questionFields))),
+
   // Status and booking tracking
   status: v.union(
     v.literal("scheduled"),
@@ -371,6 +442,7 @@ export const classInstancesFields = {
     instructor: v.string(),
     imageStorageIds: v.optional(v.array(v.id("_storage"))),
     discountRules: v.optional(v.array(v.object(classDiscountRuleFields))),
+    questionnaire: v.optional(v.array(v.object(questionFields))),
     deleted: v.optional(v.boolean()),
     primaryCategory: venueCategoryField,
   }),
@@ -505,6 +577,9 @@ export const bookingsFields = {
   freeCancelExpiresAt: v.optional(v.number()),
   freeCancelReason: v.optional(v.string()),
 
+  // Pre-booking questionnaire answers (snapshot of questions + user's answers)
+  questionnaireAnswers: v.optional(v.object(questionnaireAnswersFields)),
+
   ...auditFields,
   ...softDeleteFields,
 };
@@ -602,7 +677,8 @@ export const notificationsFields = {
     v.literal("booking_cancelled_by_business"),
     v.literal("payment_receipt"),
     v.literal("credits_received_subscription"),
-    v.literal("credits_received_admin_gift")
+    v.literal("credits_received_admin_gift"),
+    v.literal("welcome_bonus")
   ),
 
   // Content
@@ -732,6 +808,11 @@ export const userSettingsFields = {
         push: v.boolean(),
       })),
       credits_received_admin_gift: v.optional(v.object({
+        email: v.boolean(),
+        web: v.boolean(),
+        push: v.boolean(),
+      })),
+      welcome_bonus: v.optional(v.object({
         email: v.boolean(),
         web: v.boolean(),
         push: v.boolean(),

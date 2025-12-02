@@ -186,10 +186,15 @@
             "discountRulesForm": {
                 "title": "Εκπτώσεις",
                 "addRule": "Προσθήκη",
+                "deleteRule": "Διαγραφή",
                 "noRulesConfigured": "Δεν έχουν ρυθμιστεί εκπτώσεις",
                 "noRulesDescription": "Προσθέστε κανόνες για να προσφέρετε εκπτώσεις πρώιμης κράτησης ή τελευταίας στιγμής",
                 "type": "Τύπος",
                 "amount": "Ποσό ({{currency}})",
+                "off": "έκπτωση",
+                "appliesAlways": "Ισχύει σε όλες τις κρατήσεις",
+                "earlyBookingSummary": "{{hours}}+ ώρες πριν το μάθημα",
+                "lastMinuteSummary": "Εντός {{hours}} ωρών από το μάθημα",
                 "earlyBookingApplies": "Η έκπτωση πρώιμης κράτησης ισχύει:",
                 "lastMinuteApplies": "Η έκπτωση τελευταίας στιγμής ισχύει:",
                 "hoursOrMoreBefore": "ώρες ή περισσότερο πριν την έναρξη του μαθήματος",
@@ -478,6 +483,12 @@
                 "currentBookings": "Τρέχουσες Κρατήσεις",
                 "noBookingsYet": "Δεν υπάρχουν κρατήσεις ακόμα",
                 "noBookingsDescription": "Οι πελάτες δεν έχουν κάνει κράτηση για αυτό το μάθημα ακόμα"
+            },
+            "questionnaire": {
+                "title": "Απαντήσεις Προ-κράτησης",
+                "answer": "απάντηση",
+                "answers": "απαντήσεις",
+                "totalAdditionalFees": "Συνολικές επιπλέον χρεώσεις"
             }
         },
         "messages": {
@@ -558,5 +569,38 @@
         "errorDetails": "Λεπτομέρειες Σφάλματος (Λειτουργία Ανάπτυξης)",
         "tryAgain": "Δοκιμή Ξανά",
         "reloadPage": "Ανανέωση Σελίδας"
+    },
+    "questionnaire": {
+        "title": "Ερωτήσεις Προ-κράτησης",
+        "addQuestion": "Προσθήκη Ερώτησης",
+        "deleteQuestion": "Διαγραφή Ερώτησης",
+        "noQuestionsConfigured": "Δεν έχουν ρυθμιστεί ερωτήσεις",
+        "noQuestionsDescription": "Προσθέστε ερωτήσεις για τους χρήστες κατά την κράτηση αυτού του μαθήματος",
+        "questionText": "Ερώτηση",
+        "questionPlaceholder": "Εισάγετε την ερώτησή σας...",
+        "answerType": "Τύπος Απάντησης",
+        "required": "Υποχρεωτικό",
+        "untitled": "Ερώτηση χωρίς τίτλο",
+        "types": {
+            "boolean": "Ναι/Όχι",
+            "singleSelect": "Μονή Επιλογή",
+            "multiSelect": "Πολλαπλή Επιλογή",
+            "number": "Αριθμός",
+            "text": "Κείμενο"
+        },
+        "feeIfYes": "Χρέωση αν απαντηθεί Ναι",
+        "additionalFee": "επιπλέον χρέωση",
+        "options": "Επιλογές",
+        "addOption": "Προσθήκη",
+        "optionLabel": "Επιλογή",
+        "optionPlaceholder": "Εισάγετε επιλογή...",
+        "noOptions": "Δεν υπάρχουν επιλογές ακόμα",
+        "numberConfig": "Ρυθμίσεις Αριθμού",
+        "min": "Ελάχιστο",
+        "max": "Μέγιστο",
+        "fee": "Χρέωση",
+        "integerOnly": "Μόνο ακέραιοι",
+        "textConfig": "Ρυθμίσεις Κειμένου",
+        "maxLength": "Μέγιστο μήκος"
     }
 }

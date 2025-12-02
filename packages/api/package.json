@@ -44,7 +44,9 @@
     "./types/booking": "./types/booking.ts",
     "./types/credit": "./types/credit.ts",
     "./types/notification": "./types/notification.ts",
+    "./types/questionnaire": "./types/questionnaire.ts",
     "./operations/payments": "./operations/payments.ts",
+    "./operations/questionnaire": "./operations/questionnaire.ts",
     "./utils/deep-linking": "./utils/deep-linking.ts",
     "./convex/_generated/api": {
       "import": "./convex/_generated/api.js",

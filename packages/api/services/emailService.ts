@@ -297,6 +297,170 @@ export const emailService = {
     },
 
     /**
+     * Send credits gifted email to customer (admin gift)
+     */
+    sendCreditsGiftEmail: async ({
+        ctx,
+        args,
+    }: {
+        ctx: ActionCtx;
+        args: {
+            customerEmail: string;
+            customerName: string;
+            creditsGifted: number;
+            totalCredits: number;
+            giftMessage?: string;
+        };
+    }): Promise<{ emailId: string; success: boolean }> => {
+        try {
+            const subject = `🎁 You've been gifted ${args.creditsGifted} credits!`;
+
+            const htmlContent = createEmailTemplate({
+                title: subject,
+                content: `
+                    <div style="text-align: center; margin-bottom: 32px;">
+                        <h1 style="color: #059669; font-size: 28px; margin-bottom: 16px;">🎁 You've Been Gifted Credits!</h1>
+                        <p style="font-size: 18px; color: #4B5563; margin: 0;">Hi ${args.customerName}!</p>
+                    </div>
+
+                    <div style="background: linear-gradient(135deg, #059669, #10B981); border-radius: 16px; padding: 32px; text-align: center; margin-bottom: 32px;">
+                        <div style="background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+                            <h2 style="color: #059669; font-size: 48px; font-weight: bold; margin: 0 0 8px 0;">${args.creditsGifted}</h2>
+                            <p style="color: #4B5563; font-size: 18px; margin: 0; font-weight: 500;">Credits Gifted</p>
+                        </div>
+                        <p style="color: white; font-size: 16px; margin: 0; opacity: 0.95;">From KymaClub</p>
+                    </div>
+
+                    ${args.giftMessage ? `
+                    <div style="background: #FEF3C7; border-left: 4px solid #F59E0B; padding: 20px; margin: 24px 0; border-radius: 4px;">
+                        <h4 style="color: #92400E; margin: 0 0 8px 0; font-size: 16px;">💬 Message</h4>
+                        <p style="color: #92400E; margin: 0; font-size: 14px; font-style: italic;">"${args.giftMessage}"</p>
+                    </div>
+                    ` : ''}
+
+                    <div style="background: #F9FAFB; border-radius: 12px; padding: 24px; margin-bottom: 32px;">
+                        <h3 style="color: #059669; font-size: 20px; margin: 0 0 16px 0;">📊 Your Credit Balance</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: white; border-radius: 8px; padding: 16px;">
+                            <span style="color: #4B5563; font-size: 16px;">Total Credits Available</span>
+                            <span style="color: #059669; font-size: 20px; font-weight: bold;">${args.totalCredits}</span>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin: 32px 0;">
+                        <a href="https://app.orcavo.com" style="background: #059669; color: white; padding: 16px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; display: inline-block;">Book a Class Now</a>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 40px; padding-top: 24px; border-top: 1px solid #E5E7EB;">
+                        <p style="color: #6B7280; font-size: 14px; margin: 0;">
+                            Questions? We're here to help! Contact us at 
+                            <a href="mailto:support@orcavo.com" style="color: #059669; text-decoration: none;">support@orcavo.com</a>
+                        </p>
+                    </div>
+                `
+            });
+
+            const emailId = await resend.sendEmail(ctx, {
+                from: "KymaClub <credits@app.orcavo.com>",
+                to: args.customerEmail,
+                subject: subject,
+                html: htmlContent,
+                replyTo: ["support@orcavo.com"],
+            });
+
+            return { emailId, success: true };
+
+        } catch (error) {
+            console.error("Failed to send credits gifted email:", error);
+            throw new ConvexError({
+                message: "Failed to send credits gifted email",
+                code: ERROR_CODES.UNKNOWN_ERROR
+            });
+        }
+    },
+
+    /**
+     * Send welcome email to new consumer
+     */
+    sendWelcomeEmail: async ({
+        ctx,
+        args,
+    }: {
+        ctx: ActionCtx;
+        args: {
+            customerEmail: string;
+            customerName: string;
+            welcomeCredits: number;
+        };
+    }): Promise<{ emailId: string; success: boolean }> => {
+        try {
+            const subject = `🚀 Welcome to KymaClub! Your ${args.welcomeCredits} bonus credits are ready`;
+
+            const htmlContent = createEmailTemplate({
+                title: subject,
+                content: `
+                    <div style="text-align: center; margin-bottom: 32px;">
+                        <h1 style="color: #059669; font-size: 28px; margin-bottom: 16px;">🚀 Welcome to KymaClub!</h1>
+                        <p style="font-size: 18px; color: #4B5563; margin: 0;">Hi ${args.customerName}!</p>
+                    </div>
+
+                    <div style="background: linear-gradient(135deg, #059669, #10B981); border-radius: 16px; padding: 32px; text-align: center; margin-bottom: 32px;">
+                        <div style="background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+                            <h2 style="color: #059669; font-size: 48px; font-weight: bold; margin: 0 0 8px 0;">${args.welcomeCredits}</h2>
+                            <p style="color: #4B5563; font-size: 18px; margin: 0; font-weight: 500;">Welcome Bonus Credits</p>
+                        </div>
+                        <p style="color: white; font-size: 16px; margin: 0; opacity: 0.95;">Ready to use right now!</p>
+                    </div>
+
+                    <div style="background: #EFF6FF; border-left: 4px solid #3B82F6; padding: 20px; margin: 24px 0; border-radius: 4px;">
+                        <h4 style="color: #1E40AF; margin: 0 0 8px 0; font-size: 16px;">🎯 What can you do with credits?</h4>
+                        <p style="color: #1E40AF; margin: 0; font-size: 14px;">
+                            Use your credits to book amazing fitness classes across the city - from yoga and pilates to HIIT and dance classes!
+                        </p>
+                    </div>
+
+                    <div style="text-align: center; margin: 32px 0;">
+                        <a href="https://app.orcavo.com" style="background: #059669; color: white; padding: 16px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; display: inline-block;">Explore Classes</a>
+                    </div>
+
+                    <div style="background: #F9FAFB; border-radius: 12px; padding: 24px; margin-bottom: 32px;">
+                        <h3 style="color: #059669; font-size: 18px; margin: 0 0 16px 0;">Here's how to get started:</h3>
+                        <ol style="color: #4B5563; font-size: 14px; margin: 0; padding-left: 20px; line-height: 1.8;">
+                            <li>Browse classes by location, type, or time</li>
+                            <li>Find a class that fits your schedule</li>
+                            <li>Book instantly with your credits</li>
+                            <li>Show up and enjoy your workout!</li>
+                        </ol>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 40px; padding-top: 24px; border-top: 1px solid #E5E7EB;">
+                        <p style="color: #6B7280; font-size: 14px; margin: 0;">
+                            Need help? We're here for you! Contact us at 
+                            <a href="mailto:support@orcavo.com" style="color: #059669; text-decoration: none;">support@orcavo.com</a>
+                        </p>
+                    </div>
+                `
+            });
+
+            const emailId = await resend.sendEmail(ctx, {
+                from: "KymaClub <welcome@app.orcavo.com>",
+                to: args.customerEmail,
+                subject: subject,
+                html: htmlContent,
+                replyTo: ["support@orcavo.com"],
+            });
+
+            return { emailId, success: true };
+
+        } catch (error) {
+            console.error("Failed to send welcome email:", error);
+            throw new ConvexError({
+                message: "Failed to send welcome email",
+                code: ERROR_CODES.UNKNOWN_ERROR
+            });
+        }
+    },
+
+    /**
      * Send credits received email to customer
      */
     sendCreditsReceivedEmail: async ({

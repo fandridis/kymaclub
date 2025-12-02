@@ -107,3 +107,30 @@ export const getTemplateUsageStats = query({
         return await classTemplateService.getTemplateUsageStats({ ctx, args, user });
     }
 });
+
+/***************************************************************
+ * Get Class Template By ID (Consumer/Public Read)
+ * This query allows any authenticated user to read template data
+ * without requiring business ownership (for booking flow, etc.)
+ ***************************************************************/
+
+export const getClassTemplateByIdPublicArgs = v.object({
+    templateId: v.id("classTemplates"),
+});
+
+export const getClassTemplateByIdPublic = query({
+    args: getClassTemplateByIdPublicArgs,
+    handler: async (ctx, args) => {
+        // Any authenticated user can read template data
+        await getAuthenticatedUserOrThrow(ctx);
+
+        const template = await ctx.db.get(args.templateId);
+
+        // Return null if template doesn't exist or is soft-deleted
+        if (!template || template.deleted) {
+            return null;
+        }
+
+        return template;
+    }
+});

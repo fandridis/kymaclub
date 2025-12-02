@@ -186,10 +186,15 @@
             "discountRulesForm": {
                 "title": "Discount Rules",
                 "addRule": "Add Rule",
+                "deleteRule": "Delete Rule",
                 "noRulesConfigured": "No discount rules configured",
                 "noRulesDescription": "Add rules to offer early-bird or last-minute discounts",
                 "type": "Type",
                 "amount": "Amount ({{currency}})",
+                "off": "off",
+                "appliesAlways": "Applies to all bookings",
+                "earlyBookingSummary": "{{hours}}+ hours before class",
+                "lastMinuteSummary": "Within {{hours}} hours of class",
                 "earlyBookingApplies": "Early booking discount applies:",
                 "lastMinuteApplies": "Last minute discount applies:",
                 "hoursOrMoreBefore": "hours or more before class starts",
@@ -453,6 +458,12 @@
                 "currentBookings": "Current Bookings",
                 "noBookingsYet": "No bookings yet",
                 "noBookingsDescription": "Customers haven't booked this class yet"
+            },
+            "questionnaire": {
+                "title": "Pre-booking Answers",
+                "answer": "answer",
+                "answers": "answers",
+                "totalAdditionalFees": "Total additional fees"
             }
         },
         "messages": {
@@ -533,5 +544,38 @@
         "errorDetails": "Error Details (Dev Mode)",
         "tryAgain": "Try Again",
         "reloadPage": "Reload Page"
+    },
+    "questionnaire": {
+        "title": "Pre-booking Questions",
+        "addQuestion": "Add Question",
+        "deleteQuestion": "Delete Question",
+        "noQuestionsConfigured": "No questions configured",
+        "noQuestionsDescription": "Add questions to ask users when booking this class",
+        "questionText": "Question",
+        "questionPlaceholder": "Enter your question...",
+        "answerType": "Answer Type",
+        "required": "Required",
+        "untitled": "Untitled Question",
+        "types": {
+            "boolean": "Yes/No",
+            "singleSelect": "Single Choice",
+            "multiSelect": "Multiple Choice",
+            "number": "Number",
+            "text": "Text"
+        },
+        "feeIfYes": "Fee if answered Yes",
+        "additionalFee": "additional fee",
+        "options": "Options",
+        "addOption": "Add",
+        "optionLabel": "Option",
+        "optionPlaceholder": "Enter option...",
+        "noOptions": "No options yet",
+        "numberConfig": "Number Settings",
+        "min": "Min",
+        "max": "Max",
+        "fee": "Fee",
+        "integerOnly": "Integer only",
+        "textConfig": "Text Settings",
+        "maxLength": "Max length"
     }
 }

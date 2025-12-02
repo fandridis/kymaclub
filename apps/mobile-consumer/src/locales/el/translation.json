@@ -715,5 +715,22 @@
         "search": "Αναζήτηση",
         "refresh": "Ανανέωση",
         "more": "Περισσότερες επιλογές"
+    },
+    "questionnaire": {
+        "preBookingQuestions": "Ερωτήσεις Προ-κράτησης",
+        "yes": "Ναι",
+        "no": "Όχι",
+        "enterNumber": "Εισάγετε αριθμό",
+        "enterText": "Εισάγετε την απάντησή σας",
+        "feeIfProvided": "Επιπλέον χρέωση: {{fee}}",
+        "additionalFees": "Επιπλέον χρεώσεις",
+        "yourAnswers": "Οι Απαντήσεις σας",
+        "completeBooking": "Ολοκληρώστε την Κράτησή σας",
+        "pleaseAnswerQuestions": "Παρακαλώ απαντήστε στις παρακάτω ερωτήσεις πριν την κράτηση.",
+        "classPrice": "Τιμή μαθήματος",
+        "total": "Σύνολο",
+        "confirmBooking": "Επιβεβαίωση Κράτησης · {{credits}} πόντοι",
+        "booking": "Κράτηση...",
+        "answerRequired": "Παρακαλώ απαντήστε σε όλες τις υποχρεωτικές ερωτήσεις"
     }
 }

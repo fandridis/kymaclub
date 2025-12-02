@@ -8,6 +8,9 @@ import { calculateBestDiscount } from "../utils/classDiscount";
 import { validateActiveBookingsLimit } from "../rules/booking";
 import { logger } from "../utils/logger";
 import { centsToCredits } from "@repo/utils/credits";
+import type { QuestionAnswer, QuestionnaireAnswers } from "../types/questionnaire";
+import { buildQuestionnaireAnswersWithFees, getEffectiveQuestionnaire } from "../operations/questionnaire";
+import { validateQuestionnaireAnswers } from "../rules/questionnaire";
 
 
 /***************************************************************
@@ -416,6 +419,8 @@ export const bookingService = {
             classInstanceId: Id<"classInstances">;
             idempotencyKey?: string;
             description?: string;
+            // Pre-booking questionnaire answers (without feeApplied - will be calculated)
+            questionnaireAnswers?: Omit<QuestionAnswer, "feeApplied">[];
         };
         user: Doc<"users">;
     }): Promise<{ bookingId: Id<"bookings">; transactionId: string }> => {
@@ -478,6 +483,47 @@ export const bookingService = {
 
         // Get platform fee rate from business settings, default to 0.20 (20%)
         const platformFeeRate = business.feeStructure.baseFeeRate ?? 0.20;
+
+        // Process pre-booking questionnaire if applicable
+        let questionnaireAnswersSnapshot: QuestionnaireAnswers | undefined;
+        let questionnaireFees = 0;
+
+        const effectiveQuestionnaire = getEffectiveQuestionnaire(
+            template.questionnaire,
+            instance.questionnaire
+        );
+
+        if (effectiveQuestionnaire && effectiveQuestionnaire.length > 0) {
+            // If questionnaire exists, answers are required
+            if (!args.questionnaireAnswers || args.questionnaireAnswers.length === 0) {
+                // Check if there are any required questions
+                const hasRequiredQuestions = effectiveQuestionnaire.some(q => q.required);
+                if (hasRequiredQuestions) {
+                    throw new ConvexError({
+                        message: "Pre-booking questionnaire must be answered",
+                        field: "questionnaireAnswers",
+                        code: ERROR_CODES.VALIDATION_ERROR,
+                    });
+                }
+            }
+
+            if (args.questionnaireAnswers && args.questionnaireAnswers.length > 0) {
+                // Validate answers against questionnaire
+                // First, create answers with placeholder fees for validation
+                const answersForValidation: QuestionAnswer[] = args.questionnaireAnswers.map(a => ({
+                    ...a,
+                    feeApplied: 0,
+                }));
+                validateQuestionnaireAnswers(effectiveQuestionnaire, answersForValidation);
+
+                // Build answers with calculated fees
+                questionnaireAnswersSnapshot = buildQuestionnaireAnswersWithFees(
+                    effectiveQuestionnaire,
+                    args.questionnaireAnswers
+                );
+                questionnaireFees = questionnaireAnswersSnapshot.totalFees;
+            }
+        }
 
         // Enforce booking window: current time must be between [start - maxHours, start - minHours]
         const effectiveBookingWindow = instance.bookingWindow ?? template.bookingWindow;
@@ -549,11 +595,14 @@ export const bookingService = {
         validateActiveBookingsLimit(userBookings, now);
 
         const discountResult = calculateBestDiscount(instance, template, { bookingTime: now });
-        const { originalPrice, finalPrice, appliedDiscount } = discountResult;
+        const { originalPrice, appliedDiscount } = discountResult;
+
+        // Add questionnaire fees to the final price (after discount)
+        const finalPriceWithFees = discountResult.finalPrice + questionnaireFees;
 
         // originalPrice and finalPrice are now in cents (not credits!)
         // Calculate credits used for credit spending using utility function
-        const creditsUsed = centsToCredits(finalPrice);
+        const creditsUsed = centsToCredits(finalPriceWithFees);
 
         if (!Number.isFinite(originalPrice) || originalPrice <= 0) {
             throw new ConvexError({
@@ -563,7 +612,7 @@ export const bookingService = {
             });
         }
 
-        if (!Number.isFinite(finalPrice) || finalPrice < 0) {
+        if (!Number.isFinite(finalPriceWithFees) || finalPriceWithFees < 0) {
             throw new ConvexError({
                 message: "Invalid final price after discount calculation",
                 field: "finalPrice",
@@ -580,11 +629,13 @@ export const bookingService = {
             classInstanceId: args.classInstanceId,
             status: "pending",
             originalPrice,  // Now stored in cents
-            finalPrice,     // Now stored in cents (creditsUsed = finalPrice / 100)
+            finalPrice: finalPriceWithFees,     // Now stored in cents including questionnaire fees (creditsUsed = finalPrice / 100)
             creditTransactionId: "", // Will be updated after credit transaction
             platformFeeRate, // Platform fee rate from business settings (default 0.20)
             refundAmount: undefined, // Will be set on cancellation if applicable
             appliedDiscount: appliedDiscount || undefined,
+            // Pre-booking questionnaire answers snapshot
+            questionnaireAnswers: questionnaireAnswersSnapshot,
             // Populate user metadata for business owners to see customer details
             userSnapshot: {
                 name: user.name || undefined,
@@ -614,7 +665,7 @@ export const bookingService = {
 
 
 
-        if (finalPrice === 0) {
+        if (finalPriceWithFees === 0) {
             // For free bookings, create a placeholder transaction ID
             transactionId = `free_booking_${bookingId}`;
             newBalance = undefined; // Credit balance unchanged

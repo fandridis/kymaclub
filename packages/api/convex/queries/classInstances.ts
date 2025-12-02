@@ -679,12 +679,14 @@ export const getVenueClassInstancesOptimized = query({
                 tags: instance.tags,
                 bookingWindow: instance.bookingWindow,
                 discountRules: instance.discountRules,
+                questionnaire: instance.questionnaire,
                 // Minimal snapshots - only essential fields
                 templateSnapshot: {
                     name: instance.templateSnapshot.name,
                     instructor: instance.templateSnapshot.instructor,
                     imageStorageIds: instance.templateSnapshot.imageStorageIds,
                     discountRules: instance.templateSnapshot.discountRules,
+                    questionnaire: instance.templateSnapshot.questionnaire,
                 },
                 venueSnapshot: {
                     name: instance.venueSnapshot.name,
@@ -716,11 +718,13 @@ export const getVenueClassInstancesOptimized = query({
             tags: instance.tags,
             bookingWindow: instance.bookingWindow,
             discountRules: instance.discountRules,
+            questionnaire: instance.questionnaire,
             templateSnapshot: {
                 name: instance.templateSnapshot.name,
                 instructor: instance.templateSnapshot.instructor,
                 imageStorageIds: instance.templateSnapshot.imageStorageIds,
                 discountRules: instance.templateSnapshot.discountRules,
+                questionnaire: instance.templateSnapshot.questionnaire,
             },
             venueSnapshot: {
                 name: instance.venueSnapshot.name,
