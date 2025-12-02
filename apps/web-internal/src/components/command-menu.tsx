@@ -3,12 +3,10 @@ import {
     Calendar,
     Search,
     Building2,
-    Dumbbell,
-    MapPin,
-    Ticket,
     Users,
+    LayoutDashboard,
 } from "lucide-react";
-import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
+import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useQuery } from "convex/react";
 import { useNavigate } from "@tanstack/react-router";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -44,12 +42,12 @@ export function CommandMenu() {
         <>
             <button
                 onClick={() => setOpen(true)}
-                className="inline-flex items-center gap-2 rounded-md border border-cyan-500/30 bg-black/50 px-3 py-1.5 text-sm font-medium text-cyan-400/70 shadow-sm transition-colors hover:bg-cyan-950/30 hover:text-cyan-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500 disabled:pointer-events-none disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-700/50 bg-slate-800/50 px-4 py-2 text-sm font-medium text-slate-400 shadow-sm transition-colors hover:bg-slate-700/50 hover:text-slate-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500 backdrop-blur-sm"
             >
                 <Search className="h-4 w-4" />
-                <span className="hidden lg:inline-flex">Search...</span>
+                <span className="hidden lg:inline-flex">Search systems...</span>
                 <span className="hidden sm:inline-flex lg:hidden">Search...</span>
-                <kbd className="pointer-events-none ml-auto hidden h-5 select-none items-center gap-1 rounded border border-cyan-500/20 bg-cyan-950/20 px-1.5 font-mono text-[10px] font-medium text-cyan-500 opacity-100 sm:flex">
+                <kbd className="pointer-events-none ml-2 hidden h-5 select-none items-center gap-1 rounded border border-slate-600 bg-slate-800 px-1.5 font-mono text-[10px] font-medium text-slate-400 sm:flex">
                     <span className="text-xs">⌘</span>K
                 </kbd>
             </button>
@@ -58,22 +56,23 @@ export function CommandMenu() {
                     placeholder="Type a command or search..."
                     value={search}
                     onValueChange={setSearch}
+                    className="border-slate-700"
                 />
                 <CommandList className="h-[30vh] max-h-[400px]">
                     {/* Static Suggestions */}
                     {search === "" && (
-                        <CommandGroup heading="Suggestions">
+                        <CommandGroup heading="Quick Navigation">
                             <CommandItem value="dashboard" onSelect={() => runCommand(() => navigate({ to: "/dashboard" }))}>
-                                <Calendar className="mr-2 h-5 w-5" />
+                                <LayoutDashboard className="mr-2 h-4 w-4 text-cyan-400" />
                                 <span>Dashboard</span>
                             </CommandItem>
-                            <CommandItem value="businesses" onSelect={() => runCommand(() => navigate({ to: "/businesses" } as any))}>
-                                <Building2 className="mr-2 h-5 w-5" />
-                                <span>Businesses</span>
-                            </CommandItem>
                             <CommandItem value="bookings" onSelect={() => runCommand(() => navigate({ to: "/bookings" }))}>
-                                <Ticket className="mr-2 h-5 w-5" />
+                                <Calendar className="mr-2 h-4 w-4 text-blue-400" />
                                 <span>Bookings</span>
+                            </CommandItem>
+                            <CommandItem value="classes" onSelect={() => runCommand(() => navigate({ to: "/classes" } as any))}>
+                                <Calendar className="mr-2 h-4 w-4 text-purple-400" />
+                                <span>Classes</span>
                             </CommandItem>
                         </CommandGroup>
                     )}
@@ -89,11 +88,11 @@ export function CommandMenu() {
                                             value={business._id}
                                             onSelect={() => runCommand(() => navigate({ to: `/businesses/${business._id}` } as any))}
                                         >
-                                            <Building2 className="mr-2 h-5 w-5" />
+                                            <Building2 className="mr-2 h-4 w-4 text-cyan-400" />
                                             <span>{business.name}</span>
                                             {business.matchType && (
-                                                <span className="ml-auto text-sm text-cyan-500/50">
-                                                    Matched by {business.matchType}
+                                                <span className="ml-auto text-xs text-slate-500">
+                                                    via {business.matchType}
                                                 </span>
                                             )}
                                         </CommandItem>
@@ -109,11 +108,11 @@ export function CommandMenu() {
                                             value={consumer._id}
                                             onSelect={() => runCommand(() => navigate({ to: `/consumers/${consumer._id}` } as any))}
                                         >
-                                            <Users className="mr-2 h-5 w-5" />
+                                            <Users className="mr-2 h-4 w-4 text-green-400" />
                                             <span>{consumer.name || consumer.email}</span>
                                             {consumer.matchType && (
-                                                <span className="ml-auto text-sm text-cyan-500/50">
-                                                    Matched by {consumer.matchType}
+                                                <span className="ml-auto text-xs text-slate-500">
+                                                    via {consumer.matchType}
                                                 </span>
                                             )}
                                         </CommandItem>

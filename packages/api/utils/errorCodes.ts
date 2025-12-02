@@ -32,6 +32,7 @@ export const ERROR_CODES = {
 
     // Resource Errors
     RESOURCE_NOT_FOUND: 'RESOURCE_NOT_FOUND',
+    DUPLICATE_RESOURCE: 'DUPLICATE_RESOURCE',
 
     // General Errors
     UNKNOWN_ERROR: 'UNKNOWN_ERROR',

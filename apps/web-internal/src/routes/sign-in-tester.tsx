@@ -1,9 +1,11 @@
-import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useState, useEffect } from "react";
-import { SciFiLoader } from '@/components/sci-fi-loader';
+import { NexusLoader, ParticleBackground } from '@/components/nexus';
 import { useCurrentUser } from '@/hooks/use-current-user';
-import { AdminButton } from '@/components/admin-button';
+import { Button } from '@/components/ui/button';
+import { Hexagon } from 'lucide-react';
+import { PasswordReset } from '@/components/auth/password-reset';
 
 export const Route = createFileRoute('/sign-in-tester')({
     component: RouteComponent,
@@ -18,84 +20,33 @@ function RouteComponent() {
     const { user, isLoading } = useCurrentUser();
     const navigate = useNavigate();
 
-
-    console.log('user', user);
-
     useEffect(() => {
-        console.log('user.role', user?.role);
         if (user) {
             navigate({
                 to: '/dashboard',
                 replace: true,
             })
         }
-
     }, [user?.role, navigate]);
 
     if (isLoading || user?.role === "internal") {
         return (
-            <div className="h-screen w-screen flex items-center justify-center bg-black">
-                <SciFiLoader fullScreen={true} />
+            <div className="min-h-screen nexus-bg relative">
+                <ParticleBackground />
+                <NexusLoader fullScreen={true} />
             </div>
         )
     }
 
     return (
-        <div className="h-screen w-screen flex items-center justify-center bg-black relative overflow-hidden">
-            {/* Animated grid background */}
-            <div className="absolute inset-0 opacity-20">
-                <div className="absolute inset-0" style={{
-                    backgroundImage: `
-                        linear-gradient(cyan 1px, transparent 1px),
-                        linear-gradient(90deg, cyan 1px, transparent 1px)
-                    `,
-                    backgroundSize: '50px 50px',
-                    animation: 'gridMove 20s linear infinite'
-                }} />
-            </div>
-
-            {/* Glitch overlay effect */}
-            <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute inset-0 bg-cyan-500/5 animate-pulse" style={{
-                    clipPath: 'polygon(0 0, 100% 0, 100% 35%, 0 35%)',
-                    animation: 'glitch1 1.5s infinite'
-                }} />
-                <div className="absolute inset-0 bg-green-500/5 animate-pulse" style={{
-                    clipPath: 'polygon(0 65%, 100% 65%, 100% 100%, 0 100%)',
-                    animation: 'glitch2 1.5s infinite 0.2s'
-                }} />
-            </div>
-
-            <div className="relative z-10 w-full max-w-md px-8">
+        <div className="min-h-screen nexus-bg relative overflow-hidden flex items-center justify-center">
+            <ParticleBackground />
+            <div className="relative z-10 w-full max-w-md px-6">
                 <SignInTesterForm />
             </div>
-
-            {/* Add keyframe animations */}
-            <style>{`
-                @keyframes gridMove {
-                    0% { transform: translate(0, 0); }
-                    100% { transform: translate(50px, 50px); }
-                }
-                @keyframes glitch1 {
-                    0%, 100% { transform: translate(0); }
-                    20% { transform: translate(-2px, 2px); }
-                    40% { transform: translate(-2px, -2px); }
-                    60% { transform: translate(2px, 2px); }
-                    80% { transform: translate(2px, -2px); }
-                }
-                @keyframes glitch2 {
-                    0%, 100% { transform: translate(0); }
-                    20% { transform: translate(2px, -2px); }
-                    40% { transform: translate(2px, 2px); }
-                    60% { transform: translate(-2px, -2px); }
-                    80% { transform: translate(-2px, 2px); }
-                }
-            `}</style>
         </div>
     )
 }
-
-import { PasswordReset } from '@/components/auth/password-reset';
 
 export function SignInTesterForm() {
     const { signIn } = useAuthActions();
@@ -109,14 +60,12 @@ export function SignInTesterForm() {
         const checkAdminStatus = () => {
             if (user && user.role !== "internal") {
                 setError("Access denied. Internal privileges required.");
-                // Logout non-admin users
                 setTimeout(() => {
                     window.location.href = '/sign-in-tester';
                 }, 2000);
             }
         };
 
-        // Check periodically after login
         const interval = setInterval(checkAdminStatus, 500);
         return () => clearInterval(interval);
     }, [user]);
@@ -126,29 +75,23 @@ export function SignInTesterForm() {
     }
 
     return (
-        <div className="w-full space-y-8">
-            {/* Terminal-style header */}
-            <div className="text-center font-mono">
-                <div className="text-cyan-400 text-sm mb-2 tracking-wider">
-                    {'> AUTHENTICATION_PROTOCOL.EXE'}
-                </div>
-                <div className="text-green-400 text-xs mb-6">
-                    {'[SYSTEM] Internal Access Portal v2.0.1'}
-                </div>
-                <h1 className="text-5xl md:text-6xl font-black mb-4 tracking-tighter">
-                    <span className="text-cyan-400 drop-shadow-[0_0_20px_rgba(6,182,212,0.8)] relative inline-block">
-                        <span className="absolute inset-0 text-green-400 blur-sm opacity-75 animate-pulse" style={{ transform: 'translate(2px, 2px)' }}>
-                            ADMIN LOGIN
-                        </span>
-                        ADMIN LOGIN
+        <div className="w-full space-y-6">
+            {/* Header */}
+            <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-4">
+                    <Hexagon className="h-10 w-10 text-cyan-500" />
+                    <span className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                        KYMACLUB
                     </span>
-                </h1>
+                </div>
+                <h1 className="text-3xl font-bold text-slate-100 mb-2">Internal Access</h1>
+                <p className="text-slate-400 text-sm">Sign in to the admin dashboard</p>
             </div>
 
-            {/* Terminal-style form container */}
-            <div className="bg-black/80 border-2 border-cyan-500/50 p-6 md:p-8 font-mono backdrop-blur-sm shadow-[0_0_30px_rgba(6,182,212,0.3)]">
+            {/* Form container */}
+            <div className="bg-slate-900/80 border border-slate-700/50 p-6 rounded-lg backdrop-blur-sm shadow-[0_0_30px_rgba(6,182,212,0.1)]">
                 <form
-                    className="space-y-6"
+                    className="space-y-5"
                     onSubmit={(event) => {
                         event.preventDefault();
                         setSubmitting(true);
@@ -157,13 +100,11 @@ export function SignInTesterForm() {
                         formData.set("flow", "signIn");
                         signIn("password", formData)
                             .then(() => {
-                                // Check admin status after successful login
                                 setTimeout(() => {
                                     if (user && user.role !== "internal") {
                                         setError("Access denied. Internal privileges required.");
                                         setSubmitting(false);
                                     }
-                                    // If admin, redirect will happen automatically
                                 }, 500);
                             })
                             .catch((err) => {
@@ -175,32 +116,31 @@ export function SignInTesterForm() {
                 >
                     {/* Email field */}
                     <div className="space-y-2">
-                        <label htmlFor="email" className="text-cyan-400 text-sm flex items-center gap-2">
-                            <span>{'>'}</span>
-                            <span>EMAIL_ADDRESS</span>
+                        <label htmlFor="email" className="text-sm text-slate-400">
+                            Email address
                         </label>
                         <input
                             id="email"
                             name="email"
                             type="email"
                             required
-                            className="w-full bg-black/50 border-2 border-cyan-500/30 px-4 py-3 text-green-400 font-mono text-sm focus:outline-none focus:border-cyan-500 focus:shadow-[0_0_15px_rgba(6,182,212,0.5)] transition-all placeholder:text-cyan-400/30"
-                            placeholder="user@domain.com"
+                            className="w-full bg-slate-800/50 border border-slate-700/50 rounded-md px-4 py-3 text-slate-200 text-sm focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all placeholder:text-slate-500"
+                            placeholder="admin@example.com"
                         />
                     </div>
 
+                    {/* Password field */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                            <label htmlFor="password" className="text-cyan-400 text-sm flex items-center gap-2">
-                                <span>{'>'}</span>
-                                <span>PASSWORD</span>
+                            <label htmlFor="password" className="text-sm text-slate-400">
+                                Password
                             </label>
                             <button
                                 type="button"
                                 onClick={() => setMode("reset")}
-                                className="text-cyan-400/50 hover:text-cyan-400 text-xs font-mono transition-colors"
+                                className="text-cyan-400/70 hover:text-cyan-400 text-xs transition-colors"
                             >
-                                FORGOT_PASSWORD?
+                                Forgot password?
                             </button>
                         </div>
                         <input
@@ -208,37 +148,33 @@ export function SignInTesterForm() {
                             name="password"
                             type="password"
                             required
-                            className="w-full bg-black/50 border-2 border-cyan-500/30 px-4 py-3 text-green-400 font-mono text-sm focus:outline-none focus:border-cyan-500 focus:shadow-[0_0_15px_rgba(6,182,212,0.5)] transition-all placeholder:text-cyan-400/30"
+                            className="w-full bg-slate-800/50 border border-slate-700/50 rounded-md px-4 py-3 text-slate-200 text-sm focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all placeholder:text-slate-500"
                             placeholder="••••••••"
                         />
                     </div>
 
                     {/* Error message */}
                     {error && (
-                        <div className="bg-red-500/20 border-2 border-red-500/50 p-4 text-red-400 text-sm font-mono">
-                            <div className="flex items-start gap-2">
-                                <span className="text-red-500">{'>'}</span>
-                                <span className="animate-pulse">█</span>
-                                <span>{error}</span>
-                            </div>
+                        <div className="bg-red-500/10 border border-red-500/30 rounded-md p-3 text-red-400 text-sm">
+                            {error}
                         </div>
                     )}
 
                     {/* Submit button */}
-                    <AdminButton
+                    <Button
                         type="submit"
-                        variant="primary"
-                        size="xl"
                         disabled={submitting}
-                        className="w-full"
+                        className="w-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 hover:bg-cyan-500/30 h-12 text-sm font-medium"
                     >
-                        {submitting ? 'authenticating...' : 'initiate login'}
-                    </AdminButton>
+                        {submitting ? 'Authenticating...' : 'Sign in'}
+                    </Button>
                 </form>
 
-                {/* Footer terminal text */}
-                <div className="mt-6 text-cyan-400/50 text-xs font-mono text-center">
-                    {'> Enter credentials to access internal systems...'}
+                {/* Footer */}
+                <div className="mt-6 text-center">
+                    <p className="text-slate-500 text-xs">
+                        This portal is for internal use only
+                    </p>
                 </div>
             </div>
         </div>

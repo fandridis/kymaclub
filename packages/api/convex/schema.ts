@@ -117,6 +117,295 @@ export const questionnaireAnswersFields = {
 };
 
 /***************************************************************
+ * Widget System Fields
+ * Modular add-ons that can be attached to class templates/instances
+ * Examples: Tournament brackets, Americano format, Round-robin
+ ***************************************************************/
+
+// Widget type registry - all supported widget types
+export const widgetTypeValidator = v.union(
+  v.literal("tournament_americano"),    // High-rotation, points-based padel format
+  v.literal("tournament_round_robin"),  // Classic everyone-plays-everyone format
+  v.literal("tournament_brackets"),     // Single/double elimination format
+);
+
+// Widget status lifecycle
+export const widgetStatusValidator = v.union(
+  v.literal("setup"),      // Widget attached, awaiting configuration/participants
+  v.literal("ready"),      // Configured and ready to start
+  v.literal("active"),     // In progress
+  v.literal("completed"),  // Finished
+  v.literal("cancelled"),  // Cancelled
+);
+
+// Court definition for tournament widgets
+export const tournamentCourtFields = {
+  id: v.string(),
+  name: v.string(), // "Court A", "Court B", etc.
+};
+
+// Americano-specific configuration
+export const tournamentAmericanoConfigFields = {
+  numberOfPlayers: v.union(v.literal(8), v.literal(12), v.literal(16)),
+  matchPoints: v.union(v.literal(20), v.literal(21), v.literal(24), v.literal(25)),
+  courts: v.array(v.object(tournamentCourtFields)),
+  maxMatchesPerPlayer: v.number(), // Limit for scheduling optimization
+  mode: v.union(
+    v.literal("individual_rotation"),  // Solo players, rotating partners
+    v.literal("fixed_teams"),          // Fixed team pairs throughout
+  ),
+};
+
+// Round Robin-specific configuration
+export const tournamentRoundRobinConfigFields = {
+  numberOfTeams: v.union(v.literal(4), v.literal(6), v.literal(8), v.literal(10), v.literal(12)),
+  playersPerTeam: v.union(v.literal(1), v.literal(2)), // Singles or doubles
+  courts: v.array(v.object(tournamentCourtFields)),
+  matchPointsToWin: v.number(), // Points needed to win a match
+  gamesPerMatch: v.optional(v.number()), // Optional: best of X games
+};
+
+// Brackets-specific configuration
+export const tournamentBracketsConfigFields = {
+  numberOfParticipants: v.union(v.literal(4), v.literal(8), v.literal(16), v.literal(32)),
+  bracketType: v.union(
+    v.literal("single_elimination"),
+    v.literal("double_elimination"),
+  ),
+  seedingStrategy: v.union(
+    v.literal("random"),
+    v.literal("manual"),
+  ),
+  courts: v.array(v.object(tournamentCourtFields)),
+  matchPointsToWin: v.number(),
+  thirdPlaceMatch: v.optional(v.boolean()), // Play for 3rd place?
+};
+
+// Americano match state
+export const tournamentAmericanoMatchFields = {
+  id: v.string(),
+  roundNumber: v.number(),
+  courtId: v.string(),
+  // Team 1 (2 player IDs)
+  team1: v.array(v.string()),
+  // Team 2 (2 player IDs)
+  team2: v.array(v.string()),
+  // Scores (null until match is played)
+  team1Score: v.optional(v.number()),
+  team2Score: v.optional(v.number()),
+  // Match status
+  status: v.union(
+    v.literal("scheduled"),
+    v.literal("in_progress"),
+    v.literal("completed"),
+  ),
+  completedAt: v.optional(v.number()),
+};
+
+// Americano player standings
+export const tournamentAmericanoStandingFields = {
+  participantId: v.string(),
+  matchesPlayed: v.number(),
+  matchesWon: v.number(),
+  matchesLost: v.number(),
+  pointsScored: v.number(),
+  pointsConceded: v.number(),
+  pointsDifference: v.number(),
+};
+
+// Americano tournament state (stored in widget.state)
+export const tournamentAmericanoStateFields = {
+  currentRound: v.number(),
+  totalRounds: v.number(),
+  matches: v.array(v.object(tournamentAmericanoMatchFields)),
+  standings: v.array(v.object(tournamentAmericanoStandingFields)),
+  startedAt: v.optional(v.number()),
+  completedAt: v.optional(v.number()),
+};
+
+// Round Robin match state
+export const tournamentRoundRobinMatchFields = {
+  id: v.string(),
+  roundNumber: v.number(),
+  courtId: v.string(),
+  team1Id: v.string(),
+  team2Id: v.string(),
+  team1Score: v.optional(v.number()),
+  team2Score: v.optional(v.number()),
+  status: v.union(
+    v.literal("scheduled"),
+    v.literal("in_progress"),
+    v.literal("completed"),
+  ),
+  completedAt: v.optional(v.number()),
+};
+
+// Round Robin team standings
+export const tournamentRoundRobinStandingFields = {
+  teamId: v.string(),
+  matchesPlayed: v.number(),
+  wins: v.number(),
+  draws: v.number(),
+  losses: v.number(),
+  pointsFor: v.number(),
+  pointsAgainst: v.number(),
+  pointsDifference: v.number(),
+};
+
+// Round Robin tournament state
+export const tournamentRoundRobinStateFields = {
+  currentRound: v.number(),
+  totalRounds: v.number(),
+  teams: v.array(v.object({
+    teamId: v.string(),
+    playerIds: v.array(v.string()),
+  })),
+  matches: v.array(v.object(tournamentRoundRobinMatchFields)),
+  standings: v.array(v.object(tournamentRoundRobinStandingFields)),
+  startedAt: v.optional(v.number()),
+  completedAt: v.optional(v.number()),
+};
+
+// Brackets match state
+export const tournamentBracketsMatchFields = {
+  id: v.string(),
+  roundNumber: v.number(), // 1 = first round, increases toward final
+  matchNumber: v.number(), // Position in round (1, 2, 3...)
+  courtId: v.optional(v.string()),
+  // Participant IDs (null if TBD from previous match)
+  participant1Id: v.optional(v.string()),
+  participant2Id: v.optional(v.string()),
+  // Source matches (for tracking bracket progression)
+  sourceMatch1Id: v.optional(v.string()),
+  sourceMatch2Id: v.optional(v.string()),
+  // Scores
+  participant1Score: v.optional(v.number()),
+  participant2Score: v.optional(v.number()),
+  winnerId: v.optional(v.string()),
+  status: v.union(
+    v.literal("pending"),    // Waiting for participants
+    v.literal("scheduled"),
+    v.literal("in_progress"),
+    v.literal("completed"),
+  ),
+  completedAt: v.optional(v.number()),
+};
+
+// Brackets tournament state
+export const tournamentBracketsStateFields = {
+  currentRound: v.number(),
+  totalRounds: v.number(), // log2(participants)
+  matches: v.array(v.object(tournamentBracketsMatchFields)),
+  // For double elimination
+  losersBracket: v.optional(v.array(v.object(tournamentBracketsMatchFields))),
+  finalMatch: v.optional(v.object(tournamentBracketsMatchFields)),
+  startedAt: v.optional(v.number()),
+  completedAt: v.optional(v.number()),
+  winnerId: v.optional(v.string()),
+  runnerUpId: v.optional(v.string()),
+};
+
+/***************************************************************
+ * Widget Config Discriminated Unions (Type-Safe)
+ * Using discriminated unions instead of v.any() for full type safety
+ ***************************************************************/
+
+// Widget config validator - discriminated union by type
+// This ensures the config shape matches the widget type
+export const widgetConfigValidator = v.union(
+  // Americano config
+  v.object({
+    type: v.literal("tournament_americano"),
+    config: v.object(tournamentAmericanoConfigFields),
+  }),
+  // Round Robin config
+  v.object({
+    type: v.literal("tournament_round_robin"),
+    config: v.object(tournamentRoundRobinConfigFields),
+  }),
+  // Brackets config
+  v.object({
+    type: v.literal("tournament_brackets"),
+    config: v.object(tournamentBracketsConfigFields),
+  }),
+);
+
+// Widget state validator - discriminated union by type
+// Runtime state stored in classInstanceWidgets
+export const widgetStateValidator = v.union(
+  // Americano state
+  v.object({
+    type: v.literal("tournament_americano"),
+    state: v.object(tournamentAmericanoStateFields),
+  }),
+  // Round Robin state
+  v.object({
+    type: v.literal("tournament_round_robin"),
+    state: v.object(tournamentRoundRobinStateFields),
+  }),
+  // Brackets state
+  v.object({
+    type: v.literal("tournament_brackets"),
+    state: v.object(tournamentBracketsStateFields),
+  }),
+);
+
+// Walk-in participant info (non-registered users)
+export const walkInFields = {
+  name: v.string(),
+  phone: v.optional(v.string()),
+  email: v.optional(v.string()),
+};
+
+// Lightweight widget snapshot stored on class templates/instances
+// Full config lives in classInstanceWidgets table
+export const widgetSnapshotFields = {
+  widgetId: v.id("classInstanceWidgets"),
+  type: widgetTypeValidator,
+  name: v.string(), // Display name (e.g., "Padel Americano Tournament")
+};
+
+// classInstanceWidgets - runtime state for attached widgets
+export const classInstanceWidgetsFields = {
+  classInstanceId: v.id("classInstances"),
+  businessId: v.id("businesses"),
+
+  // Widget configuration (discriminated union - type determines config shape)
+  widgetConfig: widgetConfigValidator,
+
+  // Runtime state (discriminated union - type determines state shape)
+  // Optional until tournament is initialized
+  widgetState: v.optional(widgetStateValidator),
+
+  // Widget lifecycle status
+  status: widgetStatusValidator,
+
+  // Lock state - locked widgets cannot be modified
+  isLocked: v.optional(v.boolean()),
+
+  ...auditFields,
+  ...softDeleteFields,
+};
+
+// widgetParticipants - links bookings/walk-ins to widget
+export const widgetParticipantsFields = {
+  widgetId: v.id("classInstanceWidgets"),
+
+  // Either booking OR walk-in (mutually exclusive)
+  bookingId: v.optional(v.id("bookings")),
+  walkIn: v.optional(v.object(walkInFields)),
+
+  // Tournament-specific assignments
+  teamId: v.optional(v.string()),
+  seedNumber: v.optional(v.number()),
+
+  // Participant display name (derived from booking user or walk-in)
+  displayName: v.string(),
+
+  ...auditFields,
+};
+
+/***************************************************************
  * Main tables
  ***************************************************************/
 export const usersFields = {
@@ -377,6 +666,9 @@ export const classTemplatesFields = {
   // Pre-booking questionnaire - questions to ask users when booking
   questionnaire: v.optional(v.array(v.object(questionFields))),
 
+  // Attached widgets (lightweight snapshots - full config in classInstanceWidgets)
+  widgetSnapshots: v.optional(v.array(v.object(widgetSnapshotFields))),
+
   ...auditFields,
   ...softDeleteFields,
 };
@@ -425,6 +717,9 @@ export const classInstancesFields = {
   // Pre-booking questionnaire - overrides template questionnaire if set
   questionnaire: v.optional(v.array(v.object(questionFields))),
 
+  // Attached widgets (lightweight snapshots - full config in classInstanceWidgets)
+  widgetSnapshots: v.optional(v.array(v.object(widgetSnapshotFields))),
+
   // Status and booking tracking
   status: v.union(
     v.literal("scheduled"),
@@ -443,6 +738,7 @@ export const classInstancesFields = {
     imageStorageIds: v.optional(v.array(v.id("_storage"))),
     discountRules: v.optional(v.array(v.object(classDiscountRuleFields))),
     questionnaire: v.optional(v.array(v.object(questionFields))),
+    widgetSnapshots: v.optional(v.array(v.object(widgetSnapshotFields))),
     deleted: v.optional(v.boolean()),
     primaryCategory: venueCategoryField,
   }),
@@ -1362,5 +1658,28 @@ export default defineSchema({
     .index("by_thread_active", ["activeThreadId", "isActive"])
     .index("by_device", ["deviceId"])
     .index("by_user_device", ["userId", "deviceId"]),
+
+  /**
+   * Class Instance Widgets - Runtime state for widgets attached to class instances
+   * Supports tournaments, brackets, and other add-on functionality
+   */
+  classInstanceWidgets: defineTable(classInstanceWidgetsFields)
+    .index("by_class_instance", ["classInstanceId"])
+    .index("by_business", ["businessId"])
+    .index("by_widget_config_type", ["widgetConfig.type"])
+    .index("by_status", ["status"])
+    .index("by_class_instance_deleted", ["classInstanceId", "deleted"])
+    .index("by_business_status", ["businessId", "status"])
+    .index("by_business_widget_config_type", ["businessId", "widgetConfig.type"]),
+
+  /**
+   * Widget Participants - Links bookings and walk-ins to widgets
+   * Supports both registered users (via bookingId) and walk-ins (via walkIn object)
+   */
+  widgetParticipants: defineTable(widgetParticipantsFields)
+    .index("by_widget", ["widgetId"])
+    .index("by_booking", ["bookingId"])
+    .index("by_widget_team", ["widgetId", "teamId"])
+    .index("by_widget_seed", ["widgetId", "seedNumber"]),
 
 });

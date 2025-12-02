@@ -1,13 +1,12 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useMutation } from 'convex/react';
 import { useConsumerDetail } from '@/hooks/use-consumer-detail';
-import { SciFiLoader } from '@/components/sci-fi-loader';
-import { SciFiMetricCard } from '@/components/sci-fi-metric-card';
-import { SciFiCard } from '@/components/sci-fi-card';
+import { NexusLoader, NexusMetricCard } from '@/components/nexus';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
-import { SciFiButton } from '@/components/sci-fi-button';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
     Dialog,
@@ -29,13 +28,16 @@ import {
     CheckCircle2,
     XCircle,
     UserX,
-    Gift
+    Gift,
+    ArrowLeft,
+    RefreshCw,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Booking, BookingStatus } from '@repo/api/types/booking';
 import { CreditTransaction, CreditTransactionType, CreditTransactionStatus } from '@repo/api/types/credit';
-import { api, internal } from '@repo/api/convex/_generated/api';
+import { api } from '@repo/api/convex/_generated/api';
 import { Id } from '@repo/api/convex/_generated/dataModel';
+import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_app-layout/consumers/$userId')({
     component: ConsumerDetailPage,
@@ -49,25 +51,23 @@ function ConsumerDetailPage() {
     const [giftAmount, setGiftAmount] = useState('');
     const [giftDescription, setGiftDescription] = useState('');
     const [isGifting, setIsGifting] = useState(false);
-    // @ts-expect-error - API types need regeneration after adding internal/mutations/credits
-    const giftCredits = useMutation(internal.mutations.credits.giftCredits);
+    const giftCredits = useMutation(api.internal.mutations.credits.giftCredits);
 
     if (isLoading) {
         return (
-            <div className="container mx-auto px-4 py-8">
-                <SciFiLoader fullScreen={false} />
+            <div className="p-3 sm:p-4 md:p-6">
+                <NexusLoader />
             </div>
         );
     }
 
     if (!data) {
         return (
-            <div className="container mx-auto px-4 py-8">
-                <Card className="border-red-500/30 bg-red-500/10">
-                    <CardContent className="p-6 text-center">
-                        <div className="text-red-400 font-mono text-sm">
-                            {'> Consumer not found'}
-                        </div>
+            <div className="p-3 sm:p-4 md:p-6">
+                <Card className="bg-slate-900/50 border-red-500/30">
+                    <CardContent className="p-8 text-center">
+                        <UserX className="h-12 w-12 text-red-400 mx-auto mb-4" />
+                        <p className="text-red-400">Consumer not found</p>
                     </CardContent>
                 </Card>
             </div>
@@ -75,227 +75,218 @@ function ConsumerDetailPage() {
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            {/* Header */}
-            <div className="mb-6 font-mono">
-                <div className="text-green-400 text-sm mb-2 tracking-wider">
-                    {'> CONSUMER_DETAIL.EXE'}
-                </div>
-                <div className="text-green-400 text-xs mb-3">
-                    {'[SYSTEM] Consumer Management v1.0.0'}
-                </div>
-                <h1 className="text-3xl md:text-5xl font-black mb-2 tracking-tighter">
-                    <span className="text-green-400 drop-shadow-[0_0_20px_rgba(34,197,94,0.8)]">
-                        {data.user.name?.toUpperCase() || 'CONSUMER'}
-                    </span>
-                </h1>
-                <div className="text-green-400/60 text-xs font-mono tracking-wider">
-                    {`[ID: ${userId.slice(-8)}] [EMAIL: ${data.user.email}]`}
-                </div>
-            </div>
+        <div className="p-3 sm:p-4 md:p-6">
+            {/* Back Button */}
+            <Link to="/dashboard" className="inline-flex items-center gap-2 text-slate-400 hover:text-cyan-400 mb-4 transition-colors">
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Dashboard</span>
+            </Link>
 
-            {/* User Details */}
-            <SciFiCard className="p-6 mb-6" color="cyan" disableGlow>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-center gap-3">
-                        <User className="w-5 h-5 text-cyan-400" />
-                        <div>
-                            <div className="text-cyan-400/60 text-xs font-mono">NAME</div>
-                            <div className="text-cyan-200 font-mono">{data.user.name || 'N/A'}</div>
+            {/* Header Card */}
+            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm overflow-hidden mb-6">
+                <CardHeader className="border-b border-slate-700/50 pb-3">
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="text-slate-100 flex items-center">
+                            <User className="mr-2 h-5 w-5 text-green-500" />
+                            Consumer Details
+                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="bg-slate-800/50 text-green-400 border-green-500/50 text-xs">
+                                Consumer
+                            </Badge>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400">
+                                <RefreshCw className="h-4 w-4" />
+                            </Button>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <Mail className="w-5 h-5 text-cyan-400" />
-                        <div>
-                            <div className="text-cyan-400/60 text-xs font-mono">EMAIL</div>
-                            <div className="text-cyan-200 font-mono">{data.user.email || 'N/A'}</div>
-                        </div>
-                    </div>
-                    {data.user.phone && (
-                        <div className="flex items-center gap-3">
-                            <Phone className="w-5 h-5 text-cyan-400" />
+                </CardHeader>
+                <CardContent className="p-3 sm:p-4 md:p-6">
+                    {/* User Info Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div className="flex items-center gap-3 p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
+                            <User className="w-5 h-5 text-cyan-400" />
                             <div>
-                                <div className="text-cyan-400/60 text-xs font-mono">PHONE</div>
-                                <div className="text-cyan-200 font-mono">{data.user.phone}</div>
+                                <div className="text-xs text-slate-500">Name</div>
+                                <div className="text-slate-200">{data.user.name || 'N/A'}</div>
                             </div>
                         </div>
-                    )}
-                    {data.user.credits !== undefined && (
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
+                            <Mail className="w-5 h-5 text-cyan-400" />
+                            <div>
+                                <div className="text-xs text-slate-500">Email</div>
+                                <div className="text-slate-200 truncate">{data.user.email || 'N/A'}</div>
+                            </div>
+                        </div>
+                        {data.user.phone && (
+                            <div className="flex items-center gap-3 p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
+                                <Phone className="w-5 h-5 text-cyan-400" />
+                                <div>
+                                    <div className="text-xs text-slate-500">Phone</div>
+                                    <div className="text-slate-200">{data.user.phone}</div>
+                                </div>
+                            </div>
+                        )}
+                        <div className="flex items-center gap-3 p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
                             <CreditCard className="w-5 h-5 text-cyan-400" />
                             <div>
-                                <div className="text-cyan-400/60 text-xs font-mono">CURRENT CREDITS</div>
-                                <div className="text-cyan-200 font-mono">{data.user.credits}</div>
+                                <div className="text-xs text-slate-500">Credits</div>
+                                <div className="text-slate-200">{data.user.credits ?? 0}</div>
                             </div>
                         </div>
-                    )}
-                </div>
-                <div className="mt-4 flex justify-end">
-                    <Dialog open={giftDialogOpen} onOpenChange={setGiftDialogOpen}>
-                        <DialogTrigger asChild>
-                            <SciFiButton
-                                color="green"
-                                variant="outline"
-                                size="md"
-                            >
-                                <Gift className="w-4 h-4 inline mr-2" />
-                                GIFT CREDITS
-                            </SciFiButton>
-                        </DialogTrigger>
-                        <DialogContent className="bg-black/90 border-2 border-cyan-500/70 text-cyan-50">
-                            <DialogHeader>
-                                <DialogTitle className="text-green-400 font-mono">
-                                    {'>'} GIFT CREDITS
-                                </DialogTitle>
-                                <DialogDescription className="text-cyan-400/80 font-mono text-xs">
-                                    Add credits to this user's account
-                                </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                    <label className="text-cyan-400/80 text-xs font-mono">
-                                        AMOUNT (credits)
-                                    </label>
-                                    <Input
-                                        type="number"
-                                        min="1"
-                                        max="100"
-                                        step="1"
-                                        value={giftAmount}
-                                        onChange={(e) => setGiftAmount(e.target.value)}
-                                        placeholder="Enter credit amount (1-100)"
-                                        className="font-mono"
-                                        disabled={isGifting}
-                                    />
+                    </div>
+
+                    {/* Gift Credits Button */}
+                    <div className="flex justify-end mb-6">
+                        <Dialog open={giftDialogOpen} onOpenChange={setGiftDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button className="bg-green-500/10 border border-green-500/50 text-green-400 hover:bg-green-500/20">
+                                    <Gift className="w-4 h-4 mr-2" />
+                                    Gift Credits
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="bg-slate-900 border-slate-700">
+                                <DialogHeader>
+                                    <DialogTitle className="text-green-400">Gift Credits</DialogTitle>
+                                    <DialogDescription className="text-slate-400">
+                                        Add credits to this user's account
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm text-slate-400">Amount (1-100)</label>
+                                        <Input
+                                            type="number"
+                                            min="1"
+                                            max="100"
+                                            value={giftAmount}
+                                            onChange={(e) => setGiftAmount(e.target.value)}
+                                            placeholder="Enter credit amount"
+                                            className="bg-slate-800 border-slate-700"
+                                            disabled={isGifting}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm text-slate-400">Description (optional)</label>
+                                        <Input
+                                            type="text"
+                                            value={giftDescription}
+                                            onChange={(e) => setGiftDescription(e.target.value)}
+                                            placeholder="Reason for gifting"
+                                            className="bg-slate-800 border-slate-700"
+                                            disabled={isGifting}
+                                        />
+                                    </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-cyan-400/80 text-xs font-mono">
-                                        DESCRIPTION (optional)
-                                    </label>
-                                    <Input
-                                        type="text"
-                                        value={giftDescription}
-                                        onChange={(e) => setGiftDescription(e.target.value)}
-                                        placeholder="Reason for gifting credits"
-                                        className="font-mono"
-                                        disabled={isGifting}
-                                    />
-                                </div>
-                            </div>
-                            <DialogFooter>
-                                <SciFiButton
-                                    color="zinc"
-                                    variant="outline"
-                                    size="md"
-                                    onClick={() => {
-                                        setGiftDialogOpen(false);
-                                        setGiftAmount('');
-                                        setGiftDescription('');
-                                    }}
-                                    disabled={isGifting}
-                                >
-                                    CANCEL
-                                </SciFiButton>
-                                <SciFiButton
-                                    variant="default"
-                                    size="md"
-                                    onClick={async () => {
-                                        const amount = parseFloat(giftAmount);
-                                        if (!amount || amount < 1 || amount > 100) {
-                                            alert('Please enter a valid credit amount between 1 and 100');
-                                            return;
-                                        }
-                                        setIsGifting(true);
-                                        try {
-                                            await giftCredits({
-                                                userId: userId as Id<"users">,
-                                                amount,
-                                                description: giftDescription || undefined,
-                                            });
+                                <DialogFooter>
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => {
                                             setGiftDialogOpen(false);
                                             setGiftAmount('');
                                             setGiftDescription('');
-                                        } catch (error) {
-                                            console.error('Failed to gift credits:', error);
-                                            alert(`Failed to gift credits: ${error instanceof Error ? error.message : 'Unknown error'}`);
-                                        } finally {
-                                            setIsGifting(false);
-                                        }
-                                    }}
-                                    disabled={isGifting || !giftAmount || parseFloat(giftAmount) < 1 || parseFloat(giftAmount) > 100}
-                                >
-                                    {isGifting ? 'GIFTING...' : 'GIFT CREDITS'}
-                                </SciFiButton>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
-                </div>
-            </SciFiCard>
+                                        }}
+                                        disabled={isGifting}
+                                        className="border-slate-700"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={async () => {
+                                            const amount = parseFloat(giftAmount);
+                                            if (!amount || amount < 1 || amount > 100) {
+                                                alert('Please enter a valid amount between 1 and 100');
+                                                return;
+                                            }
+                                            setIsGifting(true);
+                                            try {
+                                                await giftCredits({
+                                                    userId: userId as Id<"users">,
+                                                    amount,
+                                                    description: giftDescription || undefined,
+                                                });
+                                                setGiftDialogOpen(false);
+                                                setGiftAmount('');
+                                                setGiftDescription('');
+                                            } catch (error) {
+                                                console.error('Failed to gift credits:', error);
+                                                alert(`Failed to gift credits: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                                            } finally {
+                                                setIsGifting(false);
+                                            }
+                                        }}
+                                        disabled={isGifting || !giftAmount || parseFloat(giftAmount) < 1 || parseFloat(giftAmount) > 100}
+                                        className="bg-green-500/20 text-green-400 hover:bg-green-500/30"
+                                    >
+                                        {isGifting ? 'Gifting...' : 'Gift Credits'}
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
 
-            {/* Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <SciFiMetricCard
-                    mainMetric={data.metrics.bookingsThisMonth}
-                    mainMetricLabel="Bookings This Month"
-                    color="green"
-                    icon={Calendar}
-                />
-                <SciFiMetricCard
-                    mainMetric={data.metrics.cancelledBookings}
-                    mainMetricLabel="Cancelled Bookings"
-                    color="yellow"
-                    icon={XCircle}
-                />
-                <SciFiMetricCard
-                    mainMetric={data.metrics.noShows}
-                    mainMetricLabel="No-Shows"
-                    color="pink"
-                    icon={UserX}
-                />
-            </div>
+                    {/* Metrics */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
+                        <NexusMetricCard
+                            title="Bookings This Month"
+                            value={data.metrics.bookingsThisMonth}
+                            icon={Calendar}
+                            color="green"
+                        />
+                        <NexusMetricCard
+                            title="Cancelled"
+                            value={data.metrics.cancelledBookings}
+                            icon={XCircle}
+                            color="amber"
+                        />
+                        <NexusMetricCard
+                            title="No-Shows"
+                            value={data.metrics.noShows}
+                            icon={UserX}
+                            color="pink"
+                        />
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* Record Tabs */}
-            <div>
-                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
-                    <TabsList className="bg-cyan-500/20 border-2 border-cyan-500/50 font-mono p-1 mb-4">
-                        <TabsTrigger
-                            value="bookings"
-                            className="data-[state=active]:bg-cyan-500 data-[state=active]:text-white text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/30 transition-all"
-                        >
-                            {'>'} BOOKINGS
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="transactions"
-                            className="data-[state=active]:bg-cyan-500 data-[state=active]:text-white text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/30 transition-all"
-                        >
-                            {'>'} TRANSACTIONS
-                        </TabsTrigger>
-                    </TabsList>
+            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+                <CardContent className="p-3 sm:p-4 md:p-6">
+                    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
+                        <TabsList className="bg-slate-800/50 border border-slate-700/50 p-1 mb-6">
+                            <TabsTrigger
+                                value="bookings"
+                                className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-slate-400"
+                            >
+                                Bookings
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="transactions"
+                                className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-slate-400"
+                            >
+                                Transactions
+                            </TabsTrigger>
+                        </TabsList>
 
-                    <TabsContent value="bookings">
-                        <BookingsList bookings={data.bookings} />
-                    </TabsContent>
-                    <TabsContent value="transactions">
-                        <TransactionsList transactions={data.transactions} />
-                    </TabsContent>
-                </Tabs>
-            </div>
+                        <TabsContent value="bookings">
+                            <BookingsList bookings={data.bookings} />
+                        </TabsContent>
+                        <TabsContent value="transactions">
+                            <TransactionsList transactions={data.transactions} />
+                        </TabsContent>
+                    </Tabs>
+                </CardContent>
+            </Card>
         </div>
     );
 }
 
-function BookingsList({ bookings }: {
-    bookings?: Array<Booking>
-}) {
+function BookingsList({ bookings }: { bookings?: Array<Booking> }) {
     if (!bookings || bookings.length === 0) {
         return (
-            <Card className="border-cyan-500/30 bg-cyan-500/10">
-                <CardContent className="p-6 text-center">
-                    <div className="text-cyan-400 font-mono text-sm">
-                        {'> No bookings found'}
-                    </div>
-                </CardContent>
-            </Card>
+            <div className="text-center py-8">
+                <Calendar className="h-12 w-12 text-slate-600 mx-auto mb-4" />
+                <p className="text-slate-400">No bookings found</p>
+            </div>
         );
     }
 
@@ -310,108 +301,50 @@ function BookingsList({ bookings }: {
                     : null;
                 const bookedAt = new Date(booking.bookedAt);
 
-                const getStatusIcon = () => {
+                const getStatusConfig = () => {
                     switch (booking.status) {
                         case "completed":
-                            return <CheckCircle2 className="w-4 h-4 text-green-400" />;
+                            return { icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/30', label: 'COMPLETED' };
                         case "cancelled_by_consumer":
                         case "cancelled_by_business":
                         case "cancelled_by_business_rebookable":
-                            return <XCircle className="w-4 h-4 text-yellow-400" />;
+                            return { icon: XCircle, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30', label: 'CANCELLED' };
                         case "no_show":
-                            return <UserX className="w-4 h-4 text-red-400" />;
+                            return { icon: UserX, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/30', label: 'NO SHOW' };
                         default:
-                            return <Calendar className="w-4 h-4 text-green-400" />;
+                            return { icon: Calendar, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30', label: 'PENDING' };
                     }
                 };
 
-                const getStatusLabel = () => {
-                    switch (booking.status) {
-                        case "completed":
-                            return "COMPLETED";
-                        case "cancelled_by_consumer":
-                            return "CANCELLED BY USER";
-                        case "cancelled_by_business":
-                            return "CANCELLED BY BUSINESS";
-                        case "cancelled_by_business_rebookable":
-                            return "CANCELLED (REBOOKABLE)";
-                        case "no_show":
-                            return "NO SHOW";
-                        default:
-                            return "PENDING";
-                    }
-                };
-
-                const getStatusColor = () => {
-                    switch (booking.status) {
-                        case "completed":
-                            return "text-green-400";
-                        case "cancelled_by_consumer":
-                        case "cancelled_by_business":
-                        case "cancelled_by_business_rebookable":
-                            return "text-yellow-400";
-                        case "no_show":
-                            return "text-red-400";
-                        default:
-                            return "text-green-400";
-                    }
-                };
+                const config = getStatusConfig();
+                const StatusIcon = config.icon;
 
                 return (
-                    <SciFiCard key={booking._id} color="cyan" hoverEffect={true} className="overflow-hidden">
-                        <CardContent className="p-6 relative z-10">
-                            <div className="flex items-center gap-4">
-                                <div className="flex-shrink-0 p-2 rounded-lg bg-cyan-500/20 border border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
-                                    {getStatusIcon()}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-3 mb-1.5">
-                                        <h3 className="text-cyan-200 font-mono font-bold text-base truncate tracking-wide drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]">
-                                            {booking.classInstanceSnapshot?.name || 'Unnamed Class'}
-                                        </h3>
-                                        <span className={`text-xs font-mono px-2 py-0.5 rounded border ${getStatusColor()} border-current/30`}>
-                                            {getStatusLabel()}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-4 flex-wrap text-sm">
-                                        {startTime && (
-                                            <div className="flex items-center gap-1.5 text-cyan-300 font-medium">
-                                                <Calendar className="w-4 h-4 flex-shrink-0" />
-                                                <span className="font-mono">
-                                                    {format(startTime, 'MMM dd')}
-                                                    {endTime && (
-                                                        <> • {format(startTime, 'HH:mm')}-{format(endTime, 'HH:mm')}</>
-                                                    )}
-                                                </span>
-                                            </div>
-                                        )}
-                                        {booking.venueSnapshot?.name && (
-                                            <div className="flex items-center gap-1.5 text-cyan-300 font-medium">
-                                                <MapPin className="w-4 h-4 flex-shrink-0" />
-                                                <span className="font-mono truncate max-w-[200px]">
-                                                    {booking.venueSnapshot.name}
-                                                </span>
-                                            </div>
-                                        )}
-                                        <div className="flex items-center gap-1.5 text-cyan-300 font-medium">
-                                            <Euro className="w-4 h-4 flex-shrink-0" />
-                                            <span className="font-mono">
-                                                €{(booking.finalPrice / 100).toFixed(2)}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 text-cyan-300/60 font-medium text-xs">
-                                            <span className="font-mono">
-                                                Booked: {format(bookedAt, 'MMM dd, HH:mm')}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex-shrink-0 text-cyan-400/60 text-xs font-mono hidden md:block border border-cyan-500/30 px-2 py-1 rounded bg-cyan-500/10">
-                                    {booking._id.slice(-8)}
-                                </div>
+                    <div key={booking._id} className="flex items-center gap-4 p-4 bg-slate-800/30 rounded-lg border border-slate-700/50">
+                        <div className={cn("p-2 rounded-lg", config.bg, config.border, "border")}>
+                            <StatusIcon className={cn("w-4 h-4", config.color)} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="text-slate-200 font-medium truncate">
+                                    {booking.classInstanceSnapshot?.name || 'Unnamed Class'}
+                                </span>
+                                <Badge variant="outline" className={cn("text-xs", config.color, config.border)}>
+                                    {config.label}
+                                </Badge>
                             </div>
-                        </CardContent>
-                    </SciFiCard>
+                            <div className="flex items-center gap-4 text-sm text-slate-400">
+                                {startTime && (
+                                    <span>
+                                        {format(startTime, 'MMM dd')}
+                                        {endTime && ` • ${format(startTime, 'HH:mm')}-${format(endTime, 'HH:mm')}`}
+                                    </span>
+                                )}
+                                <span>€{(booking.finalPrice / 100).toFixed(2)}</span>
+                            </div>
+                        </div>
+                        <div className="text-xs text-slate-500 font-mono">{booking._id.slice(-8)}</div>
+                    </div>
                 );
             })}
         </div>
@@ -426,18 +359,13 @@ type EnrichedCreditTransaction = CreditTransaction & {
     };
 };
 
-function TransactionsList({ transactions }: {
-    transactions?: Array<EnrichedCreditTransaction>
-}) {
+function TransactionsList({ transactions }: { transactions?: Array<EnrichedCreditTransaction> }) {
     if (!transactions || transactions.length === 0) {
         return (
-            <Card className="border-cyan-500/30 bg-cyan-500/10">
-                <CardContent className="p-6 text-center">
-                    <div className="text-cyan-400 font-mono text-sm">
-                        {'> No transactions found'}
-                    </div>
-                </CardContent>
-            </Card>
+            <div className="text-center py-8">
+                <CreditCard className="h-12 w-12 text-slate-600 mx-auto mb-4" />
+                <p className="text-slate-400">No transactions found</p>
+            </div>
         );
     }
 
@@ -446,91 +374,53 @@ function TransactionsList({ transactions }: {
             {transactions.map((transaction) => {
                 const createdAt = new Date(transaction.createdAt);
                 const isPositive = transaction.amount > 0;
+
                 const getTypeColor = () => {
                     switch (transaction.type) {
                         case "purchase":
                         case "gift":
-                            return "text-green-400";
+                            return 'text-green-400';
                         case "spend":
-                            return "text-yellow-400";
+                            return 'text-amber-400';
                         case "refund":
-                            return "text-cyan-400";
+                            return 'text-cyan-400';
                         default:
-                            return "text-green-400";
-                    }
-                };
-
-                const getStatusColor = () => {
-                    switch (transaction.status) {
-                        case "completed":
-                            return "text-green-400 border-green-500/30";
-                        case "pending":
-                            return "text-yellow-400 border-yellow-500/30";
-                        case "failed":
-                        case "canceled":
-                            return "text-red-400 border-red-500/30";
-                        case "refunded":
-                            return "text-cyan-400 border-cyan-500/30";
-                        default:
-                            return "text-green-400 border-green-500/30"; // Default to completed/green if undefined
+                            return 'text-slate-400';
                     }
                 };
 
                 return (
-                    <SciFiCard key={transaction._id} color="cyan" hoverEffect={true} className="overflow-hidden">
-                        <CardContent className="p-6 relative z-10">
-                            <div className="flex items-center gap-4">
-                                <div className="flex-shrink-0 p-2 rounded-lg bg-cyan-500/20 border border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
-                                    <CreditCard className="w-5 h-5 text-cyan-300" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-3 mb-1.5">
-                                        <h3 className="text-cyan-200 font-mono font-bold text-base truncate tracking-wide drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]">
-                                            {transaction.description}
-                                        </h3>
-                                        <span className={`text-xs font-mono px-2 py-0.5 rounded border ${getTypeColor()} border-current/30`}>
-                                            {transaction.type?.toUpperCase()}
-                                        </span>
-                                        <span className={`text-xs font-mono px-2 py-0.5 rounded border ${isPositive ? 'text-green-400 border-green-500/30' : 'text-yellow-400 border-yellow-500/30'}`}>
-                                            {isPositive ? '+' : ''}{transaction.amount} credits
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-4 flex-wrap text-sm">
-                                        <div className="flex items-center gap-1.5 text-cyan-300 font-medium">
-                                            <Calendar className="w-4 h-4 flex-shrink-0" />
-                                            <span className="font-mono">
-                                                {format(createdAt, 'MMM dd, yyyy HH:mm')}
-                                            </span>
-                                        </div>
-                                        {transaction.type === "gift" && transaction.giftGiver && (
-                                            <div className="flex items-center gap-1.5 text-cyan-300 font-medium">
-                                                <User className="w-4 h-4 flex-shrink-0" />
-                                                <span className="font-mono text-xs">
-                                                    Gifted by: {transaction.giftGiver.name || transaction.giftGiver.email || 'Unknown'}
-                                                </span>
-                                            </div>
-                                        )}
-                                        {transaction.reason && (
-                                            <div className="flex items-center gap-1.5 text-cyan-300/80 font-medium">
-                                                <span className="font-mono text-xs">
-                                                    Reason: {transaction.reason.replace(/_/g, ' ').toUpperCase()}
-                                                </span>
-                                            </div>
-                                        )}
-                                        <span className={`text-xs font-mono px-2 py-0.5 rounded border ${getStatusColor()}`}>
-                                            {(transaction.status || 'COMPLETED').toUpperCase()}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="flex-shrink-0 text-cyan-400/60 text-xs font-mono hidden md:block border border-cyan-500/30 px-2 py-1 rounded bg-cyan-500/10">
-                                    {transaction._id.slice(-8)}
-                                </div>
+                    <div key={transaction._id} className="flex items-center gap-4 p-4 bg-slate-800/30 rounded-lg border border-slate-700/50">
+                        <div className="p-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
+                            <CreditCard className="w-4 h-4 text-cyan-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="text-slate-200 font-medium truncate">
+                                    {transaction.description}
+                                </span>
+                                <Badge variant="outline" className={cn("text-xs", getTypeColor())}>
+                                    {transaction.type?.toUpperCase()}
+                                </Badge>
+                                <Badge variant="outline" className={cn("text-xs", isPositive ? 'text-green-400 border-green-500/30' : 'text-amber-400 border-amber-500/30')}>
+                                    {isPositive ? '+' : ''}{transaction.amount} credits
+                                </Badge>
                             </div>
-                        </CardContent>
-                    </SciFiCard>
+                            <div className="flex items-center gap-4 text-sm text-slate-400">
+                                <span>{format(createdAt, 'MMM dd, yyyy HH:mm')}</span>
+                                {transaction.type === "gift" && transaction.giftGiver && (
+                                    <span>
+                                        Gifted by: {transaction.giftGiver.name || transaction.giftGiver.email || 'Unknown'}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        <div className="text-xs text-slate-500 font-mono">{transaction._id.slice(-8)}</div>
+                    </div>
                 );
             })}
         </div>
     );
 }
+
 

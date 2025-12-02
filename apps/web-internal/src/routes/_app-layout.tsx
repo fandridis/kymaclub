@@ -1,11 +1,13 @@
-import { SciFiLoader } from '@/components/sci-fi-loader';
-import { useCurrentUser } from '@/hooks/use-current-user';
-import { createFileRoute, Link, Outlet, redirect, useLocation } from '@tanstack/react-router';
+import { createFileRoute, Link, Outlet, useLocation } from '@tanstack/react-router';
 import { useAuthActions } from '@convex-dev/auth/react';
-import { AdminButton } from '@/components/admin-button';
-import { SciFiBackground } from '@/components/ui/sci-fi-background';
-import { ArrowLeft } from 'lucide-react';
-import { CommandMenu } from '@/components/command-menu';
+import { useCurrentUser } from '@/hooks/use-current-user';
+import {
+    ParticleBackground,
+    NexusSidebar,
+    NexusHeader,
+    NexusRightSidebar,
+    NexusLoader,
+} from '@/components/nexus';
 
 export const Route = createFileRoute('/_app-layout')({
     component: RouteComponent,
@@ -14,118 +16,95 @@ export const Route = createFileRoute('/_app-layout')({
 function RouteComponent() {
     const { user, isLoading } = useCurrentUser();
     const { signOut } = useAuthActions();
+    const location = useLocation();
 
+    // Show loading state
     if (isLoading) {
         return (
-            <SciFiBackground className="flex items-center justify-center">
-                <SciFiLoader fullScreen={true} />
-            </SciFiBackground>
-        )
+            <div className="min-h-screen nexus-bg">
+                <ParticleBackground />
+                <NexusLoader fullScreen={true} />
+            </div>
+        );
     }
 
+    // Unauthorized access screen
     if (user === null || user?.role !== "internal") {
         return (
-            <SciFiBackground className="flex items-center justify-center">
-
-                <div className="relative z-10 text-center px-8 max-w-4xl">
-                    {/* Terminal-style header */}
-                    <div className="mb-8 font-mono">
-                        <div className="text-cyan-400 text-sm mb-2 tracking-wider">
-                            {'> ACCESS_DENIED.EXE'}
+            <div className="min-h-screen nexus-bg relative overflow-hidden">
+                <ParticleBackground />
+                <div className="relative z-10 flex items-center justify-center min-h-screen px-8">
+                    <div className="text-center max-w-2xl">
+                        {/* Terminal header */}
+                        <div className="mb-8 font-mono">
+                            <div className="text-cyan-400 text-sm mb-2 tracking-wider">
+                                {'> ACCESS_DENIED.EXE'}
+                            </div>
+                            <div className="text-green-400 text-xs mb-4">
+                                {'[SYSTEM] Security Protocol v2.0.1'}
+                            </div>
                         </div>
-                        <div className="text-green-400 text-xs mb-4">
-                            {'[SYSTEM] Security Protocol v2.0.1'}
-                        </div>
-                    </div>
 
-                    {/* Main error message with glitch effect */}
-                    <div className="relative mb-8">
-                        <h1 className="text-6xl md:text-8xl font-black mb-4 tracking-tighter">
-                            <span className="text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.8)] relative inline-block">
-                                <span className="absolute inset-0 text-cyan-400 blur-sm opacity-75 animate-pulse" style={{ transform: 'translate(2px, 2px)' }}>
-                                    UNAUTHORIZED
-                                </span>
+                        {/* Error message */}
+                        <h1 className="text-5xl md:text-7xl font-black mb-4 tracking-tighter">
+                            <span className="text-red-500 drop-shadow-[0_0_30px_rgba(239,68,68,0.6)]">
                                 UNAUTHORIZED
                             </span>
                         </h1>
-                        <div className="text-cyan-400 text-lg md:text-xl font-mono mt-4 tracking-wider">
+                        <div className="text-cyan-400 text-lg font-mono mt-4 tracking-wider mb-8">
                             {'[ERROR_CODE: 0x4E4F5F414343455353]'}
                         </div>
-                    </div>
 
-                    {/* Terminal-style message */}
-                    <div className="bg-black/80 border-2 border-cyan-500/50 p-6 md:p-8 mb-8 font-mono text-left backdrop-blur-sm shadow-[0_0_30px_rgba(6,182,212,0.3)]">
-                        <div className="space-y-2 text-green-400 text-sm md:text-base">
-                            <div className="flex items-start gap-2">
-                                <span className="text-cyan-400">{'>'}</span>
-                                <span className="animate-pulse">█</span>
-                                <span>User authentication failed</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                                <span className="text-cyan-400">{'>'}</span>
-                                <span className="animate-pulse">█</span>
-                                <span>Insufficient clearance level</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                                <span className="text-cyan-400">{'>'}</span>
-                                <span className="animate-pulse">█</span>
-                                <span>Access requires: INTERNAL_ROLE</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                                <span className="text-cyan-400">{'>'}</span>
-                                <span className="animate-pulse">█</span>
-                                <span className="text-red-400">Current clearance: {user ? 'USER' : 'NULL'}</span>
-                            </div>
-                            <div className="flex items-start gap-2 mt-4">
-                                <span className="text-cyan-400">{'>'}</span>
-                                <span className="animate-pulse">█</span>
-                                <span className="text-yellow-400">System locked. Initiating security protocol...</span>
+                        {/* Terminal message */}
+                        <div className="bg-slate-900/80 border border-slate-700/50 p-6 mb-8 font-mono text-left backdrop-blur-sm rounded-lg shadow-[0_0_30px_rgba(6,182,212,0.15)]">
+                            <div className="space-y-2 text-green-400 text-sm">
+                                <div className="flex items-start gap-2">
+                                    <span className="text-cyan-400">{'>'}</span>
+                                    <span className="animate-pulse">█</span>
+                                    <span>User authentication failed</span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                    <span className="text-cyan-400">{'>'}</span>
+                                    <span className="animate-pulse">█</span>
+                                    <span>Insufficient clearance level</span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                    <span className="text-cyan-400">{'>'}</span>
+                                    <span className="animate-pulse">█</span>
+                                    <span>Access requires: INTERNAL_ROLE</span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                    <span className="text-cyan-400">{'>'}</span>
+                                    <span className="animate-pulse">█</span>
+                                    <span className="text-red-400">Current clearance: {user ? 'USER' : 'NULL'}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Action button with sci-fi styling */}
-                    {user ? (
-                        <>
+                        {/* Action buttons */}
+                        {user ? (
                             <button
                                 onClick={async () => {
                                     await signOut();
                                     window.location.href = '/sign-in-tester';
                                 }}
-                                className="inline-block group relative"
+                                className="px-8 py-4 bg-red-500/10 border border-red-500/50 font-mono text-red-400 tracking-wider uppercase transition-all duration-300 hover:bg-red-500/20 hover:border-red-400 hover:shadow-[0_0_30px_rgba(239,68,68,0.3)] rounded-lg"
                             >
-                                <div className="relative px-8 py-4 bg-gradient-to-r from-red-500/20 to-orange-500/20 border-2 border-red-500 font-mono text-red-400 text-lg tracking-wider uppercase transition-all duration-300 hover:border-orange-400 hover:text-orange-400 hover:shadow-[0_0_30px_rgba(251,146,60,0.5)] hover:scale-105">
-                                    <span className="relative z-10">[ DESTROY SESSION ]</span>
-                                    <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                    <div className="absolute -inset-1 bg-red-500/20 blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                </div>
+                                [ DESTROY SESSION ]
                             </button>
-                            <div className="mt-8 text-red-400/50 text-xs font-mono">
-                                {'> Press [DESTROY SESSION] to terminate current connection...'}
-                            </div>
-                        </>
-                    ) : (
-                        <>
+                        ) : (
                             <Link
                                 to="/sign-in-tester"
                                 search={{ redirect: window.location.href }}
-                                className="inline-block group relative"
+                                className="inline-block px-8 py-4 bg-cyan-500/10 border border-cyan-500/50 font-mono text-cyan-400 tracking-wider uppercase transition-all duration-300 hover:bg-cyan-500/20 hover:border-cyan-400 hover:shadow-[0_0_30px_rgba(6,182,212,0.3)] rounded-lg"
                             >
-                                <div className="relative px-8 py-4 bg-gradient-to-r from-cyan-500/20 to-green-500/20 border-2 border-cyan-500 font-mono text-cyan-400 text-lg tracking-wider uppercase transition-all duration-300 hover:border-green-400 hover:text-green-400 hover:shadow-[0_0_30px_rgba(34,197,94,0.5)] hover:scale-105">
-                                    <span className="relative z-10">[ AUTHENTICATE ]</span>
-                                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-green-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                    <div className="absolute -inset-1 bg-cyan-500/20 blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                </div>
+                                [ AUTHENTICATE ]
                             </Link>
-                            <div className="mt-8 text-cyan-400/50 text-xs font-mono">
-                                {'> Press [AUTHENTICATE] to continue...'}
-                            </div>
-                        </>
-                    )}
+                        )}
+                    </div>
                 </div>
-
-            </SciFiBackground>
-        )
+            </div>
+        );
     }
 
     const handleLogout = async () => {
@@ -133,50 +112,42 @@ function RouteComponent() {
         window.location.href = '/sign-in-tester';
     };
 
-    const location = useLocation();
-    const isOnClassesPage = location.pathname === '/classes';
-    const isOnBookingsPage = location.pathname === '/bookings';
-    const isOnBusinessPage = location.pathname.startsWith('/businesses/');
-    const isOnConsumerPage = location.pathname.startsWith('/consumers/');
-
-    const shouldHaveBackButton = isOnClassesPage || isOnBookingsPage || isOnBusinessPage || isOnConsumerPage;
+    // Check if we're on a detail page that should hide the right sidebar
+    const isDetailPage = location.pathname.startsWith('/businesses/') || location.pathname.startsWith('/consumers/');
 
     return (
-        <SciFiBackground>
+        <div className="min-h-screen nexus-bg relative overflow-hidden">
+            {/* Background particle effect */}
+            <ParticleBackground />
 
-            <div className="relative z-10">
-                <header className="border-b border-cyan-500/30 bg-black/50 backdrop-blur-sm">
-                    <div className="container mx-auto px-4 py-3 flex items-center">
-                        <div className="flex-1 flex justify-start">
-                            {shouldHaveBackButton && (
-                                <Link
-                                    to="/dashboard"
-                                    className="inline-flex items-center gap-2 text-cyan-400/80 hover:text-cyan-400 transition-colors group font-mono text-xs tracking-wider uppercase"
-                                >
-                                    <ArrowLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
-                                    <span className='text-lg'>BACK</span>
-                                </Link>
-                            )}
-                        </div>
+            {/* Main layout */}
+            <div className="relative z-10 flex flex-col h-screen">
+                {/* Header */}
+                <NexusHeader
+                    userName={user?.name}
+                    userEmail={user?.email}
+                />
 
-                        <div className="flex-1 flex justify-center">
-                            <CommandMenu />
-                        </div>
+                {/* Content area */}
+                <div className="flex-1 flex overflow-hidden">
+                    {/* Left Sidebar */}
+                    <aside className="hidden md:flex w-56 flex-shrink-0">
+                        <NexusSidebar onLogout={handleLogout} />
+                    </aside>
 
-                        <div className="flex-1 flex justify-end">
-                            <AdminButton
-                                variant="destructive"
-                                size="sm"
-                                onClick={handleLogout}
-                            >
-                                logout
-                            </AdminButton>
-                        </div>
-                    </div>
-                </header>
-                <Outlet />
+                    {/* Main Content */}
+                    <main className="flex-1 overflow-y-auto nexus-scrollbar">
+                        <Outlet />
+                    </main>
+
+                    {/* Right Sidebar - hide on detail pages */}
+                    {!isDetailPage && (
+                        <aside className="hidden lg:block w-80 flex-shrink-0 border-l border-slate-700/50 bg-slate-900/30 backdrop-blur-sm">
+                            <NexusRightSidebar />
+                        </aside>
+                    )}
+                </div>
             </div>
-
-        </SciFiBackground>
-    )
+        </div>
+    );
 }

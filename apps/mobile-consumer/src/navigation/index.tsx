@@ -29,6 +29,7 @@ import { SignInModalScreen } from '../features/core/screens/sign-in-modal-screen
 import { PaymentSuccessScreen } from './screens/PaymentSuccessScreen';
 import { PaymentCancelScreen } from './screens/PaymentCancelScreen';
 import { ConversationScreen } from './screens/ConversationScreen';
+import { TournamentScreen } from './screens/TournamentScreen';
 import OnboardingWizard from '../components/OnboardingWizard';
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
@@ -287,6 +288,15 @@ export function RootNavigator() {
             headerShown: false,
           }}
         />
+        <RootStack.Screen
+          name="Tournament"
+          component={TournamentScreen}
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
       </RootStack.Group>
     </RootStack.Navigator>
   );
@@ -351,6 +361,9 @@ export type RootStackParamList = {
     basePrice: number;
     className: string;
     classInstanceId: import('@repo/api/convex/_generated/dataModel').Id<"classInstances">;
+  };
+  Tournament: {
+    widgetId: string;
   };
   SignInModal: undefined;
   CreateAccountModal: {

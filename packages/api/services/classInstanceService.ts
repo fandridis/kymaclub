@@ -307,6 +307,7 @@ export const classInstanceService = {
                 );
                 totalBookingsAffected += bookingsAffected;
             }
+
         }
 
         return {

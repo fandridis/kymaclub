@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useNavigate } from "@tanstack/react-router"
 import {
     DialogOrDrawer,
     DialogOrDrawerContent,
@@ -8,13 +9,14 @@ import {
     DialogOrDrawerTrigger,
 } from "@/components/ui/dialog-or-drawer"
 import { Button } from "@/components/ui/button"
-import { CalendarDays, Clock, Users } from "lucide-react"
+import { CalendarDays, Clock, Users, Trophy } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
 import type { Doc } from "@repo/api/convex/_generated/dataModel"
-import { useMutation } from "convex/react"
+import { useMutation, useQuery } from "convex/react"
 import { api } from "@repo/api/convex/_generated/api"
 import { ClassBookingsItem } from "@/features/bookings/components/class-bookings-item"
 import { useClassBookings } from "../hooks/use-class-bookings"
@@ -34,9 +36,17 @@ export function ClassBookingsDialog({
     children,
 }: ClassBookingsDialogProps) {
     const { t } = useTypedTranslation();
+    const navigate = useNavigate();
     const { bookings, isLoading } = useClassBookings(classInstance._id)
 
     const deleteBooking = useMutation(api.mutations.bookings.deleteBooking)
+
+    // Check for tournament widget
+    const widget = useQuery(
+        api.queries.widgets.getByInstance,
+        { classInstanceId: classInstance._id }
+    );
+    const hasTournament = widget && widget.status !== 'cancelled';
 
     // Deduplicate bookings by userId, keeping only the newest booking for each user
     const deduplicatedBookings = React.useMemo(() => {
@@ -106,6 +116,31 @@ export function ClassBookingsDialog({
                                 <span className="text-muted-foreground">{time}</span>
                             </div>
                         </div>
+
+                        {/* Tournament Section */}
+                        {hasTournament && widget && (
+                            <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-200">
+                                <div className="flex items-center gap-2">
+                                    <Trophy className="h-5 w-5 text-amber-600" />
+                                    <div>
+                                        <span className="font-medium text-amber-900">Tournament</span>
+                                        <Badge variant="secondary" className="ml-2 text-xs">
+                                            {widget.status}
+                                        </Badge>
+                                    </div>
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        onOpenChange(false);
+                                        navigate({ to: '/tournaments/$widgetId', params: { widgetId: widget._id } });
+                                    }}
+                                >
+                                    Manage Tournament
+                                </Button>
+                            </div>
+                        )}
 
                         <Separator className="my-2" />
 

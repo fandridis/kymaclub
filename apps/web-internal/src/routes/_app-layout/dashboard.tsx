@@ -1,11 +1,25 @@
 import { createFileRoute, Link, Outlet, redirect } from '@tanstack/react-router';
-import { SciFiLoader } from '@/components/sci-fi-loader';
-import { SciFiMetricCard } from '@/components/sci-fi-metric-card';
-import { SciFiColor, getSciFiColors } from '@/components/sci-fi-card';
 import { useCurrentUser } from '@/hooks/use-current-user';
-import { Building2, Users, MapPin, BookOpen, Calendar, FileText, LucideIcon } from 'lucide-react';
+import { NexusLoader, NexusMetricCard, NexusAlert } from '@/components/nexus';
+import {
+    Building2,
+    Users,
+    MapPin,
+    BookOpen,
+    Calendar,
+    FileText,
+    Activity,
+    RefreshCw,
+    Shield,
+    AlertCircle,
+    type LucideIcon,
+} from 'lucide-react';
 import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_app-layout/dashboard')({
@@ -15,18 +29,18 @@ export const Route = createFileRoute('/_app-layout/dashboard')({
 interface DashboardSection {
     id: string;
     title: string;
-    code: string;
-    color: SciFiColor;
+    color: 'cyan' | 'green' | 'purple' | 'pink' | 'amber' | 'blue';
     icon: LucideIcon;
+    href?: string;
 }
 
 const sections: DashboardSection[] = [
-    { id: 'businesses', title: 'BUSINESSES', code: '0x425553494E455353', color: 'cyan', icon: Building2 },
-    { id: 'consumers', title: 'CONSUMERS', code: '0x434F4E53554D4552', color: 'green', icon: Users },
-    { id: 'venues', title: 'VENUES', code: '0x56454E554553', color: 'yellow', icon: MapPin },
-    { id: 'class-instances', title: 'CLASSES', code: '0x434C4153534553', color: 'purple', icon: BookOpen },
-    { id: 'class-templates', title: 'TEMPLATES', code: '0x54454D504C41544553', color: 'orange', icon: FileText },
-    { id: 'bookings', title: 'BOOKINGS', code: '0x424F4F4B494E4753', color: 'pink', icon: Calendar },
+    { id: 'businesses', title: 'Businesses', color: 'cyan', icon: Building2 },
+    { id: 'consumers', title: 'Consumers', color: 'green', icon: Users },
+    { id: 'venues', title: 'Venues', color: 'amber', icon: MapPin },
+    { id: 'class-instances', title: 'Classes', color: 'purple', icon: BookOpen, href: '/classes' },
+    { id: 'class-templates', title: 'Templates', color: 'pink', icon: FileText },
+    { id: 'bookings', title: 'Bookings', color: 'blue', icon: Calendar, href: '/bookings' },
 ];
 
 function Dashboard() {
@@ -34,7 +48,7 @@ function Dashboard() {
     const metrics = useQuery(api.internal.queries.dashboardMetrics.getDashboardMetrics);
 
     if (isLoading) {
-        return <SciFiLoader fullScreen={false} />
+        return <NexusLoader />;
     }
 
     if (!user) {
@@ -44,187 +58,253 @@ function Dashboard() {
             search: {
                 redirect: window.location.href
             }
-        })
+        });
     }
 
     const userName = user.name || user.email || "Admin";
 
+    // Format numbers with commas
+    const formatNumber = (num: number | undefined) => {
+        if (num === undefined) return '...';
+        return num.toLocaleString();
+    };
 
+    // Get metrics for each section
+    const getMetricsForSection = (sectionId: string) => {
+        if (!metrics) return { mainValue: '...', mainLabel: 'Loading...', trend: undefined as 'up' | 'down' | 'stable' | undefined, trendValue: undefined as string | undefined, subtitle: undefined as string | undefined };
+
+        switch (sectionId) {
+            case 'businesses':
+                return {
+                    mainValue: formatNumber(metrics.businesses.activeCount),
+                    mainLabel: 'Active Businesses',
+                    trend: metrics.businesses.joinedLastMonth > 0 ? 'up' as const : 'stable' as const,
+                    trendValue: `+${metrics.businesses.joinedLastMonth} this month`,
+                    subtitle: undefined,
+                };
+            case 'consumers':
+                return {
+                    mainValue: formatNumber(metrics.consumers.activeCount),
+                    mainLabel: 'Active Consumers',
+                    trend: metrics.consumers.signupsLastMonth > 0 ? 'up' as const : 'stable' as const,
+                    trendValue: `+${metrics.consumers.signupsLastMonth} signups`,
+                    subtitle: undefined,
+                };
+            case 'venues':
+                return {
+                    mainValue: formatNumber(metrics.venues.activeCount),
+                    mainLabel: 'Active Venues',
+                    trend: metrics.venues.createdLastMonth > 0 ? 'up' as const : 'stable' as const,
+                    trendValue: `+${metrics.venues.createdLastMonth} new`,
+                    subtitle: undefined,
+                };
+            case 'class-instances':
+                return {
+                    mainValue: formatNumber(metrics.classes.currentlyScheduled),
+                    mainLabel: 'Scheduled Classes',
+                    trend: 'stable' as const,
+                    trendValue: `${metrics.classes.completedLastMonth} completed`,
+                    subtitle: undefined,
+                };
+            case 'class-templates':
+                return {
+                    mainValue: formatNumber(metrics.templates.total),
+                    mainLabel: 'Total Templates',
+                    trend: metrics.templates.createdLastMonth > 0 ? 'up' as const : 'stable' as const,
+                    trendValue: `+${metrics.templates.createdLastMonth} new`,
+                    subtitle: undefined,
+                };
+            case 'bookings':
+                const bookingTrend = metrics.bookings.changeFromLastMonth >= 0 ? 'up' as const : 'down' as const;
+                return {
+                    mainValue: formatNumber(metrics.bookings.thisMonth),
+                    mainLabel: 'Bookings This Month',
+                    trend: bookingTrend,
+                    trendValue: `${metrics.bookings.changeFromLastMonth >= 0 ? '+' : ''}${metrics.bookings.changeFromLastMonth.toFixed(1)}%`,
+                    subtitle: undefined,
+                };
+            default:
+                return { mainValue: '...', mainLabel: 'Loading...', trend: undefined, trendValue: undefined, subtitle: undefined };
+        }
+    };
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            {/* Header */}
-            <div className="mb-8 font-mono">
-                <div className="text-cyan-400 text-sm mb-2 tracking-wider">
-                    {'> DASHBOARD.EXE'}
-                </div>
-                <div className="text-green-400 text-xs mb-4">
-                    {'[SYSTEM] Admin Control Panel v2.0.1'}
-                </div>
-                <h1 className="text-4xl md:text-6xl font-black mb-2 tracking-tighter">
-                    <span className="text-cyan-400 drop-shadow-[0_0_20px_rgba(6,182,212,0.8)]">
-                        WELCOME, {userName.toUpperCase()}
-                    </span>
-                </h1>
-                <div className="text-cyan-400/60 text-sm font-mono tracking-wider">
-                    {'[STATUS: ONLINE] [CLEARANCE: INTERNAL] [TIMESTAMP: ' + new Date().toISOString() + ']'}
-                </div>
-            </div>
+        <div className="p-3 sm:p-4 md:p-6">
+            {/* System Overview Card */}
+            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm overflow-hidden mb-6">
+                <CardHeader className="border-b border-slate-700/50 pb-3">
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="text-slate-100 flex items-center">
+                            <Activity className="mr-2 h-5 w-5 text-cyan-500" />
+                            System Overview
+                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="bg-slate-800/50 text-cyan-400 border-cyan-500/50 text-xs">
+                                <div className="h-1.5 w-1.5 rounded-full bg-cyan-500 mr-1 animate-pulse" />
+                                LIVE
+                            </Badge>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400">
+                                <RefreshCw className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent className="p-3 sm:p-4 md:p-6">
+                    {/* Welcome Message */}
+                    <div className="mb-6">
+                        <h2 className="text-2xl font-bold text-slate-100">
+                            Welcome back, <span className="text-cyan-400">{userName}</span>
+                        </h2>
+                        <p className="text-slate-400 text-sm mt-1">
+                            Here's what's happening with KymaClub today.
+                        </p>
+                    </div>
 
-            {/* Dashboard Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                {sections.map((section) => {
-                    // Format numbers with commas
-                    const formatNumber = (num: number | undefined) => {
-                        if (num === undefined) return '...';
-                        return num.toLocaleString();
-                    };
-
-                    // Get main and secondary metrics for specific sections
-                    let mainMetricValue: string | number = '...';
-                    let mainMetricLabel: string = 'LOADING...';
-                    let secondaryMetricValue: number | undefined = undefined;
-                    let secondaryMetricType: 'number' | 'percentage' | undefined = undefined;
-                    let secondaryMetricLabel: string | undefined = undefined;
-
-                    if (section.id === 'consumers' && metrics) {
-                        mainMetricValue = formatNumber(metrics.consumers.activeCount);
-                        mainMetricLabel = 'active consumers';
-                        secondaryMetricValue = metrics.consumers.signupsLastMonth;
-                        secondaryMetricType = 'number';
-                        secondaryMetricLabel = 'SIGNUPS LAST MONTH';
-                    } else if (section.id === 'bookings' && metrics) {
-                        mainMetricValue = formatNumber(metrics.bookings.thisMonth);
-                        mainMetricLabel = 'bookings this month';
-                        secondaryMetricValue = metrics.bookings.changeFromLastMonth;
-                        secondaryMetricType = 'percentage';
-                        secondaryMetricLabel = 'VS LAST MONTH';
-                    } else if (section.id === 'class-instances' && metrics) {
-                        mainMetricValue = formatNumber(metrics.classes.currentlyScheduled);
-                        mainMetricLabel = 'currently scheduled classes';
-                        secondaryMetricValue = metrics.classes.completedLastMonth;
-                        secondaryMetricType = 'number';
-                        secondaryMetricLabel = 'COMPLETED LAST MONTH';
-                    } else if (section.id === 'class-templates' && metrics) {
-                        mainMetricValue = formatNumber(metrics.templates.total);
-                        mainMetricLabel = 'total templates';
-                        secondaryMetricValue = metrics.templates.createdLastMonth;
-                        secondaryMetricType = 'number';
-                        secondaryMetricLabel = 'CREATED LAST MONTH';
-                    } else if (section.id === 'businesses' && metrics) {
-                        mainMetricValue = formatNumber(metrics.businesses.activeCount);
-                        mainMetricLabel = 'active businesses';
-                        secondaryMetricValue = metrics.businesses.joinedLastMonth;
-                        secondaryMetricType = 'number';
-                        secondaryMetricLabel = 'JOINED LAST MONTH';
-                    } else if (section.id === 'venues' && metrics) {
-                        mainMetricValue = formatNumber(metrics.venues.activeCount);
-                        mainMetricLabel = 'active venues';
-                        secondaryMetricValue = metrics.venues.createdLastMonth;
-                        secondaryMetricType = 'number';
-                        secondaryMetricLabel = 'CREATED LAST MONTH';
-                    }
-
-                    const colors = getSciFiColors(section.color);
-                    const cardProps = {
-                        mainMetric: mainMetricValue,
-                        mainMetricLabel,
-                        color: section.color,
-                        icon: section.icon,
-                        dataTitle: section.title,
-                        renderFooter: () => (
-                            <span className={cn("font-mono text-xs", colors.text)}>ONLINE</span>
-                        ),
-                        secondaryMetricValue,
-                        secondaryMetricType,
-                        secondaryMetricLabel,
-                    };
-
-                    if (section.id === 'class-instances') {
-                        return (
-                            <Link
-                                key={section.id}
-                                to="/classes"
-                                className="block h-full"
-                            >
-                                <SciFiMetricCard
-                                    {...cardProps}
+                    {/* Metric Cards Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
+                        {sections.map((section) => {
+                            const sectionMetrics = getMetricsForSection(section.id);
+                            const card = (
+                                <NexusMetricCard
+                                    key={section.id}
+                                    title={section.title}
+                                    value={sectionMetrics.mainValue}
+                                    subtitle={sectionMetrics.mainLabel}
+                                    icon={section.icon}
+                                    color={section.color}
+                                    trend={sectionMetrics.trend}
+                                    trendValue={sectionMetrics.trendValue}
+                                    onClick={section.href ? undefined : undefined}
                                 />
-                            </Link>
-                        );
-                    }
+                            );
 
-                    if (section.id === 'bookings') {
-                        return (
-                            <Link
-                                key={section.id}
-                                to="/bookings"
-                                className="block h-full"
-                            >
-                                <SciFiMetricCard
-                                    {...cardProps}
-                                />
-                            </Link>
-                        );
-                    }
+                            if (section.href) {
+                                return (
+                                    <Link key={section.id} to={section.href as any} className="block">
+                                        {card}
+                                    </Link>
+                                );
+                            }
 
-                    return (
-                        <SciFiMetricCard
-                            key={section.id}
-                            {...cardProps}
-                        />
-                    );
-                })
-                }
+                            return card;
+                        })}
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Security & Alerts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
+                {/* Security Status Card */}
+                <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-slate-100 flex items-center text-base">
+                            <Shield className="mr-2 h-5 w-5 text-green-500" />
+                            Security Status
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-slate-400">Authentication</span>
+                                <Badge className="bg-green-500/20 text-green-400 border-green-500/50">Active</Badge>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-slate-400">Rate Limiting</span>
+                                <Badge className="bg-green-500/20 text-green-400 border-green-500/50">Active</Badge>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-slate-400">Data Encryption</span>
+                                <Badge className="bg-green-500/20 text-green-400 border-green-500/50">Active</Badge>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-slate-400">Last Security Scan</span>
+                                <span className="text-sm text-cyan-400">Just now</span>
+                            </div>
+                            <div className="pt-2 mt-2 border-t border-slate-700/50">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm font-medium text-slate-300">Security Level</span>
+                                    <span className="text-sm text-cyan-400">100%</span>
+                                </div>
+                                <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-gradient-to-r from-green-500 to-cyan-500 rounded-full"
+                                        style={{ width: '100%' }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* System Alerts Card */}
+                <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-slate-100 flex items-center text-base">
+                            <AlertCircle className="mr-2 h-5 w-5 text-amber-500" />
+                            System Alerts
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-3">
+                            <NexusAlert
+                                title="All Systems Operational"
+                                description="No issues detected in the past 24 hours"
+                                time="Now"
+                                type="success"
+                            />
+                            <NexusAlert
+                                title="Daily Backup Complete"
+                                description="All data successfully backed up"
+                                time="06:00"
+                                type="info"
+                            />
+                            <NexusAlert
+                                title="Performance Optimized"
+                                description="Database queries optimized automatically"
+                                time="Yesterday"
+                                type="update"
+                            />
+                            <NexusAlert
+                                title="New Features Available"
+                                description="Check the changelog for updates"
+                                time="2 days ago"
+                                type="info"
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
-            {/* Footer stats */}
-            <div className="mt-12 bg-black/80 border-2 border-cyan-500/30 p-6 font-mono backdrop-blur-sm shadow-[0_0_20px_rgba(6,182,212,0.2)]">
-                <div className="text-cyan-400 text-sm mb-4 tracking-wider">
-                    {'> SYSTEM_STATUS.EXE'}
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                    <div className="space-y-2">
-                        <div className="flex items-start gap-2 text-green-400">
-                            <span className="text-cyan-400">{'>'}</span>
-                            <span className="animate-pulse">█</span>
-                            <span>Database: CONNECTED</span>
+            {/* System Status Footer */}
+            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+                <CardContent className="p-3 sm:p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                            <span className="text-sm text-slate-400">Database: </span>
+                            <span className="text-sm text-green-400">Connected</span>
                         </div>
-                        <div className="flex items-start gap-2 text-green-400">
-                            <span className="text-cyan-400">{'>'}</span>
-                            <span className="animate-pulse">█</span>
-                            <span>API: OPERATIONAL</span>
+                        <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                            <span className="text-sm text-slate-400">API: </span>
+                            <span className="text-sm text-green-400">Operational</span>
                         </div>
-                    </div>
-                    <div className="space-y-2">
-                        <div className="flex items-start gap-2 text-green-400">
-                            <span className="text-cyan-400">{'>'}</span>
-                            <span className="animate-pulse">█</span>
-                            <span>Cache: SYNCED</span>
+                        <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                            <span className="text-sm text-slate-400">Cache: </span>
+                            <span className="text-sm text-green-400">Synced</span>
                         </div>
-                        <div className="flex items-start gap-2 text-green-400">
-                            <span className="text-cyan-400">{'>'}</span>
-                            <span className="animate-pulse">█</span>
-                            <span>Security: ACTIVE</span>
+                        <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-cyan-500 animate-pulse" />
+                            <span className="text-sm text-slate-400">Load: </span>
+                            <span className="text-sm text-cyan-400">Normal</span>
                         </div>
                     </div>
-                    <div className="space-y-2">
-                        <div className="flex items-start gap-2 text-yellow-400">
-                            <span className="text-cyan-400">{'>'}</span>
-                            <span className="animate-pulse">█</span>
-                            <span>Uptime: 99.9%</span>
-                        </div>
-                        <div className="flex items-start gap-2 text-yellow-400">
-                            <span className="text-cyan-400">{'>'}</span>
-                            <span className="animate-pulse">█</span>
-                            <span>Load: NORMAL</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                </CardContent>
+            </Card>
 
-            {/* Render child routes */}
+            {/* Child routes outlet */}
             <Outlet />
-        </div >
+        </div>
     );
 }

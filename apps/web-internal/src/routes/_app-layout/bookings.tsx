@@ -1,17 +1,17 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useBookings, Booking } from '@/hooks/use-bookings';
-import { SciFiListLoader } from '@/components/sci-fi-list-loader';
+import { NexusLoader, NexusMetricCard } from '@/components/nexus';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, User, MapPin, Euro, CheckCircle2, XCircle, UserX } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Calendar, User, MapPin, Euro, CheckCircle2, XCircle, UserX, Activity, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { useCallback, useState } from 'react';
 import { useQuery } from "convex/react";
 import { api } from "@repo/api/convex/_generated/api";
-import { SciFiMetricCard } from '@/components/sci-fi-metric-card';
 import { BookingsTrendChart } from '@/components/dashboard/BookingsTrendChart';
-import { SciFiCard } from "@/components/sci-fi-card";
+import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_app-layout/bookings')({
     component: BookingsPage,
@@ -42,134 +42,140 @@ function BookingsPage() {
     };
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            {/* Header */}
-            <div className="mb-6 font-mono">
-                <div className="text-pink-400 text-sm mb-2 tracking-wider">
-                    {'> BOOKINGS.EXE'}
-                </div>
-                <div className="text-green-400 text-xs mb-3">
-                    {'[SYSTEM] Bookings Management v1.0.0'}
-                </div>
-                <h1 className="text-3xl md:text-5xl font-black mb-2 tracking-tighter">
-                    <span className="text-pink-400 drop-shadow-[0_0_20px_rgba(236,72,153,0.8)]">
-                        BOOKINGS
-                    </span>
-                </h1>
-                <div className="text-pink-400/60 text-xs font-mono tracking-wider">
-                    {isLoading ? '[LOADING...]' : `[TOTAL: ${bookingList.length}] [STATUS: ${queryStatus}]`}
-                </div>
-            </div>
+        <div className="p-3 sm:p-4 md:p-6">
+            {/* Header Card */}
+            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm overflow-hidden">
+                <CardHeader className="border-b border-slate-700/50 pb-3">
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="text-slate-100 flex items-center">
+                            <Calendar className="mr-2 h-5 w-5 text-blue-500" />
+                            Bookings Management
+                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="bg-slate-800/50 text-cyan-400 border-cyan-500/50 text-xs">
+                                <div className="h-1.5 w-1.5 rounded-full bg-cyan-500 mr-1 animate-pulse" />
+                                LIVE
+                            </Badge>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400">
+                                <RefreshCw className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent className="p-3 sm:p-4 md:p-6">
+                    {/* Metrics Row */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
+                        <NexusMetricCard
+                            title="Completed"
+                            value={formatNumber(metrics?.completedBookings.value)}
+                            icon={CheckCircle2}
+                            color="green"
+                            trend={metrics?.completedBookings.diff ? (metrics.completedBookings.diff >= 0 ? 'up' : 'down') : undefined}
+                            trendValue={metrics?.completedBookings.diff ? `${metrics.completedBookings.diff >= 0 ? '+' : ''}${metrics.completedBookings.diff.toFixed(1)}%` : undefined}
+                            subtitle="vs last month"
+                        />
+                        <NexusMetricCard
+                            title="No-Show Rate"
+                            value={`${metrics?.noShowPercentage.value.toFixed(1) ?? '0.0'}%`}
+                            icon={UserX}
+                            color="amber"
+                            trend={metrics?.noShowPercentage.diff ? (metrics.noShowPercentage.diff <= 0 ? 'up' : 'down') : undefined}
+                            trendValue={metrics?.noShowPercentage.diff ? `${metrics.noShowPercentage.diff >= 0 ? '+' : ''}${metrics.noShowPercentage.diff.toFixed(1)}%` : undefined}
+                            subtitle="vs last month"
+                        />
+                        <NexusMetricCard
+                            title="Total Records"
+                            value={formatNumber(bookingList.length)}
+                            icon={Calendar}
+                            color="cyan"
+                            subtitle="Loaded records"
+                        />
+                        <NexusMetricCard
+                            title="Query Status"
+                            value={queryStatus.replace(/([A-Z])/g, ' $1').trim()}
+                            icon={Activity}
+                            color="purple"
+                            subtitle="Data sync"
+                        />
+                    </div>
 
-            {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <div className="space-y-6 flex flex-col">
-                    <SciFiMetricCard
-                        mainMetric={formatNumber(metrics?.completedBookings.value)}
-                        mainMetricLabel="Completed Bookings"
-                        secondaryMetricValue={metrics?.completedBookings.diff}
-                        secondaryMetricType="percentage"
-                        secondaryMetricLabel="VS LAST MONTH"
-                        color='cyan'
-                    />
-                    <SciFiMetricCard
-                        mainMetric={`${metrics?.noShowPercentage.value.toFixed(1) ?? '0.0'}%`}
-                        mainMetricLabel="No-Show Percentage"
-                        secondaryMetricValue={metrics?.noShowPercentage.diff}
-                        secondaryMetricType="percentage"
-                        secondaryMetricLabel="VS LAST MONTH"
-                        color='yellow'
-                    />
-                </div>
-                <div className="lg:col-span-2">
-                    <BookingsTrendChart data={metrics?.trend ?? []} />
-                </div>
-            </div>
+                    {/* Chart */}
+                    <div>
+                        <BookingsTrendChart data={metrics?.trend ?? []} />
+                    </div>
+                </CardContent>
+            </Card>
 
-            {/* Status Tabs */}
-            <div className="mb-6">
+            {/* Status Tabs - Floating above list */}
+            <div className="mt-6 mb-3">
                 <Tabs value={status} onValueChange={(value) => setStatus(value as BookingStatus)}>
-                    <TabsList className="bg-cyan-500/20 border-2 border-cyan-500/50 font-mono p-1">
+                    <TabsList className="bg-slate-900/90 border border-slate-700/50 p-1 backdrop-blur-sm shadow-lg">
                         <TabsTrigger
                             value="latest"
-                            className="data-[state=active]:bg-cyan-500 data-[state=active]:text-white text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/30 transition-all"
+                            className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-slate-400 hover:text-slate-200 text-xs sm:text-sm"
                         >
-                            {'>'} LATEST
+                            Latest
                         </TabsTrigger>
                         <TabsTrigger
                             value="cancelled_by_consumer"
-                            className="data-[state=active]:bg-cyan-500 data-[state=active]:text-white text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/30 transition-all"
+                            className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-slate-400 hover:text-slate-200 text-xs sm:text-sm"
                         >
-                            {'>'} CANCELLED BY USER
+                            <span className="hidden sm:inline">Cancelled by User</span>
+                            <span className="sm:hidden">By User</span>
                         </TabsTrigger>
                         <TabsTrigger
                             value="cancelled_by_business"
-                            className="data-[state=active]:bg-cyan-500 data-[state=active]:text-white text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/30 transition-all"
+                            className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-slate-400 hover:text-slate-200 text-xs sm:text-sm"
                         >
-                            {'>'} CANCELLED BY BUSINESS
+                            <span className="hidden sm:inline">Cancelled by Business</span>
+                            <span className="sm:hidden">By Business</span>
                         </TabsTrigger>
                         <TabsTrigger
                             value="no_show"
-                            className="data-[state=active]:bg-cyan-500 data-[state=active]:text-white text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/30 transition-all"
+                            className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-slate-400 hover:text-slate-200 text-xs sm:text-sm"
                         >
-                            {'>'} NO SHOWS
+                            No Shows
                         </TabsTrigger>
                     </TabsList>
                 </Tabs>
             </div>
 
             {/* Bookings List */}
-            {
-                isLoading ? (
-                    <SciFiListLoader count={5} cardHeight="h-30" colorTheme="cyan" />
-                ) : bookingList.length === 0 ? (
-                    <Card className="border-cyan-500/30 bg-cyan-500/10">
-                        <CardContent className="p-6 text-center">
-                            <div className="text-cyan-400 font-mono text-sm">
-                                {'> No bookings found'}
-                            </div>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <div className="space-y-2 mb-6">
-                        {bookingList.map((booking) => (
-                            <BookingCard key={booking._id} booking={booking} />
-                        ))}
-                    </div>
-                )
-            }
+            {isLoading ? (
+                <NexusLoader />
+            ) : bookingList.length === 0 ? (
+                <Card className="bg-slate-900/50 border-slate-700/50">
+                    <CardContent className="p-8 text-center">
+                        <Calendar className="h-12 w-12 text-slate-600 mx-auto mb-4" />
+                        <p className="text-slate-400">No bookings found</p>
+                    </CardContent>
+                </Card>
+            ) : (
+                <div className="space-y-1.5 sm:space-y-2">
+                    {bookingList.map((booking) => (
+                        <BookingCard key={booking._id} booking={booking} />
+                    ))}
+                </div>
+            )}
 
             {/* Load More Button */}
-            {
-                hasMore && (
-                    <div className="flex justify-center mt-6">
-                        <Button
-                            onClick={handleLoadMore}
-                            disabled={queryStatus !== "CanLoadMore"}
-                            className="font-mono border-2 border-cyan-500 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 hover:border-cyan-400 text-sm py-2 px-4"
-                        >
-                            {isLoadingMore ? (
-                                <>
-                                    <span className="animate-pulse">█</span>
-                                    <span className="ml-2">Loading...</span>
-                                </>
-                            ) : (
-                                <>
-                                    {'>'} LOAD MORE
-                                </>
-                            )}
-                        </Button>
-                    </div>
-                )
-            }
+            {hasMore && (
+                <div className="flex justify-center mt-6">
+                    <Button
+                        onClick={handleLoadMore}
+                        disabled={queryStatus !== "CanLoadMore"}
+                        className="bg-slate-800/50 border border-slate-700/50 hover:bg-slate-700/50 text-cyan-400"
+                    >
+                        {isLoadingMore ? 'Loading...' : 'Load More'}
+                    </Button>
+                </div>
+            )}
 
-            {
-                !hasMore && bookingList.length > 0 && (
-                    <div className="text-center mt-6 text-cyan-400/60 text-xs font-mono">
-                        {'> All bookings loaded'}
-                    </div>
-                )
-            }
+            {!hasMore && bookingList.length > 0 && (
+                <div className="text-center mt-6 text-slate-500 text-sm">
+                    All bookings loaded
+                </div>
+            )}
         </div>
     );
 }
@@ -190,77 +196,48 @@ function BookingCard({ booking }: BookingCardProps) {
     type BookingStatusType = "pending" | "completed" | "cancelled_by_consumer" | "cancelled_by_business" | "cancelled_by_business_rebookable" | "no_show";
     const status: BookingStatusType = booking.status as BookingStatusType;
 
-    const getStatusIcon = () => {
+    const getStatusConfig = () => {
         switch (status) {
             case "completed":
-                return <CheckCircle2 className="w-4 h-4 text-green-400" />;
+                return { icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/30', label: 'COMPLETED' };
             case "cancelled_by_consumer":
             case "cancelled_by_business":
             case "cancelled_by_business_rebookable":
-                return <XCircle className="w-4 h-4 text-yellow-400" />;
+                return { icon: XCircle, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30', label: status === 'cancelled_by_consumer' ? 'CANCELLED BY USER' : 'CANCELLED BY BUSINESS' };
             case "no_show":
-                return <UserX className="w-4 h-4 text-red-400" />;
+                return { icon: UserX, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/30', label: 'NO SHOW' };
             default:
-                return <Calendar className="w-4 h-4 text-cyan-400" />;
+                return { icon: Calendar, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30', label: 'PENDING' };
         }
     };
 
-    const getStatusLabel = () => {
-        switch (status) {
-            case "completed":
-                return "COMPLETED";
-            case "cancelled_by_consumer":
-                return "CANCELLED BY USER";
-            case "cancelled_by_business":
-                return "CANCELLED BY BUSINESS";
-            case "cancelled_by_business_rebookable":
-                return "CANCELLED BY BUSINESS (REBOOKABLE)";
-            case "no_show":
-                return "NO SHOW";
-            default:
-                return "PENDING";
-        }
-    };
-
-    const getStatusColor = (status: BookingStatusType) => {
-        switch (status) {
-            case "completed":
-                return "text-green-400";
-            case "cancelled_by_consumer":
-            case "cancelled_by_business":
-            case "cancelled_by_business_rebookable":
-                return "text-yellow-400";
-            case "no_show":
-                return "text-red-400";
-            default:
-                return "text-cyan-400";
-        }
-    };
+    const config = getStatusConfig();
+    const StatusIcon = config.icon;
 
     return (
-        <SciFiCard color="cyan" hoverEffect={true} className="overflow-hidden">
-            <CardContent className="p-6 relative z-10">
+        <Card className="bg-slate-900/50 border-slate-700/50 hover:bg-slate-800/50 transition-colors">
+            <CardContent className="p-3 sm:p-4">
                 <div className="flex items-center gap-4">
                     {/* Icon */}
-                    <div className="flex-shrink-0 p-2 rounded-lg bg-cyan-500/20 border border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
-                        {getStatusIcon()}
+                    <div className={cn("p-2 rounded-lg", config.bg, config.border, "border")}>
+                        <StatusIcon className={cn("w-4 h-4", config.color)} />
                     </div>
 
-                    {/* Main content - compact horizontal layout */}
+                    {/* Main content */}
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-1.5">
-                            <h3 className="text-cyan-200 font-mono font-bold text-base truncate tracking-wide drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]">
+                        <div className="flex items-center gap-3 mb-1">
+                            <h3 className="text-slate-200 font-medium truncate">
                                 {booking.classInstanceSnapshot?.name || 'Unnamed Class'}
                             </h3>
-                            <span className={`text-xs font-mono px-2 py-0.5 rounded border ${getStatusColor(status)} border-current/30`}>
-                                {getStatusLabel()}
-                            </span>
+                            <Badge variant="outline" className={cn("text-xs", config.color, config.border)}>
+                                {config.label}
+                            </Badge>
                         </div>
                         <div className="flex items-center gap-4 flex-wrap text-sm">
                             {startTime && (
-                                <div className="flex items-center gap-1.5 text-cyan-300 font-medium">
-                                    <Calendar className="w-4 h-4 flex-shrink-0" />
-                                    <span className="font-mono">
+                                <div className="flex items-center gap-1.5 text-slate-400">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    <span>
                                         {format(startTime, 'MMM dd')}
                                         {endTime && (
                                             <> • {format(startTime, 'HH:mm')}-{format(endTime, 'HH:mm')}</>
@@ -268,49 +245,35 @@ function BookingCard({ booking }: BookingCardProps) {
                                     </span>
                                 </div>
                             )}
-
                             {booking.venueSnapshot?.name && (
-                                <div className="flex items-center gap-1.5 text-cyan-300 font-medium">
-                                    <MapPin className="w-4 h-4 flex-shrink-0" />
-                                    <span className="font-mono truncate max-w-[200px]">
-                                        {booking.venueSnapshot.name}
-                                    </span>
+                                <div className="flex items-center gap-1.5 text-slate-400">
+                                    <MapPin className="w-3.5 h-3.5" />
+                                    <span className="truncate max-w-[150px]">{booking.venueSnapshot.name}</span>
                                 </div>
                             )}
-
                             {booking.userSnapshot && (
-                                <div className="flex items-center gap-1.5 text-cyan-300 font-medium">
-                                    <User className="w-4 h-4 flex-shrink-0" />
-                                    <span className="font-mono truncate max-w-[200px]">
-                                        {booking.userSnapshot.name || booking.userSnapshot.email || 'Unknown User'}
+                                <div className="flex items-center gap-1.5 text-slate-400">
+                                    <User className="w-3.5 h-3.5" />
+                                    <span className="truncate max-w-[150px]">
+                                        {booking.userSnapshot.name || booking.userSnapshot.email || 'Unknown'}
                                     </span>
                                 </div>
                             )}
-
                             {booking.finalPrice !== undefined && booking.finalPrice !== null && (
-                                <div className="flex items-center gap-1.5 text-cyan-300 font-medium">
-                                    <Euro className="w-4 h-4 flex-shrink-0" />
-                                    <span className="font-mono">
-                                        €{(booking.finalPrice / 100).toFixed(2)}
-                                    </span>
+                                <div className="flex items-center gap-1.5 text-slate-400">
+                                    <Euro className="w-3.5 h-3.5" />
+                                    <span>€{(booking.finalPrice / 100).toFixed(2)}</span>
                                 </div>
                             )}
-
-                            <div className="flex items-center gap-1.5 text-cyan-300/60 font-medium text-xs">
-                                <span className="font-mono">
-                                    Booked: {format(bookedAt, 'MMM dd, HH:mm')}
-                                </span>
-                            </div>
                         </div>
                     </div>
 
-                    {/* ID - compact */}
-                    <div className="flex-shrink-0 text-cyan-400/60 text-xs font-mono hidden md:block border border-cyan-500/30 px-2 py-1 rounded bg-cyan-500/10">
+                    {/* ID */}
+                    <div className="hidden md:block text-xs text-slate-500 font-mono bg-slate-800/50 px-2 py-1 rounded border border-slate-700/50">
                         {booking._id.slice(-8)}
                     </div>
                 </div>
             </CardContent>
-        </SciFiCard>
+        </Card>
     );
 }
-

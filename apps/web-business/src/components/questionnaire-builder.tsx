@@ -185,7 +185,7 @@ export function QuestionnaireBuilder({
                     type="single"
                     collapsible
                     className="w-full space-y-2"
-                    defaultValue={localQuestions.length > 0 ? localQuestions[0].id : undefined}
+                    defaultValue={localQuestions.length > 0 ? localQuestions[0]?.id : undefined}
                 >
                     {localQuestions.map((question, index) => (
                         <AccordionItem

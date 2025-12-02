@@ -625,14 +625,21 @@ export const createTestNotification = internalMutation({
             recipientType: v.union(v.literal("business"), v.literal("consumer")),
             recipientUserId: v.optional(v.id("users")),
             type: v.union(
+                // Business notifications
                 v.literal("booking_created"),
                 v.literal("booking_cancelled_by_consumer"),
-                v.literal("booking_cancelled_by_business"),
-                v.literal("class_cancelled"),
+                v.literal("review_received"),
                 v.literal("payment_received"),
+                // Consumer notifications
                 v.literal("booking_confirmation"),
                 v.literal("booking_reminder"),
-                v.literal("payment_receipt")
+                v.literal("class_cancelled"),
+                v.literal("class_rebookable"),
+                v.literal("booking_cancelled_by_business"),
+                v.literal("payment_receipt"),
+                v.literal("credits_received_subscription"),
+                v.literal("credits_received_admin_gift"),
+                v.literal("welcome_bonus")
             ),
             title: v.string(),
             message: v.string(),

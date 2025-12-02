@@ -270,6 +270,7 @@ export const prepareInstanceUpdatesFromTemplateChanges = (
                     imageStorageIds: templateChanges.imageStorageIds,
                     discountRules: templateChanges.discountRules,
                     questionnaire: templateChanges.questionnaire,
+                    widgetSnapshots: templateChanges.widgetSnapshots,
                     deleted: templateChanges.deleted,
                     primaryCategory: templateChanges.primaryCategory,
                 }),
@@ -473,6 +474,7 @@ export const createInstanceFromTemplate = (
         discountRules: template.discountRules,
         hasDiscountRules: hasDiscountRules(template.discountRules),
         questionnaire: template.questionnaire,
+        widgetSnapshots: template.widgetSnapshots,
         disableBookings: disableBookings !== undefined ? disableBookings : template.disableBookings,
 
         // Booking tracking
@@ -494,6 +496,7 @@ export const createInstanceFromTemplate = (
             imageStorageIds: template.imageStorageIds,
             discountRules: template.discountRules,
             questionnaire: template.questionnaire,
+            widgetSnapshots: template.widgetSnapshots,
             primaryCategory,
         },
 

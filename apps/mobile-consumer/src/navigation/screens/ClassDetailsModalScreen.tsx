@@ -286,6 +286,15 @@ export function ClassDetailsModalScreen() {
         ) || [];
     }, [template?.questionnaire, finalClassInstance?.questionnaire]);
 
+    // Check for tournament widget
+    const widget = useQuery(
+        api.queries.widgets.getByInstance,
+        finalClassInstance ? { classInstanceId: finalClassInstance._id } : "skip"
+    );
+    const hasTournament = widget && widget.status !== 'cancelled';
+
+    console.log('widget', finalClassInstance?._id, widget);
+
     // Get image IDs with null-safe access
     const templateSnapshot = finalClassInstance?.templateSnapshot;
     const templateImageIds = templateSnapshot?.imageStorageIds ?? [];
@@ -432,6 +441,49 @@ export function ClassDetailsModalScreen() {
         }
     };
 
+    // Book class without questionnaire (direct booking)
+    // NOTE: This useCallback must be called before any conditional returns
+    const handleDirectBooking = useCallback(async () => {
+        if (!finalClassInstance || !user) return;
+
+        const finalPrice = discountResult.appliedDiscount ? discountResult.finalPrice : centsToCredits(finalClassInstance.price ?? 0);
+        const classNameForBooking = finalClassInstance.name ?? finalClassInstance.templateSnapshot?.name ?? 'Class';
+        const options = [t('classes.spendCredits', { credits: finalPrice }), t('common.cancel')];
+        const cancelButtonIndex = 1;
+
+        showActionSheetWithOptions({
+            options,
+            cancelButtonIndex,
+        }, async (selectedIndex?: number) => {
+            if (selectedIndex === undefined) return;
+
+            switch (selectedIndex) {
+                case 0: {
+                    try {
+                        setIsBooking(true);
+                        await bookClass({
+                            classInstanceId: finalClassInstance._id,
+                            description: `Booking for ${classNameForBooking}`,
+                        });
+                        Alert.alert(t('classes.booked'), t('classes.bookedSuccess'));
+                    } catch (err: any) {
+                        const message =
+                            (err?.data && (err.data.message || err.data.code)) ||
+                            err?.message ||
+                            t('classes.bookingFailedMessage');
+                        Alert.alert(t('classes.bookingFailed'), String(message));
+                    } finally {
+                        setIsBooking(false);
+                    }
+                    break;
+                }
+
+                case cancelButtonIndex:
+                    break;
+            }
+        });
+    }, [finalClassInstance, user, discountResult, bookClass, showActionSheetWithOptions, t]);
+
     // NOW we can do conditional returns, after ALL hooks have been called
     if (!finalClassInstance && !classInstanceId) {
         return (
@@ -525,48 +577,6 @@ export function ClassDetailsModalScreen() {
     const spotsLeft = Math.max(0, capacity - (finalClassInstance.bookedCount ?? 0));
     const isLoading = (allImageIds.length > 0 && !imageUrlsQuery) || existingBooking === undefined;
 
-    // Book class without questionnaire (direct booking)
-    const handleDirectBooking = useCallback(async () => {
-        if (!finalClassInstance || !user) return;
-
-        const finalPrice = discountResult.appliedDiscount ? discountResult.finalPrice : priceCredits;
-        const options = [t('classes.spendCredits', { credits: finalPrice }), t('common.cancel')];
-        const cancelButtonIndex = 1;
-
-        showActionSheetWithOptions({
-            options,
-            cancelButtonIndex,
-        }, async (selectedIndex?: number) => {
-            if (selectedIndex === undefined) return;
-
-            switch (selectedIndex) {
-                case 0: {
-                    try {
-                        setIsBooking(true);
-                        await bookClass({
-                            classInstanceId: finalClassInstance._id,
-                            description: `Booking for ${className}`,
-                        });
-                        Alert.alert(t('classes.booked'), t('classes.bookedSuccess'));
-                    } catch (err: any) {
-                        const message =
-                            (err?.data && (err.data.message || err.data.code)) ||
-                            err?.message ||
-                            t('classes.bookingFailedMessage');
-                        Alert.alert(t('classes.bookingFailed'), String(message));
-                    } finally {
-                        setIsBooking(false);
-                    }
-                    break;
-                }
-
-                case cancelButtonIndex:
-                    break;
-            }
-        });
-    }, [finalClassInstance, user, discountResult, priceCredits, bookClass, showActionSheetWithOptions, className, t]);
-
-    // Book class with questionnaire answers
     // Event handlers
     const onPress = () => {
         if (!finalClassInstance) return;
@@ -595,6 +605,8 @@ export function ClassDetailsModalScreen() {
         // Otherwise, proceed with direct booking
         handleDirectBooking();
     };
+
+
 
     return (
         <View style={styles.container}>
@@ -703,7 +715,7 @@ export function ClassDetailsModalScreen() {
                                 <View style={styles.spotsContainer}>
                                     <Text style={styles.spotsLabel}>{t('classes.availableSpots')}</Text>
                                     <Text style={styles.spotsValue}>
-                                        {t('classes.spotsLeft', { count: 1 })}
+                                        {t('classes.spotsLeft', { count: spotsLeft })}
                                     </Text>
                                 </View>
                             </View>
@@ -769,6 +781,44 @@ export function ClassDetailsModalScreen() {
                                         </Text>
                                     </View>
                                 )}
+
+                            {/* Tournament Widget Banner */}
+                            {hasTournament && widget && (
+                                <TouchableOpacity
+                                    style={[
+                                        styles.widgetBanner,
+                                        !discountResult.appliedDiscount && !getBookingWindowText(
+                                            finalClassInstance,
+                                            closesInTemplate,
+                                            timeUnitDays,
+                                            timeUnitHours,
+                                            timeUnitMinutes
+                                        ) && styles.widgetBannerFirst
+                                    ]}
+                                    onPress={() => navigation.navigate('Tournament', { widgetId: widget._id })}
+                                    activeOpacity={0.8}
+                                >
+                                    <View style={styles.widgetBannerContent}>
+                                        <View style={styles.widgetBannerLeft}>
+                                            <View style={styles.widgetBannerIcon}>
+                                                <Text style={styles.widgetBannerIconText}>🏆</Text>
+                                            </View>
+                                            <View>
+                                                <Text style={styles.widgetBannerTitle}>
+                                                    {widget.widgetConfig.type === 'tournament_americano' ? 'Americano Tournament' : 'Tournament'}
+                                                </Text>
+                                                <Text style={styles.widgetBannerSubtext}>
+                                                    {widget.status === 'setup' && 'Setting up • Tap to view'}
+                                                    {widget.status === 'ready' && 'Ready to start • Tap to view'}
+                                                    {widget.status === 'active' && 'In progress • Tap to view'}
+                                                    {widget.status === 'completed' && 'Completed • View results'}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                        <ChevronLeftIcon size={20} color="rgba(255, 255, 255, 0.7)" style={{ transform: [{ rotate: '180deg' }] }} />
+                                    </View>
+                                </TouchableOpacity>
+                            )}
 
                             {/* Key details */}
                             <View style={styles.detailsList}>
@@ -1110,6 +1160,49 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: 'white',
         textAlign: 'center',
+    },
+    widgetBanner: {
+        backgroundColor: '#7c3aed', // violet-600
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        marginBottom: 8,
+        marginTop: 0,
+        width: screenWidth,
+    },
+    widgetBannerFirst: {
+        marginTop: -14,
+    },
+    widgetBannerContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    widgetBannerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    widgetBannerIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    widgetBannerIconText: {
+        fontSize: 18,
+    },
+    widgetBannerTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: 'white',
+    },
+    widgetBannerSubtext: {
+        fontSize: 13,
+        fontWeight: '500',
+        color: 'rgba(255, 255, 255, 0.85)',
+        marginTop: 1,
     },
     carouselContainer: {
         marginBottom: 16,

@@ -45,6 +45,13 @@ import { cn } from '@/lib/utils';
 import { TEMPLATE_COLORS_MAP } from '@/utils/colors';
 import { ClassDiscountRulesForm } from '@/components/class-discount-rules-form';
 import { QuestionnaireBuilder } from '@/components/questionnaire-builder';
+import {
+    WidgetsSectionCard,
+    SelectWidgetTypeModal,
+    AmericanoWizard,
+    type WidgetType,
+    type WidgetSnapshot
+} from '@/components/widgets';
 import { useTypedTranslation } from '@/lib/typed';
 import type { Question } from '@repo/api/types/questionnaire';
 
@@ -132,6 +139,11 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
     const [discountRules, setDiscountRules] = useState<DiscountRule[]>([]);
     const [questionnaire, setQuestionnaire] = useState<Question[]>([]);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+    // Widget modals state
+    const [showWidgetTypeModal, setShowWidgetTypeModal] = useState(false);
+    const [showAmericanoWizard, setShowAmericanoWizard] = useState(false);
+    const [selectedWidgetType, setSelectedWidgetType] = useState<WidgetType | null>(null);
     const [pendingFormData, setPendingFormData] = useState<FormData | null>(null);
     const [applyToAll, setApplyToAll] = useState(false);
     const isMobile = useIsMobile();
@@ -315,7 +327,8 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                         condition: rule.condition,
                         discount: rule.discount,
                     })) : [],
-                    questionnaire: questionnaire.length > 0 ? questionnaire : undefined,
+                    questionnaire: questionnaire.length > 0 ? questionnaire : [],
+                    // Note: widgets are managed separately via the widget wizard
                 }
             });
 
@@ -366,7 +379,8 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                         condition: rule.condition,
                         discount: rule.discount,
                     })) : [],
-                    questionnaire: questionnaire.length > 0 ? questionnaire : undefined,
+                    questionnaire: questionnaire.length > 0 ? questionnaire : [],
+                    // Note: widgets are managed separately via the widget wizard
                 }
             });
             toast.success(t('routes.calendar.editClass.classesUpdatedSuccess', { count: result.totalUpdated }));
@@ -667,6 +681,17 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                         />
                                     </div>
 
+                                    {/* Widgets Section */}
+                                    {instance && (
+                                        <div className="space-y-4 mt-8">
+                                            <WidgetsSectionCard
+                                                widgetSnapshots={instance.widgetSnapshots as WidgetSnapshot[] | undefined}
+                                                classInstanceId={instance._id}
+                                                onAddWidget={() => setShowWidgetTypeModal(true)}
+                                            />
+                                        </div>
+                                    )}
+
                                 </div>
                             </Form>
                         </ScrollArea>
@@ -717,6 +742,31 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                 similarInstances={similarInstances || []}
                 businessTimezone={businessTimezone}
             />
+
+            {/* Widget Selection Modal */}
+            <SelectWidgetTypeModal
+                open={showWidgetTypeModal}
+                onOpenChange={setShowWidgetTypeModal}
+                onSelectType={(type) => {
+                    setSelectedWidgetType(type);
+                    if (type === 'tournament_americano') {
+                        setShowAmericanoWizard(true);
+                    }
+                }}
+            />
+
+            {/* Americano Tournament Wizard */}
+            {instance && (
+                <AmericanoWizard
+                    open={showAmericanoWizard}
+                    onOpenChange={setShowAmericanoWizard}
+                    classInstanceId={instance._id}
+                    onComplete={() => {
+                        // Widget was created - the instance will be updated via Convex reactivity
+                        setSelectedWidgetType(null);
+                    }}
+                />
+            )}
         </>
     );
 } 

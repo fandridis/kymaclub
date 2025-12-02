@@ -296,7 +296,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                     condition: rule.condition,
                     discount: rule.discount,
                 })) : undefined,
-                questionnaire: questionnaire.length > 0 ? questionnaire : undefined,
+                questionnaire: questionnaire.length > 0 ? questionnaire : [],
             };
 
             if (isEditMode) {
