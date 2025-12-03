@@ -12,7 +12,6 @@ import { VenueDetailsScreen } from './screens/VenueDetailsScreen';
 import { VenueClassInstancesScreen } from './screens/VenueClassInstancesScreen';
 import { ExploreFiltersModalScreen } from './screens/ExploreFiltersModalScreen';
 import { SettingsNotificationsPreferenceScreen } from './screens/SettingsNotificationsPreferenceScreen';
-import { SettingsProfileScreen } from './screens/SettingsProfileScreen';
 import { SettingsNotificationsScreen } from './screens/SettingsNotificationsScreen';
 import { SettingsSubscriptionScreen } from './screens/SettingsSubscriptionScreen';
 import { SettingsAccountScreen } from './screens/SettingsAccountScreen';
@@ -118,15 +117,6 @@ export function RootNavigator() {
         component={ClassDetailsModalScreen}
         options={{
           animation: 'slide_from_right',
-        }}
-      />
-      <RootStack.Screen
-        name="SettingsProfile"
-        component={SettingsProfileScreen}
-        options={{
-          title: 'Profile Settings',
-          animation: 'slide_from_right',
-          headerShown: false,
         }}
       />
       <RootStack.Screen
@@ -310,7 +300,6 @@ export type RootStackParamList = {
   Bookings: undefined;
   Messages: undefined;
   Settings: undefined;
-  Profile: { user: string };
   VenueDetailsScreen: { venueId: string };
   VenueClassInstancesModal: { venueId: string; venueName: string };
   ExploreFiltersModal: undefined;
@@ -318,7 +307,6 @@ export type RootStackParamList = {
     classInstance?: import('@repo/api/convex/_generated/dataModel').Doc<"classInstances">;
     classInstanceId?: import('@repo/api/convex/_generated/dataModel').Id<"classInstances">;
   };
-  SettingsProfile: undefined;
   SettingsNotifications: undefined;
   SettingsSubscription: undefined;
   SettingsAccount: undefined;
@@ -380,7 +368,6 @@ export type RootStackParamListWithNestedTabs = {
   Bookings: undefined;
   Messages: undefined;
   Settings: undefined;
-  Profile: { user: string };
   VenueDetailsScreen: { venueId: string };
   VenueClassInstancesModal: { venueId: string; venueName: string };
   ExploreFiltersModal: undefined;
@@ -388,7 +375,6 @@ export type RootStackParamListWithNestedTabs = {
     classInstance?: import('../hooks/use-class-instances').ClassInstance;
     classInstanceId?: import('@repo/api/convex/_generated/dataModel').Id<"classInstances">;
   };
-  ProfileSettings: undefined;
   SettingsNotifications: undefined;
   SettingsSubscription: undefined;
   SettingsAccount: undefined;

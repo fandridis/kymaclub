@@ -60,7 +60,6 @@ function needsAuthentication(route: string): boolean {
     'ClassDetailsModal',
     'Home',
     'Settings',
-    'SettingsProfile',
     'SettingsNotifications',
     'SettingsSubscription',
     'SettingsAccount',
@@ -328,7 +327,6 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
                   },
                 },
                 // Settings screens
-                SettingsProfile: 'settings/profile',
                 SettingsNotifications: 'settings/notifications',
                 SettingsSubscription: 'settings/subscription',
                 SettingsAccount: 'settings/account',

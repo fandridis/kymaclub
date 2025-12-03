@@ -17,7 +17,6 @@ export type DeepLinkType =
   | 'home'
   | 'explore'
   | 'settings'
-  | 'profile'
   | 'notifications'
   | 'payment-success'
   | 'payment-cancel';
@@ -83,7 +82,7 @@ export function generateExploreLink(): string {
  * Generate deep link URL for settings
  */
 export function generateSettingsLink(): string {
-  return `${SCHEME}settings/profile`;
+  return `${SCHEME}home/settings`;
 }
 
 /**
@@ -130,7 +129,7 @@ export function generateNotificationDeepLink(
 
     case 'credits_received_subscription':
     case 'credits_received_admin_gift':
-      return generateSettingsLink();
+      return generateHomeLink();
 
     default:
       return generateHomeLink();
@@ -164,7 +163,6 @@ export function generateDeepLinkFromData(data: DeepLinkData): string {
       return generateExploreLink();
 
     case 'settings':
-    case 'profile':
     case 'notifications':
       return generateSettingsLink();
 
@@ -284,7 +282,11 @@ export function parseDeepLink(url: string): { route: string; params: Record<stri
     }
 
     if (segments[0] === 'settings') {
-      const settingsRoute = segments[1] || 'profile';
+      const settingsRoute = segments[1];
+      // 'profile' screen was removed - redirect to News
+      if (!settingsRoute || settingsRoute === 'profile') {
+        return { route: 'News', params: {} };
+      }
       return {
         route: `Settings${settingsRoute.charAt(0).toUpperCase() + settingsRoute.slice(1)}`,
         params: {}

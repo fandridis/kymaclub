@@ -50,6 +50,11 @@ export const upsertUserSettingsArgs = v.object({
                 web: v.boolean(),
                 push: v.boolean(),
             })),
+            welcome_bonus: v.optional(v.object({
+                email: v.boolean(),
+                web: v.boolean(),
+                push: v.boolean(),
+            })),
         }),
     })),
     banners: v.optional(v.object({

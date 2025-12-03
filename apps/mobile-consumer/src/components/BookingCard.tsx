@@ -57,8 +57,25 @@ export const BookingCard: React.FC<BookingCardProps> = ({
   const startTimeValue = booking.classInstanceSnapshot?.startTime;
   const startTime = startTimeValue ? new Date(startTimeValue) : null;
 
-  const dateLabel = startTime ? format(startTime, 'MMM d', { in: tz(ATHENS_TZ) }) : '—';
-  const timeLabel = startTime ? format(startTime, 'HH:mm', { in: tz(ATHENS_TZ) }) : '—';
+  const dateLabel = useMemo(() => {
+    if (!startTime) return '—';
+    try {
+      return format(startTime, 'MMM d', { in: tz(ATHENS_TZ) });
+    } catch (e) {
+      console.warn('Error formatting dateLabel:', e);
+      return format(startTime, 'MMM d');
+    }
+  }, [startTime]);
+
+  const timeLabel = useMemo(() => {
+    if (!startTime) return '—';
+    try {
+      return format(startTime, 'HH:mm', { in: tz(ATHENS_TZ) });
+    } catch (e) {
+      console.warn('Error formatting timeLabel:', e);
+      return format(startTime, 'HH:mm');
+    }
+  }, [startTime]);
 
   const className = booking.classInstanceSnapshot?.name ?? 'Class';
   const instructor = booking.classInstanceSnapshot?.instructor ?? '';

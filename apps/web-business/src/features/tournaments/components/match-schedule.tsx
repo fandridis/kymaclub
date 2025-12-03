@@ -30,22 +30,22 @@ function InlineScoreControl({
     isWinning: boolean;
 }) {
     return (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
             <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onDecrement(); }}
                 disabled={score <= 0}
                 className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+                    "w-8 h-8 rounded-full flex items-center justify-center transition-all",
                     "bg-slate-100 hover:bg-slate-200 border border-slate-300",
                     "disabled:opacity-30 disabled:cursor-not-allowed",
                     "active:scale-95"
                 )}
             >
-                <Minus className="h-4 w-4 text-slate-600" />
+                <Minus className="h-3.5 w-3.5 text-slate-600" />
             </button>
             <span className={cn(
-                "text-4xl font-black tabular-nums w-14 text-center",
+                "text-2xl font-black tabular-nums w-10 text-center",
                 isWinning ? "text-cyan-600" : "text-slate-900"
             )}>
                 {score}
@@ -55,13 +55,13 @@ function InlineScoreControl({
                 onClick={(e) => { e.stopPropagation(); onIncrement(); }}
                 disabled={score >= maxPoints}
                 className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+                    "w-8 h-8 rounded-full flex items-center justify-center transition-all",
                     "bg-cyan-500 hover:bg-cyan-600 border border-cyan-600",
                     "disabled:opacity-30 disabled:cursor-not-allowed",
                     "active:scale-95"
                 )}
             >
-                <Plus className="h-4 w-4 text-white" />
+                <Plus className="h-3.5 w-3.5 text-white" />
             </button>
         </div>
     );
@@ -147,14 +147,13 @@ function MatchCard({
         onCancelEdit();
     };
 
-    const isValid = team1Score !== team2Score;
     const team1Winning = team1Score > team2Score;
     const team2Winning = team2Score > team1Score;
 
     if (isEditing) {
         return (
             <div className={cn(
-                "rounded-2xl p-5 transition-all duration-200",
+                "rounded-2xl p-3 transition-all duration-200",
                 "bg-white",
                 "border-2 border-cyan-500",
                 "shadow-xl shadow-cyan-500/20"
@@ -213,17 +212,7 @@ function MatchCard({
                 </div>
 
                 {/* Info & Actions */}
-                <div className="mt-5 pt-4 border-t border-slate-200">
-                    <p className="text-[10px] text-slate-400 text-center mb-3 tracking-wide font-semibold uppercase">
-                        Total Points: {matchPoints} • Auto-balanced
-                    </p>
-
-                    {!isValid && (
-                        <p className="text-xs text-orange-500 text-center mb-3 font-bold">
-                            Ties are not allowed
-                        </p>
-                    )}
-
+                <div className="mt-3 pt-3 border-t border-slate-200">
                     <div className="flex gap-2">
                         <button
                             onClick={handleCancel}
@@ -240,7 +229,7 @@ function MatchCard({
                         </button>
                         <button
                             onClick={handleSave}
-                            disabled={!isValid || isSaving}
+                            disabled={isSaving}
                             className={cn(
                                 "flex-1 h-11 rounded-xl font-bold text-sm transition-all",
                                 "bg-cyan-500 hover:bg-cyan-600 text-white",
@@ -259,7 +248,7 @@ function MatchCard({
 
     return (
         <div className={cn(
-            "rounded-2xl p-5 transition-all duration-200",
+            "rounded-2xl p-3 transition-all duration-200",
             "bg-white",
             "border border-slate-200",
             "shadow-sm hover:shadow-md",
@@ -330,7 +319,7 @@ function MatchCard({
 
             {/* Edit button */}
             {canRecordScores && (
-                <div className="mt-4 pt-4 border-t border-slate-100 flex justify-center">
+                <div className="mt-3 pt-3 border-t border-slate-100 flex justify-center">
                     <button
                         onClick={onStartEdit}
                         className={cn(

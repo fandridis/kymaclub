@@ -273,7 +273,10 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
               {/* See Studio Button */}
               <TouchableOpacity
                 style={styles.seeStudioButton}
-                onPress={() => navigation.navigate('VenueDetailsScreen', { venueId: selectedVenue._id })}
+                onPress={() => {
+                  handleCloseSheet();
+                  navigation.navigate('VenueDetailsScreen', { venueId: selectedVenue._id });
+                }}
                 activeOpacity={0.8}
               >
                 <Text style={styles.seeStudioButtonText}>See Studio</Text>

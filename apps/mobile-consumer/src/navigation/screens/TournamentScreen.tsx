@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
-import { useQuery } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
 import { Trophy, Users, Target, LayoutGrid, X, Lock, Clock, CheckCircle } from 'lucide-react-native';
@@ -30,6 +30,17 @@ export function TournamentScreen() {
         api.queries.widgets.getById,
         { widgetId: widgetId as Id<"classInstanceWidgets"> }
     );
+
+    const recordMatchResult = useMutation(api.mutations.widgets.recordAmericanoMatchResult);
+
+    const handleSaveScore = async (matchId: string, team1Score: number, team2Score: number) => {
+        await recordMatchResult({
+            widgetId: widgetId as Id<"classInstanceWidgets">,
+            matchId,
+            team1Score,
+            team2Score,
+        });
+    };
 
     if (!tournamentState || !widget) {
         return (
@@ -64,6 +75,7 @@ export function TournamentScreen() {
     const state = tournamentState.state;
     const classInfo = tournamentState.classInstanceInfo;
     const playersReady = tournamentState.participants.length === config.numberOfPlayers;
+    const canRecordScores = isActive && !isLocked;
 
     // Check if current round is complete (waiting for organizer to advance)
     const currentRound = state?.currentRound ?? 1;
@@ -182,6 +194,8 @@ export function TournamentScreen() {
                                 currentRound={state.currentRound}
                                 matchPoints={config.matchPoints}
                                 courts={config.courts}
+                                onSaveScore={handleSaveScore}
+                                canRecordScores={canRecordScores}
                             />
                         </>
                     ) : (

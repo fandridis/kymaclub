@@ -1,11 +1,10 @@
 import React from 'react';
-import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Text, Platform } from 'react-native';
 import { SearchIcon, TicketIcon } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation';
 import { theme } from '../theme';
-import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTypedTranslation } from '../i18n/typed';
 import { useQuery } from 'convex/react';
@@ -19,8 +18,8 @@ export function FloatingNavButtons() {
     const { user } = useCurrentUser();
     const { bottom: bottomInset } = useSafeAreaInsets();
 
-    // Keep the button lifted above the system nav (Android) while preserving iOS safe area
-    const containerBottom = bottomInset + 16;
+    // iOS: lower position (closer to bottom), Android: higher to clear system nav bar
+    const containerBottom = Platform.OS === 'ios' ? bottomInset + 8 : Math.max(bottomInset, 24) + 24;
 
     // Check if there are upcoming bookings
     const userBookings = useQuery(
@@ -52,11 +51,6 @@ export function FloatingNavButtons() {
                     accessibilityLabel={t('navigation.explore')}
                     accessibilityRole="button"
                 >
-                    <BlurView
-                        intensity={20}
-                        tint="light"
-                        style={[StyleSheet.absoluteFillObject, styles.blurContainer]}
-                    />
                     <View style={styles.searchButtonContent}>
                         <SearchIcon size={24} color={theme.colors.zinc[950]} />
                         <Text style={styles.buttonLabel}>{t('navigation.explore')}</Text>
@@ -119,11 +113,9 @@ const styles = StyleSheet.create({
     searchButton: {
         borderRadius: 32,
         overflow: 'hidden',
-    },
-    blurContainer: {
-        borderRadius: 32,
-        overflow: 'hidden',
-        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.95)',
     },
     searchButtonContent: {
         flexDirection: 'row',

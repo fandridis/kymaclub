@@ -14,13 +14,16 @@ interface TournamentMatchesProps {
     currentRound: number;
     matchPoints: TournamentAmericanoMatchPoints;
     courts: TournamentCourt[];
+    onSaveScore?: (matchId: string, team1Score: number, team2Score: number) => Promise<void>;
+    canRecordScores?: boolean;
 }
 
-export function TournamentMatches({ matches, participants, currentRound, matchPoints, courts }: TournamentMatchesProps) {
+export function TournamentMatches({ matches, participants, currentRound, matchPoints, courts, onSaveScore, canRecordScores = false }: TournamentMatchesProps) {
     const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set([currentRound]));
     const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
     const [team1Score, setTeam1Score] = useState(0);
     const [team2Score, setTeam2Score] = useState(0);
+    const [isSaving, setIsSaving] = useState(false);
 
     const participantMap = new Map(
         participants.map(p => [p._id.toString(), p.displayName])
@@ -98,9 +101,17 @@ export function TournamentMatches({ matches, participants, currentRound, matchPo
         }
     };
 
-    const handleSave = () => {
-        // TODO: Call mutation to save score
-        setEditingMatchId(null);
+    const handleSave = async () => {
+        if (!editingMatchId || !onSaveScore) return;
+        if (team1Score === team2Score) return;
+
+        setIsSaving(true);
+        try {
+            await onSaveScore(editingMatchId, team1Score, team2Score);
+            setEditingMatchId(null);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const isValid = team1Score !== team2Score;
@@ -199,17 +210,21 @@ export function TournamentMatches({ matches, participants, currentRound, matchPo
                             <Text style={styles.editingError}>Ties not allowed</Text>
                         )}
                         <View style={styles.editingButtons}>
-                            <TouchableOpacity style={styles.cancelBtn} onPress={cancelEditing}>
+                            <TouchableOpacity
+                                style={styles.cancelBtn}
+                                onPress={cancelEditing}
+                                disabled={isSaving}
+                            >
                                 <X size={16} color={theme.colors.zinc[600]} />
                                 <Text style={styles.cancelBtnText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.saveBtn, !isValid && styles.saveBtnDisabled]}
+                                style={[styles.saveBtn, (!isValid || isSaving) && styles.saveBtnDisabled]}
                                 onPress={handleSave}
-                                disabled={!isValid}
+                                disabled={!isValid || isSaving}
                             >
                                 <Check size={16} color="#fff" />
-                                <Text style={styles.saveBtnText}>Save</Text>
+                                <Text style={styles.saveBtnText}>{isSaving ? 'Saving...' : 'Save'}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -264,8 +279,8 @@ export function TournamentMatches({ matches, participants, currentRound, matchPo
                     </View>
                 </View>
 
-                {/* Edit Button - only show for current round */}
-                {isCurrentRound && (
+                {/* Edit Button - only show for current round when can record */}
+                {isCurrentRound && canRecordScores && (
                     <View style={styles.editButtonContainer}>
                         <TouchableOpacity
                             style={styles.editButton}
@@ -302,7 +317,7 @@ export function TournamentMatches({ matches, participants, currentRound, matchPo
                             activeOpacity={0.7}
                         >
                             <View style={styles.roundHeaderLeft}>
-                                <Text style={[styles.roundTitle, isCurrentRound && styles.roundTitleCurrent]}>
+                                <Text style={[styles.roundTitle, isCurrentRound && styles.roundTitleCurrent, isFutureRound && styles.roundTitleFaded]}>
                                     ROUND {round}
                                 </Text>
                                 {isCurrentRound && (
@@ -340,7 +355,7 @@ const styles = StyleSheet.create({
     },
     roundSection: {},
     roundSectionFaded: {
-        opacity: 0.5,
+        opacity: 0.7,
     },
     roundHeader: {
         flexDirection: 'row',
@@ -374,6 +389,9 @@ const styles = StyleSheet.create({
     roundTitleCurrent: {
         color: '#f97316',
     },
+    roundTitleFaded: {
+        opacity: 0.5,
+    },
     roundLiveBadge: {
         backgroundColor: '#f97316',
         paddingHorizontal: 8,
@@ -396,16 +414,9 @@ const styles = StyleSheet.create({
         padding: 16,
         borderWidth: 1,
         borderColor: theme.colors.zinc[200],
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
-        elevation: 2,
     },
     matchCardLive: {
         borderColor: '#f97316',
-        shadowColor: '#f97316',
-        shadowOpacity: 0.1,
     },
     matchCardEditing: {
         backgroundColor: '#fff',
@@ -413,11 +424,6 @@ const styles = StyleSheet.create({
         padding: 16,
         borderWidth: 2,
         borderColor: '#06b6d4',
-        shadowColor: '#06b6d4',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
-        elevation: 4,
     },
     matchContent: {
         flexDirection: 'row',

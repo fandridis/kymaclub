@@ -75,36 +75,15 @@ export function SettingsNotificationsScreen() {
         }
     }, [settings]);
 
-    // Get group status - returns 'all', 'none', or 'mixed'
-    const getGroupStatus = (group: typeof notificationGroups[0]) => {
-        const allChannels: boolean[] = [];
-
-        group.notificationKeys.forEach(key => {
-            const pref = preferences[key];
-            allChannels.push(pref.email, pref.web, pref.push);
-        });
-
-        const enabledCount = allChannels.filter(Boolean).length;
-
-        if (enabledCount === 0) return 'none';
-        if (enabledCount === allChannels.length) return 'all';
-        return 'mixed';
-    };
-
-    // Get group description based on status
+    // Get group description showing enabled channels
+    // Note: We only show push and email on mobile (web/in-app notifications don't apply)
     const getGroupDescription = (group: typeof notificationGroups[0]) => {
-        const status = getGroupStatus(group);
-
-        if (status === 'none') return t('settings.notifications.status.disabled');
-        if (status === 'all') return t('settings.notifications.status.enabledAllChannels');
-
-        // For mixed status, show which channels are enabled across all notifications in the group
+        // Collect which channels are enabled across all notifications in the group
         const enabledChannels = new Set<string>();
         group.notificationKeys.forEach(key => {
             const pref = preferences[key];
             if (pref.push) enabledChannels.add(t('settings.notifications.channels.push'));
             if (pref.email) enabledChannels.add(t('settings.notifications.channels.email'));
-            if (pref.web) enabledChannels.add(t('settings.notifications.channels.inApp'));
         });
 
         return enabledChannels.size > 0
@@ -152,20 +131,15 @@ export function SettingsNotificationsScreen() {
                 </View>
 
                 <SettingsGroup>
-                    {notificationGroups.map((group) => {
-                        const status = getGroupStatus(group);
-                        const description = getGroupDescription(group);
-
-                        return (
-                            <SettingsRow
-                                key={group.id}
-                                title={group.title}
-                                subtitle={description}
-                                icon={group.icon}
-                                onPress={() => handleGroupPress(group)}
-                            />
-                        );
-                    })}
+                    {notificationGroups.map((group) => (
+                        <SettingsRow
+                            key={group.id}
+                            title={group.title}
+                            subtitle={getGroupDescription(group)}
+                            icon={group.icon}
+                            onPress={() => handleGroupPress(group)}
+                        />
+                    ))}
                 </SettingsGroup>
             </ScrollView>
         </SafeAreaView>

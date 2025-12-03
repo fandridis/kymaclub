@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, Alert, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { Calendar1Icon, ClockIcon, CalendarOffIcon, DiamondIcon, ChevronLeftIcon, CheckCircleIcon, ArrowLeftIcon } from 'lucide-react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -16,7 +16,6 @@ import { useActionSheet } from '@expo/react-native-action-sheet';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { centsToCredits } from '@repo/utils/credits';
 import { theme } from '../../theme';
-import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCancellationInfo, getCancellationMessage, getCancellationTranslations } from '../../utils/cancellationUtils';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
@@ -922,12 +921,11 @@ export function ClassDetailsModalScreen() {
                     </ScrollView>
 
                     {/* Sticky Button - Book or Already Attending */}
-                    <View style={[styles.stickyButtonContainer, { bottom: bottomInset + 24 }]}>
+                    <View style={[styles.stickyButtonContainer, { bottom: Platform.OS === 'ios' ? bottomInset + 8 : Math.max(bottomInset, 24) + 24 }]}>
                         {existingBooking ? (
                             existingBooking.status === "pending" || existingBooking.status === "completed" ? (
                                 /* Already Attending Container */
                                 <View style={styles.alreadyAttendingContainer}>
-                                    <BlurView intensity={20} style={[StyleSheet.absoluteFill, styles.blurContainer]} />
                                     <View style={styles.attendingTitleContainer}>
                                         <CheckCircleIcon size={22} color={theme.colors.emerald[600]} />
                                         <Text style={styles.alreadyAttendingTitle}>
@@ -963,7 +961,6 @@ export function ClassDetailsModalScreen() {
                                         activeOpacity={0.8}
                                         disabled={isBooking}
                                     >
-                                        <BlurView intensity={20} style={[StyleSheet.absoluteFill, styles.blurContainer]} />
                                         <Text style={styles.rebookTitle}>
                                             {existingBooking.status === "cancelled_by_consumer" && t('classes.youCancelled')}
                                             {existingBooking.status === "cancelled_by_business_rebookable" && t('classes.cancelledByStudio')}
@@ -975,7 +972,6 @@ export function ClassDetailsModalScreen() {
                                 ) : (
                                     /* Status Display Container - Not clickable */
                                     <View style={styles.statusContainer}>
-                                        <BlurView intensity={20} style={[StyleSheet.absoluteFill, styles.blurContainer]} />
                                         <View style={styles.statusTitleContainer}>
                                             {existingBooking.status === "cancelled_by_business" && <Text style={styles.statusTitle}>{t('classes.cancelledByStudio')}</Text>}
                                             {existingBooking.status === "no_show" && <Text style={styles.statusTitle}>{t('classes.noShow')}</Text>}
@@ -1064,7 +1060,7 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     contentContainer: {
-        paddingBottom: 100,
+        paddingBottom: 140,
     },
     fullWidthCarouselContainer: {
         marginBottom: 0,
@@ -1121,13 +1117,6 @@ const styles = StyleSheet.create({
         height: 1,
         backgroundColor: '#e5e7eb',
         marginVertical: 12,
-    },
-    blurContainer: {
-        borderRadius: 30,
-        overflow: 'hidden',
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.5)',
     },
     discountBanner: {
         backgroundColor: theme.colors.amber[500],
@@ -1535,9 +1524,10 @@ const styles = StyleSheet.create({
         color: 'rgba(255, 255, 255, 0.9)',
     },
     alreadyAttendingContainer: {
-        backgroundColor: 'transparent',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
         borderRadius: 30,
-
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.95)',
         paddingHorizontal: 24,
         paddingVertical: 16,
         gap: 18,
@@ -1610,8 +1600,10 @@ const styles = StyleSheet.create({
         color: theme.colors.zinc[700],
     },
     statusContainer: {
-        backgroundColor: 'transparent',
+        backgroundColor: 'rgba(255, 255, 255, 0.92)',
         borderRadius: 40,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.5)',
         height: 56,
         paddingHorizontal: 28,
         flexDirection: 'column',
@@ -1644,8 +1636,10 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     rebookContainer: {
-        backgroundColor: 'transparent',
+        backgroundColor: 'rgba(255, 255, 255, 0.92)',
         borderRadius: 40,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.5)',
         height: 56,
         paddingHorizontal: 28,
         flexDirection: 'column',

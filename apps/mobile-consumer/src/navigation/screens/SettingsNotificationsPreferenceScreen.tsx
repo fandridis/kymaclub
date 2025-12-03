@@ -89,11 +89,6 @@ export function SettingsNotificationsPreferenceScreen() {
             description: t('settings.notifications.channelLabels.push.description')
         },
         {
-            key: 'web' as const,
-            label: t('settings.notifications.channelLabels.inApp.label'),
-            description: t('settings.notifications.channelLabels.inApp.description')
-        },
-        {
             key: 'email' as const,
             label: t('settings.notifications.channelLabels.email.label'),
             description: t('settings.notifications.channelLabels.email.description')
