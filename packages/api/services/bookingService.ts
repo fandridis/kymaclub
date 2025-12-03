@@ -500,7 +500,7 @@ export const bookingService = {
                 const hasRequiredQuestions = effectiveQuestionnaire.some(q => q.required);
                 if (hasRequiredQuestions) {
                     throw new ConvexError({
-                        message: "Pre-booking questionnaire must be answered",
+                        message: "Questionnaire must be answered",
                         field: "questionnaireAnswers",
                         code: ERROR_CODES.VALIDATION_ERROR,
                     });

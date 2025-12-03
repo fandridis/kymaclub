@@ -462,7 +462,7 @@
                 "noBookingsDescription": "Customers haven't booked this class yet"
             },
             "questionnaire": {
-                "title": "Pre-booking Answers",
+                "title": "Questionnaire",
                 "answer": "answer",
                 "answers": "answers",
                 "totalAdditionalFees": "Total additional fees"
@@ -548,7 +548,7 @@
         "reloadPage": "Reload Page"
     },
     "questionnaire": {
-        "title": "Pre-booking Questions",
+        "title": "Questionnaire",
         "addQuestion": "Add Question",
         "deleteQuestion": "Delete Question",
         "noQuestionsConfigured": "No questions configured",
