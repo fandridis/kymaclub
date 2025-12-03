@@ -319,31 +319,26 @@ export const emailService = {
                 title: subject,
                 content: `
                     <div style="text-align: center; margin-bottom: 32px;">
-                        <h1 style="color: #059669; font-size: 28px; margin-bottom: 16px;">🎁 You've Been Gifted Credits!</h1>
-                        <p style="font-size: 18px; color: #4B5563; margin: 0;">Hi ${args.customerName}!</p>
-                    </div>
-
-                    <div style="background: linear-gradient(135deg, #059669, #10B981); border-radius: 16px; padding: 32px; text-align: center; margin-bottom: 32px;">
-                        <div style="background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-                            <h2 style="color: #059669; font-size: 48px; font-weight: bold; margin: 0 0 8px 0;">${args.creditsGifted}</h2>
-                            <p style="color: #4B5563; font-size: 18px; margin: 0; font-weight: 500;">Credits Gifted</p>
-                        </div>
-                        <p style="color: white; font-size: 16px; margin: 0; opacity: 0.95;">From KymaClub</p>
+                        <p style="font-size: 18px; color: #1e293b; margin: 0;">
+                            Hi ${args.customerName}, KymaClub have just sent you <strong style="color: #059669;">${args.creditsGifted} credits</strong>!
+                        </p>
                     </div>
 
                     ${args.giftMessage ? `
-                    <div style="background: #FEF3C7; border-left: 4px solid #F59E0B; padding: 20px; margin: 24px 0; border-radius: 4px;">
-                        <h4 style="color: #92400E; margin: 0 0 8px 0; font-size: 16px;">💬 Message</h4>
-                        <p style="color: #92400E; margin: 0; font-size: 14px; font-style: italic;">"${args.giftMessage}"</p>
+                    <div style="margin: 0 0 24px 0;">
+                        <p style="color: #6B7280; font-size: 14px; margin: 0 0 4px 0; font-weight: 500;">Note</p>
+                        <p style="color: #374151; margin: 0; font-size: 14px;">${args.giftMessage}</p>
                     </div>
                     ` : ''}
 
                     <div style="background: #F9FAFB; border-radius: 12px; padding: 24px; margin-bottom: 32px;">
-                        <h3 style="color: #059669; font-size: 20px; margin: 0 0 16px 0;">📊 Your Credit Balance</h3>
-                        <div style="display: flex; justify-content: space-between; align-items: center; background: white; border-radius: 8px; padding: 16px;">
-                            <span style="color: #4B5563; font-size: 16px;">Total Credits Available</span>
-                            <span style="color: #059669; font-size: 20px; font-weight: bold;">${args.totalCredits}</span>
-                        </div>
+                        <h3 style="color: #059669; font-size: 18px; margin: 0 0 16px 0;">📊 Your Credit Balance</h3>
+                        <table width="100%" cellpadding="0" cellspacing="0" style="background: white; border-radius: 8px;">
+                            <tr>
+                                <td style="padding: 16px; color: #4B5563; font-size: 16px;">Total Credits Available</td>
+                                <td style="padding: 16px; color: #059669; font-size: 20px; font-weight: bold; text-align: right;">${args.totalCredits}</td>
+                            </tr>
+                        </table>
                     </div>
 
                     <div style="text-align: center; margin: 32px 0;">
