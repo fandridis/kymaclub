@@ -474,6 +474,8 @@ export const createTestClassInstance = internalMutation({
                 imageStorageIds: venue.imageStorageIds || [],
                 deleted: venue.deleted || false,
             },
+            // Copy requiresConfirmation from template
+            requiresConfirmation: template.requiresConfirmation,
             createdAt: Date.now(),
             createdBy: user._id,
         });

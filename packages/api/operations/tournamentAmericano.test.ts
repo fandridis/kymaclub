@@ -42,7 +42,7 @@ describe('Tournament Americano Operations', () => {
             const invalidConfig = { ...validConfig, numberOfPlayers: 10 as any };
             const result = validateConfig(invalidConfig);
             expect(result.isValid).toBe(false);
-            expect(result.errors).toContain(expect.stringContaining('Invalid number of players'));
+            expect(result.errors.some(e => e.includes('Invalid number of players'))).toBe(true);
         });
 
         it('should reject config without courts', () => {
@@ -143,7 +143,7 @@ describe('Tournament Americano Operations', () => {
             const result = generateSchedule({ participantIds: participants, config: validConfig });
 
             expect(result.totalRounds).toBeGreaterThan(0);
-            expect(result.matches).toHaveLength(expect.any(Number));
+            expect(result.matches.length).toBeGreaterThan(0);
             expect(result.playerMatchCounts.size).toBe(8);
         });
 
@@ -156,7 +156,7 @@ describe('Tournament Americano Operations', () => {
             const result = generateSchedule({ participantIds: participants, config: fixedConfig });
 
             expect(result.totalRounds).toBeGreaterThan(0);
-            expect(result.matches).toHaveLength(expect.any(Number));
+            expect(result.matches.length).toBeGreaterThan(0);
         });
 
         it('should respect maxMatchesPerPlayer', () => {
@@ -371,7 +371,7 @@ describe('Tournament Americano Operations', () => {
 
             expect(state.currentRound).toBe(1);
             expect(state.totalRounds).toBeGreaterThan(0);
-            expect(state.matches).toHaveLength(expect.any(Number));
+            expect(state.matches.length).toBeGreaterThan(0);
             expect(state.standings).toHaveLength(8);
             expect(state.startedAt).toBeDefined();
         });

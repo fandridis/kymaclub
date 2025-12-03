@@ -72,7 +72,7 @@ export const widgetService = {
         const existingWidget = await ctx.db
             .query("classInstanceWidgets")
             .withIndex("by_class_instance_deleted", q =>
-                q.eq("classInstanceId", args.classInstanceId).eq("deleted", false)
+                q.eq("classInstanceId", args.classInstanceId).eq("deleted", undefined)
             )
             .first();
 
@@ -379,7 +379,7 @@ export const widgetService = {
             walkIns: updatedWalkIns,
             updatedAt: Date.now(),
             updatedBy: user._id,
-        });
+            });
     },
 
     /***************************************************************
