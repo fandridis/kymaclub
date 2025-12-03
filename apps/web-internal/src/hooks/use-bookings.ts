@@ -1,7 +1,7 @@
 import { usePaginatedQuery } from "convex/react";
 import { api } from "@repo/api/convex/_generated/api";
 
-type BookingStatus = "latest" | "cancelled_by_consumer" | "cancelled_by_business" | "no_show";
+type BookingStatus = "latest" | "awaiting_approval" | "cancelled_by_consumer" | "cancelled_by_business" | "rejected_by_business" | "no_show";
 
 export const useBookings = (initialNumItems: number = 10, status: BookingStatus = "latest") => {
     return usePaginatedQuery(

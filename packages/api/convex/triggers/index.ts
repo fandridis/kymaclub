@@ -133,20 +133,68 @@ triggers.register("bookings", async (ctx, change) => {
     const { id, oldDoc, newDoc, operation } = change;
 
     if (operation === 'insert') {
-        await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleNewClassBookingEvent, {
+        // Check if booking requires approval (awaiting_approval status)
+        if (newDoc.status === 'awaiting_approval') {
+            // Notify business about new booking request that needs approval
+            await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleBookingAwaitingApprovalEvent, {
+                payload: {
+                    bookingId: id,
+                    userId: newDoc.userId,
+                    classInstanceId: newDoc.classInstanceId,
+                    businessId: newDoc.businessId,
+                    creditsPaid: newDoc.finalPrice / 100,
+                },
+            });
+        } else {
+            // Regular booking - notify business about new booking
+            await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleNewClassBookingEvent, {
+                payload: {
+                    bookingId: id,
+                    userId: newDoc.userId,
+                    classInstanceId: newDoc.classInstanceId,
+                    businessId: newDoc.businessId,
+                    creditsPaid: newDoc.finalPrice / 100,
+                },
+            });
+        }
+    }
+
+    // Status transition detection
+    const wasCancelled = oldDoc?.status === 'cancelled_by_consumer' || oldDoc?.status === 'cancelled_by_business';
+    const becameCancelled = !wasCancelled && (newDoc?.status === 'cancelled_by_consumer' || newDoc?.status === 'cancelled_by_business');
+    const becameRebookable = oldDoc?.status !== 'cancelled_by_business_rebookable' && newDoc?.status === 'cancelled_by_business_rebookable';
+    
+    // New approval/rejection transitions
+    const wasAwaitingApproval = oldDoc?.status === 'awaiting_approval';
+    const becameApproved = wasAwaitingApproval && newDoc?.status === 'pending';
+    const becameRejected = wasAwaitingApproval && newDoc?.status === 'rejected_by_business';
+
+    // Handle approval - notify consumer
+    if (operation === 'update' && becameApproved) {
+        await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleBookingApprovedEvent, {
             payload: {
                 bookingId: id,
                 userId: newDoc.userId,
                 classInstanceId: newDoc.classInstanceId,
                 businessId: newDoc.businessId,
-                creditsPaid: newDoc.finalPrice / 100, // Calculate from finalPrice (cents / 100)
+                creditsPaid: newDoc.finalPrice / 100,
             },
         });
     }
 
-    const wasCancelled = oldDoc?.status === 'cancelled_by_consumer' || oldDoc?.status === 'cancelled_by_business';
-    const becameCancelled = !wasCancelled && (newDoc?.status === 'cancelled_by_consumer' || newDoc?.status === 'cancelled_by_business');
-    const becameRebookable = oldDoc?.status !== 'cancelled_by_business_rebookable' && newDoc?.status === 'cancelled_by_business_rebookable';
+    // Handle rejection - notify consumer
+    if (operation === 'update' && becameRejected) {
+        await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleBookingRejectedEvent, {
+            payload: {
+                bookingId: id,
+                userId: newDoc.userId,
+                classInstanceId: newDoc.classInstanceId,
+                businessId: newDoc.businessId,
+                creditsPaid: newDoc.finalPrice / 100,
+                reason: newDoc.rejectByBusinessReason,
+            },
+        });
+    }
 
     if (operation === 'update' && becameCancelled) {
         if (newDoc.cancelledBy === "consumer") {
@@ -156,7 +204,7 @@ triggers.register("bookings", async (ctx, change) => {
                     userId: newDoc.userId,
                     classInstanceId: newDoc.classInstanceId,
                     businessId: newDoc.businessId,
-                    creditsPaid: newDoc.finalPrice / 100, // Calculate from finalPrice (cents / 100)
+                    creditsPaid: newDoc.finalPrice / 100,
                 },
             });
         }
@@ -167,7 +215,7 @@ triggers.register("bookings", async (ctx, change) => {
                     userId: newDoc.userId,
                     classInstanceId: newDoc.classInstanceId,
                     businessId: newDoc.businessId,
-                    creditsPaid: newDoc.finalPrice / 100, // Calculate from finalPrice (cents / 100)
+                    creditsPaid: newDoc.finalPrice / 100,
                 },
             });
         }
@@ -180,7 +228,7 @@ triggers.register("bookings", async (ctx, change) => {
                 userId: newDoc.userId,
                 classInstanceId: newDoc.classInstanceId,
                 businessId: newDoc.businessId,
-                creditsPaid: newDoc.finalPrice / 100, // Calculate from finalPrice (cents / 100)
+                creditsPaid: newDoc.finalPrice / 100,
             },
         });
     }

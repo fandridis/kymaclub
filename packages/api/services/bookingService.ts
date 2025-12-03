@@ -569,13 +569,16 @@ export const bookingService = {
         // This prevents consumers from overbooking and reduces book/cancel churn behavior
         // Get user's current bookings to validate limits
         // First, check for duplicate booking to ensure idempotent behavior
-        // Only check for active bookings (not cancelled, completed, or no_show)
+        // Only check for active bookings (pending or awaiting_approval - not cancelled, completed, rejected, or no_show)
         const existing = await ctx.db
             .query("bookings")
             .withIndex("by_user_class", (q: any) => q.eq("userId", user._id).eq("classInstanceId", args.classInstanceId))
             .filter(q => q.and(
                 q.neq(q.field("deleted"), true),
-                q.eq(q.field("status"), 'pending')
+                q.or(
+                    q.eq(q.field("status"), 'pending'),
+                    q.eq(q.field("status"), 'awaiting_approval')
+                )
             ))
             .first();
 
@@ -622,12 +625,17 @@ export const bookingService = {
 
 
 
+        // Determine booking status based on requiresConfirmation
+        // If the class requires confirmation, start in "awaiting_approval" status
+        const requiresConfirmation = instance.requiresConfirmation ?? template.requiresConfirmation ?? false;
+        const initialStatus = requiresConfirmation ? "awaiting_approval" : "pending";
+
         // Create booking row first with user metadata for business owners
         const bookingId = await ctx.db.insert("bookings", {
             businessId: instance.businessId,
             userId: user._id,
             classInstanceId: args.classInstanceId,
-            status: "pending",
+            status: initialStatus,
             originalPrice,  // Now stored in cents
             finalPrice: finalPriceWithFees,     // Now stored in cents including questionnaire fees (creditsUsed = finalPrice / 100)
             creditTransactionId: "", // Will be updated after credit transaction
@@ -826,12 +834,13 @@ export const bookingService = {
             });
         }
 
-        // Allow cancellation of pending bookings, or completed bookings within 30 minutes after class start
+        // Allow cancellation of pending or awaiting_approval bookings, or completed bookings within 30 minutes after class start
         const THIRTY_MINUTES_MS = 30 * 60 * 1000;
         const thirtyMinutesAfterStart = instance.startTime + THIRTY_MINUTES_MS;
         const isWithinGracePeriod = booking.status === "completed" && now <= thirtyMinutesAfterStart;
+        const isActiveBooking = booking.status === "pending" || booking.status === "awaiting_approval";
 
-        if (booking.status !== "pending" && !isWithinGracePeriod) {
+        if (!isActiveBooking && !isWithinGracePeriod) {
             throw new ConvexError({
                 message: `Cannot cancel booking with status: ${booking.status}`,
                 field: "status",
@@ -895,7 +904,8 @@ export const bookingService = {
             status: args.cancelledBy === "consumer" ? "cancelled_by_consumer" : "cancelled_by_business",
             cancelledAt: now,
             cancelledBy: args.cancelledBy,
-            cancelReason: args.reason,
+            // Only set cancelByBusinessReason if cancelled by business
+            ...(args.cancelledBy === "business" && args.reason ? { cancelByBusinessReason: args.reason } : {}),
             refundAmount: refundAmountInCents,
             updatedAt: now,
             updatedBy: user._id,
@@ -1048,10 +1058,10 @@ export const bookingService = {
             });
         }
 
-        // Only allow rebooking for bookings cancelled by business
-        if (booking.status !== "cancelled_by_business") {
+        // Only allow rebooking for bookings cancelled or rejected by business
+        if (booking.status !== "cancelled_by_business" && booking.status !== "rejected_by_business") {
             throw new ConvexError({
-                message: "Only business-cancelled bookings can be made rebookable",
+                message: "Only business-cancelled or rejected bookings can be made rebookable",
                 field: "status",
                 code: ERROR_CODES.ACTION_NOT_ALLOWED,
             });
@@ -1063,6 +1073,164 @@ export const bookingService = {
             updatedAt: now,
             updatedBy: user._id,
         });
+
+        return { success: true };
+    },
+
+    /***************************************************************
+     * Approve Booking Handler
+     * Approves a booking that was awaiting business confirmation
+     ***************************************************************/
+    approveBooking: async ({
+        ctx,
+        args,
+        user,
+    }: {
+        ctx: MutationCtx;
+        args: {
+            bookingId: Id<"bookings">;
+        };
+        user: Doc<"users">;
+    }): Promise<{ success: boolean }> => {
+        const now = Date.now();
+
+        const booking = await ctx.db.get(args.bookingId);
+        if (!booking) {
+            throw new ConvexError({
+                message: "Booking not found",
+                field: "bookingId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND,
+            });
+        }
+
+        // Check if user has permission to approve this booking (must be business owner/staff)
+        if (booking.businessId !== user.businessId) {
+            throw new ConvexError({
+                message: "You are not authorized to approve this booking",
+                field: "businessId",
+                code: ERROR_CODES.UNAUTHORIZED,
+            });
+        }
+
+        // Only allow approval of awaiting_approval bookings
+        if (booking.status !== "awaiting_approval") {
+            throw new ConvexError({
+                message: `Cannot approve booking with status: ${booking.status}`,
+                field: "status",
+                code: ERROR_CODES.ACTION_NOT_ALLOWED,
+            });
+        }
+
+        // Update booking status to pending (approved)
+        await ctx.db.patch(args.bookingId, {
+            status: "pending",
+            approvedAt: now,
+            approvedBy: user._id,
+            updatedAt: now,
+            updatedBy: user._id,
+        });
+
+        return { success: true };
+    },
+
+    /***************************************************************
+     * Reject Booking Handler
+     * Rejects a booking that was awaiting business confirmation
+     * Issues full refund to the user
+     ***************************************************************/
+    rejectBooking: async ({
+        ctx,
+        args,
+        user,
+    }: {
+        ctx: MutationCtx;
+        args: {
+            bookingId: Id<"bookings">;
+            reason?: string;
+        };
+        user: Doc<"users">;
+    }): Promise<{ success: boolean }> => {
+        const now = Date.now();
+
+        const booking = await ctx.db.get(args.bookingId);
+        if (!booking) {
+            throw new ConvexError({
+                message: "Booking not found",
+                field: "bookingId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND,
+            });
+        }
+
+        // Check if user has permission to reject this booking (must be business owner/staff)
+        if (booking.businessId !== user.businessId) {
+            throw new ConvexError({
+                message: "You are not authorized to reject this booking",
+                field: "businessId",
+                code: ERROR_CODES.UNAUTHORIZED,
+            });
+        }
+
+        // Only allow rejection of awaiting_approval bookings
+        if (booking.status !== "awaiting_approval") {
+            throw new ConvexError({
+                message: `Cannot reject booking with status: ${booking.status}`,
+                field: "status",
+                code: ERROR_CODES.ACTION_NOT_ALLOWED,
+            });
+        }
+
+        // Get class instance to decrement booked count
+        const instance = await ctx.db.get(booking.classInstanceId);
+        if (!instance) {
+            throw new ConvexError({
+                message: "Class instance not found",
+                field: "classInstanceId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND,
+            });
+        }
+
+        // Get template for refund description
+        const template = await ctx.db.get(instance.templateId);
+
+        // Calculate full refund (100% for rejections)
+        const refundAmountInCents = booking.finalPrice;
+        const refundAmountInCredits = centsToCredits(booking.finalPrice);
+
+        // Update booking status to rejected
+        await ctx.db.patch(args.bookingId, {
+            status: "rejected_by_business",
+            rejectedAt: now,
+            rejectedBy: user._id,
+            rejectByBusinessReason: args.reason,
+            refundAmount: refundAmountInCents,
+            updatedAt: now,
+            updatedBy: user._id,
+        });
+
+        // Decrease booked count
+        await ctx.db.patch(booking.classInstanceId, {
+            bookedCount: Math.max(0, instance.bookedCount - 1),
+            updatedAt: now,
+            updatedBy: user._id,
+        });
+
+        // Process full refund if there was a charge
+        if (refundAmountInCredits > 0) {
+            const refundDescription = `Refund for rejected booking: ${template?.name ?? 'Class'} (100% refund)`;
+
+            await creditService.addCredits(ctx, {
+                userId: booking.userId,
+                amount: refundAmountInCredits,
+                type: "refund",
+                reason: "business_cancellation", // Using business_cancellation as the closest reason
+                description: refundDescription,
+                businessId: booking.businessId,
+                venueId: instance.venueId,
+                classTemplateId: instance.templateId,
+                classInstanceId: booking.classInstanceId,
+                bookingId: booking._id,
+            });
+        }
 
         return { success: true };
     },

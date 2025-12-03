@@ -194,6 +194,7 @@ export const createTestClassTemplate = internalMutation({
             tags: v.array(v.string()),
             color: v.string(),
             primaryCategory: v.optional(v.string()),
+            requiresConfirmation: v.optional(v.boolean()),
         })
     },
     returns: v.id("classTemplates"),
@@ -210,6 +211,7 @@ export const createTestClassTemplate = internalMutation({
             tags: args.template.tags,
             color: args.template.color,
             primaryCategory: (args.template.primaryCategory as any) || 'wellness_center',
+            requiresConfirmation: args.template.requiresConfirmation,
             allowWaitlist: true,
             isActive: true,
             bookingWindow: {

@@ -180,109 +180,109 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
           followsUserLocation={false}
           mapPadding={{ top: 0, right: 10, bottom: 60, left: 0 }}
         >
-        {venuesWithCoordinates.map((venue) => {
-          // Use vibrant green for selected marker, brand color for others
-          const isSelected = selectedVenue?._id === venue._id;
-          const pinColor = isSelected
-            ? "#22c55e"  // Vibrant green for active marker
-            : "#ff4747"; // Brand orange/red for default markers
+          {venuesWithCoordinates.map((venue) => {
+            // Use vibrant green for selected marker, brand color for others
+            const isSelected = selectedVenue?._id === venue._id;
+            const pinColor = isSelected
+              ? "#22c55e"  // Vibrant green for active marker
+              : "#ff4747"; // Brand orange/red for default markers
 
-          return (
-            <Marker
-              key={venue._id}
-              coordinate={venue.coordinate}
-              pinColor={pinColor}
-              onPress={() => handleMarkerPress(venue)}
-              tracksViewChanges={false}
-            />
-          );
-        })}
-      </MapView>
+            return (
+              <Marker
+                key={venue._id}
+                coordinate={venue.coordinate}
+                pinColor={pinColor}
+                onPress={() => handleMarkerPress(venue)}
+                tracksViewChanges={false}
+              />
+            );
+          })}
+        </MapView>
 
-      {/* Floating Venue Sheet */}
-      <BottomSheetModal
-        ref={bottomSheetRef}
-        index={0}
-        snapPoints={sheetSnapPoints}
-        onDismiss={handleSheetDismiss}
-        backgroundStyle={styles.sheetBackground}
-        handleIndicatorStyle={styles.sheetHandle}
-        enablePanDownToClose
-      >
-        <BottomSheetView style={[styles.sheetContent, { paddingBottom: 24 + insets.bottom }]}>
-          {selectedVenue && (
-            <>
-              {/* Close button */}
-              <TouchableOpacity style={styles.closeButton} onPress={handleCloseSheet}>
-                <X size={18} color="#666" />
-              </TouchableOpacity>
+        {/* Floating Venue Sheet */}
+        <BottomSheetModal
+          ref={bottomSheetRef}
+          index={0}
+          snapPoints={sheetSnapPoints}
+          onDismiss={handleSheetDismiss}
+          backgroundStyle={styles.sheetBackground}
+          handleIndicatorStyle={styles.sheetHandle}
+          enablePanDownToClose
+        >
+          <BottomSheetView style={[styles.sheetContent, { paddingBottom: 24 + insets.bottom }]}>
+            {selectedVenue && (
+              <>
+                {/* Close button */}
+                <TouchableOpacity style={styles.closeButton} onPress={handleCloseSheet}>
+                  <X size={18} color="#666" />
+                </TouchableOpacity>
 
-              {/* Header */}
-              <View style={styles.header}>
-                <Text style={styles.venueName}>{selectedVenue.name}</Text>
-                {selectedVenue.shortDescription && (
-                  <Text style={styles.venueShortDescription}>{selectedVenue.shortDescription}</Text>
-                )}
-              </View>
-
-              <Text style={styles.businessType}>{selectedVenue.type}</Text>
-
-              {typeof selectedVenue.distance === 'number' && (
-                <Text style={styles.distanceText}>{formatDistance(selectedVenue.distance)}</Text>
-              )}
-
-              {selectedVenue.rating && (
-                <View style={styles.ratingContainer}>
-                  <StarIcon size={14} color="#ffd700" fill="#ffd700" />
-                  <Text style={styles.rating}>
-                    {selectedVenue.rating.toFixed(1)}
-                  </Text>
-                  <Text style={styles.reviewCount}>
-                    ({selectedVenue.reviewCount || 0} reviews)
-                  </Text>
+                {/* Header */}
+                <View style={styles.header}>
+                  <Text style={styles.venueName}>{selectedVenue.name}</Text>
+                  {selectedVenue.shortDescription && (
+                    <Text style={styles.venueShortDescription}>{selectedVenue.shortDescription}</Text>
+                  )}
                 </View>
-              )}
 
-              {/* Image Gallery */}
-              {selectedVenue.imageUrls && selectedVenue.imageUrls.length > 0 && (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.imageScrollView}
-                  contentContainerStyle={styles.imageScrollContent}
-                  nestedScrollEnabled
+                <Text style={styles.businessType}>{selectedVenue.type}</Text>
+
+                {typeof selectedVenue.distance === 'number' && (
+                  <Text style={styles.distanceText}>{formatDistance(selectedVenue.distance)}</Text>
+                )}
+
+                {selectedVenue.rating && (
+                  <View style={styles.ratingContainer}>
+                    <StarIcon size={14} color="#ffd700" fill="#ffd700" />
+                    <Text style={styles.rating}>
+                      {selectedVenue.rating.toFixed(1)}
+                    </Text>
+                    <Text style={styles.reviewCount}>
+                      ({selectedVenue.reviewCount || 0} reviews)
+                    </Text>
+                  </View>
+                )}
+
+                {/* Image Gallery */}
+                {selectedVenue.imageUrls && selectedVenue.imageUrls.length > 0 && (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.imageScrollView}
+                    contentContainerStyle={styles.imageScrollContent}
+                    nestedScrollEnabled
+                  >
+                    {selectedVenue.imageUrls.slice(0, 4).map((imageUrl, index, array) => (
+                      <Image
+                        key={index}
+                        source={{ uri: imageUrl }}
+                        style={[
+                          styles.galleryImage,
+                          index === array.length - 1 ? {} : styles.galleryImageSpacing
+                        ]}
+                        contentFit="cover"
+                        transition={300}
+                        cachePolicy="memory-disk"
+                      />
+                    ))}
+                  </ScrollView>
+                )}
+
+                <View style={styles.divider} />
+
+                {/* See Studio Button */}
+                <TouchableOpacity
+                  style={styles.seeStudioButton}
+                  onPress={() => {
+                    handleCloseSheet();
+                    navigation.navigate('VenueDetailsScreen', { venueId: selectedVenue._id });
+                  }}
+                  activeOpacity={0.8}
                 >
-                  {selectedVenue.imageUrls.slice(0, 4).map((imageUrl, index, array) => (
-                    <Image
-                      key={index}
-                      source={{ uri: imageUrl }}
-                      style={[
-                        styles.galleryImage,
-                        index === array.length - 1 ? {} : styles.galleryImageSpacing
-                      ]}
-                      contentFit="cover"
-                      transition={300}
-                      cachePolicy="memory-disk"
-                    />
-                  ))}
-                </ScrollView>
-              )}
-
-              <View style={styles.divider} />
-
-              {/* See Studio Button */}
-              <TouchableOpacity
-                style={styles.seeStudioButton}
-                onPress={() => {
-                  handleCloseSheet();
-                  navigation.navigate('VenueDetailsScreen', { venueId: selectedVenue._id });
-                }}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.seeStudioButtonText}>See Studio</Text>
-              </TouchableOpacity>
-            </>
-          )}
+                  <Text style={styles.seeStudioButtonText}>See Studio</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </BottomSheetView>
         </BottomSheetModal>
       </View>

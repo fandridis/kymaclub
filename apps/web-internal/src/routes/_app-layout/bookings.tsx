@@ -17,7 +17,7 @@ export const Route = createFileRoute('/_app-layout/bookings')({
     component: BookingsPage,
 });
 
-type BookingStatus = "latest" | "cancelled_by_consumer" | "cancelled_by_business" | "no_show";
+type BookingStatus = "latest" | "awaiting_approval" | "cancelled_by_consumer" | "cancelled_by_business" | "rejected_by_business" | "no_show";
 
 function BookingsPage() {
     const [status, setStatus] = useState<BookingStatus>("latest");
@@ -109,12 +109,19 @@ function BookingsPage() {
             {/* Status Tabs - Floating above list */}
             <div className="mt-6 mb-3">
                 <Tabs value={status} onValueChange={(value) => setStatus(value as BookingStatus)}>
-                    <TabsList className="bg-slate-900/90 border border-slate-700/50 p-1 backdrop-blur-sm shadow-lg">
+                    <TabsList className="bg-slate-900/90 border border-slate-700/50 p-1 backdrop-blur-sm shadow-lg flex-wrap">
                         <TabsTrigger
                             value="latest"
                             className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-slate-400 hover:text-slate-200 text-xs sm:text-sm"
                         >
                             Latest
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="awaiting_approval"
+                            className="data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-400 text-slate-400 hover:text-slate-200 text-xs sm:text-sm"
+                        >
+                            <span className="hidden sm:inline">Awaiting Approval</span>
+                            <span className="sm:hidden">Awaiting</span>
                         </TabsTrigger>
                         <TabsTrigger
                             value="cancelled_by_consumer"
@@ -129,6 +136,13 @@ function BookingsPage() {
                         >
                             <span className="hidden sm:inline">Cancelled by Business</span>
                             <span className="sm:hidden">By Business</span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="rejected_by_business"
+                            className="data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400 text-slate-400 hover:text-slate-200 text-xs sm:text-sm"
+                        >
+                            <span className="hidden sm:inline">Rejected</span>
+                            <span className="sm:hidden">Rejected</span>
                         </TabsTrigger>
                         <TabsTrigger
                             value="no_show"
@@ -193,17 +207,21 @@ function BookingCard({ booking }: BookingCardProps) {
         : null;
     const bookedAt = new Date(booking.bookedAt);
 
-    type BookingStatusType = "pending" | "completed" | "cancelled_by_consumer" | "cancelled_by_business" | "cancelled_by_business_rebookable" | "no_show";
+    type BookingStatusType = "awaiting_approval" | "pending" | "completed" | "cancelled_by_consumer" | "cancelled_by_business" | "cancelled_by_business_rebookable" | "rejected_by_business" | "no_show";
     const status: BookingStatusType = booking.status as BookingStatusType;
 
     const getStatusConfig = () => {
         switch (status) {
+            case "awaiting_approval":
+                return { icon: Calendar, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30', label: 'AWAITING APPROVAL' };
             case "completed":
                 return { icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/30', label: 'COMPLETED' };
             case "cancelled_by_consumer":
             case "cancelled_by_business":
             case "cancelled_by_business_rebookable":
                 return { icon: XCircle, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30', label: status === 'cancelled_by_consumer' ? 'CANCELLED BY USER' : 'CANCELLED BY BUSINESS' };
+            case "rejected_by_business":
+                return { icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/30', label: 'REJECTED' };
             case "no_show":
                 return { icon: UserX, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/30', label: 'NO SHOW' };
             default:

@@ -760,6 +760,9 @@ importers:
       '@convex-dev/expo-push-notifications':
         specifier: ^0.2.5
         version: 0.2.5(@standard-schema/spec@1.0.0)(convex@1.27.3(react@19.1.0))(react@19.1.0)(typescript@5.7.3)(zod@4.1.9)
+      '@convex-dev/migrations':
+        specifier: ^0.3.1
+        version: 0.3.1(convex@1.27.3(react@19.1.0))
       '@convex-dev/rate-limiter':
         specifier: ^0.2.14
         version: 0.2.14(convex@1.27.3(react@19.1.0))(react@19.1.0)
@@ -1721,6 +1724,11 @@ packages:
     resolution: {integrity: sha512-9Ga9IsiR+miv7gtBDpUM0enRQ1jZfxCUsDN3rvieWxU9oqYfB0Cags+gkiYg51RLOC8TenrhRqEs4rko8wnUpA==}
     peerDependencies:
       convex: '>=1.23.0 <1.35.0'
+
+  '@convex-dev/migrations@0.3.1':
+    resolution: {integrity: sha512-dGiN82vWMN415/AGMcVooDOJk8iTousZahBBs27uA03pL74Uo3ksucUW3CiCfPx75rv+x9UnenEakimQYYNIrA==}
+    peerDependencies:
+      convex: ^1.24.8
 
   '@convex-dev/rate-limiter@0.2.14':
     resolution: {integrity: sha512-6dQ2ceHFcU8HVXT0QdcgWXCahasMcjne/bWvLZ6qyyk5gZDP4JtjZyidy9HflAOCo1Nc428pgrROnbQBM0QPCQ==}
@@ -10827,6 +10835,10 @@ snapshots:
       - react
       - typescript
       - zod
+
+  '@convex-dev/migrations@0.3.1(convex@1.27.3(react@19.1.0))':
+    dependencies:
+      convex: 1.27.3(react@19.1.0)
 
   '@convex-dev/rate-limiter@0.2.14(convex@1.27.3(react@19.1.0))(react@19.1.0)':
     dependencies:

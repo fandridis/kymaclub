@@ -7,25 +7,23 @@ import {
     StyleSheet,
     ScrollView,
 } from 'react-native';
-import { Check } from 'lucide-react-native';
+import { Check, DiamondIcon } from 'lucide-react-native';
 import { theme } from '../theme';
 import type { Question, QuestionAnswer } from '@repo/api/types/questionnaire';
 import { calculateQuestionFee } from '@repo/api/operations/questionnaire';
-import { centsToEuros } from '@repo/utils/credits';
+import { centsToCredits } from '@repo/utils/credits';
 import { useTypedTranslation } from '../i18n/typed';
 
 interface QuestionnaireFormProps {
     questions: Question[];
     answers: Omit<QuestionAnswer, 'feeApplied'>[];
     onAnswersChange: (answers: Omit<QuestionAnswer, 'feeApplied'>[]) => void;
-    currency?: string;
 }
 
 export function QuestionnaireForm({
     questions,
     answers,
     onAnswersChange,
-    currency = '€',
 }: QuestionnaireFormProps) {
     const { t } = useTypedTranslation();
 
@@ -51,7 +49,7 @@ export function QuestionnaireForm({
     const calculateFeeDisplay = useCallback((question: Question, answer: Omit<QuestionAnswer, 'feeApplied'> | undefined) => {
         if (!answer) return 0;
         const fee = calculateQuestionFee(question, { ...answer, feeApplied: 0 });
-        return centsToEuros(fee);
+        return Math.ceil(centsToCredits(fee));
     }, []);
 
     const totalFees = useMemo(() => {
@@ -60,7 +58,7 @@ export function QuestionnaireForm({
             if (!answer) return total;
             return total + calculateQuestionFee(question, { ...answer, feeApplied: 0 });
         }, 0);
-        return centsToEuros(totalCents);
+        return Math.ceil(centsToCredits(totalCents));
     }, [questions, answers, getAnswer]);
 
     const renderBooleanQuestion = (question: Question) => {
@@ -82,7 +80,10 @@ export function QuestionnaireForm({
                     </View>
                     <Text style={styles.optionLabel}>{t('questionnaire.yes')}</Text>
                     {fee !== undefined && fee > 0 && (
-                        <Text style={styles.feeBadge}>+{currency}{centsToEuros(fee)}</Text>
+                        <View style={styles.feeBadge}>
+                            <DiamondIcon size={12} color={theme.colors.amber[600]} />
+                            <Text style={styles.feeBadgeText}>{Math.ceil(centsToCredits(fee))}</Text>
+                        </View>
                     )}
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -121,7 +122,10 @@ export function QuestionnaireForm({
                         </View>
                         <Text style={styles.optionLabel}>{option.label}</Text>
                         {option.fee !== undefined && option.fee > 0 && (
-                            <Text style={styles.feeBadge}>+{currency}{centsToEuros(option.fee)}</Text>
+                            <View style={styles.feeBadge}>
+                                <DiamondIcon size={12} color={theme.colors.amber[600]} />
+                                <Text style={styles.feeBadgeText}>{Math.ceil(centsToCredits(option.fee))}</Text>
+                            </View>
                         )}
                     </TouchableOpacity>
                 ))}
@@ -158,7 +162,11 @@ export function QuestionnaireForm({
                             </View>
                             <Text style={styles.optionLabel}>{option.label}</Text>
                             {option.fee !== undefined && option.fee > 0 && (
-                                <Text style={styles.feeBadge}>+{currency}{centsToEuros(option.fee)}</Text>
+                                <View style={styles.feeBadge}>
+                                    <Text style={styles.feeBadgeText}>+</Text>
+                                    <DiamondIcon size={12} color={theme.colors.amber[600]} />
+                                    <Text style={styles.feeBadgeText}>{Math.ceil(centsToCredits(option.fee))}</Text>
+                                </View>
                             )}
                         </TouchableOpacity>
                     );
@@ -193,9 +201,11 @@ export function QuestionnaireForm({
                     }}
                 />
                 {config?.fee !== undefined && config.fee > 0 && (
-                    <Text style={styles.feeNote}>
-                        {t('questionnaire.feeIfProvided', { fee: `${currency}${centsToEuros(config.fee)}` })}
-                    </Text>
+                    <View style={styles.feeNoteContainer}>
+                        <Text style={styles.feeNote}>{t('questionnaire.feeIfProvided')}</Text>
+                        <DiamondIcon size={12} color={theme.colors.amber[600]} />
+                        <Text style={styles.feeNote}>{Math.ceil(centsToCredits(config.fee))}</Text>
+                    </View>
                 )}
             </View>
         );
@@ -222,9 +232,11 @@ export function QuestionnaireForm({
                     </Text>
                 )}
                 {config?.fee !== undefined && config.fee > 0 && (
-                    <Text style={styles.feeNote}>
-                        {t('questionnaire.feeIfProvided', { fee: `${currency}${centsToEuros(config.fee)}` })}
-                    </Text>
+                    <View style={styles.feeNoteContainer}>
+                        <Text style={styles.feeNote}>{t('questionnaire.feeIfProvided')}</Text>
+                        <DiamondIcon size={12} color={theme.colors.amber[600]} />
+                        <Text style={styles.feeNote}>{Math.ceil(centsToCredits(config.fee))}</Text>
+                    </View>
                 )}
             </View>
         );
@@ -261,7 +273,11 @@ export function QuestionnaireForm({
             {totalFees > 0 && (
                 <View style={styles.totalFeesContainer}>
                     <Text style={styles.totalFeesLabel}>{t('questionnaire.additionalFees')}:</Text>
-                    <Text style={styles.totalFeesValue}>+{currency}{totalFees.toFixed(2)}</Text>
+                    <View style={styles.totalFeesValueContainer}>
+                        <Text style={styles.totalFeesValue}>+</Text>
+                        <DiamondIcon size={16} color={theme.colors.amber[600]} />
+                        <Text style={styles.totalFeesValue}>{totalFees}</Text>
+                    </View>
                 </View>
             )}
         </View>
@@ -350,13 +366,18 @@ const styles = StyleSheet.create({
         color: theme.colors.zinc[700],
     },
     feeBadge: {
-        fontSize: theme.fontSize.sm,
-        fontWeight: '600',
-        color: theme.colors.amber[600],
+        flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: theme.colors.amber[50],
         paddingHorizontal: 8,
         paddingVertical: 2,
         borderRadius: 4,
+        gap: 2,
+    },
+    feeBadgeText: {
+        fontSize: theme.fontSize.sm,
+        fontWeight: '600',
+        color: theme.colors.amber[600],
     },
     inputContainer: {
         gap: 4,
@@ -379,10 +400,15 @@ const styles = StyleSheet.create({
         color: theme.colors.zinc[400],
         textAlign: 'right',
     },
+    feeNoteContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 4,
+        gap: 2,
+    },
     feeNote: {
         fontSize: theme.fontSize.sm,
         color: theme.colors.amber[600],
-        marginTop: 4,
     },
     totalFeesContainer: {
         flexDirection: 'row',
@@ -397,6 +423,11 @@ const styles = StyleSheet.create({
         fontSize: theme.fontSize.base,
         fontWeight: '500',
         color: theme.colors.zinc[700],
+    },
+    totalFeesValueContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
     },
     totalFeesValue: {
         fontSize: theme.fontSize.lg,

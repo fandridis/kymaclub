@@ -112,6 +112,8 @@ async function getMonthEarningsData(
     // - cancelled_by_consumer: only include if has revenue (late cancellation)
     // - cancelled_by_business: only include if has revenue (fees apply)
     // - pending: exclude (not yet earned, can still be cancelled)
+    // - awaiting_approval: exclude (not yet confirmed, can be rejected)
+    // - rejected_by_business: exclude (booking was rejected, fully refunded)
     const isReconciled =
       status === "completed" ||
       status === "no_show" ||

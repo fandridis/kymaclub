@@ -13,10 +13,10 @@
 
 export const BOOKING_LIMITS = {
   /**
-   * Maximum number of active (pending) bookings a consumer can have simultaneously
+   * Maximum number of active bookings a consumer can have simultaneously
    * 
    * Active bookings are those with:
-   * - status: "pending" 
+   * - status: "pending" OR "awaiting_approval"
    * - classInstanceSnapshot.startTime > current time (future classes)
    * - not deleted
    * 

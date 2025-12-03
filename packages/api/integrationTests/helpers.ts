@@ -66,6 +66,7 @@ export async function createTestClassTemplate(
         tags?: string[];
         color?: string;
         primaryCategory?: string;
+        requiresConfirmation?: boolean;
         bookingWindow?: {
             minHours?: number;
             maxHours?: number;
@@ -87,6 +88,7 @@ export async function createTestClassTemplate(
             tags: template.tags || ["test", "fitness"],
             color: template.color || "#3B82F6",
             primaryCategory: template.primaryCategory || 'wellness_center',
+            requiresConfirmation: template.requiresConfirmation,
         }
     });
 }

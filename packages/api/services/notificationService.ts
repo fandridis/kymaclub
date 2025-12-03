@@ -1297,4 +1297,362 @@ export const notificationService = {
 
         return { createdNotificationId };
     },
+
+    /**
+     * Handle booking awaiting approval event
+     * Notifies business that a new booking request needs approval
+     */
+    handleBookingAwaitingApprovalEvent: async ({
+        ctx,
+        payload,
+    }: {
+        ctx: MutationCtx;
+        payload: {
+            bookingId: Id<"bookings">;
+            userId: Id<"users">;
+            classInstanceId: Id<"classInstances">;
+            businessId: Id<"businesses">;
+            creditsPaid: number;
+        };
+    }): Promise<{ createdNotificationId: Id<"notifications"> | null }> => {
+        const { bookingId, userId, classInstanceId, businessId, creditsPaid } = payload;
+
+        // Fetch the booking, user, classInstance and business
+        const booking = await ctx.db.get(bookingId);
+        const [user, classInstance, business] = await Promise.all([
+            ctx.db.get(userId),
+            ctx.db.get(classInstanceId),
+            ctx.db.get(businessId),
+        ]);
+
+        if (!user || !classInstance || !business || !booking) {
+            throw new ConvexError({
+                message: "User, class instance, or business not found",
+                field: "userId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND
+            });
+        }
+
+        // Get business notification preferences
+        const businessNotificationSettings = await ctx.db
+            .query("businessSettings")
+            .withIndex("by_business", q => q.eq("businessId", businessId))
+            .filter(q => q.neq(q.field("deleted"), true))
+            .first();
+
+        let notificationId: Id<"notifications"> | undefined;
+
+        // Always notify business about approval requests (web notification)
+        // This is a special notification type that may not have explicit preferences yet
+        // For now, use booking_created preferences as a fallback
+        if (businessNotificationSettings?.notifications?.preferences?.booking_created?.web !== false) {
+            notificationId = await ctx.db.insert("notifications", {
+                businessId,
+                recipientType: "business",
+                recipientUserId: userId,
+                type: "booking_awaiting_approval",
+                title: "New booking request",
+                message: `${user.name || user.email} has requested to book ${classInstance?.name || classInstance.templateSnapshot.name}. Approval required.`,
+                relatedBookingId: bookingId,
+                relatedClassInstanceId: classInstanceId,
+                seen: false,
+                deliveryStatus: "pending",
+                retryCount: 0,
+                sentToEmail: false,
+                sentToWeb: false,
+                sentToPush: false,
+                metadata: {
+                    className: classInstance?.name || classInstance.templateSnapshot.name,
+                    userName: user.name,
+                    userEmail: user.email,
+                    amount: creditsPaid,
+                },
+                createdAt: Date.now(),
+                createdBy: userId,
+            });
+        }
+
+        // Send email notification to business
+        if (businessNotificationSettings?.notifications?.preferences?.booking_created?.email && process.env.NODE_ENV === "production") {
+            try {
+                await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
+                    businessEmail: business.email,
+                    businessName: business.name,
+                    customerName: user.name || user.email || "Customer",
+                    customerEmail: user.email,
+                    className: classInstance.name || classInstance.templateSnapshot.name || "",
+                    venueName: classInstance.venueSnapshot?.name || "",
+                    classTime: format(classInstance.startTime, "MMM d, yyyy h:mm a"),
+                    bookingAmount: booking.finalPrice,
+                    notificationType: 'booking_awaiting_approval',
+                });
+            } catch (error) {
+                console.error('Error sending email notification:', error);
+            }
+        }
+
+        return { createdNotificationId: notificationId || null };
+    },
+
+    /**
+     * Handle booking approved event
+     * Notifies consumer that their booking request was approved
+     */
+    handleBookingApprovedEvent: async ({
+        ctx,
+        payload,
+    }: {
+        ctx: MutationCtx;
+        payload: {
+            bookingId: Id<"bookings">;
+            userId: Id<"users">;
+            classInstanceId: Id<"classInstances">;
+            businessId: Id<"businesses">;
+            creditsPaid: number;
+        };
+    }): Promise<{ success: boolean }> => {
+        const { bookingId, userId, classInstanceId, businessId, creditsPaid } = payload;
+
+        // Fetch the booking, user, classInstance and business
+        const booking = await ctx.db.get(bookingId);
+        const [user, classInstance, business] = await Promise.all([
+            ctx.db.get(userId),
+            ctx.db.get(classInstanceId),
+            ctx.db.get(businessId),
+        ]);
+
+        if (!user || !classInstance || !business || !booking) {
+            throw new ConvexError({
+                message: "User, class instance, or business not found",
+                field: "userId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND
+            });
+        }
+
+        // Get user notification settings
+        const userNotificationSettings = await ctx.db
+            .query("userSettings")
+            .withIndex("by_user", q => q.eq("userId", userId))
+            .filter(q => q.neq(q.field("deleted"), true))
+            .first();
+
+        if (userNotificationSettings?.notifications) {
+            userNotificationSettings.notifications.preferences = {
+                ...DEFAULT_USER_NOTIFICATION_PREFERENCES,
+                ...userNotificationSettings.notifications.preferences,
+            };
+        }
+
+        // Default to true if no preferences set (booking approval is important)
+        const shouldSendWeb = userNotificationSettings?.notifications?.preferences?.booking_confirmation?.web !== false;
+        const shouldSendPush = userNotificationSettings?.notifications?.preferences?.booking_confirmation?.push !== false;
+        const shouldSendEmail = userNotificationSettings?.notifications?.preferences?.booking_confirmation?.email !== false;
+
+        // Send web notification to user
+        if (shouldSendWeb) {
+            await ctx.db.insert("notifications", {
+                businessId,
+                recipientType: "consumer",
+                recipientUserId: userId,
+                type: "booking_approved",
+                title: "Booking approved!",
+                message: `Your booking for ${classInstance?.name || classInstance.templateSnapshot.name} at ${classInstance.venueSnapshot.name} has been approved.`,
+                relatedBookingId: bookingId,
+                relatedClassInstanceId: classInstanceId,
+                seen: false,
+                deliveryStatus: "pending",
+                retryCount: 0,
+                sentToEmail: false,
+                sentToWeb: false,
+                sentToPush: false,
+                metadata: {
+                    className: classInstance?.name || classInstance.templateSnapshot.name,
+                    userName: user.name,
+                    userEmail: user.email,
+                    amount: creditsPaid,
+                },
+                createdAt: Date.now(),
+                createdBy: userId,
+            });
+        }
+
+        // Send push notification to user
+        if (shouldSendPush) {
+            const notificationContent = createNotificationWithDeepLink(
+                'booking_approved',
+                'Booking approved!',
+                `Your booking for ${classInstance.name || classInstance.templateSnapshot.name} at ${classInstance.venueSnapshot?.name} has been approved.`,
+                {
+                    classInstanceId: classInstanceId,
+                    bookingId: bookingId,
+                    additionalData: {
+                        businessId: businessId,
+                        businessName: business.name,
+                        className: classInstance.name || classInstance.templateSnapshot.name,
+                        venueName: classInstance.venueSnapshot?.name,
+                        classTime: format(classInstance.startTime, 'MMM d, yyyy h:mm a'),
+                    }
+                }
+            );
+
+            await pushNotifications.sendPushNotification(ctx, {
+                userId: userId,
+                notification: notificationContent,
+            });
+        }
+
+        // Send email notification to user
+        if (shouldSendEmail && process.env.NODE_ENV === "production") {
+            try {
+                await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
+                    businessEmail: business.email,
+                    businessName: business.name,
+                    customerName: user.name || user.email || "Customer",
+                    customerEmail: user.email,
+                    className: classInstance.name || classInstance.templateSnapshot.name || "",
+                    venueName: classInstance.venueSnapshot?.name || "",
+                    classTime: format(classInstance.startTime, "MMM d, yyyy h:mm a"),
+                    bookingAmount: booking.finalPrice,
+                    notificationType: 'booking_approved',
+                });
+            } catch (error) {
+                console.error('Error sending email notification:', error);
+            }
+        }
+
+        return { success: true };
+    },
+
+    /**
+     * Handle booking rejected event
+     * Notifies consumer that their booking request was rejected
+     */
+    handleBookingRejectedEvent: async ({
+        ctx,
+        payload,
+    }: {
+        ctx: MutationCtx;
+        payload: {
+            bookingId: Id<"bookings">;
+            userId: Id<"users">;
+            classInstanceId: Id<"classInstances">;
+            businessId: Id<"businesses">;
+            creditsPaid: number;
+            reason?: string;
+        };
+    }): Promise<{ success: boolean }> => {
+        const { bookingId, userId, classInstanceId, businessId, creditsPaid, reason } = payload;
+
+        // Fetch the booking, user, classInstance and business
+        const booking = await ctx.db.get(bookingId);
+        const [user, classInstance, business] = await Promise.all([
+            ctx.db.get(userId),
+            ctx.db.get(classInstanceId),
+            ctx.db.get(businessId),
+        ]);
+
+        if (!user || !classInstance || !business || !booking) {
+            throw new ConvexError({
+                message: "User, class instance, or business not found",
+                field: "userId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND
+            });
+        }
+
+        // Get user notification settings
+        const userNotificationSettings = await ctx.db
+            .query("userSettings")
+            .withIndex("by_user", q => q.eq("userId", userId))
+            .filter(q => q.neq(q.field("deleted"), true))
+            .first();
+
+        if (userNotificationSettings?.notifications) {
+            userNotificationSettings.notifications.preferences = {
+                ...DEFAULT_USER_NOTIFICATION_PREFERENCES,
+                ...userNotificationSettings.notifications.preferences,
+            };
+        }
+
+        // Default to true if no preferences set (booking rejection is important)
+        const shouldSendWeb = userNotificationSettings?.notifications?.preferences?.booking_cancelled_by_business?.web !== false;
+        const shouldSendPush = userNotificationSettings?.notifications?.preferences?.booking_cancelled_by_business?.push !== false;
+        const shouldSendEmail = userNotificationSettings?.notifications?.preferences?.booking_cancelled_by_business?.email !== false;
+
+        const reasonMessage = reason ? ` Reason: ${reason}` : '';
+
+        // Send web notification to user
+        if (shouldSendWeb) {
+            await ctx.db.insert("notifications", {
+                businessId,
+                recipientType: "consumer",
+                recipientUserId: userId,
+                type: "booking_rejected",
+                title: "Booking request declined",
+                message: `Your booking request for ${classInstance?.name || classInstance.templateSnapshot.name} at ${classInstance.venueSnapshot.name} was declined.${reasonMessage} Your credits have been refunded.`,
+                relatedBookingId: bookingId,
+                relatedClassInstanceId: classInstanceId,
+                seen: false,
+                deliveryStatus: "pending",
+                retryCount: 0,
+                sentToEmail: false,
+                sentToWeb: false,
+                sentToPush: false,
+                metadata: {
+                    className: classInstance?.name || classInstance.templateSnapshot.name,
+                    userName: user.name,
+                    userEmail: user.email,
+                    amount: creditsPaid,
+                },
+                createdAt: Date.now(),
+                createdBy: userId,
+            });
+        }
+
+        // Send push notification to user
+        if (shouldSendPush) {
+            const notificationContent = createNotificationWithDeepLink(
+                'booking_rejected',
+                'Booking request declined',
+                `Your booking request for ${classInstance.name || classInstance.templateSnapshot.name} was declined.${reasonMessage} Your credits have been refunded.`,
+                {
+                    classInstanceId: classInstanceId,
+                    bookingId: bookingId,
+                    additionalData: {
+                        businessId: businessId,
+                        businessName: business.name,
+                        className: classInstance.name || classInstance.templateSnapshot.name,
+                        venueName: classInstance.venueSnapshot?.name,
+                        classTime: format(classInstance.startTime, 'MMM d, yyyy h:mm a'),
+                        reason: reason,
+                    }
+                }
+            );
+
+            await pushNotifications.sendPushNotification(ctx, {
+                userId: userId,
+                notification: notificationContent,
+            });
+        }
+
+        // Send email notification to user
+        if (shouldSendEmail && process.env.NODE_ENV === "production") {
+            try {
+                await ctx.scheduler.runAfter(0, internal.actions.email.sendBookingNotificationEmail, {
+                    businessEmail: business.email,
+                    businessName: business.name,
+                    customerName: user.name || user.email || "Customer",
+                    customerEmail: user.email,
+                    className: classInstance.name || classInstance.templateSnapshot.name || "",
+                    venueName: classInstance.venueSnapshot?.name || "",
+                    classTime: format(classInstance.startTime, "MMM d, yyyy h:mm a"),
+                    bookingAmount: booking.finalPrice,
+                    notificationType: 'booking_rejected',
+                });
+            } catch (error) {
+                console.error('Error sending email notification:', error);
+            }
+        }
+
+        return { success: true };
+    },
 };

@@ -181,6 +181,8 @@
             "classSettings": "Ρυθμίσεις Μαθήματος",
             "bookingRules": "Κανόνες Κράτησης",
             "bookingWindow": "Παράθυρο Κράτησης",
+            "requiresConfirmation": "Απαιτείται Επιβεβαίωση",
+            "requiresConfirmationDescription": "Οι κρατήσεις θα απαιτούν την έγκρισή σας πριν επιβεβαιωθούν",
             "refundPolicy": "Πολιτική Επιστροφής",
             "discountRules": "Εκπτώσεις",
             "discountRulesForm": {

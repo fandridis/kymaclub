@@ -50,7 +50,7 @@ export const canCancelBooking = (
  * Counts the number of active bookings for a user
  * 
  * Active bookings are defined as:
- * - status = "pending" (not cancelled, completed, or no_show)
+ * - status = "pending" OR "awaiting_approval" (not cancelled, completed, rejected, or no_show)
  * - classInstanceSnapshot.startTime > current time (future classes only)
  * - deleted != true (not soft deleted)
  * 
@@ -74,8 +74,8 @@ export function countActiveBookings(
   currentTime: number = Date.now()
 ): number {
   return bookings.filter(booking => {
-    // Must be pending status
-    if (booking.status !== "pending") return false;
+    // Must be pending or awaiting_approval status
+    if (booking.status !== "pending" && booking.status !== "awaiting_approval") return false;
 
     // Must not be deleted
     if (booking.deleted === true) return false;
@@ -151,7 +151,7 @@ export function getActiveBookingsDetails(
   return bookings
     .filter(booking => {
       // Same filter logic as countActiveBookings
-      if (booking.status !== "pending") return false;
+      if (booking.status !== "pending" && booking.status !== "awaiting_approval") return false;
       if (booking.deleted === true) return false;
 
       const startTime = booking.classInstanceSnapshot?.startTime;

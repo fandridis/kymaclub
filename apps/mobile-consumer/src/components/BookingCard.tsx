@@ -26,11 +26,13 @@ const getStatusVariant = (status?: string): 'success' | 'warning' | 'danger' | '
     case 'completed':
     case 'attended':
       return 'success';
+    case 'awaiting_approval':
     case 'waitlist':
       return 'warning';
     case 'cancelled_by_consumer':
     case 'cancelled_by_business':
     case 'cancelled_by_business_rebookable':
+    case 'rejected_by_business':
     case 'no_show':
       return 'danger';
     default:
@@ -95,6 +97,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
     }
 
     const statusMap: Record<string, string> = {
+      awaiting_approval: t('bookings.status.awaitingApproval'),
       pending: t('bookings.status.confirmed'),
       completed: t('bookings.status.checkedIn'),
       attended: t('bookings.status.attended'),
@@ -102,6 +105,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
       cancelled_by_consumer: t('bookings.status.cancelledByYou'),
       cancelled_by_business: t('bookings.status.cancelledByStudio'),
       cancelled_by_business_rebookable: t('bookings.status.cancelledByStudio'),
+      rejected_by_business: t('bookings.status.rejectedByStudio'),
       no_show: t('bookings.status.noShow'),
     };
 
@@ -122,9 +126,9 @@ export const BookingCard: React.FC<BookingCardProps> = ({
         return styles.status_info;
     }
   }, [statusVariant]);
-  // Show footer icons for pending and completed bookings in upcoming tab
-  const isUpcoming = booking.status === 'pending' || booking.status === 'completed';
-  // Show status badge for completed bookings
+  // Show footer icons for pending, awaiting_approval and completed bookings in upcoming tab
+  const isUpcoming = booking.status === 'pending' || booking.status === 'awaiting_approval' || booking.status === 'completed';
+  // Show status badge for all statuses except pending (confirmed is the default)
   const shouldShowStatus = statusLabel && booking.status !== 'pending';
 
   return (
@@ -152,12 +156,21 @@ export const BookingCard: React.FC<BookingCardProps> = ({
               <View style={[styles.statusPill, statusStyle]}>
                 <Text style={styles.statusText}>{statusLabel}</Text>
               </View>
-              {booking.cancelReason && (
+              {/* Show business cancellation reason (backward-compatible with old cancelReason field) */}
+              {booking.cancelByBusinessReason && (
                 booking.status === 'cancelled_by_business' ||
                 booking.status === 'cancelled_by_business_rebookable'
               ) && (
-                  <Text style={styles.cancelReasonText}>Business note: {booking.cancelReason}</Text>
+                  <Text style={styles.cancelReasonText}>
+                    {t('bookings.businessNote')}: {booking.cancelByBusinessReason}
+                  </Text>
                 )}
+              {/* Show business rejection reason */}
+              {booking.rejectByBusinessReason && booking.status === 'rejected_by_business' && (
+                <Text style={styles.cancelReasonText}>
+                  {t('bookings.rejectionReason')}: {booking.rejectByBusinessReason}
+                </Text>
+              )}
             </View>
           )}
 

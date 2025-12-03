@@ -92,6 +92,9 @@ const createTemplateSchema = z.object({
     enableRefundPolicy: z.boolean(),
     cancellationWindowHours: z.string().optional(),
 
+    // Booking Confirmation
+    requiresConfirmation: z.boolean(),
+
     // Discount Rules
     discountRules: z.array(discountRuleSchema).optional(),
 }).refine((data) => {
@@ -154,6 +157,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
             bookingWindowMaxHours: z.string().optional(),
             enableRefundPolicy: z.boolean(),
             cancellationWindowHours: z.string().optional(),
+            requiresConfirmation: z.boolean(),
             discountRules: z.array(discountRuleSchema).optional(),
         }).refine((data) => {
             if (data.enableBookingWindow) {
@@ -184,6 +188,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
             bookingWindowMaxHours: "168",
             enableRefundPolicy: false,
             cancellationWindowHours: "2",
+            requiresConfirmation: false,
             discountRules: [],
             primaryCategory: '' as VenueCategory,
         },
@@ -218,6 +223,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                 bookingWindowMaxHours: (classTemplate!.bookingWindow?.maxHours || 168).toString(),
                 enableRefundPolicy: !!(classTemplate!.cancellationWindowHours && classTemplate!.cancellationWindowHours > 0),
                 cancellationWindowHours: classTemplate!.cancellationWindowHours?.toString() || "2",
+                requiresConfirmation: classTemplate!.requiresConfirmation || false,
                 discountRules: classTemplate!.discountRules || [],
                 primaryCategory: (classTemplate!.primaryCategory as VenueCategory) || '' as VenueCategory,
             });
@@ -297,6 +303,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                     discount: rule.discount,
                 })) : undefined,
                 questionnaire: questionnaire.length > 0 ? questionnaire : [],
+                requiresConfirmation: data.requiresConfirmation,
             };
 
             if (isEditMode) {
@@ -554,6 +561,25 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                             )} />
                                         </div>
 
+
+                                        {/* Requires Confirmation Section */}
+                                        <div className="space-y-4">
+                                            <FormField control={form.control} name="requiresConfirmation" render={({ field }) => (
+                                                <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                                    <FormControl>
+                                                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                                    </FormControl>
+                                                    <div className="space-y-0.5">
+                                                        <FormLabel className="flex items-center gap-2">
+                                                            {t('routes.templates.requiresConfirmation')}
+                                                        </FormLabel>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {t('routes.templates.requiresConfirmationDescription')}
+                                                        </p>
+                                                    </div>
+                                                </FormItem>
+                                            )} />
+                                        </div>
 
                                         {/* Booking Window Section */}
                                         <div className="space-y-4">

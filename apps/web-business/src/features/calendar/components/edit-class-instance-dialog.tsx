@@ -99,6 +99,8 @@ const editInstanceSchema = z.object({
     enableRefundPolicy: z.boolean(),
     cancellationWindowHours: z.string().optional(),
 
+    // Booking Confirmation
+    requiresConfirmation: z.boolean(),
 
     // Discount Rules
     discountRules: z.array(discountRuleSchema).optional(),
@@ -186,6 +188,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
             bookingWindowMaxHours: z.string().optional(),
             enableRefundPolicy: z.boolean(),
             cancellationWindowHours: z.string().optional(),
+            requiresConfirmation: z.boolean(),
             discountRules: z.array(discountRuleSchema).optional(),
         }).refine((data) => {
             if (data.enableBookingWindow) {
@@ -220,6 +223,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
             bookingWindowMaxHours: "168",
             enableRefundPolicy: false,
             cancellationWindowHours: "2",
+            requiresConfirmation: false,
             discountRules: [],
         },
     });
@@ -249,6 +253,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                 bookingWindowMaxHours: (instance.bookingWindow?.maxHours || 168).toString(),
                 enableRefundPolicy: !!(instance.cancellationWindowHours && instance.cancellationWindowHours > 0),
                 cancellationWindowHours: instance.cancellationWindowHours?.toString() || "2",
+                requiresConfirmation: instance.requiresConfirmation || false,
                 discountRules: instance.discountRules || [],
             });
             // Also update the discount rules and questionnaire state
@@ -328,6 +333,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                         discount: rule.discount,
                     })) : [],
                     questionnaire: questionnaire.length > 0 ? questionnaire : [],
+                    requiresConfirmation: data.requiresConfirmation,
                     // Note: widgets are managed separately via the widget wizard
                 }
             });
@@ -380,6 +386,7 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                         discount: rule.discount,
                     })) : [],
                     questionnaire: questionnaire.length > 0 ? questionnaire : [],
+                    requiresConfirmation: data.requiresConfirmation,
                     // Note: widgets are managed separately via the widget wizard
                 }
             });
@@ -589,6 +596,25 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                                 </FormItem>
                                             )} />
                                         </div>
+                                        {/* Requires Confirmation Section */}
+                                        <div className="space-y-4">
+                                            <FormField control={form.control} name="requiresConfirmation" render={({ field }) => (
+                                                <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                                    <FormControl>
+                                                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                                    </FormControl>
+                                                    <div className="space-y-0.5">
+                                                        <FormLabel className="flex items-center gap-2">
+                                                            {t('routes.templates.requiresConfirmation')}
+                                                        </FormLabel>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {t('routes.templates.requiresConfirmationDescription')}
+                                                        </p>
+                                                    </div>
+                                                </FormItem>
+                                            )} />
+                                        </div>
+
                                         {/* Booking Window Section */}
                                         <div className="space-y-4">
                                             <FormField control={form.control} name="enableBookingWindow" render={({ field }) => (

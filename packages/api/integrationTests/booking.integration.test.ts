@@ -545,4 +545,278 @@ describe('Booking System Integration Tests', () => {
             expect(balance.balance).toBe(100); // Full refund
         });
     });
+
+    describe('Booking Confirmation Flow', () => {
+        test('should create booking with awaiting_approval status when class requiresConfirmation', async () => {
+            const { userId, businessId } = await initAuth();
+            const asUser = testT.withIdentity({ subject: userId });
+
+            // Give user credits
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
+                userId: userId,
+                amount: 30
+            });
+
+            // Create a class that requires confirmation
+            const venueId = await createTestVenue(asUser);
+            const templateId = await createTestClassTemplate(asUser, userId, businessId, venueId, {
+                name: "Confirmation Required Yoga",
+                description: "A class that requires approval",
+                duration: 60,
+                capacity: 20,
+                price: 500, // 5 credits
+                requiresConfirmation: true
+            });
+
+            const startTime = Date.now() + (24 * 60 * 60 * 1000); // 24 hours from now
+            const endTime = startTime + (60 * 60 * 1000);
+
+            const instanceId = await createTestClassInstance(asUser, templateId, startTime, endTime, "UTC");
+
+            // Book the class
+            const bookingResult = await asUser.mutation(api.mutations.bookings.bookClass, {
+                classInstanceId: instanceId
+            });
+
+            // Verify booking is in awaiting_approval status
+            const booking = await asUser.query(api.queries.bookings.getBookingDetails, {
+                bookingId: bookingResult.bookingId
+            });
+            expect(booking.status).toBe("awaiting_approval");
+
+            // Credits should still be charged
+            const balance = await asUser.query(api.queries.credits.getUserBalance, {
+                userId: userId
+            });
+            expect(balance.balance).toBe(25); // 30 - 5 credits
+        });
+
+        test('should approve booking and change status to pending', async () => {
+            const { userId, businessId } = await initAuth();
+            const asUser = testT.withIdentity({ subject: userId });
+
+            // Give user credits
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
+                userId: userId,
+                amount: 30
+            });
+
+            // Create a class that requires confirmation
+            const venueId = await createTestVenue(asUser);
+            const templateId = await createTestClassTemplate(asUser, userId, businessId, venueId, {
+                name: "Approval Test Yoga",
+                description: "A class that requires approval",
+                duration: 60,
+                capacity: 20,
+                price: 500,
+                requiresConfirmation: true
+            });
+
+            const startTime = Date.now() + (24 * 60 * 60 * 1000);
+            const endTime = startTime + (60 * 60 * 1000);
+
+            const instanceId = await createTestClassInstance(asUser, templateId, startTime, endTime, "UTC");
+
+            // Book the class
+            const bookingResult = await asUser.mutation(api.mutations.bookings.bookClass, {
+                classInstanceId: instanceId
+            });
+
+            // Approve the booking (as business owner)
+            await asUser.mutation(api.mutations.bookings.approveBooking, {
+                bookingId: bookingResult.bookingId
+            });
+
+            // Verify booking is now pending (approved)
+            const booking = await asUser.query(api.queries.bookings.getBookingDetails, {
+                bookingId: bookingResult.bookingId
+            });
+            expect(booking.status).toBe("pending");
+            expect(booking.approvedAt).toBeDefined();
+            expect(booking.approvedBy).toBeDefined();
+        });
+
+        test('should reject booking with full refund', async () => {
+            const { userId, businessId } = await initAuth();
+            const asUser = testT.withIdentity({ subject: userId });
+
+            // Give user credits
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
+                userId: userId,
+                amount: 30
+            });
+
+            // Create a class that requires confirmation
+            const venueId = await createTestVenue(asUser);
+            const templateId = await createTestClassTemplate(asUser, userId, businessId, venueId, {
+                name: "Rejection Test Yoga",
+                description: "A class that requires approval",
+                duration: 60,
+                capacity: 20,
+                price: 500,
+                requiresConfirmation: true
+            });
+
+            const startTime = Date.now() + (24 * 60 * 60 * 1000);
+            const endTime = startTime + (60 * 60 * 1000);
+
+            const instanceId = await createTestClassInstance(asUser, templateId, startTime, endTime, "UTC");
+
+            // Book the class
+            const bookingResult = await asUser.mutation(api.mutations.bookings.bookClass, {
+                classInstanceId: instanceId
+            });
+
+            // Verify credits were charged
+            let balance = await asUser.query(api.queries.credits.getUserBalance, {
+                userId: userId
+            });
+            expect(balance.balance).toBe(25); // 30 - 5
+
+            // Reject the booking (as business owner)
+            await asUser.mutation(api.mutations.bookings.rejectBooking, {
+                bookingId: bookingResult.bookingId,
+                reason: "Class is overbooked"
+            });
+
+            // Verify booking is rejected
+            const booking = await asUser.query(api.queries.bookings.getBookingDetails, {
+                bookingId: bookingResult.bookingId
+            });
+            expect(booking.status).toBe("rejected_by_business");
+            expect(booking.rejectedAt).toBeDefined();
+            expect(booking.rejectedBy).toBeDefined();
+            expect(booking.rejectByBusinessReason).toBe("Class is overbooked");
+
+            // Verify full refund was issued
+            balance = await asUser.query(api.queries.credits.getUserBalance, {
+                userId: userId
+            });
+            expect(balance.balance).toBe(30); // Full refund: 25 + 5
+
+            // Verify bookedCount was decremented
+            const instance = await asUser.query(api.queries.classInstances.getClassInstanceById, {
+                instanceId: instanceId
+            });
+            expect(instance?.bookedCount).toBe(0);
+        });
+
+        test('should allow cancellation while awaiting_approval with full refund', async () => {
+            const { userId, businessId } = await initAuth();
+            const asUser = testT.withIdentity({ subject: userId });
+
+            // Give user credits
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
+                userId: userId,
+                amount: 30
+            });
+
+            // Create a class that requires confirmation (far in future for full refund)
+            const venueId = await createTestVenue(asUser);
+            const templateId = await createTestClassTemplate(asUser, userId, businessId, venueId, {
+                name: "Cancellation Test Yoga",
+                description: "A class that requires approval",
+                duration: 60,
+                capacity: 20,
+                price: 500,
+                requiresConfirmation: true
+            });
+
+            const startTime = Date.now() + (48 * 60 * 60 * 1000); // 48 hours for full refund
+            const endTime = startTime + (60 * 60 * 1000);
+
+            const instanceId = await createTestClassInstance(asUser, templateId, startTime, endTime, "UTC");
+
+            // Book the class
+            const bookingResult = await asUser.mutation(api.mutations.bookings.bookClass, {
+                classInstanceId: instanceId
+            });
+
+            // Verify booking is awaiting approval
+            let booking = await asUser.query(api.queries.bookings.getBookingDetails, {
+                bookingId: bookingResult.bookingId
+            });
+            expect(booking.status).toBe("awaiting_approval");
+
+            // Cancel while awaiting approval
+            await asUser.mutation(api.mutations.bookings.cancelBooking, {
+                bookingId: bookingResult.bookingId,
+                cancelledBy: "consumer"
+            });
+
+            // Verify booking is cancelled
+            booking = await asUser.query(api.queries.bookings.getBookingDetails, {
+                bookingId: bookingResult.bookingId
+            });
+            expect(booking.status).toBe("cancelled_by_consumer");
+
+            // Verify full refund
+            const balance = await asUser.query(api.queries.credits.getUserBalance, {
+                userId: userId
+            });
+            expect(balance.balance).toBe(30); // 30 - 5 + 5 = 30
+        });
+
+        test('should count awaiting_approval bookings toward active booking limit', async () => {
+            const { userId, businessId } = await initAuth();
+            const asUser = testT.withIdentity({ subject: userId });
+
+            // Give user plenty of credits
+            await asUser.mutation(api.internal.mutations.credits.giftCredits, {
+                userId: userId,
+                amount: 100
+            });
+
+            // Create a class that requires confirmation
+            const venueId = await createTestVenue(asUser);
+            const templateId = await createTestClassTemplate(asUser, userId, businessId, venueId, {
+                name: "Active Limit Test Yoga",
+                description: "A class that requires approval",
+                duration: 60,
+                capacity: 20,
+                price: 500,
+                requiresConfirmation: true
+            });
+
+            // Book the class
+            const startTime = Date.now() + (24 * 60 * 60 * 1000);
+            const endTime = startTime + (60 * 60 * 1000);
+            const instanceId = await createTestClassInstance(asUser, templateId, startTime, endTime, "UTC");
+
+            await asUser.mutation(api.mutations.bookings.bookClass, {
+                classInstanceId: instanceId
+            });
+
+            // Check active bookings count
+            const activeBookings = await asUser.query(api.queries.bookings.getActiveBookingsCount, {});
+            expect(activeBookings.count).toBe(1); // awaiting_approval should count
+        });
+
+        test('should copy requiresConfirmation from template to instance', async () => {
+            const { userId, businessId } = await initAuth();
+            const asUser = testT.withIdentity({ subject: userId });
+
+            // Create a template with requiresConfirmation = true
+            const venueId = await createTestVenue(asUser);
+            const templateId = await createTestClassTemplate(asUser, userId, businessId, venueId, {
+                name: "Template Copy Test",
+                description: "Testing template property copy",
+                duration: 60,
+                capacity: 20,
+                price: 500,
+                requiresConfirmation: true
+            });
+
+            // Create an instance from the template
+            const startTime = Date.now() + (24 * 60 * 60 * 1000);
+            const endTime = startTime + (60 * 60 * 1000);
+            const instanceId = await createTestClassInstance(asUser, templateId, startTime, endTime, "UTC");
+
+            // Verify instance inherited requiresConfirmation
+            const instance = await asUser.query(api.queries.classInstances.getClassInstanceById, {
+                instanceId: instanceId
+            });
+            expect(instance?.requiresConfirmation).toBe(true);
+        });
+    });
 });

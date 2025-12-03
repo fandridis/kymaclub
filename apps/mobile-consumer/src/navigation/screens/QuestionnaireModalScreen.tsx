@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { DiamondIcon, X } from 'lucide-react-native';
 import { theme } from '../../theme';
 import { QuestionnaireForm } from '../../components/QuestionnaireForm';
@@ -35,6 +35,11 @@ export function QuestionnaireModalScreen() {
   const { questions, basePrice, className, classInstanceId } = route.params;
 
   const bookClass = useMutation(api.mutations.bookings.bookClass);
+
+  // Fetch class instance to check requiresConfirmation
+  const classInstance = useQuery(api.queries.classInstances.getConsumerClassInstanceById, {
+    instanceId: classInstanceId,
+  });
 
   const [answers, setAnswers] = useState<Omit<QuestionAnswer, 'feeApplied'>[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,7 +79,13 @@ export function QuestionnaireModalScreen() {
         description: `Booking for ${className}`,
         questionnaireAnswers: answers.length > 0 ? answers : undefined,
       });
-      Alert.alert(t('classes.booked'), t('classes.bookedSuccess'));
+      // Show different message based on whether class requires confirmation
+      const requiresConfirmation = classInstance?.requiresConfirmation;
+      if (requiresConfirmation) {
+        Alert.alert(t('classes.requestSent'), t('classes.requestSentMessage'));
+      } else {
+        Alert.alert(t('classes.booked'), t('classes.bookedSuccess'));
+      }
       navigation.goBack();
     } catch (err: any) {
       const message =
@@ -85,7 +96,7 @@ export function QuestionnaireModalScreen() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [answers, bookClass, classInstanceId, className, navigation, t, isSubmitting]);
+  }, [answers, bookClass, classInstanceId, className, classInstance, navigation, t, isSubmitting]);
 
   const handleClose = useCallback(() => {
     navigation.goBack();
@@ -128,7 +139,6 @@ export function QuestionnaireModalScreen() {
             questions={questions}
             answers={answers}
             onAnswersChange={setAnswers}
-            currency="€"
           />
 
           {/* Extra space at bottom for footer */}

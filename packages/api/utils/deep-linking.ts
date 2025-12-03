@@ -116,6 +116,9 @@ export function generateNotificationDeepLink(
     case 'class_cancelled':
     case 'class_rebookable':
     case 'booking_confirmation':
+    case 'booking_approved':
+    case 'booking_rejected':
+    case 'booking_awaiting_approval':
       if (data.classInstanceId) {
         return generateClassDetailsLink(data.classInstanceId);
       }

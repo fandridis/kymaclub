@@ -349,7 +349,7 @@ export function ClassDetailsModalScreen() {
     };
 
     const handleCancelBooking = () => {
-        if (!existingBooking || (existingBooking.status !== 'pending' && existingBooking.status !== 'completed')) {
+        if (!existingBooking || (existingBooking.status !== 'pending' && existingBooking.status !== 'completed' && existingBooking.status !== 'awaiting_approval')) {
             return;
         }
 
@@ -464,7 +464,13 @@ export function ClassDetailsModalScreen() {
                             classInstanceId: finalClassInstance._id,
                             description: `Booking for ${classNameForBooking}`,
                         });
-                        Alert.alert(t('classes.booked'), t('classes.bookedSuccess'));
+                        // Show different message based on whether class requires confirmation
+                        const requiresConfirmation = finalClassInstance.requiresConfirmation;
+                        if (requiresConfirmation) {
+                            Alert.alert(t('classes.requestSent'), t('classes.requestSentMessage'));
+                        } else {
+                            Alert.alert(t('classes.booked'), t('classes.bookedSuccess'));
+                        }
                     } catch (err: any) {
                         const message =
                             (err?.data && (err.data.message || err.data.code)) ||
@@ -882,11 +888,13 @@ export function ClassDetailsModalScreen() {
                                             <View key={booking._id} style={styles.bookingHistoryItem}>
                                                 <View style={styles.bookingHistoryLeft}>
                                                     <Text style={styles.bookingHistoryStatus}>
+                                                        {booking.status === "awaiting_approval" && t('classes.waitingForApproval')}
                                                         {booking.status === "pending" && t('classes.currentBooking')}
                                                         {booking.status === "completed" && t('classes.completed')}
                                                         {booking.status === "cancelled_by_consumer" && t('classes.youCancelled')}
                                                         {booking.status === "cancelled_by_business" && t('classes.cancelledByStudio')}
                                                         {booking.status === "cancelled_by_business_rebookable" && t('classes.cancelledByStudio')}
+                                                        {booking.status === "rejected_by_business" && t('classes.rejectedByStudio')}
                                                         {booking.status === "no_show" && t('classes.noShow')}
                                                     </Text>
                                                     <Text style={styles.bookingHistoryDate}>
@@ -900,9 +908,9 @@ export function ClassDetailsModalScreen() {
                                                             }
                                                         })()}
                                                     </Text>
-                                                    {booking.cancelReason && (
+                                                    {booking.cancelByBusinessReason && (
                                                         <Text style={styles.bookingHistoryReason}>
-                                                            {booking.cancelReason}
+                                                            {booking.cancelByBusinessReason}
                                                         </Text>
                                                     )}
                                                 </View>
@@ -923,7 +931,29 @@ export function ClassDetailsModalScreen() {
                     {/* Sticky Button - Book or Already Attending */}
                     <View style={[styles.stickyButtonContainer, { bottom: Platform.OS === 'ios' ? bottomInset + 8 : Math.max(bottomInset, 24) + 24 }]}>
                         {existingBooking ? (
-                            existingBooking.status === "pending" || existingBooking.status === "completed" ? (
+                            existingBooking.status === "awaiting_approval" ? (
+                                /* Awaiting Approval Container */
+                                <View style={styles.alreadyAttendingContainer}>
+                                    <View style={styles.attendingTitleContainer}>
+                                        <ClockIcon size={22} color={theme.colors.zinc[600]} />
+                                        <Text style={styles.alreadyAttendingTitle}>
+                                            {t('classes.waitingForApproval')}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.attendingActionsRow}>
+                                        <TouchableOpacity
+                                            style={[styles.attendingSecondaryButton, isCancelling && styles.attendingSecondaryButtonDisabled]}
+                                            onPress={handleCancelBooking}
+                                            activeOpacity={0.85}
+                                            disabled={isCancelling}
+                                        >
+                                            <Text style={styles.attendingSecondaryText}>
+                                                {isCancelling ? t('classes.cancelling') : t('classes.cancelBooking')}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            ) : existingBooking.status === "pending" || existingBooking.status === "completed" ? (
                                 /* Already Attending Container */
                                 <View style={styles.alreadyAttendingContainer}>
                                     <View style={styles.attendingTitleContainer}>
@@ -975,13 +1005,15 @@ export function ClassDetailsModalScreen() {
                                         <View style={styles.statusTitleContainer}>
                                             {existingBooking.status === "cancelled_by_business" && <Text style={styles.statusTitle}>{t('classes.cancelledByStudio')}</Text>}
                                             {existingBooking.status === "no_show" && <Text style={styles.statusTitle}>{t('classes.noShow')}</Text>}
+                                            {existingBooking.status === "rejected_by_business" && <Text style={styles.statusTitle}>{t('classes.requestRejected')}</Text>}
                                         </View>
-                                        <Text style={styles.statusSubtext}>
-                                            {existingBooking.status === "no_show"
-                                                ? t('classes.didntShowUp')
-                                                : t('classes.cannotBookAgain')
-                                            }
-                                        </Text>
+                                        {existingBooking.status === "no_show" ? (
+                                            <Text style={styles.statusSubtext}>{t('classes.didntShowUp')}</Text>
+                                        ) : existingBooking.status === "rejected_by_business" && existingBooking.rejectByBusinessReason ? (
+                                            <Text style={styles.statusSubtext}>Note: "{existingBooking.rejectByBusinessReason}"</Text>
+                                        ) : existingBooking.status === "cancelled_by_business" && existingBooking.cancelByBusinessReason ? (
+                                            <Text style={styles.statusSubtext}>Note: "{existingBooking.cancelByBusinessReason}"</Text>
+                                        ) : null}
                                     </View>
                                 )
                             )
@@ -1604,8 +1636,8 @@ const styles = StyleSheet.create({
         borderRadius: 40,
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.5)',
-        height: 56,
         paddingHorizontal: 28,
+        paddingVertical: 16,
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
@@ -1626,14 +1658,14 @@ const styles = StyleSheet.create({
     statusTitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#7c2d12',
+        color: theme.colors.zinc[950],
     },
     statusSubtext: {
         fontSize: 13,
         fontWeight: '500',
-        color: '#92400e',
+        color: theme.colors.zinc[700],
         textAlign: 'center',
-        marginTop: 2,
+        marginTop: 6,
     },
     rebookContainer: {
         backgroundColor: 'rgba(255, 255, 255, 0.92)',

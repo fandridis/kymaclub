@@ -4,8 +4,8 @@ import { v } from "convex/values";
 import { requireInternalUserOrThrow } from "../../utils";
 import { startOfMonth, endOfMonth, subMonths, format } from "date-fns";
 
-type BookingStatusFilter = "latest" | "cancelled_by_consumer" | "cancelled_by_business" | "no_show";
-type BookingStatus = "pending" | "completed" | "cancelled_by_consumer" | "cancelled_by_business" | "cancelled_by_business_rebookable" | "no_show";
+type BookingStatusFilter = "latest" | "awaiting_approval" | "cancelled_by_consumer" | "cancelled_by_business" | "rejected_by_business" | "no_show";
+type BookingStatus = "awaiting_approval" | "pending" | "completed" | "cancelled_by_consumer" | "cancelled_by_business" | "cancelled_by_business_rebookable" | "rejected_by_business" | "no_show";
 
 /**
  * Get all bookings across all businesses (admin/internal only)
@@ -18,8 +18,10 @@ export const getAllBookings = query({
         paginationOpts: paginationOptsValidator,
         status: v.optional(v.union(
             v.literal("latest"),
+            v.literal("awaiting_approval"),
             v.literal("cancelled_by_consumer"),
             v.literal("cancelled_by_business"),
+            v.literal("rejected_by_business"),
             v.literal("no_show")
         )),
     },
@@ -81,12 +83,20 @@ export const getAllBookings = query({
         }
 
         // For specific status filters, use the index directly
+        if (status === "awaiting_approval") {
+            return await queryBookings("awaiting_approval");
+        }
+
         if (status === "cancelled_by_consumer") {
             return await queryBookings("cancelled_by_consumer");
         }
 
         if (status === "cancelled_by_business") {
             return await queryBookings("cancelled_by_business");
+        }
+
+        if (status === "rejected_by_business") {
+            return await queryBookings("rejected_by_business");
         }
 
         if (status === "no_show") {

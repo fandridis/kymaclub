@@ -185,3 +185,61 @@ export const handleReviewApprovedEvent = internalMutation({
         return await notificationService.handleReviewApprovedEvent({ ctx, payload: args.payload });
     }
 });
+
+/***************************************************************
+ * Handle Booking Awaiting Approval Event
+ * Notifies business when a booking request needs approval
+ ***************************************************************/
+export const handleBookingAwaitingApprovalEvent = internalMutation({
+    args: v.object({
+        payload: v.object({
+            bookingId: v.id("bookings"),
+            userId: v.id("users"),
+            classInstanceId: v.id("classInstances"),
+            businessId: v.id("businesses"),
+            creditsPaid: v.number(),
+        })
+    }),
+    handler: async (ctx, args) => {
+        return await notificationService.handleBookingAwaitingApprovalEvent({ ctx, payload: args.payload });
+    }
+});
+
+/***************************************************************
+ * Handle Booking Approved Event
+ * Notifies consumer when their booking request is approved
+ ***************************************************************/
+export const handleBookingApprovedEvent = internalMutation({
+    args: v.object({
+        payload: v.object({
+            bookingId: v.id("bookings"),
+            userId: v.id("users"),
+            classInstanceId: v.id("classInstances"),
+            businessId: v.id("businesses"),
+            creditsPaid: v.number(),
+        })
+    }),
+    handler: async (ctx, args) => {
+        return await notificationService.handleBookingApprovedEvent({ ctx, payload: args.payload });
+    }
+});
+
+/***************************************************************
+ * Handle Booking Rejected Event
+ * Notifies consumer when their booking request is rejected
+ ***************************************************************/
+export const handleBookingRejectedEvent = internalMutation({
+    args: v.object({
+        payload: v.object({
+            bookingId: v.id("bookings"),
+            userId: v.id("users"),
+            classInstanceId: v.id("classInstances"),
+            businessId: v.id("businesses"),
+            creditsPaid: v.number(),
+            reason: v.optional(v.string()),
+        })
+    }),
+    handler: async (ctx, args) => {
+        return await notificationService.handleBookingRejectedEvent({ ctx, payload: args.payload });
+    }
+});

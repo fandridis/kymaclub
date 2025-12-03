@@ -654,6 +654,7 @@ export const classTemplatesFields = {
 
   // Booking control
   disableBookings: v.optional(v.boolean()), // Default: false (bookings enabled)
+  requiresConfirmation: v.optional(v.boolean()), // Default: false (auto-confirm bookings)
 
   // Template metadata
   isActive: v.boolean(),
@@ -713,6 +714,7 @@ export const classInstancesFields = {
 
   // Booking control
   disableBookings: v.optional(v.boolean()), // Default: false (bookings enabled)
+  requiresConfirmation: v.optional(v.boolean()), // Copied from template, can be overridden
 
   // Pre-booking questionnaire - overrides template questionnaire if set
   questionnaire: v.optional(v.array(v.object(questionFields))),
@@ -825,16 +827,25 @@ export const bookingsFields = {
 
   // Simplified status flow
   status: v.union(
-    v.literal("pending"),    // Just booked, not yet attended
+    v.literal("awaiting_approval"),  // Waiting for business approval (requires confirmation)
+    v.literal("pending"),    // Approved/confirmed, not yet attended
     v.literal("completed"),  // User attended class
     v.literal("cancelled_by_consumer"),  // User cancelled before class
     v.literal("cancelled_by_business"),  // Business cancelled class
     v.literal("cancelled_by_business_rebookable"),  // Business cancelled, but allows rebooking
+    v.literal("rejected_by_business"),  // Business rejected the booking request
     v.literal("no_show")     // User didn't show up
   ),
 
-  // Optional Cancel reason
-  cancelReason: v.optional(v.string()),
+  // Business cancellation/rejection reasons
+  cancelByBusinessReason: v.optional(v.string()),  // Reason for business cancellation
+  rejectByBusinessReason: v.optional(v.string()),  // Reason for business rejection
+
+  // Approval tracking (for requiresConfirmation bookings)
+  approvedAt: v.optional(v.number()),
+  approvedBy: v.optional(v.id("users")),
+  rejectedAt: v.optional(v.number()),
+  rejectedBy: v.optional(v.id("users")),
 
   // Searchable ID for partial ID search (e.g. "F4D...")
   searchableId: v.optional(v.string()),
@@ -962,12 +973,15 @@ export const notificationsFields = {
     // Business notifications
     v.literal("booking_created"),
     v.literal("booking_cancelled_by_consumer"),
+    v.literal("booking_awaiting_approval"),  // Business: new booking request needs approval
     v.literal("review_received"),
     v.literal("payment_received"),
 
     // Consumer notifications  
     v.literal("booking_confirmation"),
     v.literal("booking_reminder"),
+    v.literal("booking_approved"),           // Consumer: booking was approved by business
+    v.literal("booking_rejected"),           // Consumer: booking was rejected by business
     v.literal("class_cancelled"),
     v.literal("class_rebookable"),
     v.literal("booking_cancelled_by_business"),

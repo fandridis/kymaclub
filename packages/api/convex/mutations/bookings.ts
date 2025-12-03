@@ -73,6 +73,38 @@ export const allowRebooking = mutationWithTriggers({
   },
 });
 
+/***************************************************************
+ * Approve Booking
+ * Business approves a booking that requires confirmation
+ ***************************************************************/
+export const approveBooking = mutationWithTriggers({
+  args: v.object({
+    bookingId: v.id("bookings"),
+  }),
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUserOrThrow(ctx);
+    const result = await bookingService.approveBooking({ ctx, args, user });
+    return result;
+  },
+});
+
+/***************************************************************
+ * Reject Booking
+ * Business rejects a booking that requires confirmation
+ * Full refund is issued to the user
+ ***************************************************************/
+export const rejectBooking = mutationWithTriggers({
+  args: v.object({
+    bookingId: v.id("bookings"),
+    reason: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUserOrThrow(ctx);
+    const result = await bookingService.rejectBooking({ ctx, args, user });
+    return result;
+  },
+});
+
 export const completeBooking = mutationWithTriggers({
   args: v.object({
     bookingId: v.id("bookings"),

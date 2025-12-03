@@ -181,6 +181,8 @@
             "classSettings": "Class Settings",
             "bookingRules": "Booking Rules",
             "bookingWindow": "Booking Window",
+            "requiresConfirmation": "Require Confirmation",
+            "requiresConfirmationDescription": "Bookings will require your approval before being confirmed",
             "refundPolicy": "Refund Policy",
             "discountRules": "Discount Rules",
             "discountRulesForm": {

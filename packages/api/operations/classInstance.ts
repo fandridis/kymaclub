@@ -253,6 +253,7 @@ export const prepareInstanceUpdatesFromTemplateChanges = (
                 instructor: templateChanges.instructor,
                 primaryCategory: templateChanges.primaryCategory,
                 disableBookings: templateChanges.disableBookings,
+                requiresConfirmation: templateChanges.requiresConfirmation,
             }),
             // Update hasDiscountRules when discountRules change - WE DON'T DO THIS BECAUSE WE DON'T UPDATE THE DISCOUNT RULES for existing instances
             // ...(templateChanges.discountRules !== undefined && {
@@ -476,6 +477,7 @@ export const createInstanceFromTemplate = (
         questionnaire: template.questionnaire,
         widgetSnapshots: template.widgetSnapshots,
         disableBookings: disableBookings !== undefined ? disableBookings : template.disableBookings,
+        requiresConfirmation: template.requiresConfirmation,
 
         // Booking tracking
         bookedCount: 0,

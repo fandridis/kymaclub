@@ -22,6 +22,7 @@ import { useMutation } from "convex/react";
 import { api } from "@repo/api/convex/_generated/api";
 import { toast } from "sonner";
 import { CancelBookingDialog } from "./cancel-booking-dialog";
+import { RejectBookingDialog } from "./reject-booking-dialog";
 import { Badge } from "@/components/ui/badge";
 import type { Doc } from "@repo/api/convex/_generated/dataModel";
 import { formatEuros } from "@repo/utils/credits";
@@ -42,9 +43,14 @@ export function ClassBookingsItem({
 }: ClassBookingsItemProps) {
     const [isCancelling, setIsCancelling] = useState(false);
     const [showCancelDialog, setShowCancelDialog] = useState(false);
+    const [showRejectDialog, setShowRejectDialog] = useState(false);
     const [isAllowingRebook, setIsAllowingRebook] = useState(false);
+    const [isApproving, setIsApproving] = useState(false);
+    const [isRejecting, setIsRejecting] = useState(false);
     const cancelBooking = useMutation(api.mutations.bookings.cancelBooking);
     const allowRebooking = useMutation(api.mutations.bookings.allowRebooking);
+    const approveBooking = useMutation(api.mutations.bookings.approveBooking);
+    const rejectBooking = useMutation(api.mutations.bookings.rejectBooking);
 
     const customerName = booking.userSnapshot?.name;
 
@@ -96,6 +102,46 @@ export function ClassBookingsItem({
         }
     };
 
+    const handleApproveBooking = async () => {
+        if (isApproving) return;
+
+        try {
+            setIsApproving(true);
+
+            await approveBooking({
+                bookingId: booking._id,
+            });
+
+            toast.success(`Approved booking for ${customerName}`);
+        } catch (error) {
+            console.error('Failed to approve booking:', error);
+            toast.error('Failed to approve booking. Please try again.');
+        } finally {
+            setIsApproving(false);
+        }
+    };
+
+    const handleRejectBooking = async (reason?: string) => {
+        if (isRejecting) return;
+
+        try {
+            setIsRejecting(true);
+
+            await rejectBooking({
+                bookingId: booking._id,
+                reason: reason || undefined,
+            });
+
+            toast.success(`Rejected booking for ${customerName}`);
+            setShowRejectDialog(false);
+        } catch (error) {
+            console.error('Failed to reject booking:', error);
+            toast.error('Failed to reject booking. Please try again.');
+        } finally {
+            setIsRejecting(false);
+        }
+    };
+
     const formatBookingTime = (timestamp: number) => {
         return format(new Date(timestamp), "MMM d, yyyy 'at' h:mm a");
     };
@@ -116,15 +162,18 @@ export function ClassBookingsItem({
 
     const getStatusVariant = (status: string) => {
         switch (status) {
+            case 'awaiting_approval':
+                return 'secondary'; // Amber/warning style
             case 'pending':
                 return 'default';
             case 'completed':
                 return 'secondary';
             case 'cancelled_by_consumer':
             case 'cancelled_by_business':
+            case 'rejected_by_business':
                 return 'destructive';
             case 'cancelled_by_business_rebookable':
-                return 'secondary'; // Yellow-ish variant for rebookable
+                return 'secondary';
             case 'no_show':
                 return 'outline';
             default:
@@ -134,8 +183,10 @@ export function ClassBookingsItem({
 
     const getStatusLabel = (status: string) => {
         switch (status) {
+            case 'awaiting_approval':
+                return 'Awaiting Approval';
             case 'pending':
-                return 'Pending';
+                return 'Confirmed';
             case 'completed':
                 return 'Completed';
             case 'cancelled_by_consumer':
@@ -144,6 +195,8 @@ export function ClassBookingsItem({
                 return 'Cancelled (Business)';
             case 'cancelled_by_business_rebookable':
                 return 'Rebookable';
+            case 'rejected_by_business':
+                return 'Rejected';
             case 'no_show':
                 return 'No Show';
             default:
@@ -219,9 +272,13 @@ export function ClassBookingsItem({
                         {(() => {
                             const hasActions =
                                 (booking.status === 'pending') || // Can cancel
-                                (booking.status === 'cancelled_by_business'); // Can allow rebooking
+                                (booking.status === 'awaiting_approval') || // Can approve/reject
+                                (booking.status === 'cancelled_by_business') || // Can allow rebooking
+                                (booking.status === 'rejected_by_business'); // Can allow rebooking
 
                             if (!hasActions) return null;
+
+                            const isLoading = isCancelling || isAllowingRebook || isApproving || isRejecting;
 
                             return (
                                 <DropdownMenu>
@@ -230,9 +287,9 @@ export function ClassBookingsItem({
                                             variant="outline"
                                             size="sm"
                                             className="h-8 w-8 p-0"
-                                            disabled={isCancelling || isAllowingRebook}
+                                            disabled={isLoading}
                                         >
-                                            {(isCancelling || isAllowingRebook) ? (
+                                            {isLoading ? (
                                                 <Loader2 className="h-4 w-4 animate-spin" />
                                             ) : (
                                                 <MoreVertical className="h-4 w-4" />
@@ -241,7 +298,27 @@ export function ClassBookingsItem({
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        {/* Only show Cancel Booking for non-cancelled bookings */}
+                                        {/* Approve/Reject actions for awaiting_approval bookings */}
+                                        {booking.status === 'awaiting_approval' && (
+                                            <>
+                                                <DropdownMenuItem
+                                                    onClick={handleApproveBooking}
+                                                    disabled={isApproving}
+                                                    className="text-green-600 focus:text-green-600"
+                                                >
+                                                    Approve Booking
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() => setShowRejectDialog(true)}
+                                                    disabled={isRejecting}
+                                                    className="text-destructive focus:text-destructive"
+                                                >
+                                                    Reject Booking
+                                                </DropdownMenuItem>
+                                            </>
+                                        )}
+
+                                        {/* Only show Cancel Booking for confirmed bookings */}
                                         {booking.status === 'pending' && (
                                             <DropdownMenuItem
                                                 onClick={() => setShowCancelDialog(true)}
@@ -252,8 +329,8 @@ export function ClassBookingsItem({
                                             </DropdownMenuItem>
                                         )}
 
-                                        {/* Show Allow Rebooking for business-cancelled bookings */}
-                                        {booking.status === 'cancelled_by_business' && (
+                                        {/* Show Allow Rebooking for business-cancelled or rejected bookings */}
+                                        {(booking.status === 'cancelled_by_business' || booking.status === 'rejected_by_business') && (
                                             <DropdownMenuItem
                                                 onClick={handleAllowRebooking}
                                                 disabled={isAllowingRebook}
@@ -274,7 +351,6 @@ export function ClassBookingsItem({
                 {hasQuestionnaire && (
                     <QuestionnaireAnswersDisplay
                         questionnaireAnswers={questionnaireAnswers}
-                        className="ml-13"
                     />
                 )}
             </div>
@@ -286,6 +362,15 @@ export function ClassBookingsItem({
                 onConfirm={handleCancelBooking}
                 booking={booking}
                 isCancelling={isCancelling}
+            />
+
+            {/* Reject Booking Confirmation Dialog */}
+            <RejectBookingDialog
+                isOpen={showRejectDialog}
+                onClose={() => setShowRejectDialog(false)}
+                onConfirm={handleRejectBooking}
+                booking={booking}
+                isRejecting={isRejecting}
             />
         </>
     );
