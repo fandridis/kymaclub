@@ -161,6 +161,72 @@ export const widgetService = {
     },
 
     /***************************************************************
+     * Update Widget Config
+     * Updates the configuration of a widget (only allowed during setup)
+     ***************************************************************/
+    updateWidgetConfig: async ({
+        ctx,
+        args,
+        user,
+    }: {
+        ctx: MutationCtx;
+        args: {
+            widgetId: Id<"classInstanceWidgets">;
+            widgetConfig: WidgetConfig;
+        };
+        user: Doc<"users">;
+    }): Promise<void> => {
+        const widget = await ctx.db.get(args.widgetId);
+        if (!widget || widget.deleted) {
+            throw new ConvexError({
+                message: "Widget not found",
+                field: "widgetId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND,
+            });
+        }
+
+        // Authorization check
+        widgetRules.userMustBeWidgetOwner(widget, user);
+
+        // Can only update config during setup
+        widgetRules.widgetMustBeInStatus(widget, ["setup"]);
+
+        // Validate that the widget type matches
+        if (widget.widgetConfig.type !== args.widgetConfig.type) {
+            throw new ConvexError({
+                message: "Cannot change widget type",
+                field: "widgetConfig.type",
+                code: ERROR_CODES.ACTION_NOT_ALLOWED,
+            });
+        }
+
+        const now = Date.now();
+
+        // Update the widget config
+        await ctx.db.patch(args.widgetId, {
+            widgetConfig: args.widgetConfig,
+            updatedAt: now,
+            updatedBy: user._id,
+        });
+
+        // Update the widget snapshot on the class instance
+        const instance = await ctx.db.get(widget.classInstanceId);
+        if (instance) {
+            const displayName = WIDGET_DISPLAY_NAMES[args.widgetConfig.type];
+            const updatedSnapshots = (instance.widgetSnapshots ?? []).map(snapshot =>
+                snapshot.widgetId === args.widgetId
+                    ? { ...snapshot, name: displayName }
+                    : snapshot
+            );
+            await ctx.db.patch(widget.classInstanceId, {
+                widgetSnapshots: updatedSnapshots,
+                updatedAt: now,
+                updatedBy: user._id,
+            });
+        }
+    },
+
+    /***************************************************************
      * Get Setup Participants
      * Derives participant list from pending bookings + walkIns array
      * Used during setup mode before tournament starts
@@ -379,7 +445,7 @@ export const widgetService = {
             walkIns: updatedWalkIns,
             updatedAt: Date.now(),
             updatedBy: user._id,
-            });
+        });
     },
 
     /***************************************************************

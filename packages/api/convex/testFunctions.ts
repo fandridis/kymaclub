@@ -632,11 +632,14 @@ export const createTestNotification = internalMutation({
                 // Business notifications
                 v.literal("booking_created"),
                 v.literal("booking_cancelled_by_consumer"),
+                v.literal("booking_awaiting_approval"),
                 v.literal("review_received"),
                 v.literal("payment_received"),
                 // Consumer notifications
                 v.literal("booking_confirmation"),
                 v.literal("booking_reminder"),
+                v.literal("booking_approved"),
+                v.literal("booking_rejected"),
                 v.literal("class_cancelled"),
                 v.literal("class_rebookable"),
                 v.literal("booking_cancelled_by_business"),

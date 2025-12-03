@@ -38,7 +38,7 @@ export const emailService = {
             venueName: string;
             classTime: string;
             bookingAmount: number;
-            notificationType: "booking_created" | "booking_cancelled_by_consumer" | "booking_cancelled_by_business";
+            notificationType: "booking_created" | "booking_cancelled_by_consumer" | "booking_cancelled_by_business" | "booking_awaiting_approval" | "booking_approved" | "booking_rejected";
         };
     }): Promise<{ emailId: string; success: boolean }> => {
         try {

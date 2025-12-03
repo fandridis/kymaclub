@@ -1,8 +1,9 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Trash2, Loader2 } from 'lucide-react';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
+import { ConvexError } from 'convex/values';
 import { api } from '@repo/api/convex/_generated/api';
 import { toast } from 'sonner';
 import {
@@ -43,6 +44,8 @@ interface AmericanoWizardProps {
     onOpenChange: (open: boolean) => void;
     classInstanceId: Id<"classInstances">;
     onComplete: () => void;
+    /** If provided, the wizard will be in edit mode */
+    widgetId?: Id<"classInstanceWidgets">;
 }
 
 const STEPS = ['Players', 'Format', 'Courts', 'Review'];
@@ -78,9 +81,12 @@ export function AmericanoWizard({
     onOpenChange,
     classInstanceId,
     onComplete,
+    widgetId,
 }: AmericanoWizardProps) {
+    const isEditMode = !!widgetId;
     const [currentStep, setCurrentStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isInitialized, setIsInitialized] = useState(false);
 
     // Form state
     const [numberOfPlayers, setNumberOfPlayers] = useState<PlayerCount>(8);
@@ -93,7 +99,37 @@ export function AmericanoWizard({
     const [maxMatchesPerPlayer, setMaxMatchesPerPlayer] = useState(4);
     const [newCourtName, setNewCourtName] = useState('');
 
+    // Query existing widget data for edit mode
+    const existingWidget = useQuery(
+        api.queries.widgets.getById,
+        widgetId ? { widgetId } : "skip"
+    );
+
     const attachWidget = useMutation(api.mutations.widgets.attachWidget);
+    const updateWidgetConfig = useMutation(api.mutations.widgets.updateWidgetConfig);
+
+    // Initialize form with existing widget data in edit mode
+    useEffect(() => {
+        if (isEditMode && existingWidget && !isInitialized && open) {
+            const config = existingWidget.widgetConfig;
+            if (config.type === 'tournament_americano') {
+                setNumberOfPlayers(config.config.numberOfPlayers);
+                setMatchPoints(config.config.matchPoints);
+                setMode(config.config.mode);
+                setCourts(config.config.courts);
+                setMaxMatchesPerPlayer(config.config.maxMatchesPerPlayer);
+                setIsInitialized(true);
+            }
+        }
+    }, [isEditMode, existingWidget, isInitialized, open]);
+
+    // Reset initialization state when dialog closes
+    useEffect(() => {
+        if (!open) {
+            setIsInitialized(false);
+            setCurrentStep(0);
+        }
+    }, [open]);
 
     const handleAddCourt = () => {
         if (!newCourtName.trim()) return;
@@ -131,23 +167,38 @@ export function AmericanoWizard({
                 mode,
             };
 
-            await attachWidget({
-                classInstanceId,
-                widgetConfig: {
-                    type: 'tournament_americano',
-                    config,
-                },
-            });
+            if (isEditMode && widgetId) {
+                await updateWidgetConfig({
+                    widgetId,
+                    widgetConfig: {
+                        type: 'tournament_americano',
+                        config,
+                    },
+                });
+                toast.success('Tournament updated successfully!');
+            } else {
+                await attachWidget({
+                    classInstanceId,
+                    widgetConfig: {
+                        type: 'tournament_americano',
+                        config,
+                    },
+                });
+                toast.success('Tournament created successfully!');
+            }
 
-            toast.success('Tournament created successfully!');
             onComplete();
             onOpenChange(false);
 
             // Reset form
             setCurrentStep(0);
         } catch (error) {
-            console.error('Failed to create tournament:', error);
-            toast.error('Failed to create tournament. Please try again.');
+            if (error instanceof ConvexError) {
+                toast.error(error.data.message);
+            } else {
+                console.error(`Failed to ${isEditMode ? 'update' : 'create'} tournament:`, error);
+                toast.error(`Failed to ${isEditMode ? 'update' : 'create'} tournament. Please try again.`);
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -395,7 +446,9 @@ export function AmericanoWizard({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Create Padel Americano Tournament</DialogTitle>
+                    <DialogTitle>
+                        {isEditMode ? 'Edit Padel Americano Tournament' : 'Create Padel Americano Tournament'}
+                    </DialogTitle>
                     <DialogDescription>
                         Step {currentStep + 1} of {STEPS.length}: {STEPS[currentStep]}
                     </DialogDescription>
@@ -444,10 +497,10 @@ export function AmericanoWizard({
                             {isSubmitting ? (
                                 <>
                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    Creating...
+                                    {isEditMode ? 'Updating...' : 'Creating...'}
                                 </>
                             ) : (
-                                'Create Tournament'
+                                isEditMode ? 'Update Tournament' : 'Create Tournament'
                             )}
                         </Button>
                     )}

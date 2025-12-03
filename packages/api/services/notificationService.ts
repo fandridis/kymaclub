@@ -169,7 +169,7 @@ export const notificationService = {
         const { unreadOnly = false } = args;
 
         // Get all business notification types
-        const businessTypes = ["booking_created", "booking_cancelled_by_consumer", "booking_cancelled_by_business", "payment_received", "review_received"];
+        const businessTypes = ["booking_created", "booking_cancelled_by_consumer", "booking_cancelled_by_business", "booking_awaiting_approval", "payment_received", "review_received"];
 
         const allNotifications: Doc<"notifications">[] = [];
 

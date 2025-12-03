@@ -251,7 +251,13 @@
                 "templateUpdatedSuccess": "Class template updated successfully",
                 "failedToCreateTemplate": "Failed to create class template.",
                 "failedToUpdateTemplate": "Failed to update class template.",
-                "maxBookingHoursMustBeGreater": "Maximum booking hours must be greater than minimum"
+                "maxBookingHoursMustBeGreater": "Maximum booking hours must be greater than minimum",
+                "tabs": {
+                    "details": "Details",
+                    "discounts": "Discounts",
+                    "questions": "Questions",
+                    "widgets": "Widgets"
+                }
             },
             "templateCard": {
                 "noTemplateDataAvailable": "No template data available",

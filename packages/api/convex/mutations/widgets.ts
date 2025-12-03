@@ -62,6 +62,29 @@ export const detachWidget = mutation({
 });
 
 /**
+ * Update widget configuration (only allowed during setup status)
+ */
+export const updateWidgetConfig = mutation({
+    args: {
+        widgetId: v.id("classInstanceWidgets"),
+        widgetConfig: widgetConfigValidator,
+    },
+    returns: v.null(),
+    handler: async (ctx, args) => {
+        const user = await getAuthenticatedUserOrThrow(ctx);
+        await widgetService.updateWidgetConfig({
+            ctx,
+            args: {
+                widgetId: args.widgetId,
+                widgetConfig: args.widgetConfig,
+            },
+            user,
+        });
+        return null;
+    },
+});
+
+/**
  * Add a walk-in participant to the widget
  * Adds to widget.walkIns array
  */

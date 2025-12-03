@@ -251,7 +251,13 @@
                 "templateUpdatedSuccess": "Το πρότυπο μαθήματος ενημερώθηκε με επιτυχία",
                 "failedToCreateTemplate": "Αποτυχία δημιουργίας προτύπου μαθήματος.",
                 "failedToUpdateTemplate": "Αποτυχία ενημέρωσης προτύπου μαθήματος.",
-                "maxBookingHoursMustBeGreater": "Οι μέγιστες ώρες κράτησης πρέπει να είναι μεγαλύτερες από τις ελάχιστες"
+                "maxBookingHoursMustBeGreater": "Οι μέγιστες ώρες κράτησης πρέπει να είναι μεγαλύτερες από τις ελάχιστες",
+                "tabs": {
+                    "details": "Λεπτομέρειες",
+                    "discounts": "Εκπτώσεις",
+                    "questions": "Ερωτήσεις",
+                    "widgets": "Widgets"
+                }
             },
             "templateCard": {
                 "noTemplateDataAvailable": "Δεν υπάρχουν διαθέσιμα δεδομένα προτύπου",

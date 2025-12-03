@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Clock, Users, BookOpen, Tag, X, User, Palette, Shapes, Settings } from 'lucide-react';
+import { Plus, Clock, Users, BookOpen, Tag, X, User, Palette, Shapes } from 'lucide-react';
 import { useMutation } from "convex/react";
 import { api } from "@repo/api/convex/_generated/api";
 import type { Doc, Id } from "@repo/api/convex/_generated/dataModel";
@@ -31,6 +31,8 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { EuroPriceInput } from "@/components/euro-price-input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { useEffect } from 'react';
 import { getDurationOptions } from '@/features/calendar/utils/duration';
 import { ConvexError } from 'convex/values';
@@ -366,315 +368,333 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                         </DrawerTitle>
                     </DrawerHeader>
 
-                    <div className="flex-1 overflow-y-auto">
-                        <ScrollArea className="h-full p-4">
-                            <Form {...form}>
-                                <div className="space-y-6 pb-6">
-                                    <div className="space-y-4">
-                                        <FormField control={form.control} name="name" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="flex items-center gap-2">
-                                                    <BookOpen className="h-4 w-4" />
-                                                    {t('routes.templates.dialog.className')} <span className="text-red-500">*</span>
-                                                </FormLabel>
-                                                <FormControl>
-                                                    <Input autoFocus placeholder={t('routes.templates.classNamePlaceholder')} {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
+                    <Form {...form}>
+                        <Tabs defaultValue="details" className="flex flex-col flex-1 overflow-hidden">
+                            <div className="px-4 pt-4 pb-2 border-b bg-background">
+                                <TabsList className="w-full">
+                                    <TabsTrigger value="details" className="flex-1">
+                                        {t('routes.templates.dialog.tabs.details')}
+                                    </TabsTrigger>
+                                    <TabsTrigger value="discounts" className="flex-1 gap-1.5">
+                                        {t('routes.templates.dialog.tabs.discounts')}
+                                        {discountRules.length > 0 && (
+                                            <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">{discountRules.length}</Badge>
+                                        )}
+                                    </TabsTrigger>
+                                    <TabsTrigger value="questions" className="flex-1 gap-1.5">
+                                        {t('routes.templates.dialog.tabs.questions')}
+                                        {questionnaire.length > 0 && (
+                                            <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">{questionnaire.length}</Badge>
+                                        )}
+                                    </TabsTrigger>
+                                </TabsList>
+                            </div>
 
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <FormField control={form.control} name="primaryCategory" render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="flex items-center gap-2">
-                                                        <Shapes className="h-4 w-4" />
-                                                        {t('routes.templates.dialog.classCategory')} <span className="text-red-500">*</span>
-                                                    </FormLabel>
-                                                    <FormControl>
-                                                        <Select onValueChange={field.onChange} value={field.value || ''}>
-                                                            <FormControl>
-                                                                <SelectTrigger className="w-full">
-                                                                    <SelectValue placeholder={t('routes.templates.selectCategory')} />
-                                                                </SelectTrigger>
-                                                            </FormControl>
-                                                            <SelectContent>
-                                                                {VENUE_CATEGORIES.map((category) => (
-                                                                    <SelectItem key={category} value={category}>
-                                                                        {VENUE_CATEGORY_DISPLAY_NAMES[category]}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )} />
-
-                                            <FormField control={form.control} name="instructor" render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="flex items-center gap-2">
-                                                        <User className="h-4 w-4" />
-                                                        {t('common.instructor')} <span className="text-red-500">*</span>
-                                                    </FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder={t('routes.templates.instructorPlaceholder')} {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )} />
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <FormField control={form.control} name="venueId" render={({ field }) => (
+                            <div className="flex-1 overflow-y-auto">
+                                <ScrollArea className="h-full">
+                                    {/* Details Tab */}
+                                    <TabsContent value="details" className="mt-0 p-4">
+                                        <div className="space-y-4">
+                                            <FormField control={form.control} name="name" render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel className="flex items-center gap-2">
                                                         <BookOpen className="h-4 w-4" />
-                                                        {t('common.venue')} <span className="text-red-500">*</span>
+                                                        {t('routes.templates.dialog.className')} <span className="text-red-500">*</span>
                                                     </FormLabel>
                                                     <FormControl>
-                                                        <Select onValueChange={field.onChange} value={field.value || ''}>
-                                                            <FormControl>
-                                                                <SelectTrigger className="w-full">
-                                                                    <SelectValue placeholder={t('routes.templates.selectVenue')} />
-                                                                </SelectTrigger>
-                                                            </FormControl>
-                                                            <SelectContent>
-                                                                {venues.map((venue) => (
-                                                                    <SelectItem key={venue._id} value={venue._id}>
-                                                                        {venue.name}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
+                                                        <Input autoFocus placeholder={t('routes.templates.classNamePlaceholder')} {...field} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />
 
-                                            <FormField control={form.control} name="duration" render={({ field }) => (
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <FormField control={form.control} name="primaryCategory" render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="flex items-center gap-2">
+                                                            <Shapes className="h-4 w-4" />
+                                                            {t('routes.templates.dialog.classCategory')} <span className="text-red-500">*</span>
+                                                        </FormLabel>
+                                                        <FormControl>
+                                                            <Select onValueChange={field.onChange} value={field.value || ''}>
+                                                                <FormControl>
+                                                                    <SelectTrigger className="w-full">
+                                                                        <SelectValue placeholder={t('routes.templates.selectCategory')} />
+                                                                    </SelectTrigger>
+                                                                </FormControl>
+                                                                <SelectContent>
+                                                                    {VENUE_CATEGORIES.map((category) => (
+                                                                        <SelectItem key={category} value={category}>
+                                                                            {VENUE_CATEGORY_DISPLAY_NAMES[category]}
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )} />
+
+                                                <FormField control={form.control} name="instructor" render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="flex items-center gap-2">
+                                                            <User className="h-4 w-4" />
+                                                            {t('common.instructor')} <span className="text-red-500">*</span>
+                                                        </FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder={t('routes.templates.instructorPlaceholder')} {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )} />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <FormField control={form.control} name="venueId" render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="flex items-center gap-2">
+                                                            <BookOpen className="h-4 w-4" />
+                                                            {t('common.venue')} <span className="text-red-500">*</span>
+                                                        </FormLabel>
+                                                        <FormControl>
+                                                            <Select onValueChange={field.onChange} value={field.value || ''}>
+                                                                <FormControl>
+                                                                    <SelectTrigger className="w-full">
+                                                                        <SelectValue placeholder={t('routes.templates.selectVenue')} />
+                                                                    </SelectTrigger>
+                                                                </FormControl>
+                                                                <SelectContent>
+                                                                    {venues.map((venue) => (
+                                                                        <SelectItem key={venue._id} value={venue._id}>
+                                                                            {venue.name}
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )} />
+
+                                                <FormField control={form.control} name="duration" render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="flex items-center gap-2">
+                                                            <Clock className="h-4 w-4" />
+                                                            {t('common.duration')} <span className="text-red-500">*</span>
+                                                        </FormLabel>
+                                                        <FormControl>
+                                                            <Select onValueChange={field.onChange} value={field.value || ''}>
+                                                                <FormControl>
+                                                                    <SelectTrigger className="w-full">
+                                                                        <SelectValue placeholder={t('routes.templates.selectDuration')} />
+                                                                    </SelectTrigger>
+                                                                </FormControl>
+                                                                <SelectContent>
+                                                                    {getDurationOptions(t).map(option => (
+                                                                        <SelectItem key={option.value} value={option.value}>
+                                                                            {option.label}
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )} />
+                                            </div>
+
+                                            <FormField control={form.control} name="shortDescription" render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel className="flex items-center gap-2">
-                                                        <Clock className="h-4 w-4" />
-                                                        {t('common.duration')} <span className="text-red-500">*</span>
-                                                    </FormLabel>
+                                                    <FormLabel>{t('common.shortDescription')}</FormLabel>
                                                     <FormControl>
-                                                        <Select onValueChange={field.onChange} value={field.value || ''}>
-                                                            <FormControl>
-                                                                <SelectTrigger className="w-full">
-                                                                    <SelectValue placeholder={t('routes.templates.selectDuration')} />
-                                                                </SelectTrigger>
-                                                            </FormControl>
-                                                            <SelectContent>
-                                                                {getDurationOptions(t).map(option => (
-                                                                    <SelectItem key={option.value} value={option.value}>
-                                                                        {option.label}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )} />
-                                        </div>
-
-
-
-                                        <FormField control={form.control} name="shortDescription" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>{t('common.shortDescription')}</FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        placeholder="A brief 1-3 sentence description (max 120 characters)"
-                                                        maxLength={120}
-                                                        {...field}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-
-                                        <FormField control={form.control} name="description" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>{t('common.description')}</FormLabel>
-                                                <FormControl>
-                                                    <Textarea placeholder={t('routes.templates.descriptionPlaceholder')} rows={3} {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-
-                                        <div className="space-y-2">
-                                            <Label className="flex items-center gap-2">
-                                                <Tag className="h-4 w-4" />
-                                                {t('routes.templates.dialog.tags')}
-                                            </Label>
-                                            <Input
-                                                value={currentTag}
-                                                onChange={(e) => setCurrentTag(e.target.value)}
-                                                onKeyPress={handleTagKeyPress}
-                                                placeholder={t('routes.templates.tagsPlaceholder')}
-                                            />
-                                            {formData.tags.length > 0 && (
-                                                <div className="flex flex-wrap gap-2 pt-2">
-                                                    {formData.tags.map((tag, index) => (
-                                                        <span key={index} className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-md text-sm">
-                                                            {tag}
-                                                            <button type="button" onClick={() => removeTag(tag)} className="hover:bg-primary/20 rounded-full p-0.5">
-                                                                <X className="h-3 w-3" />
-                                                            </button>
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-
-
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <FormField control={form.control} name="capacity" render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="flex items-center gap-2">
-                                                        <Users className="h-4 w-4" />
-                                                        {t('common.capacity')} <span className="text-red-500">*</span>
-                                                    </FormLabel>
-                                                    <FormControl>
-                                                        <Input type="number" min="1" placeholder={t('common.maxParticipants')} {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )} />
-
-                                            <FormField control={form.control} name="price" render={({ field }) => (
-                                                <FormItem>
-                                                    <FormControl>
-                                                        <EuroPriceInput
-                                                            value={field.value}
-                                                            onChange={field.onChange}
-                                                            onBlur={field.onBlur}
-                                                            name={field.name}
-                                                            required
-                                                            error={form.formState.errors.price?.message}
+                                                        <Input
+                                                            placeholder="A brief 1-3 sentence description (max 120 characters)"
+                                                            maxLength={120}
+                                                            {...field}
                                                         />
                                                     </FormControl>
-                                                </FormItem>
-                                            )} />
-                                        </div>
-
-
-                                        {/* Requires Confirmation Section */}
-                                        <div className="space-y-4">
-                                            <FormField control={form.control} name="requiresConfirmation" render={({ field }) => (
-                                                <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                                                    <FormControl>
-                                                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                                    </FormControl>
-                                                    <div className="space-y-0.5">
-                                                        <FormLabel className="flex items-center gap-2">
-                                                            {t('routes.templates.requiresConfirmation')}
-                                                        </FormLabel>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {t('routes.templates.requiresConfirmationDescription')}
-                                                        </p>
-                                                    </div>
-                                                </FormItem>
-                                            )} />
-                                        </div>
-
-                                        {/* Booking Window Section */}
-                                        <div className="space-y-4">
-                                            <FormField control={form.control} name="enableBookingWindow" render={({ field }) => (
-                                                <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                                                    <FormControl>
-                                                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                                    </FormControl>
-                                                    <FormLabel className="flex items-center gap-2">
-                                                        {t('routes.templates.bookingWindow')}
-                                                    </FormLabel>
+                                                    <FormMessage />
                                                 </FormItem>
                                             )} />
 
-                                            {formData.enableBookingWindow && (
-                                                <div className="space-y-3 pl-6 border-l-2 border-muted">
-                                                    <FormField control={form.control} name="bookingWindowMaxHours" render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormControl>
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-sm font-medium min-w-[120px]">{t('routes.templates.dialog.openBookings')}</span>
-                                                                    <Input type="number" min="1" className="w-20" {...field} />
-                                                                    <span className="text-sm text-muted-foreground">{t('routes.templates.dialog.hoursBeforeClass')}</span>
-                                                                </div>
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )} />
-
-                                                    <FormField control={form.control} name="bookingWindowMinHours" render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormControl>
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-sm font-medium min-w-[120px]">{t('routes.templates.dialog.closeBookings')}</span>
-                                                                    <Input type="number" min="0" className="w-20" {...field} />
-                                                                    <span className="text-sm text-muted-foreground">{t('routes.templates.dialog.hoursBeforeClass')}</span>
-                                                                </div>
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )} />
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="mt-8">
-                                            <FormField control={form.control} name="color" render={({ field }) => (
+                                            <FormField control={form.control} name="description" render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel className="flex items-center gap-2">
-                                                        <Palette className="h-4 w-4" />
-                                                        {t('routes.templates.dialog.colorTheme')}
-                                                    </FormLabel>
-                                                    <div className="pl-1 flex flex-wrap gap-2">
-                                                        {TEMPLATE_COLORS_ARRAY.map((color) => (
-                                                            <button
-                                                                key={color}
-                                                                type="button"
-                                                                onClick={() => field.onChange(color)}
-                                                                className={cn(
-                                                                    TEMPLATE_COLORS_MAP[color]?.default,
-                                                                    "w-8 h-8 rounded-full transition-all",
-                                                                    field.value === color && 'border-2 border-gray-900 scale-120'
-                                                                )}
-                                                                title={color}
-                                                            />
+                                                    <FormLabel>{t('common.description')}</FormLabel>
+                                                    <FormControl>
+                                                        <Textarea placeholder={t('routes.templates.descriptionPlaceholder')} rows={3} {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+
+                                            <div className="space-y-2">
+                                                <Label className="flex items-center gap-2">
+                                                    <Tag className="h-4 w-4" />
+                                                    {t('routes.templates.dialog.tags')}
+                                                </Label>
+                                                <Input
+                                                    value={currentTag}
+                                                    onChange={(e) => setCurrentTag(e.target.value)}
+                                                    onKeyPress={handleTagKeyPress}
+                                                    placeholder={t('routes.templates.tagsPlaceholder')}
+                                                />
+                                                {formData.tags.length > 0 && (
+                                                    <div className="flex flex-wrap gap-2 pt-2">
+                                                        {formData.tags.map((tag, index) => (
+                                                            <span key={index} className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-md text-sm">
+                                                                {tag}
+                                                                <button type="button" onClick={() => removeTag(tag)} className="hover:bg-primary/20 rounded-full p-0.5">
+                                                                    <X className="h-3 w-3" />
+                                                                </button>
+                                                            </span>
                                                         ))}
                                                     </div>
-                                                </FormItem>
-                                            )} />
-                                        </div>
+                                                )}
+                                            </div>
 
-                                        {/* Discount Rules Section */}
-                                        <div className="space-y-4 mt-8">
-                                            <ClassDiscountRulesForm
-                                                discountRules={discountRules}
-                                                onChange={setDiscountRules}
-                                                currency="EUR"
-                                                price={parseInt(formData.price)}
-                                            />
-                                        </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <FormField control={form.control} name="capacity" render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="flex items-center gap-2">
+                                                            <Users className="h-4 w-4" />
+                                                            {t('common.capacity')} <span className="text-red-500">*</span>
+                                                        </FormLabel>
+                                                        <FormControl>
+                                                            <Input type="number" min="1" placeholder={t('common.maxParticipants')} {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )} />
 
-                                        {/* Pre-booking Questionnaire Section */}
-                                        <div className="space-y-4 mt-8">
-                                            <QuestionnaireBuilder
-                                                questions={questionnaire}
-                                                onChange={setQuestionnaire}
-                                                currency="EUR"
-                                            />
-                                        </div>
+                                                <FormField control={form.control} name="price" render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormControl>
+                                                            <EuroPriceInput
+                                                                value={field.value}
+                                                                onChange={field.onChange}
+                                                                onBlur={field.onBlur}
+                                                                name={field.name}
+                                                                required
+                                                                error={form.formState.errors.price?.message}
+                                                            />
+                                                        </FormControl>
+                                                    </FormItem>
+                                                )} />
+                                            </div>
 
-                                    </div>
-                                </div>
-                            </Form>
-                        </ScrollArea>
-                    </div>
+                                            {/* Requires Confirmation Section */}
+                                            <div className="space-y-4">
+                                                <FormField control={form.control} name="requiresConfirmation" render={({ field }) => (
+                                                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                                        <FormControl>
+                                                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                                        </FormControl>
+                                                        <div className="space-y-0.5">
+                                                            <FormLabel className="flex items-center gap-2">
+                                                                {t('routes.templates.requiresConfirmation')}
+                                                            </FormLabel>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {t('routes.templates.requiresConfirmationDescription')}
+                                                            </p>
+                                                        </div>
+                                                    </FormItem>
+                                                )} />
+                                            </div>
+
+                                            {/* Booking Window Section */}
+                                            <div className="space-y-4">
+                                                <FormField control={form.control} name="enableBookingWindow" render={({ field }) => (
+                                                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                                        <FormControl>
+                                                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                                        </FormControl>
+                                                        <FormLabel className="flex items-center gap-2">
+                                                            {t('routes.templates.bookingWindow')}
+                                                        </FormLabel>
+                                                    </FormItem>
+                                                )} />
+
+                                                {formData.enableBookingWindow && (
+                                                    <div className="space-y-3 pl-6 border-l-2 border-muted">
+                                                        <FormField control={form.control} name="bookingWindowMaxHours" render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormControl>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-sm font-medium min-w-[120px]">{t('routes.templates.dialog.openBookings')}</span>
+                                                                        <Input type="number" min="1" className="w-20" {...field} />
+                                                                        <span className="text-sm text-muted-foreground">{t('routes.templates.dialog.hoursBeforeClass')}</span>
+                                                                    </div>
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )} />
+
+                                                        <FormField control={form.control} name="bookingWindowMinHours" render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormControl>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-sm font-medium min-w-[120px]">{t('routes.templates.dialog.closeBookings')}</span>
+                                                                        <Input type="number" min="0" className="w-20" {...field} />
+                                                                        <span className="text-sm text-muted-foreground">{t('routes.templates.dialog.hoursBeforeClass')}</span>
+                                                                    </div>
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )} />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="pt-4">
+                                                <FormField control={form.control} name="color" render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="flex items-center gap-2">
+                                                            <Palette className="h-4 w-4" />
+                                                            {t('routes.templates.dialog.colorTheme')}
+                                                        </FormLabel>
+                                                        <div className="pl-1 flex flex-wrap gap-2">
+                                                            {TEMPLATE_COLORS_ARRAY.map((color) => (
+                                                                <button
+                                                                    key={color}
+                                                                    type="button"
+                                                                    onClick={() => field.onChange(color)}
+                                                                    className={cn(
+                                                                        TEMPLATE_COLORS_MAP[color]?.default,
+                                                                        "w-8 h-8 rounded-full transition-all",
+                                                                        field.value === color && 'border-2 border-gray-900 scale-120'
+                                                                    )}
+                                                                    title={color}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    </FormItem>
+                                                )} />
+                                            </div>
+                                        </div>
+                                    </TabsContent>
+
+                                    {/* Discounts Tab */}
+                                    <TabsContent value="discounts" className="mt-0 p-4">
+                                        <ClassDiscountRulesForm
+                                            discountRules={discountRules}
+                                            onChange={setDiscountRules}
+                                            currency="EUR"
+                                            price={parseInt(formData.price)}
+                                        />
+                                    </TabsContent>
+
+                                    {/* Questions Tab */}
+                                    <TabsContent value="questions" className="mt-0 p-4">
+                                        <QuestionnaireBuilder
+                                            questions={questionnaire}
+                                            onChange={setQuestionnaire}
+                                            currency="EUR"
+                                        />
+                                    </TabsContent>
+                                </ScrollArea>
+                            </div>
+                        </Tabs>
+                    </Form>
 
                     <DrawerFooter className="flex-col gap-2 pt-4 border-t flex-shrink-0">
                         <Button

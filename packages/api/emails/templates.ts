@@ -334,7 +334,7 @@ const createBusinessNotificationEmail = ({
   venueName: string;
   classTime: string;
   bookingAmount: string; // Formatted euro amount (e.g., "15,00 €")
-  notificationType: "booking_created" | "booking_cancelled_by_consumer" | "booking_cancelled_by_business";
+  notificationType: "booking_created" | "booking_cancelled_by_consumer" | "booking_cancelled_by_business" | "booking_awaiting_approval" | "booking_approved" | "booking_rejected";
 }) => {
   const isBooking = notificationType === "booking_created";
   const isCancelledByBusiness = notificationType === "booking_cancelled_by_business";

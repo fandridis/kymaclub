@@ -145,7 +145,7 @@ export async function createTestNotification(
         businessId: Id<"businesses">;
         recipientType: "business" | "consumer";
         recipientUserId?: Id<"users">;
-        type: "booking_created" | "booking_cancelled_by_consumer" | "review_received" | "payment_received" | "booking_confirmation" | "booking_reminder" | "class_cancelled" | "class_rebookable" | "booking_cancelled_by_business" | "payment_receipt" | "credits_received_subscription" | "credits_received_admin_gift" | "welcome_bonus";
+        type: "booking_created" | "booking_cancelled_by_consumer" | "review_received" | "payment_received" | "booking_confirmation" | "booking_reminder" | "class_cancelled" | "class_rebookable" | "booking_cancelled_by_business" | "payment_receipt" | "credits_received_subscription" | "credits_received_admin_gift" | "welcome_bonus" | "booking_awaiting_approval" | "booking_approved" | "booking_rejected";
         title: string;
         message: string;
         metadata?: {

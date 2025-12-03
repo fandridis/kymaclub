@@ -176,7 +176,7 @@ describe('Widget System Integration Tests', () => {
                 asUser.mutation(api.mutations.widgets.addWalkIn, {
                     widgetId,
                     walkIn: { name: 'John Doe' },
-                }, { sessionId: userId })
+                })
             ).rejects.toThrow();
         });
 
@@ -222,7 +222,7 @@ describe('Widget System Integration Tests', () => {
             await expect(
                 asUser.mutation(api.mutations.widgets.startAmericanoTournament, {
                     widgetId,
-                }, { sessionId: userId })
+                })
             ).rejects.toThrow();
         });
 
