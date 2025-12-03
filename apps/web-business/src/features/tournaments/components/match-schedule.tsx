@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react";
-import type { TournamentAmericanoMatch, WidgetParticipant, TournamentAmericanoMatchPoints, TournamentCourt } from "@repo/api/types/widget";
+import type { TournamentAmericanoMatch, ParticipantSnapshot, TournamentAmericanoMatchPoints, TournamentCourt } from "@repo/api/types/widget";
 import { ChevronDown, Minus, Plus, Check, X, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MatchScheduleProps {
     matches: TournamentAmericanoMatch[];
-    participants: WidgetParticipant[];
+    participants: ParticipantSnapshot[]; // Participants snapshot from tournament state
     currentRound: number;
     onSaveScore: (matchId: string, team1Score: number, team2Score: number) => Promise<void>;
     canRecordScores: boolean;
@@ -131,7 +131,6 @@ function MatchCard({
     };
 
     const handleSave = async () => {
-        if (team1Score === team2Score) return;
         setIsSaving(true);
         try {
             await onSaveScore(match.id, team1Score, team2Score);
@@ -431,9 +430,9 @@ export function MatchSchedule({
 }: MatchScheduleProps) {
     const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
 
-    // Create participant lookup
-    const participantMap = new Map(
-        participants.map(p => [p._id.toString(), p.displayName])
+    // Create participants lookup (id -> displayName)
+    const participantsMap = new Map(
+        participants.map(p => [p.id, p.displayName])
     );
 
     // Create court lookup
@@ -442,7 +441,7 @@ export function MatchSchedule({
     );
 
     const getTeamNames = (teamIds: string[]): string[] => {
-        return teamIds.map(id => participantMap.get(id) || "Unknown");
+        return teamIds.map(id => participantsMap.get(id) || "Unknown");
     };
 
     const getCourtName = (courtId: string): string => {
@@ -468,7 +467,7 @@ export function MatchSchedule({
     }
 
     return (
-        <div className="space-y-10">
+        <div className="space-y-8">
             {rounds.map(round => (
                 <RoundSection
                     key={round}

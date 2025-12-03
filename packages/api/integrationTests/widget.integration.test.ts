@@ -158,7 +158,7 @@ describe('Widget System Integration Tests', () => {
         });
     });
 
-    describe('Participant Management', () => {
+    describe('Walk-in Management', () => {
         let widgetId: Id<"classInstanceWidgets">;
 
         beforeEach(async () => {
@@ -170,7 +170,7 @@ describe('Widget System Integration Tests', () => {
         });
 
         it('should add walk-in participants', async () => {
-            const result = await t.mutation(api.mutations.widgets.addWalkInParticipant, {
+            const result = await t.mutation(api.mutations.widgets.addWalkIn, {
                 widgetId,
                 walkIn: {
                     name: 'John Doe',
@@ -178,43 +178,45 @@ describe('Widget System Integration Tests', () => {
                 },
             }, { sessionId: userId });
 
-            expect(result.participantId).toBeDefined();
+            expect(result.walkInId).toBeDefined();
 
-            // Verify participant was added
-            const participants = await t.query(api.queries.widgets.getParticipants, {
+            // Verify participant was added via setupParticipants
+            const participants = await t.query(api.queries.widgets.getSetupParticipants, {
                 widgetId,
             });
 
             expect(participants.length).toBe(1);
             expect(participants[0].displayName).toBe('John Doe');
-            expect(participants[0].walkIn?.phone).toBe('+1234567890');
+            expect(participants[0].isWalkIn).toBe(true);
+            expect(participants[0].walkInPhone).toBe('+1234567890');
         });
 
         it('should not allow duplicate walk-in names', async () => {
-            await t.mutation(api.mutations.widgets.addWalkInParticipant, {
+            await t.mutation(api.mutations.widgets.addWalkIn, {
                 widgetId,
                 walkIn: { name: 'John Doe' },
             }, { sessionId: userId });
 
             await expect(
-                t.mutation(api.mutations.widgets.addWalkInParticipant, {
+                t.mutation(api.mutations.widgets.addWalkIn, {
                     widgetId,
                     walkIn: { name: 'John Doe' },
                 }, { sessionId: userId })
             ).rejects.toThrow();
         });
 
-        it('should remove participants', async () => {
-            const { participantId } = await t.mutation(api.mutations.widgets.addWalkInParticipant, {
+        it('should remove walk-in participants', async () => {
+            const { walkInId } = await t.mutation(api.mutations.widgets.addWalkIn, {
                 widgetId,
                 walkIn: { name: 'To Remove' },
             }, { sessionId: userId });
 
-            await t.mutation(api.mutations.widgets.removeParticipant, {
-                participantId,
+            await t.mutation(api.mutations.widgets.removeWalkIn, {
+                widgetId,
+                walkInId,
             }, { sessionId: userId });
 
-            const participants = await t.query(api.queries.widgets.getParticipants, {
+            const participants = await t.query(api.queries.widgets.getSetupParticipants, {
                 widgetId,
             });
 
@@ -236,7 +238,7 @@ describe('Widget System Integration Tests', () => {
         it('should not start tournament without enough participants', async () => {
             // Add only 4 participants (need 8)
             for (let i = 0; i < 4; i++) {
-                await t.mutation(api.mutations.widgets.addWalkInParticipant, {
+                await t.mutation(api.mutations.widgets.addWalkIn, {
                     widgetId,
                     walkIn: { name: `Player ${i + 1}` },
                 }, { sessionId: userId });
@@ -252,7 +254,7 @@ describe('Widget System Integration Tests', () => {
         it('should start tournament with correct number of participants', async () => {
             // Add all 8 participants
             for (let i = 0; i < 8; i++) {
-                await t.mutation(api.mutations.widgets.addWalkInParticipant, {
+                await t.mutation(api.mutations.widgets.addWalkIn, {
                     widgetId,
                     walkIn: { name: `Player ${i + 1}` },
                 }, { sessionId: userId });
@@ -273,12 +275,14 @@ describe('Widget System Integration Tests', () => {
             expect(state?.state).not.toBeNull();
             expect(state?.state?.matches.length).toBeGreaterThan(0);
             expect(state?.state?.standings.length).toBe(8);
+            // Verify participants snapshot was created
+            expect(state?.participants.length).toBe(8);
         });
 
         it('should record match results', async () => {
             // Setup tournament
             for (let i = 0; i < 8; i++) {
-                await t.mutation(api.mutations.widgets.addWalkInParticipant, {
+                await t.mutation(api.mutations.widgets.addWalkIn, {
                     widgetId,
                     walkIn: { name: `Player ${i + 1}` },
                 }, { sessionId: userId });
@@ -317,10 +321,10 @@ describe('Widget System Integration Tests', () => {
             expect(updatedMatch?.team2Score).toBe(15);
         });
 
-        it('should not allow equal scores', async () => {
+        it('should allow tied scores', async () => {
             // Setup tournament
             for (let i = 0; i < 8; i++) {
-                await t.mutation(api.mutations.widgets.addWalkInParticipant, {
+                await t.mutation(api.mutations.widgets.addWalkIn, {
                     widgetId,
                     walkIn: { name: `Player ${i + 1}` },
                 }, { sessionId: userId });
@@ -336,20 +340,27 @@ describe('Widget System Integration Tests', () => {
 
             const firstMatch = state?.state?.matches[0];
 
-            await expect(
-                t.mutation(api.mutations.widgets.recordAmericanoMatchResult, {
-                    widgetId,
-                    matchId: firstMatch!.id,
-                    team1Score: 15,
-                    team2Score: 15, // Equal scores not allowed
-                }, { sessionId: userId })
-            ).rejects.toThrow();
+            // Ties should be allowed now
+            await t.mutation(api.mutations.widgets.recordAmericanoMatchResult, {
+                widgetId,
+                matchId: firstMatch!.id,
+                team1Score: 18,
+                team2Score: 18, // Tied score is allowed
+            }, { sessionId: userId });
+
+            // Verify the tied score was saved
+            const updatedState = await t.query(api.queries.widgets.getAmericanoTournamentState, {
+                widgetId,
+            });
+            const updatedMatch = updatedState?.state?.matches.find(m => m.id === firstMatch!.id);
+            expect(updatedMatch?.team1Score).toBe(18);
+            expect(updatedMatch?.team2Score).toBe(18);
         });
 
         it('should complete tournament', async () => {
             // Setup and start tournament
             for (let i = 0; i < 8; i++) {
-                await t.mutation(api.mutations.widgets.addWalkInParticipant, {
+                await t.mutation(api.mutations.widgets.addWalkIn, {
                     widgetId,
                     walkIn: { name: `Player ${i + 1}` },
                 }, { sessionId: userId });
@@ -409,9 +420,9 @@ describe('Widget System Integration Tests', () => {
             expect(widget?._id).toBe(widgetId);
         });
 
-        it('should get widget by ID with participants', async () => {
-            // Add some participants
-            await t.mutation(api.mutations.widgets.addWalkInParticipant, {
+        it('should get widget by ID with setup participants', async () => {
+            // Add a walk-in participant
+            await t.mutation(api.mutations.widgets.addWalkIn, {
                 widgetId,
                 walkIn: { name: 'Test Player' },
             }, { sessionId: userId });
@@ -421,13 +432,13 @@ describe('Widget System Integration Tests', () => {
             });
 
             expect(widget).not.toBeNull();
-            expect(widget?.participants.length).toBe(1);
+            expect(widget?.setupParticipants.length).toBe(1);
         });
 
         it('should get leaderboard', async () => {
             // Setup and start tournament
             for (let i = 0; i < 8; i++) {
-                await t.mutation(api.mutations.widgets.addWalkInParticipant, {
+                await t.mutation(api.mutations.widgets.addWalkIn, {
                     widgetId,
                     walkIn: { name: `Player ${i + 1}` },
                 }, { sessionId: userId });
@@ -447,4 +458,3 @@ describe('Widget System Integration Tests', () => {
         });
     });
 });
-

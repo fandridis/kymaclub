@@ -6,12 +6,10 @@ import { widgetRules } from "../rules/widget";
 import type {
     WidgetConfig,
     WidgetStatus,
-    WidgetWithParticipants,
-    WidgetParticipant,
     WalkIn,
+    WalkInEntry,
+    SetupParticipant,
     ClassInstanceWidget,
-    TournamentAmericanoConfig,
-    isAmericanoConfig,
 } from "../types/widget";
 
 // Widget display names by type
@@ -21,12 +19,21 @@ const WIDGET_DISPLAY_NAMES: Record<WidgetConfig["type"], string> = {
     tournament_brackets: "Bracket Tournament",
 };
 
+// Generate a unique ID for walk-ins
+const generateWalkInId = (): string => {
+    return `walkin_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+};
+
 /***************************************************************
  * Widget Service - Orchestration layer for widget operations
  * 
  * This service handles all widget-related database operations and
  * coordinates between the widget rules, operations, and type-specific
  * tournament services.
+ * 
+ * NEW PARTICIPANT MODEL:
+ * - During setup: participants are derived from bookings + walkIns array
+ * - When tournament starts: participants snapshot into widgetState.participants
  ***************************************************************/
 export const widgetService = {
     /***************************************************************
@@ -71,12 +78,13 @@ export const widgetService = {
 
         widgetRules.instanceMustNotHaveWidget(existingWidget);
 
-        // Create the widget
+        // Create the widget with empty walkIns array
         const now = Date.now();
         const widgetId = await ctx.db.insert("classInstanceWidgets", {
             classInstanceId: args.classInstanceId,
             businessId: instance.businessId,
             widgetConfig: args.widgetConfig,
+            walkIns: [], // Initialize empty walk-ins array
             status: "setup",
             createdAt: now,
             createdBy: user._id,
@@ -149,16 +157,62 @@ export const widgetService = {
                 updatedBy: user._id,
             });
         }
+        // Note: No need to delete participants - walkIns are embedded in widget
+    },
 
-        // Also delete all participants
-        const participants = await ctx.db
-            .query("widgetParticipants")
-            .withIndex("by_widget", q => q.eq("widgetId", args.widgetId))
+    /***************************************************************
+     * Get Setup Participants
+     * Derives participant list from pending bookings + walkIns array
+     * Used during setup mode before tournament starts
+     ***************************************************************/
+    getSetupParticipants: async ({
+        ctx,
+        widget,
+    }: {
+        ctx: QueryCtx;
+        widget: ClassInstanceWidget;
+    }): Promise<SetupParticipant[]> => {
+        const participants: SetupParticipant[] = [];
+
+        // Get all pending bookings for this class instance
+        const bookings = await ctx.db
+            .query("bookings")
+            .withIndex("by_class_instance_status", q =>
+                q.eq("classInstanceId", widget.classInstanceId).eq("status", "pending")
+            )
             .collect();
 
-        for (const participant of participants) {
-            await ctx.db.delete(participant._id);
+        // Add booking participants
+        for (const booking of bookings) {
+            const bookingUser = await ctx.db.get(booking.userId);
+            const displayName = booking.userSnapshot?.name
+                || bookingUser?.name
+                || booking.userSnapshot?.email
+                || "Unknown User";
+
+            participants.push({
+                id: `booking_${booking._id}`,
+                displayName,
+                isWalkIn: false,
+                bookingId: booking._id,
+                userId: booking.userId,
+            });
         }
+
+        // Add walk-in participants
+        const walkIns = widget.walkIns ?? [];
+        for (const walkIn of walkIns) {
+            participants.push({
+                id: `walkin_${walkIn.id}`,
+                displayName: walkIn.name,
+                isWalkIn: true,
+                walkInId: walkIn.id,
+                walkInPhone: walkIn.phone,
+                walkInEmail: walkIn.email,
+            });
+        }
+
+        return participants;
     },
 
     /***************************************************************
@@ -171,8 +225,7 @@ export const widgetService = {
     }: {
         ctx: QueryCtx;
         classInstanceId: Id<"classInstances">;
-    }): Promise<WidgetWithParticipants | null> => {
-        console.log('[widgetService.getWidgetForInstance]--->', classInstanceId);
+    }): Promise<(ClassInstanceWidget & { setupParticipants: SetupParticipant[] }) | null> => {
         const widget = await ctx.db
             .query("classInstanceWidgets")
             .withIndex("by_class_instance_deleted", q =>
@@ -184,21 +237,18 @@ export const widgetService = {
             return null;
         }
 
-        // Get participants
-        const participants = await ctx.db
-            .query("widgetParticipants")
-            .withIndex("by_widget", q => q.eq("widgetId", widget._id))
-            .collect();
+        // Get setup participants (derived from bookings + walkIns)
+        const setupParticipants = await widgetService.getSetupParticipants({ ctx, widget });
 
         return {
             ...widget,
-            participants,
+            setupParticipants,
         };
     },
 
     /***************************************************************
      * Get Widget by ID
-     * Returns a widget with all its participants
+     * Returns a widget with setup participants
      ***************************************************************/
     getWidgetById: async ({
         ctx,
@@ -206,46 +256,26 @@ export const widgetService = {
     }: {
         ctx: QueryCtx;
         widgetId: Id<"classInstanceWidgets">;
-    }): Promise<WidgetWithParticipants | null> => {
+    }): Promise<(ClassInstanceWidget & { setupParticipants: SetupParticipant[] }) | null> => {
         const widget = await ctx.db.get(widgetId);
         if (!widget || widget.deleted) {
             return null;
         }
 
-        // Get participants
-        const participants = await ctx.db
-            .query("widgetParticipants")
-            .withIndex("by_widget", q => q.eq("widgetId", widgetId))
-            .collect();
+        // Get setup participants (derived from bookings + walkIns)
+        const setupParticipants = await widgetService.getSetupParticipants({ ctx, widget });
 
         return {
             ...widget,
-            participants,
+            setupParticipants,
         };
     },
 
     /***************************************************************
-     * Get Participants for Widget
-     * Returns all participants for a widget
+     * Add Walk-In
+     * Adds a non-registered user to the widget's walkIns array
      ***************************************************************/
-    getParticipants: async ({
-        ctx,
-        widgetId,
-    }: {
-        ctx: QueryCtx;
-        widgetId: Id<"classInstanceWidgets">;
-    }): Promise<WidgetParticipant[]> => {
-        return await ctx.db
-            .query("widgetParticipants")
-            .withIndex("by_widget", q => q.eq("widgetId", widgetId))
-            .collect();
-    },
-
-    /***************************************************************
-     * Add Walk-In Participant
-     * Adds a non-registered user as a participant
-     ***************************************************************/
-    addWalkInParticipant: async ({
+    addWalkIn: async ({
         ctx,
         args,
         user,
@@ -256,7 +286,7 @@ export const widgetService = {
             walkIn: WalkIn;
         };
         user: Doc<"users">;
-    }): Promise<{ participantId: Id<"widgetParticipants"> }> => {
+    }): Promise<{ walkInId: string }> => {
         const widget = await ctx.db.get(args.widgetId);
         if (!widget || widget.deleted) {
             throw new ConvexError({
@@ -273,31 +303,34 @@ export const widgetService = {
         widgetRules.canAddParticipant(widget);
 
         // Check for duplicate walk-in name
-        const existingParticipants = await ctx.db
-            .query("widgetParticipants")
-            .withIndex("by_widget", q => q.eq("widgetId", args.widgetId))
-            .collect();
+        const existingWalkIns = widget.walkIns ?? [];
+        widgetRules.walkInNameMustBeUnique(existingWalkIns, args.walkIn.name);
 
-        widgetRules.walkInNameMustBeUnique(existingParticipants, args.walkIn.name);
+        // Create walk-in entry with generated ID
+        const walkInId = generateWalkInId();
+        const walkInEntry: WalkInEntry = {
+            id: walkInId,
+            name: args.walkIn.name,
+            phone: args.walkIn.phone,
+            email: args.walkIn.email,
+            createdAt: Date.now(),
+        };
 
-        // Create participant
-        const now = Date.now();
-        const participantId = await ctx.db.insert("widgetParticipants", {
-            widgetId: args.widgetId,
-            walkIn: args.walkIn,
-            displayName: args.walkIn.name,
-            createdAt: now,
-            createdBy: user._id,
+        // Add to walkIns array
+        await ctx.db.patch(args.widgetId, {
+            walkIns: [...existingWalkIns, walkInEntry],
+            updatedAt: Date.now(),
+            updatedBy: user._id,
         });
 
-        return { participantId };
+        return { walkInId };
     },
 
     /***************************************************************
-     * Add Booking as Participant
-     * Links a booking to the widget as a participant
+     * Remove Walk-In
+     * Removes a walk-in from the widget's walkIns array
      ***************************************************************/
-    addBookingParticipant: async ({
+    removeWalkIn: async ({
         ctx,
         args,
         user,
@@ -305,97 +338,11 @@ export const widgetService = {
         ctx: MutationCtx;
         args: {
             widgetId: Id<"classInstanceWidgets">;
-            bookingId: Id<"bookings">;
-        };
-        user: Doc<"users">;
-    }): Promise<{ participantId: Id<"widgetParticipants"> }> => {
-        const widget = await ctx.db.get(args.widgetId);
-        if (!widget || widget.deleted) {
-            throw new ConvexError({
-                message: "Widget not found",
-                field: "widgetId",
-                code: ERROR_CODES.RESOURCE_NOT_FOUND,
-            });
-        }
-
-        // Authorization check
-        widgetRules.userMustBeWidgetOwner(widget, user);
-
-        // Business rule check
-        widgetRules.canAddParticipant(widget);
-
-        // Get the booking
-        const booking = await ctx.db.get(args.bookingId);
-        if (!booking || booking.deleted) {
-            throw new ConvexError({
-                message: "Booking not found",
-                field: "bookingId",
-                code: ERROR_CODES.RESOURCE_NOT_FOUND,
-            });
-        }
-
-        // Verify booking is for the same class instance
-        if (booking.classInstanceId !== widget.classInstanceId) {
-            throw new ConvexError({
-                message: "Booking is not for this class",
-                field: "bookingId",
-                code: ERROR_CODES.VALIDATION_ERROR,
-            });
-        }
-
-        // Check if booking is already a participant
-        const existingParticipant = await ctx.db
-            .query("widgetParticipants")
-            .withIndex("by_booking", q => q.eq("bookingId", args.bookingId))
-            .first();
-
-        widgetRules.bookingMustNotBeParticipant(existingParticipant);
-
-        // Get user info for display name
-        const bookingUser = await ctx.db.get(booking.userId);
-        const displayName = booking.userSnapshot?.name
-            || bookingUser?.name
-            || booking.userSnapshot?.email
-            || "Unknown User";
-
-        // Create participant
-        const now = Date.now();
-        const participantId = await ctx.db.insert("widgetParticipants", {
-            widgetId: args.widgetId,
-            bookingId: args.bookingId,
-            displayName,
-            createdAt: now,
-            createdBy: user._id,
-        });
-
-        return { participantId };
-    },
-
-    /***************************************************************
-     * Remove Participant
-     * Removes a participant from the widget
-     ***************************************************************/
-    removeParticipant: async ({
-        ctx,
-        args,
-        user,
-    }: {
-        ctx: MutationCtx;
-        args: {
-            participantId: Id<"widgetParticipants">;
+            walkInId: string;
         };
         user: Doc<"users">;
     }): Promise<void> => {
-        const participant = await ctx.db.get(args.participantId);
-        if (!participant) {
-            throw new ConvexError({
-                message: "Participant not found",
-                field: "participantId",
-                code: ERROR_CODES.RESOURCE_NOT_FOUND,
-            });
-        }
-
-        const widget = await ctx.db.get(participant.widgetId);
+        const widget = await ctx.db.get(args.widgetId);
         if (!widget || widget.deleted) {
             throw new ConvexError({
                 message: "Widget not found",
@@ -410,86 +357,29 @@ export const widgetService = {
         // Business rule check
         widgetRules.canRemoveParticipant(widget);
 
-        // Delete participant
-        await ctx.db.delete(args.participantId);
-    },
+        // Find and remove the walk-in
+        const existingWalkIns = widget.walkIns ?? [];
+        const walkInIndex = existingWalkIns.findIndex(w => w.id === args.walkInId);
 
-    /***************************************************************
-     * Sync Participants from Bookings
-     * Auto-adds all confirmed bookings as participants
-     ***************************************************************/
-    syncParticipantsFromBookings: async ({
-        ctx,
-        widgetId,
-        user,
-    }: {
-        ctx: MutationCtx;
-        widgetId: Id<"classInstanceWidgets">;
-        user: Doc<"users">;
-    }): Promise<{ addedCount: number }> => {
-        const widget = await ctx.db.get(widgetId);
-        if (!widget || widget.deleted) {
+        if (walkInIndex === -1) {
             throw new ConvexError({
-                message: "Widget not found",
-                field: "widgetId",
+                message: "Walk-in not found",
+                field: "walkInId",
                 code: ERROR_CODES.RESOURCE_NOT_FOUND,
             });
         }
 
-        // Authorization check
-        widgetRules.userMustBeWidgetOwner(widget, user);
+        // Remove from array
+        const updatedWalkIns = [
+            ...existingWalkIns.slice(0, walkInIndex),
+            ...existingWalkIns.slice(walkInIndex + 1),
+        ];
 
-        // Business rule check
-        widgetRules.canAddParticipant(widget);
-
-        // Get all pending bookings for this class instance
-        const bookings = await ctx.db
-            .query("bookings")
-            .withIndex("by_class_instance_status", q =>
-                q.eq("classInstanceId", widget.classInstanceId).eq("status", "pending")
-            )
-            .collect();
-
-        // Get existing participants (bookings)
-        const existingParticipants = await ctx.db
-            .query("widgetParticipants")
-            .withIndex("by_widget", q => q.eq("widgetId", widgetId))
-            .collect();
-
-        const existingBookingIds = new Set(
-            existingParticipants
-                .filter(p => p.bookingId)
-                .map(p => p.bookingId)
-        );
-
-        // Add new participants
-        let addedCount = 0;
-        const now = Date.now();
-
-        for (const booking of bookings) {
-            if (existingBookingIds.has(booking._id)) {
-                continue; // Already a participant
-            }
-
-            // Get user info for display name
-            const bookingUser = await ctx.db.get(booking.userId);
-            const displayName = booking.userSnapshot?.name
-                || bookingUser?.name
-                || booking.userSnapshot?.email
-                || "Unknown User";
-
-            await ctx.db.insert("widgetParticipants", {
-                widgetId,
-                bookingId: booking._id,
-                displayName,
-                createdAt: now,
-                createdBy: user._id,
-            });
-
-            addedCount++;
-        }
-
-        return { addedCount };
+        await ctx.db.patch(args.widgetId, {
+            walkIns: updatedWalkIns,
+            updatedAt: Date.now(),
+            updatedBy: user._id,
+        });
     },
 
     /***************************************************************

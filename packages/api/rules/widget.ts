@@ -3,10 +3,10 @@ import { ERROR_CODES } from "../utils/errorCodes";
 import type { Doc } from "../convex/_generated/dataModel";
 import type {
     ClassInstanceWidget,
-    WidgetParticipant,
+    WalkInEntry,
+    SetupParticipant,
     WidgetStatus,
     TournamentAmericanoConfig,
-    WidgetConfig,
 } from "../types/widget";
 import { isAmericanoConfig } from "../types/widget";
 import { tournamentAmericanoOperations } from "../operations/tournamentAmericano";
@@ -16,6 +16,11 @@ import { tournamentAmericanoOperations } from "../operations/tournamentAmericano
  * 
  * Validation rules for widget operations including authorization,
  * state transitions, and data integrity checks.
+ * 
+ * NEW PARTICIPANT MODEL:
+ * - Bookings are auto-included (no need to check for duplicates)
+ * - Walk-ins are stored in widget.walkIns array
+ * - SetupParticipant is the unified view during setup
  */
 
 /***************************************************************
@@ -189,29 +194,15 @@ const canRemoveParticipant = (widget: ClassInstanceWidget): void => {
 };
 
 /**
- * Verify booking is not already a participant
- */
-const bookingMustNotBeParticipant = (
-    existingParticipant: WidgetParticipant | null
-): void => {
-    if (existingParticipant) {
-        throw new ConvexError({
-            message: "This booking is already a participant in the tournament",
-            field: "bookingId",
-            code: ERROR_CODES.DUPLICATE_RESOURCE,
-        });
-    }
-};
-
-/**
  * Verify walk-in name is not already used
+ * Checks against widget.walkIns array
  */
 const walkInNameMustBeUnique = (
-    participants: WidgetParticipant[],
+    walkIns: WalkInEntry[],
     walkInName: string
 ): void => {
-    const existing = participants.find(
-        p => p.walkIn?.name.toLowerCase() === walkInName.toLowerCase()
+    const existing = walkIns.find(
+        w => w.name.toLowerCase() === walkInName.toLowerCase()
     );
 
     if (existing) {
@@ -234,7 +225,7 @@ const walkInNameMustBeUnique = (
  */
 const canStartAmericanoTournament = (
     widget: ClassInstanceWidget,
-    participants: WidgetParticipant[],
+    participants: SetupParticipant[],
     config: TournamentAmericanoConfig
 ): void => {
     // Widget must be in ready or setup status
@@ -268,10 +259,11 @@ const canStartAmericanoTournament = (
 
 /**
  * Verify any tournament can be started (dispatches to type-specific validation)
+ * Uses SetupParticipant[] - the unified view of bookings + walk-ins
  */
 const canStartTournament = (
     widget: ClassInstanceWidget,
-    participants: WidgetParticipant[]
+    participants: SetupParticipant[]
 ): void => {
     // Widget must be in ready or setup status
     if (widget.status !== "ready" && widget.status !== "setup") {
@@ -353,14 +345,7 @@ const validateMatchScores = (
         });
     }
 
-    // Scores shouldn't be equal (there's always a winner)
-    if (team1Score === team2Score) {
-        throw new ConvexError({
-            message: "Scores cannot be equal - there must be a winner",
-            field: "score",
-            code: ERROR_CODES.VALIDATION_ERROR,
-        });
-    }
+    // Note: Ties are allowed - both teams can have equal scores
 };
 
 /***************************************************************
@@ -413,7 +398,6 @@ export const widgetRules = {
     // Participants
     canAddParticipant,
     canRemoveParticipant,
-    bookingMustNotBeParticipant,
     walkInNameMustBeUnique,
 
     // Tournament start
@@ -427,4 +411,3 @@ export const widgetRules = {
     // Round advancement
     canAdvanceRound,
 };
-

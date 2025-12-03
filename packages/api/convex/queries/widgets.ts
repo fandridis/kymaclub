@@ -6,10 +6,34 @@ import { tournamentAmericanoService } from "../../services/tournamentAmericanoSe
 import {
     widgetConfigValidator,
     widgetStatusValidator,
+    walkInEntryFields,
+    participantSnapshotFields,
 } from "../schema";
+
+// Validator for setup participants (derived from bookings + walk-ins)
+const setupParticipantValidator = v.object({
+    id: v.string(), // "booking_<id>" or "walkin_<id>"
+    displayName: v.string(),
+    isWalkIn: v.boolean(),
+    bookingId: v.optional(v.id("bookings")),
+    userId: v.optional(v.id("users")),
+    walkInId: v.optional(v.string()),
+    walkInPhone: v.optional(v.string()),
+    walkInEmail: v.optional(v.string()),
+});
+
+// Validator for participant snapshot entries (stored in widgetState)
+const participantSnapshotValidator = v.object(participantSnapshotFields);
+
+// Validator for walk-in entries (stored in widget.walkIns)
+const walkInEntryValidator = v.object(walkInEntryFields);
 
 /***************************************************************
  * Widget Queries - Public API for reading widget data
+ * 
+ * NEW PARTICIPANT MODEL:
+ * - setupParticipants: derived from bookings + walkIns (for setup mode)
+ * - participants: snapshot in widgetState (for active/completed tournaments)
  ***************************************************************/
 
 /**
@@ -27,7 +51,8 @@ export const getByInstance = query({
             classInstanceId: v.id("classInstances"),
             businessId: v.id("businesses"),
             widgetConfig: widgetConfigValidator,
-            widgetState: v.optional(v.any()), // State varies by type
+            widgetState: v.optional(v.any()), // State varies by type, includes participants after start
+            walkIns: v.optional(v.array(walkInEntryValidator)), // Walk-ins stored on widget
             status: widgetStatusValidator,
             isLocked: v.optional(v.boolean()),
             createdAt: v.number(),
@@ -37,31 +62,12 @@ export const getByInstance = query({
             deleted: v.optional(v.boolean()),
             deletedAt: v.optional(v.union(v.number(), v.null())),
             deletedBy: v.optional(v.union(v.id("users"), v.null())),
-            participants: v.array(v.object({
-                _id: v.id("widgetParticipants"),
-                _creationTime: v.number(),
-                widgetId: v.id("classInstanceWidgets"),
-                bookingId: v.optional(v.id("bookings")),
-                walkIn: v.optional(v.object({
-                    name: v.string(),
-                    phone: v.optional(v.string()),
-                    email: v.optional(v.string()),
-                })),
-                displayName: v.string(),
-                teamId: v.optional(v.string()),
-                seedNumber: v.optional(v.number()),
-                createdAt: v.number(),
-                createdBy: v.id("users"),
-                updatedAt: v.optional(v.number()),
-                updatedBy: v.optional(v.id("users")),
-            })),
+            // Setup participants - derived from bookings + walkIns
+            setupParticipants: v.array(setupParticipantValidator),
         }),
         v.null()
     ),
     handler: async (ctx, args) => {
-        // Allow unauthenticated access for viewing
-        console.log('getWidgetForInstance--->', args.classInstanceId);
-
         return widgetService.getWidgetForInstance({
             ctx,
             classInstanceId: args.classInstanceId,
@@ -71,7 +77,7 @@ export const getByInstance = query({
 
 /**
  * Get widget by ID
- * Returns a widget with all its participants
+ * Returns a widget with setup participants
  */
 export const getById = query({
     args: {
@@ -84,7 +90,8 @@ export const getById = query({
             classInstanceId: v.id("classInstances"),
             businessId: v.id("businesses"),
             widgetConfig: widgetConfigValidator,
-            widgetState: v.optional(v.any()),
+            widgetState: v.optional(v.any()), // State varies by type, includes participants after start
+            walkIns: v.optional(v.array(walkInEntryValidator)), // Walk-ins stored on widget
             status: widgetStatusValidator,
             isLocked: v.optional(v.boolean()),
             createdAt: v.number(),
@@ -94,24 +101,8 @@ export const getById = query({
             deleted: v.optional(v.boolean()),
             deletedAt: v.optional(v.union(v.number(), v.null())),
             deletedBy: v.optional(v.union(v.id("users"), v.null())),
-            participants: v.array(v.object({
-                _id: v.id("widgetParticipants"),
-                _creationTime: v.number(),
-                widgetId: v.id("classInstanceWidgets"),
-                bookingId: v.optional(v.id("bookings")),
-                walkIn: v.optional(v.object({
-                    name: v.string(),
-                    phone: v.optional(v.string()),
-                    email: v.optional(v.string()),
-                })),
-                displayName: v.string(),
-                teamId: v.optional(v.string()),
-                seedNumber: v.optional(v.number()),
-                createdAt: v.number(),
-                createdBy: v.id("users"),
-                updatedAt: v.optional(v.number()),
-                updatedBy: v.optional(v.id("users")),
-            })),
+            // Setup participants - derived from bookings + walkIns
+            setupParticipants: v.array(setupParticipantValidator),
         }),
         v.null()
     ),
@@ -124,35 +115,20 @@ export const getById = query({
 });
 
 /**
- * Get participants for a widget
+ * Get setup participants for a widget
+ * Returns the live participant list (from bookings + walkIns)
  */
-export const getParticipants = query({
+export const getSetupParticipants = query({
     args: {
         widgetId: v.id("classInstanceWidgets"),
     },
-    returns: v.array(v.object({
-        _id: v.id("widgetParticipants"),
-        _creationTime: v.number(),
-        widgetId: v.id("classInstanceWidgets"),
-        bookingId: v.optional(v.id("bookings")),
-        walkIn: v.optional(v.object({
-            name: v.string(),
-            phone: v.optional(v.string()),
-            email: v.optional(v.string()),
-        })),
-        displayName: v.string(),
-        teamId: v.optional(v.string()),
-        seedNumber: v.optional(v.number()),
-        createdAt: v.number(),
-        createdBy: v.id("users"),
-        updatedAt: v.optional(v.number()),
-        updatedBy: v.optional(v.id("users")),
-    })),
+    returns: v.array(setupParticipantValidator),
     handler: async (ctx, args) => {
-        return widgetService.getParticipants({
-            ctx,
-            widgetId: args.widgetId,
-        });
+        const widget = await ctx.db.get(args.widgetId);
+        if (!widget || widget.deleted) {
+            return [];
+        }
+        return widgetService.getSetupParticipants({ ctx, widget });
     },
 });
 
@@ -200,29 +176,17 @@ export const getAmericanoTournamentState = query({
                         pointsConceded: v.number(),
                         pointsDifference: v.number(),
                     })),
+                    // Participants snapshot (after tournament starts)
+                    participants: v.array(participantSnapshotValidator),
                     startedAt: v.optional(v.number()),
                     completedAt: v.optional(v.number()),
                 }),
                 v.null()
             ),
-            participants: v.array(v.object({
-                _id: v.id("widgetParticipants"),
-                _creationTime: v.number(),
-                widgetId: v.id("classInstanceWidgets"),
-                bookingId: v.optional(v.id("bookings")),
-                walkIn: v.optional(v.object({
-                    name: v.string(),
-                    phone: v.optional(v.string()),
-                    email: v.optional(v.string()),
-                })),
-                displayName: v.string(),
-                teamId: v.optional(v.string()),
-                seedNumber: v.optional(v.number()),
-                createdAt: v.number(),
-                createdBy: v.id("users"),
-                updatedAt: v.optional(v.number()),
-                updatedBy: v.optional(v.id("users")),
-            })),
+            // Setup participants - live from bookings + walkIns (for setup mode)
+            setupParticipants: v.array(setupParticipantValidator),
+            // Participants - snapshot from widgetState (for active/completed tournaments)
+            participants: v.array(participantSnapshotValidator),
             summary: v.union(
                 v.object({
                     currentRound: v.number(),
@@ -329,6 +293,7 @@ export const getBusinessWidgets = query({
         businessId: v.id("businesses"),
         widgetConfig: widgetConfigValidator,
         widgetState: v.optional(v.any()),
+        walkIns: v.optional(v.array(walkInEntryValidator)),
         status: widgetStatusValidator,
         isLocked: v.optional(v.boolean()),
         createdAt: v.number(),

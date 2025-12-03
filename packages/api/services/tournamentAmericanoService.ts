@@ -4,14 +4,14 @@ import { ConvexError } from "convex/values";
 import { ERROR_CODES } from "../utils/errorCodes";
 import { widgetRules } from "../rules/widget";
 import { tournamentAmericanoOperations } from "../operations/tournamentAmericano";
+import { widgetService } from "./widgetService";
 import type {
     TournamentAmericanoConfig,
     TournamentAmericanoState,
     TournamentAmericanoMatch,
     TournamentAmericanoStanding,
-    WidgetParticipant,
-    AmericanoWidgetState,
-    isAmericanoConfig,
+    SetupParticipant,
+    ParticipantSnapshot,
 } from "../types/widget";
 
 /***************************************************************
@@ -20,11 +20,17 @@ import type {
  * This service handles Americano-specific tournament operations
  * that require database access. It orchestrates between the pure
  * operations and the database layer.
+ * 
+ * NEW PARTICIPANT MODEL:
+ * - During setup: uses widgetService.getSetupParticipants() 
+ * - When tournament starts: snapshots participants into widgetState.participants
+ * - After start: uses participants from widgetState for all lookups
  ***************************************************************/
 export const tournamentAmericanoService = {
     /***************************************************************
      * Initialize Tournament
      * Sets up the tournament state from participants
+     * Creates participants snapshot from bookings + walk-ins
      ***************************************************************/
     initialize: async ({
         ctx,
@@ -60,29 +66,34 @@ export const tournamentAmericanoService = {
 
         const config = widget.widgetConfig.config as TournamentAmericanoConfig;
 
-        // Get participants
-        const participants = await ctx.db
-            .query("widgetParticipants")
-            .withIndex("by_widget", q => q.eq("widgetId", args.widgetId))
-            .collect();
+        // Get setup participants (derived from bookings + walkIns)
+        const setupParticipants = await widgetService.getSetupParticipants({ ctx, widget });
 
         // Validate we can start
-        widgetRules.canStartTournament(widget, participants);
+        widgetRules.canStartTournament(widget, setupParticipants);
 
-        // Extract participant IDs
-        const participantIds = participants.map(p => p._id.toString());
+        // Create participants snapshot from setup participants
+        const participants: ParticipantSnapshot[] = setupParticipants.map(p => ({
+            id: p.id, // Already formatted as "booking_<id>" or "walkin_<id>"
+            displayName: p.displayName,
+            bookingId: p.bookingId,
+            walkInId: p.walkInId,
+        }));
 
         // Initialize tournament state using pure operations
         const state = tournamentAmericanoOperations.initializeTournamentState(
             config,
-            participantIds
+            participants.map(p => p.id) // Pass participant IDs to operations
         );
 
-        // Update widget with state
+        // Update widget with state including participants snapshot
         await ctx.db.patch(args.widgetId, {
             widgetState: {
                 type: "tournament_americano" as const,
-                state,
+                state: {
+                    ...state,
+                    participants, // Include participants snapshot
+                },
             },
             status: "active",
             updatedAt: Date.now(),
@@ -138,10 +149,7 @@ export const tournamentAmericanoService = {
             });
         }
 
-        // Authorization check
-        widgetRules.userMustBeWidgetOwner(widget, user);
-
-        // Business rule check
+        // Business rule check - tournament must be active
         widgetRules.canRecordMatchResult(widget);
 
         // Verify this is an Americano widget with state
@@ -174,6 +182,49 @@ export const tournamentAmericanoService = {
             });
         }
 
+        // Authorization check:
+        // - Business owners can always record/edit scores
+        // - Players can only record scores for their own matches if no score exists yet
+        const isBusinessOwner = widget.businessId === user.businessId;
+
+        if (!isBusinessOwner) {
+            // Check if user is a participant in this match via their booking
+            // Status "pending" means the booking is confirmed/approved and not yet attended
+            const userBooking = await ctx.db
+                .query("bookings")
+                .withIndex("by_user_class", q =>
+                    q.eq("userId", user._id).eq("classInstanceId", widget.classInstanceId)
+                )
+                .filter(q => q.eq(q.field("status"), "pending"))
+                .first();
+
+            const userParticipantId = userBooking ? `booking_${userBooking._id}` : null;
+
+            const isMatchParticipant = userParticipantId && (
+                match.team1.includes(userParticipantId) ||
+                match.team2.includes(userParticipantId)
+            );
+
+            const hasExistingScore = match.status === "completed" ||
+                (match.team1Score !== undefined && match.team1Score !== null);
+
+            if (!isMatchParticipant) {
+                throw new ConvexError({
+                    message: "You can only record scores for matches you are playing in",
+                    field: "matchId",
+                    code: ERROR_CODES.UNAUTHORIZED,
+                });
+            }
+
+            if (hasExistingScore) {
+                throw new ConvexError({
+                    message: "Score has already been recorded. Ask the organizer to update it.",
+                    field: "matchId",
+                    code: ERROR_CODES.ACTION_NOT_ALLOWED,
+                });
+            }
+        }
+
         // Validate scores
         widgetRules.validateMatchScores(
             args.team1Score,
@@ -195,12 +246,13 @@ export const tournamentAmericanoService = {
         const isComplete = tournamentAmericanoOperations.isTournamentComplete(newState);
         const newStatus = isComplete ? "completed" : "active";
 
-        // Update widget state
+        // Update widget state (preserve participants)
         await ctx.db.patch(args.widgetId, {
             widgetState: {
                 type: "tournament_americano" as const,
                 state: {
                     ...newState,
+                    participants: currentState.participants, // Preserve participants
                     completedAt: isComplete ? Date.now() : undefined,
                 },
             },
@@ -225,7 +277,8 @@ export const tournamentAmericanoService = {
     }): Promise<{
         config: TournamentAmericanoConfig;
         state: TournamentAmericanoState | null;
-        participants: WidgetParticipant[];
+        setupParticipants: SetupParticipant[]; // For setup mode
+        participants: ParticipantSnapshot[]; // For active/completed tournaments (snapshot)
         summary: {
             currentRound: number;
             totalRounds: number;
@@ -252,16 +305,16 @@ export const tournamentAmericanoService = {
 
         const config = widget.widgetConfig.config as TournamentAmericanoConfig;
 
-        // Get participants
-        const participants = await ctx.db
-            .query("widgetParticipants")
-            .withIndex("by_widget", q => q.eq("widgetId", widgetId))
-            .collect();
+        // Get setup participants (live from bookings + walkIns)
+        const setupParticipants = await widgetService.getSetupParticipants({ ctx, widget });
 
         // Get state if available
         const state = widget.widgetState?.type === "tournament_americano"
             ? (widget.widgetState.state as TournamentAmericanoState)
             : null;
+
+        // Get participants from state (only available after tournament starts)
+        const participants = state?.participants ?? [];
 
         // Get summary if state exists
         const summary = state
@@ -288,6 +341,7 @@ export const tournamentAmericanoService = {
         return {
             config,
             state,
+            setupParticipants,
             participants,
             summary,
             classInstanceInfo,
@@ -437,7 +491,7 @@ export const tournamentAmericanoService = {
 
         const currentState = widget.widgetState.state as TournamentAmericanoState;
 
-        // Update state with completion time
+        // Update state with completion time (preserve participants)
         await ctx.db.patch(args.widgetId, {
             widgetState: {
                 type: "tournament_americano" as const,
@@ -569,11 +623,14 @@ export const tournamentAmericanoService = {
         // Advance to next round
         const newState = tournamentAmericanoOperations.advanceToNextRound(currentState);
 
-        // Update widget state
+        // Update widget state (preserve participants)
         await ctx.db.patch(args.widgetId, {
             widgetState: {
                 type: "tournament_americano" as const,
-                state: newState,
+                state: {
+                    ...newState,
+                    participants: currentState.participants, // Preserve participants
+                },
             },
             updatedAt: Date.now(),
             updatedBy: user._id,

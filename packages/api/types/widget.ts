@@ -1,5 +1,5 @@
 import { Infer, v } from "convex/values";
-import { Doc } from "../convex/_generated/dataModel";
+import { Doc, Id } from "../convex/_generated/dataModel";
 import {
     widgetTypeValidator,
     widgetStatusValidator,
@@ -19,7 +19,8 @@ import {
     widgetConfigValidator,
     widgetStateValidator,
     walkInFields,
-    widgetParticipantsFields,
+    walkInEntryFields,
+    participantSnapshotFields,
 } from "../convex/schema";
 
 /***************************************************************
@@ -32,9 +33,17 @@ export type WidgetType = Infer<typeof widgetTypeValidator>;
 // Widget status lifecycle
 export type WidgetStatus = Infer<typeof widgetStatusValidator>;
 
-// Walk-in participant info
+// Walk-in participant info (basic, without ID)
 const walkInFieldObject = v.object(walkInFields);
 export type WalkIn = Infer<typeof walkInFieldObject>;
+
+// Walk-in entry stored in widget.walkIns array (with stable ID)
+const walkInEntryFieldObject = v.object(walkInEntryFields);
+export type WalkInEntry = Infer<typeof walkInEntryFieldObject>;
+
+// Participant snapshot - frozen participant when tournament starts
+const participantSnapshotFieldObject = v.object(participantSnapshotFields);
+export type ParticipantSnapshot = Infer<typeof participantSnapshotFieldObject>;
 
 // Widget snapshot (lightweight reference stored on class instances)
 const widgetSnapshotFieldObject = v.object(widgetSnapshotFields);
@@ -146,40 +155,33 @@ export type TournamentBracketsState = Infer<typeof tournamentBracketsStateFieldO
 // Class instance widget document
 export type ClassInstanceWidget = Doc<"classInstanceWidgets">;
 
-// Widget participant document
-export type WidgetParticipant = Doc<"widgetParticipants">;
-
-/***************************************************************
- * Field Types - For mutations/service layer
- ***************************************************************/
-
-// Widget participant fields (without system fields)
-const widgetParticipantsFieldObject = v.object(widgetParticipantsFields);
-export type WidgetParticipantFields = Infer<typeof widgetParticipantsFieldObject>;
-
 /***************************************************************
  * Helper Types
  ***************************************************************/
 
-// Widget with resolved participants
-export interface WidgetWithParticipants extends ClassInstanceWidget {
-    participants: WidgetParticipant[];
-}
-
-// Participant display info (flattened for UI)
-export interface ParticipantDisplay {
-    id: string; // participant document ID
+// Setup participant - unified view of bookings + walk-ins during setup
+// Used before tournament starts (derived from live queries)
+export interface SetupParticipant {
+    id: string; // "booking_<bookingId>" or "walkin_<walkInId>"
     displayName: string;
     isWalkIn: boolean;
-    teamId?: string;
-    seedNumber?: number;
-    // Booking user info (if not walk-in)
-    userId?: string;
-    userEmail?: string;
-    userPhone?: string;
-    // Walk-in info (if walk-in)
+    // Booking reference (if not walk-in)
+    bookingId?: Id<"bookings">;
+    userId?: Id<"users">;
+    // Walk-in reference (if walk-in)
+    walkInId?: string;
     walkInPhone?: string;
     walkInEmail?: string;
+}
+
+// Widget with setup participants (for display during setup mode)
+export interface WidgetWithSetupParticipants extends ClassInstanceWidget {
+    setupParticipants: SetupParticipant[];
+}
+
+// Widget with participants (for display during active/completed tournaments)
+export interface WidgetWithParticipants extends ClassInstanceWidget {
+    // Participants is already in widgetState, this is for convenience
 }
 
 /***************************************************************

@@ -29,7 +29,7 @@ export function AddWalkInDialog({ open, onOpenChange, widgetId }: AddWalkInDialo
     const [email, setEmail] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const addWalkIn = useMutation(api.mutations.widgets.addWalkInParticipant);
+    const addWalkIn = useMutation(api.mutations.widgets.addWalkIn);
 
     const handleSubmit = async () => {
         if (!name.trim()) {

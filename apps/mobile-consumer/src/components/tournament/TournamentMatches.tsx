@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, LayoutAnimation, UIManager, Platform } from 'react-native';
 import { ChevronDown, Pencil, Minus, Plus, Check, X } from 'lucide-react-native';
 import { theme } from '../../theme';
-import type { TournamentAmericanoMatch, WidgetParticipant, TournamentAmericanoMatchPoints, TournamentCourt } from '@repo/api/types/widget';
+import type { TournamentAmericanoMatch, ParticipantSnapshot, TournamentAmericanoMatchPoints, TournamentCourt } from '@repo/api/types/widget';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -10,23 +10,24 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 interface TournamentMatchesProps {
     matches: TournamentAmericanoMatch[];
-    participants: WidgetParticipant[];
+    participants: ParticipantSnapshot[]; // Participants snapshot from tournament state
     currentRound: number;
     matchPoints: TournamentAmericanoMatchPoints;
     courts: TournamentCourt[];
     onSaveScore?: (matchId: string, team1Score: number, team2Score: number) => Promise<void>;
     canRecordScores?: boolean;
+    currentUserParticipantId?: string | null; // Current user's participant ID for permission checks
 }
 
-export function TournamentMatches({ matches, participants, currentRound, matchPoints, courts, onSaveScore, canRecordScores = false }: TournamentMatchesProps) {
+export function TournamentMatches({ matches, participants, currentRound, matchPoints, courts, onSaveScore, canRecordScores = false, currentUserParticipantId }: TournamentMatchesProps) {
     const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set([currentRound]));
     const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
     const [team1Score, setTeam1Score] = useState(0);
     const [team2Score, setTeam2Score] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
 
-    const participantMap = new Map(
-        participants.map(p => [p._id.toString(), p.displayName])
+    const participantsMap = new Map(
+        participants.map(p => [p.id, p.displayName])
     );
 
     const courtMap = new Map(
@@ -34,7 +35,7 @@ export function TournamentMatches({ matches, participants, currentRound, matchPo
     );
 
     const getTeamNames = (teamIds: string[]) => {
-        return teamIds.map(id => participantMap.get(id) || '?');
+        return teamIds.map(id => participantsMap.get(id) || '?');
     };
 
     const getCourtName = (courtId: string) => {
@@ -103,7 +104,6 @@ export function TournamentMatches({ matches, participants, currentRound, matchPo
 
     const handleSave = async () => {
         if (!editingMatchId || !onSaveScore) return;
-        if (team1Score === team2Score) return;
 
         setIsSaving(true);
         try {
@@ -114,14 +114,21 @@ export function TournamentMatches({ matches, participants, currentRound, matchPo
         }
     };
 
-    const isValid = team1Score !== team2Score;
-
     const renderMatch = (match: TournamentAmericanoMatch, isCurrentRound: boolean) => {
         const team1Names = getTeamNames(match.team1);
         const team2Names = getTeamNames(match.team2);
         const isCompleted = match.status === 'completed';
         const isLive = match.status === 'in_progress';
         const isEditing = editingMatchId === match.id;
+
+        // Check if current user can edit this match
+        // Mobile users can only edit matches they're playing in, and only if no score exists yet
+        const isUserInMatch = currentUserParticipantId && (
+            match.team1.includes(currentUserParticipantId) ||
+            match.team2.includes(currentUserParticipantId)
+        );
+        const hasExistingScore = isCompleted || (match.team1Score !== undefined && match.team1Score !== null);
+        const canEditThisMatch = isUserInMatch && !hasExistingScore;
 
         const winner = isCompleted
             ? ((match.team1Score ?? 0) > (match.team2Score ?? 0) ? 1 : 2)
@@ -206,9 +213,6 @@ export function TournamentMatches({ matches, participants, currentRound, matchPo
 
                     {/* Footer */}
                     <View style={styles.editingFooter}>
-                        {!isValid && (
-                            <Text style={styles.editingError}>Ties not allowed</Text>
-                        )}
                         <View style={styles.editingButtons}>
                             <TouchableOpacity
                                 style={styles.cancelBtn}
@@ -219,9 +223,9 @@ export function TournamentMatches({ matches, participants, currentRound, matchPo
                                 <Text style={styles.cancelBtnText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.saveBtn, (!isValid || isSaving) && styles.saveBtnDisabled]}
+                                style={[styles.saveBtn, isSaving && styles.saveBtnDisabled]}
                                 onPress={handleSave}
-                                disabled={!isValid || isSaving}
+                                disabled={isSaving}
                             >
                                 <Check size={16} color="#fff" />
                                 <Text style={styles.saveBtnText}>{isSaving ? 'Saving...' : 'Save'}</Text>
@@ -279,8 +283,8 @@ export function TournamentMatches({ matches, participants, currentRound, matchPo
                     </View>
                 </View>
 
-                {/* Edit Button - only show for current round when can record */}
-                {isCurrentRound && canRecordScores && (
+                {/* Edit Button - only show for current round when user can edit this match */}
+                {isCurrentRound && canRecordScores && canEditThisMatch && (
                     <View style={styles.editButtonContainer}>
                         <TouchableOpacity
                             style={styles.editButton}
@@ -288,9 +292,7 @@ export function TournamentMatches({ matches, participants, currentRound, matchPo
                             activeOpacity={0.7}
                         >
                             <Pencil size={14} color={theme.colors.zinc[600]} />
-                            <Text style={styles.editButtonText}>
-                                {isCompleted ? 'Edit Score' : 'Enter Score'}
-                            </Text>
+                            <Text style={styles.editButtonText}>Enter Score</Text>
                         </TouchableOpacity>
                     </View>
                 )}
@@ -351,7 +353,7 @@ export function TournamentMatches({ matches, participants, currentRound, matchPo
 
 const styles = StyleSheet.create({
     container: {
-        gap: 32,
+        gap: 20,
     },
     roundSection: {},
     roundSectionFaded: {

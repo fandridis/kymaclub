@@ -202,6 +202,15 @@ export const tournamentAmericanoMatchFields = {
   completedAt: v.optional(v.number()),
 };
 
+// Participant snapshot - frozen participant when tournament starts
+// Used for stable identity during active/completed tournaments
+export const participantSnapshotFields = {
+  id: v.string(), // "booking_<id>" or "walkin_<id>"
+  displayName: v.string(),
+  bookingId: v.optional(v.id("bookings")),
+  walkInId: v.optional(v.string()), // References walkIns[].id
+};
+
 // Americano player standings
 export const tournamentAmericanoStandingFields = {
   participantId: v.string(),
@@ -219,6 +228,8 @@ export const tournamentAmericanoStateFields = {
   totalRounds: v.number(),
   matches: v.array(v.object(tournamentAmericanoMatchFields)),
   standings: v.array(v.object(tournamentAmericanoStandingFields)),
+  // Participants snapshot - immutable list created when tournament starts
+  participants: v.array(v.object(participantSnapshotFields)),
   startedAt: v.optional(v.number()),
   completedAt: v.optional(v.number()),
 };
@@ -262,6 +273,8 @@ export const tournamentRoundRobinStateFields = {
   })),
   matches: v.array(v.object(tournamentRoundRobinMatchFields)),
   standings: v.array(v.object(tournamentRoundRobinStandingFields)),
+  // Participants snapshot - immutable list created when tournament starts
+  participants: v.array(v.object(participantSnapshotFields)),
   startedAt: v.optional(v.number()),
   completedAt: v.optional(v.number()),
 };
@@ -299,6 +312,8 @@ export const tournamentBracketsStateFields = {
   // For double elimination
   losersBracket: v.optional(v.array(v.object(tournamentBracketsMatchFields))),
   finalMatch: v.optional(v.object(tournamentBracketsMatchFields)),
+  // Participants snapshot - immutable list created when tournament starts
+  participants: v.array(v.object(participantSnapshotFields)),
   startedAt: v.optional(v.number()),
   completedAt: v.optional(v.number()),
   winnerId: v.optional(v.string()),
@@ -350,11 +365,20 @@ export const widgetStateValidator = v.union(
   }),
 );
 
-// Walk-in participant info (non-registered users)
+// Walk-in participant info (non-registered users) - basic info
 export const walkInFields = {
   name: v.string(),
   phone: v.optional(v.string()),
   email: v.optional(v.string()),
+};
+
+// Walk-in entry stored in widget.walkIns array (with stable ID)
+export const walkInEntryFields = {
+  id: v.string(), // Generated UUID for stable identity
+  name: v.string(),
+  phone: v.optional(v.string()),
+  email: v.optional(v.string()),
+  createdAt: v.number(),
 };
 
 // Lightweight widget snapshot stored on class templates/instances
@@ -377,6 +401,11 @@ export const classInstanceWidgetsFields = {
   // Optional until tournament is initialized
   widgetState: v.optional(widgetStateValidator),
 
+  // Walk-in participants (non-booked users added manually)
+  // During setup: combined with live bookings query to show participant list
+  // When tournament starts: snapshot into widgetState.participants
+  walkIns: v.optional(v.array(v.object(walkInEntryFields))),
+
   // Widget lifecycle status
   status: widgetStatusValidator,
 
@@ -385,24 +414,6 @@ export const classInstanceWidgetsFields = {
 
   ...auditFields,
   ...softDeleteFields,
-};
-
-// widgetParticipants - links bookings/walk-ins to widget
-export const widgetParticipantsFields = {
-  widgetId: v.id("classInstanceWidgets"),
-
-  // Either booking OR walk-in (mutually exclusive)
-  bookingId: v.optional(v.id("bookings")),
-  walkIn: v.optional(v.object(walkInFields)),
-
-  // Tournament-specific assignments
-  teamId: v.optional(v.string()),
-  seedNumber: v.optional(v.number()),
-
-  // Participant display name (derived from booking user or walk-in)
-  displayName: v.string(),
-
-  ...auditFields,
 };
 
 /***************************************************************
@@ -1685,15 +1696,5 @@ export default defineSchema({
     .index("by_class_instance_deleted", ["classInstanceId", "deleted"])
     .index("by_business_status", ["businessId", "status"])
     .index("by_business_widget_config_type", ["businessId", "widgetConfig.type"]),
-
-  /**
-   * Widget Participants - Links bookings and walk-ins to widgets
-   * Supports both registered users (via bookingId) and walk-ins (via walkIn object)
-   */
-  widgetParticipants: defineTable(widgetParticipantsFields)
-    .index("by_widget", ["widgetId"])
-    .index("by_booking", ["bookingId"])
-    .index("by_widget_team", ["widgetId", "teamId"])
-    .index("by_widget_seed", ["widgetId", "seedNumber"]),
 
 });

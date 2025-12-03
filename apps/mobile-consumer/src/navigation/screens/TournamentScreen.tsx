@@ -10,6 +10,7 @@ import { theme } from '../../theme';
 import type { RootStackParamList } from '..';
 import { TournamentLeaderboard } from '../../components/tournament/TournamentLeaderboard';
 import { TournamentMatches } from '../../components/tournament/TournamentMatches';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
 
 type TournamentRoute = RouteProp<RootStackParamList, 'Tournament'>;
 type TabType = 'schedule' | 'leaderboard';
@@ -20,6 +21,7 @@ export function TournamentScreen() {
     const { widgetId } = route.params;
     const { top: topInset, bottom: bottomInset } = useSafeAreaInsets();
     const [activeTab, setActiveTab] = useState<TabType>('schedule');
+    const { user } = useCurrentUser();
 
     const tournamentState = useQuery(
         api.queries.widgets.getAmericanoTournamentState,
@@ -30,6 +32,16 @@ export function TournamentScreen() {
         api.queries.widgets.getById,
         { widgetId: widgetId as Id<"classInstanceWidgets"> }
     );
+
+    // Get current user's booking for this class to determine their participant ID
+    const userBooking = useQuery(
+        api.queries.bookings.getUserBookings,
+        widget ? { classInstanceId: widget.classInstanceId } : 'skip'
+    );
+
+    // Derive current user's participant ID from their confirmed booking
+    // Status "pending" means the booking is confirmed/approved and not yet attended
+    const currentUserParticipantId = userBooking?.status === 'pending' ? `booking_${userBooking._id}` : null;
 
     const recordMatchResult = useMutation(api.mutations.widgets.recordAmericanoMatchResult);
 
@@ -74,7 +86,12 @@ export function TournamentScreen() {
     const config = tournamentState.config;
     const state = tournamentState.state;
     const classInfo = tournamentState.classInstanceInfo;
-    const playersReady = tournamentState.participants.length === config.numberOfPlayers;
+
+    // Use setupParticipants for setup mode, participants for active/completed
+    const setupParticipants = tournamentState.setupParticipants;
+    const participants = tournamentState.participants;
+    const currentParticipantCount = state ? participants.length : setupParticipants.length;
+    const playersReady = currentParticipantCount === config.numberOfPlayers;
     const canRecordScores = isActive && !isLocked;
 
     // Check if current round is complete (waiting for organizer to advance)
@@ -120,7 +137,7 @@ export function TournamentScreen() {
                     <View style={[styles.statItem, playersReady && styles.statItemAccent]}>
                         <Users size={16} color={playersReady ? '#06b6d4' : theme.colors.zinc[400]} />
                         <Text style={[styles.statValue, playersReady && styles.statValueAccent]}>
-                            {tournamentState.participants.length}/{config.numberOfPlayers}
+                            {currentParticipantCount}/{config.numberOfPlayers}
                         </Text>
                     </View>
                     <View style={styles.statItem}>
@@ -190,18 +207,19 @@ export function TournamentScreen() {
                             )}
                             <TournamentMatches
                                 matches={state.matches}
-                                participants={tournamentState.participants}
+                                participants={participants}
                                 currentRound={state.currentRound}
                                 matchPoints={config.matchPoints}
                                 courts={config.courts}
                                 onSaveScore={handleSaveScore}
                                 canRecordScores={canRecordScores}
+                                currentUserParticipantId={currentUserParticipantId}
                             />
                         </>
                     ) : (
                         <TournamentLeaderboard
                             standings={state.standings}
-                            participants={tournamentState.participants}
+                            participants={participants}
                         />
                     )
                 ) : (
@@ -211,16 +229,16 @@ export function TournamentScreen() {
                         </View>
                         <Text style={styles.waitingTitle}>Ready to Play</Text>
                         <Text style={styles.waitingSubtitle}>
-                            {tournamentState.participants.length === 0
+                            {setupParticipants.length === 0
                                 ? 'Waiting for players to register'
-                                : `${tournamentState.participants.length}/${config.numberOfPlayers} players registered`
+                                : `${setupParticipants.length}/${config.numberOfPlayers} players registered`
                             }
                         </Text>
 
-                        {tournamentState.participants.length > 0 && (
+                        {setupParticipants.length > 0 && (
                             <View style={styles.participantsList}>
-                                {tournamentState.participants.map((p) => (
-                                    <View key={p._id} style={styles.participantChip}>
+                                {setupParticipants.map((p) => (
+                                    <View key={p.id} style={styles.participantChip}>
                                         <Text style={styles.participantName}>{p.displayName}</Text>
                                     </View>
                                 ))}

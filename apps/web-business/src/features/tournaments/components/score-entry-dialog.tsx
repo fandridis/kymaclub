@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react";
-import type { TournamentAmericanoMatch, WidgetParticipant, TournamentAmericanoMatchPoints } from "@repo/api/types/widget";
+import type { TournamentAmericanoMatch, ParticipantSnapshot, TournamentAmericanoMatchPoints } from "@repo/api/types/widget";
 import {
     Drawer,
     DrawerContent,
@@ -19,7 +19,7 @@ interface ScoreEntryDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     match: TournamentAmericanoMatch;
-    participants: WidgetParticipant[];
+    participants: ParticipantSnapshot[]; // Participants snapshot from tournament state
     matchPoints: TournamentAmericanoMatchPoints;
     onSubmit: (matchId: string, team1Score: number, team2Score: number) => void;
 }
@@ -131,13 +131,13 @@ export function ScoreEntryDialog({
         setTeam2Score(match.team2Score ?? 0);
     }, [match.id, match.team1Score, match.team2Score]);
 
-    // Create participant lookup
-    const participantMap = new Map(
-        participants.map(p => [p._id.toString(), p.displayName])
+    // Create participants lookup (id -> displayName)
+    const participantsMap = new Map(
+        participants.map(p => [p.id, p.displayName])
     );
 
     const getTeamNames = (teamIds: string[]): string[] => {
-        return teamIds.map(id => participantMap.get(id) || "Unknown");
+        return teamIds.map(id => participantsMap.get(id) || "Unknown");
     };
 
     const team1Names = getTeamNames(match.team1);
@@ -190,7 +190,7 @@ export function ScoreEntryDialog({
     const isValid = () => {
         if (team1Score < 0 || team2Score < 0) return false;
         if (team1Score > matchPoints || team2Score > matchPoints) return false;
-        if (team1Score === team2Score) return false;
+        // Note: Ties are allowed
         return true;
     };
 
@@ -243,17 +243,6 @@ export function ScoreEntryDialog({
                         />
                     </div>
 
-                    {/* Info text */}
-                    <p className="text-xs text-muted-foreground text-center mt-4">
-                        Match points: {matchPoints} • Scores auto-balance
-                    </p>
-
-                    {/* Validation message */}
-                    {team1Score === team2Score && (team1Score > 0 || team2Score > 0) && (
-                        <p className="text-xs text-destructive text-center mt-2">
-                            Ties are not allowed
-                        </p>
-                    )}
                 </div>
 
                 <DrawerFooter className="pt-2">

@@ -1,12 +1,12 @@
 "use client"
 
-import type { TournamentAmericanoStanding, WidgetParticipant } from "@repo/api/types/widget";
+import type { TournamentAmericanoStanding, ParticipantSnapshot } from "@repo/api/types/widget";
 import { Trophy, Medal, Award } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface LeaderboardProps {
     standings: TournamentAmericanoStanding[];
-    participants: WidgetParticipant[];
+    participants: ParticipantSnapshot[]; // Participants snapshot from tournament state
     isComplete?: boolean;
 }
 
@@ -140,13 +140,13 @@ function StandingRow({
 }
 
 export function Leaderboard({ standings, participants, isComplete }: LeaderboardProps) {
-    // Create participant lookup
-    const participantMap = new Map(
-        participants.map(p => [p._id.toString(), p.displayName])
+    // Create participants lookup (id -> displayName)
+    const participantsMap = new Map(
+        participants.map(p => [p.id, p.displayName])
     );
 
     const getName = (id: string): string => {
-        return participantMap.get(id) || "Unknown";
+        return participantsMap.get(id) || "Unknown";
     };
 
     if (standings.length === 0) {

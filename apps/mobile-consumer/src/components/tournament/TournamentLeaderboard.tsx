@@ -2,19 +2,19 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Trophy } from 'lucide-react-native';
 import { theme } from '../../theme';
-import type { TournamentAmericanoStanding, WidgetParticipant } from '@repo/api/types/widget';
+import type { TournamentAmericanoStanding, ParticipantSnapshot } from '@repo/api/types/widget';
 
 interface TournamentLeaderboardProps {
     standings: TournamentAmericanoStanding[];
-    participants: WidgetParticipant[];
+    participants: ParticipantSnapshot[]; // Participants snapshot from tournament state
 }
 
 export function TournamentLeaderboard({ standings, participants }: TournamentLeaderboardProps) {
-    const participantMap = new Map(
-        participants.map(p => [p._id.toString(), p.displayName])
+    const participantsMap = new Map(
+        participants.map(p => [p.id, p.displayName])
     );
 
-    const getName = (id: string) => participantMap.get(id) || 'Unknown';
+    const getName = (id: string) => participantsMap.get(id) || 'Unknown';
 
     if (standings.length === 0) {
         return (

@@ -26,12 +26,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
     Trophy, Play, CheckCircle, XCircle,
-    Plus, RefreshCw, Loader2, ArrowLeft, Users, Target, LayoutGrid,
+    Plus, Loader2, ArrowLeft, Users, Target, LayoutGrid,
     MoreVertical, Lock, Unlock, ChevronRight
 } from "lucide-react";
 import { MatchSchedule } from './match-schedule';
 import { Leaderboard } from './leaderboard';
 import { AddWalkInDialog } from './add-walk-in-dialog';
+import { ParticipantsList } from './participants-list';
 import { cn } from "@/lib/utils";
 import { useNavigate } from '@tanstack/react-router';
 
@@ -57,25 +58,12 @@ export function TournamentManagementPage({ widgetId }: TournamentManagementPageP
     );
 
     // Mutations
-    const syncParticipants = useMutation(api.mutations.widgets.syncParticipantsFromBookings);
     const startTournament = useMutation(api.mutations.widgets.startAmericanoTournament);
     const completeTournament = useMutation(api.mutations.widgets.completeAmericanoTournament);
     const recordMatchResult = useMutation(api.mutations.widgets.recordAmericanoMatchResult);
     const advanceRound = useMutation(api.mutations.widgets.advanceAmericanoRound);
     const lockWidget = useMutation(api.mutations.widgets.lockWidget);
     const unlockWidget = useMutation(api.mutations.widgets.unlockWidget);
-
-    const handleSyncParticipants = async () => {
-        try {
-            const result = await syncParticipants({
-                widgetId: widgetId as Id<"classInstanceWidgets">
-            });
-            toast.success(`Added ${result.addedCount} participant(s)`);
-        } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : "Failed to sync";
-            toast.error(message);
-        }
-    };
 
     const handleStartTournament = async () => {
         try {
@@ -175,7 +163,18 @@ export function TournamentManagementPage({ widgetId }: TournamentManagementPageP
     const isActive = status === "active";
     const isCompleted = status === "completed";
     const isLocked = widget.isLocked === true;
-    const canStart = isSetupOrReady && tournamentState.participants.length === tournamentState.config.numberOfPlayers;
+
+    // Use setupParticipants for setup mode, participants for active/completed
+    const setupParticipants = tournamentState.setupParticipants;
+    const participants = tournamentState.participants;
+
+    // For setup: use setupParticipants count
+    // For active/completed: use participants count
+    const currentParticipantCount = isSetupOrReady
+        ? setupParticipants.length
+        : participants.length;
+
+    const canStart = isSetupOrReady && setupParticipants.length === tournamentState.config.numberOfPlayers;
     const classInfo = tournamentState.classInstanceInfo;
     const config = tournamentState.config;
     const canRecordScores = isActive && !isLocked;
@@ -263,8 +262,8 @@ export function TournamentManagementPage({ widgetId }: TournamentManagementPageP
                     <StatCard
                         icon={<Users className="h-5 w-5" />}
                         label="Players"
-                        value={`${tournamentState.participants.length}/${config.numberOfPlayers}`}
-                        accent={tournamentState.participants.length === config.numberOfPlayers}
+                        value={`${currentParticipantCount}/${config.numberOfPlayers}`}
+                        accent={currentParticipantCount === config.numberOfPlayers}
                     />
                     <StatCard
                         icon={<Target className="h-5 w-5" />}
@@ -280,14 +279,13 @@ export function TournamentManagementPage({ widgetId }: TournamentManagementPageP
             </div>
 
             <div className="max-w-2xl mx-auto px-4 pb-12">
-                {/* Setup Panel */}
+                {/* Setup Panel - only show during setup */}
                 {isSetupOrReady && (
                     <SetupPanel
-                        currentPlayers={tournamentState.participants.length}
+                        currentPlayers={setupParticipants.length}
                         targetPlayers={tournamentState.config.numberOfPlayers}
                         canStart={canStart}
                         onAddWalkIn={() => setShowAddWalkIn(true)}
-                        onSync={handleSyncParticipants}
                         onStart={handleStartTournament}
                     />
                 )}
@@ -332,7 +330,7 @@ export function TournamentManagementPage({ widgetId }: TournamentManagementPageP
                             )}
                             <MatchSchedule
                                 matches={tournamentState.state.matches}
-                                participants={tournamentState.participants}
+                                participants={participants}
                                 currentRound={tournamentState.state.currentRound}
                                 onSaveScore={handleSaveScore}
                                 canRecordScores={canRecordScores}
@@ -344,13 +342,29 @@ export function TournamentManagementPage({ widgetId }: TournamentManagementPageP
                         <TabsContent value="leaderboard" className="mt-0">
                             <Leaderboard
                                 standings={tournamentState.state.standings}
-                                participants={tournamentState.participants}
+                                participants={participants}
                                 isComplete={isCompleted}
                             />
                         </TabsContent>
                     </Tabs>
                 ) : (
-                    <EmptyState playerCount={tournamentState.participants.length} />
+                    // Setup mode - show participants list
+                    <div className="space-y-6">
+                        {setupParticipants.length > 0 ? (
+                            <div className="rounded-2xl border border-slate-200 bg-white p-6">
+                                <h3 className="text-lg font-bold text-slate-900 mb-4">
+                                    Registered Players
+                                </h3>
+                                <ParticipantsList
+                                    participants={setupParticipants}
+                                    widgetId={widgetId}
+                                    canRemove={isSetupOrReady}
+                                />
+                            </div>
+                        ) : (
+                            <EmptyState playerCount={0} />
+                        )}
+                    </div>
                 )}
             </div>
 
@@ -456,20 +470,18 @@ function StatusBadge({ status, isLocked }: { status: string; isLocked?: boolean 
     return null;
 }
 
-// Setup Panel Component
+// Setup Panel Component - No sync button needed, bookings are auto-included
 function SetupPanel({
     currentPlayers,
     targetPlayers,
     canStart,
     onAddWalkIn,
-    onSync,
     onStart,
 }: {
     currentPlayers: number;
     targetPlayers: number;
     canStart: boolean;
     onAddWalkIn: () => void;
-    onSync: () => void;
     onStart: () => void;
 }) {
     const remaining = targetPlayers - currentPlayers;
@@ -514,15 +526,7 @@ function SetupPanel({
                     className="flex-1 h-12 bg-white border-slate-300 hover:bg-slate-50 hover:border-slate-400 text-slate-700 font-bold"
                 >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Player
-                </Button>
-                <Button
-                    variant="outline"
-                    onClick={onSync}
-                    className="flex-1 h-12 bg-white border-slate-300 hover:bg-slate-50 hover:border-slate-400 text-slate-700 font-bold"
-                >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Sync
+                    Add Walk-in
                 </Button>
                 <Button
                     onClick={onStart}
@@ -535,9 +539,13 @@ function SetupPanel({
                     )}
                 >
                     <Play className="h-4 w-4 mr-2" />
-                    Start
+                    Start Tournament
                 </Button>
             </div>
+
+            <p className="text-xs text-slate-400 mt-4 text-center">
+                Bookings are automatically included. Add walk-ins for non-booked players.
+            </p>
         </div>
     );
 }
@@ -552,7 +560,7 @@ function EmptyState({ playerCount }: { playerCount: number }) {
             <h3 className="text-xl font-black text-slate-900 mb-2">Ready to Play</h3>
             <p className="text-slate-400 font-semibold max-w-sm mx-auto">
                 {playerCount === 0
-                    ? "Add players to get started with the tournament."
+                    ? "Waiting for bookings or add walk-ins to get started."
                     : "Once all players are registered, start the tournament to generate matches."
                 }
             </p>
