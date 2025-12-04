@@ -141,7 +141,7 @@ export function TournamentManagementPage({ widgetId }: TournamentManagementPageP
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
                 <div className="text-center">
-                    <Loader2 className="h-10 w-10 animate-spin text-cyan-500 mx-auto mb-4" />
+                    <Loader2 className="h-10 w-10 animate-spin text-orange-500 mx-auto mb-4" />
                     <p className="text-slate-400 font-bold">Loading tournament...</p>
                 </div>
             </div>
@@ -239,7 +239,7 @@ export function TournamentManagementPage({ widgetId }: TournamentManagementPageP
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
                                         onClick={() => setShowCompleteConfirm(true)}
-                                        className="gap-2 text-cyan-600"
+                                        className="gap-2 text-orange-600"
                                     >
                                         <CheckCircle className="h-4 w-4" />
                                         Complete Tournament
@@ -263,7 +263,6 @@ export function TournamentManagementPage({ widgetId }: TournamentManagementPageP
                         icon={<Users className="h-5 w-5" />}
                         label="Players"
                         value={`${currentParticipantCount}/${config.numberOfPlayers}`}
-                        accent={currentParticipantCount === config.numberOfPlayers}
                     />
                     <StatCard
                         icon={<Target className="h-5 w-5" />}
@@ -304,13 +303,13 @@ export function TournamentManagementPage({ widgetId }: TournamentManagementPageP
                         <TabsList className="grid w-full grid-cols-2 mb-8 bg-slate-100 border border-slate-200 rounded-xl p-1 h-12">
                             <TabsTrigger
                                 value="schedule"
-                                className="rounded-lg font-bold text-sm data-[state=active]:bg-cyan-500 data-[state=active]:text-white data-[state=inactive]:text-slate-500 transition-all"
+                                className="rounded-lg font-bold text-sm data-[state=active]:bg-slate-700 data-[state=active]:text-white data-[state=inactive]:text-slate-500 transition-all"
                             >
                                 Schedule
                             </TabsTrigger>
                             <TabsTrigger
                                 value="leaderboard"
-                                className="rounded-lg font-bold text-sm data-[state=active]:bg-cyan-500 data-[state=active]:text-white data-[state=inactive]:text-slate-500 transition-all"
+                                className="rounded-lg font-bold text-sm data-[state=active]:bg-slate-700 data-[state=active]:text-white data-[state=inactive]:text-slate-500 transition-all"
                             >
                                 Leaderboard
                             </TabsTrigger>
@@ -387,7 +386,7 @@ export function TournamentManagementPage({ widgetId }: TournamentManagementPageP
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleCompleteTournament} className="bg-cyan-500 hover:bg-cyan-600">
+                        <AlertDialogAction onClick={handleCompleteTournament} className="bg-orange-500 hover:bg-orange-600">
                             Complete Tournament
                         </AlertDialogAction>
                     </AlertDialogFooter>
@@ -413,18 +412,18 @@ function StatCard({
         <div className={cn(
             "rounded-xl p-4 transition-all",
             "bg-white border shadow-sm",
-            accent ? "border-cyan-300 bg-cyan-50" : "border-slate-200"
+            accent ? "border-orange-300 bg-orange-50" : "border-slate-200"
         )}>
             <div className={cn(
                 "flex items-center gap-2 mb-2",
-                accent ? "text-cyan-600" : "text-slate-400"
+                accent ? "text-orange-600" : "text-slate-400"
             )}>
                 {icon}
                 <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
             </div>
             <p className={cn(
                 "text-2xl font-black tabular-nums",
-                accent ? "text-cyan-600" : "text-slate-900"
+                accent ? "text-orange-600" : "text-slate-900"
             )}>
                 {value}
             </p>
@@ -514,7 +513,7 @@ function SetupPanel({
             {/* Progress bar */}
             <div className="h-2 bg-slate-100 rounded-full mb-6 overflow-hidden">
                 <div
-                    className="h-full bg-gradient-to-r from-cyan-500 to-cyan-400 rounded-full transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-orange-500 to-orange-400 rounded-full transition-all duration-500"
                     style={{ width: `${progress}%` }}
                 />
             </div>
@@ -534,7 +533,7 @@ function SetupPanel({
                     className={cn(
                         "flex-1 h-12 font-bold transition-all",
                         canStart
-                            ? "bg-cyan-500 hover:bg-cyan-600 text-white"
+                            ? "bg-orange-500 hover:bg-orange-600 text-white"
                             : "bg-slate-100 text-slate-400 cursor-not-allowed"
                     )}
                 >
@@ -554,8 +553,8 @@ function SetupPanel({
 function EmptyState({ playerCount }: { playerCount: number }) {
     return (
         <div className="text-center py-20">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-100 to-cyan-50 border border-cyan-200 mb-6">
-                <Trophy className="h-10 w-10 text-cyan-500" />
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-100 to-orange-50 border border-orange-200 mb-6">
+                <Trophy className="h-10 w-10 text-orange-500" />
             </div>
             <h3 className="text-xl font-black text-slate-900 mb-2">Ready to Play</h3>
             <p className="text-slate-400 font-semibold max-w-sm mx-auto">
@@ -587,7 +586,7 @@ function RoundCompletePanel({
     if (isOnLastRound) {
         // Last round complete - show finish tournament
         return (
-            <div className="rounded-2xl p-5 mb-6 bg-gradient-to-r from-emerald-50 to-cyan-50 border border-emerald-200">
+            <div className="rounded-2xl p-5 mb-6 bg-gradient-to-r from-emerald-50 to-orange-50 border border-emerald-200">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center">
@@ -615,15 +614,15 @@ function RoundCompletePanel({
 
     // Regular round complete - show advance button
     return (
-        <div className="rounded-2xl p-5 mb-6 bg-gradient-to-r from-cyan-50 to-sky-50 border border-cyan-200">
+        <div className="rounded-2xl p-5 mb-6 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-cyan-500 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center">
                         <CheckCircle className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                        <p className="font-black text-cyan-800">Round {currentRound} Complete!</p>
-                        <p className="text-sm text-cyan-600">
+                        <p className="font-black text-orange-800">Round {currentRound} Complete!</p>
+                        <p className="text-sm text-orange-600">
                             All matches finished. {totalRounds - currentRound} round{totalRounds - currentRound !== 1 ? 's' : ''} remaining.
                         </p>
                     </div>
@@ -631,7 +630,7 @@ function RoundCompletePanel({
                 <Button
                     onClick={onAdvance}
                     disabled={isLocked}
-                    className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold"
+                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold"
                 >
                     Start Round {currentRound + 1}
                     <ChevronRight className="h-4 w-4 ml-2" />

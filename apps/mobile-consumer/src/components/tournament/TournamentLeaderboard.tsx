@@ -9,6 +9,19 @@ interface TournamentLeaderboardProps {
     participants: ParticipantSnapshot[]; // Participants snapshot from tournament state
 }
 
+// Medal colors
+const GOLD_BORDER = '#ffdf20';
+const GOLD_BG = '#fef9c2';
+const GOLD_BADGE = '#efb100';  // dark gold
+
+const SILVER_BORDER = '#cad5e2';
+const SILVER_BG = '#f1f5f9';
+const SILVER_BADGE = '#62748e'; // dark grey (zinc-600)
+
+const BRONZE_BORDER = '#ffb86a';
+const BRONZE_BG = '#fff7ed';
+const BRONZE_BADGE = '#ff8904'; // dark orange
+
 export function TournamentLeaderboard({ standings, participants }: TournamentLeaderboardProps) {
     const participantsMap = new Map(
         participants.map(p => [p.id, p.displayName])
@@ -41,42 +54,58 @@ export function TournamentLeaderboard({ standings, participants }: TournamentLea
 
                 const isFirst = rank === 1;
                 const isSecond = rank === 2;
+                const isThird = rank === 3;
+                const isPodium = isFirst || isSecond || isThird;
 
-                // Get row colors based on position
-                const getRowStyle = () => {
-                    if (isFirst) return { bg: '#fffbeb', border: '#fde68a' };
-                    if (isSecond) return { bg: '#f8fafc', border: '#e2e8f0' };
-                    return { bg: '#fff', border: theme.colors.zinc[200] };
+                // Get colors based on position
+                const getRowColors = () => {
+                    if (isFirst) return { border: GOLD_BORDER, bg: GOLD_BG };
+                    if (isSecond) return { border: SILVER_BORDER, bg: SILVER_BG };
+                    if (isThird) return { border: BRONZE_BORDER, bg: BRONZE_BG };
+                    return { border: theme.colors.zinc[200], bg: '#fff' };
                 };
 
-                const getRankStyle = () => {
-                    if (isFirst) return { bg: '#fbbf24', color: '#92400e' };
-                    if (isSecond) return { bg: '#94a3b8', color: '#fff' };
-                    return { bg: theme.colors.zinc[100], color: theme.colors.zinc[500] };
-                };
-
-                const rowStyle = getRowStyle();
-                const rankStyle = getRankStyle();
+                const rowColors = getRowColors();
 
                 return (
                     <View
                         key={standing.participantId}
-                        style={[styles.row, { backgroundColor: rowStyle.bg, borderColor: rowStyle.border }]}
+                        style={[
+                            styles.row,
+                            {
+                                backgroundColor: rowColors.bg,
+                                borderColor: rowColors.border,
+                                borderWidth: isPodium ? 1 : 1,
+                            }
+                        ]}
                     >
                         {/* Rank Badge */}
-                        <View style={[styles.rankBadge, { backgroundColor: rankStyle.bg }]}>
-                            <Text style={[styles.rankText, { color: rankStyle.color }]}>{rank}</Text>
+                        <View style={[
+                            styles.rankBadge,
+                            isFirst && { backgroundColor: GOLD_BADGE },
+                            isSecond && { backgroundColor: SILVER_BADGE },
+                            isThird && { backgroundColor: BRONZE_BADGE },
+                        ]}>
+                            <Text style={[
+                                styles.rankText,
+                                isPodium && styles.rankTextPodium
+                            ]}>
+                                {rank}
+                            </Text>
                         </View>
 
                         {/* Name & Record */}
                         <View style={styles.info}>
-                            <Text style={[styles.name, isFirst && styles.nameFirst]} numberOfLines={1}>
+                            <Text style={[
+                                styles.name,
+                                isPodium && styles.namePodium
+                            ]} numberOfLines={1}>
                                 {name}
                             </Text>
                             <Text style={styles.record}>
-                                <Text style={styles.wins}>{wins}W</Text>
-                                <Text style={styles.dot}> · </Text>
-                                <Text style={styles.losses}>{losses}L</Text>
+                                <Text style={[styles.wins, isPodium && styles.winsPodium]}>{wins}W</Text>
+                                <Text style={[styles.dot, isPodium && styles.dotPodium]}> · </Text>
+                                <Text style={[styles.losses, isPodium && styles.lossesPodium]}>{losses}L</Text>
                             </Text>
                         </View>
 
@@ -84,12 +113,13 @@ export function TournamentLeaderboard({ standings, participants }: TournamentLea
                         <View style={styles.diffContainer}>
                             <Text style={[
                                 styles.diff,
-                                isPositive && styles.diffPositive,
-                                isNegative && styles.diffNegative,
+                                isPodium && styles.diffPodium,
+                                !isPodium && isPositive && styles.diffPositive,
+                                !isPodium && isNegative && styles.diffNegative,
                             ]}>
                                 {isPositive && '+'}{diff}
                             </Text>
-                            <Text style={styles.diffLabel}>pts</Text>
+                            <Text style={[styles.diffLabel, isPodium && styles.diffLabelPodium]}>pts</Text>
                         </View>
                     </View>
                 );
@@ -105,20 +135,28 @@ const styles = StyleSheet.create({
     row: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 12,
+        padding: 14,
         borderRadius: 12,
         borderWidth: 1,
+        backgroundColor: '#fff',
+        borderColor: theme.colors.zinc[200],
     },
     rankBadge: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         alignItems: 'center',
         justifyContent: 'center',
+        backgroundColor: theme.colors.zinc[100],
     },
     rankText: {
-        fontSize: 13,
+        fontSize: 14,
         fontWeight: '800',
+        color: theme.colors.zinc[500],
+    },
+    rankTextPodium: {
+        color: '#ffffff',
+        fontWeight: '900',
     },
     info: {
         flex: 1,
@@ -126,12 +164,14 @@ const styles = StyleSheet.create({
     },
     name: {
         fontSize: 15,
-        fontWeight: '700',
+        fontWeight: '600',
         color: theme.colors.zinc[800],
         marginBottom: 2,
     },
-    nameFirst: {
-        color: '#92400e',
+    namePodium: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: theme.colors.zinc[900],
     },
     record: {
         fontSize: 12,
@@ -140,19 +180,32 @@ const styles = StyleSheet.create({
     wins: {
         color: '#10b981',
     },
+    winsPodium: {
+        color: '#059669',
+    },
     dot: {
         color: theme.colors.zinc[400],
     },
+    dotPodium: {
+        color: theme.colors.zinc[500],
+    },
     losses: {
         color: '#ef4444',
+    },
+    lossesPodium: {
+        color: '#dc2626',
     },
     diffContainer: {
         alignItems: 'flex-end',
     },
     diff: {
         fontSize: 18,
-        fontWeight: '900',
+        fontWeight: '800',
         color: theme.colors.zinc[400],
+    },
+    diffPodium: {
+        color: theme.colors.zinc[700],
+        fontWeight: '900',
     },
     diffPositive: {
         color: '#10b981',
@@ -166,6 +219,9 @@ const styles = StyleSheet.create({
         color: theme.colors.zinc[400],
         textTransform: 'uppercase',
         letterSpacing: 0.3,
+    },
+    diffLabelPodium: {
+        color: theme.colors.zinc[500],
     },
     // Empty State
     emptyState: {

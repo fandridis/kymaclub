@@ -4,7 +4,7 @@ import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
-import { Trophy, Users, Target, LayoutGrid, X, Lock, Clock, CheckCircle } from 'lucide-react-native';
+import { Trophy, X, Lock, Clock } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../theme';
 import type { RootStackParamList } from '..';
@@ -58,7 +58,7 @@ export function TournamentScreen() {
         return (
             <View style={[styles.container, { paddingTop: topInset }]}>
                 <View style={styles.loadingContent}>
-                    <ActivityIndicator size="large" color="#06b6d4" />
+                    <ActivityIndicator size="large" color="#f97316" />
                     <Text style={styles.loadingText}>Loading tournament...</Text>
                 </View>
             </View>
@@ -106,47 +106,49 @@ export function TournamentScreen() {
 
     return (
         <View style={styles.container}>
-            {/* Close Button */}
-            <TouchableOpacity
-                style={[styles.closeButton, { top: topInset + 16 }]}
-                onPress={() => navigation.goBack()}
-            >
-                <X size={24} color={theme.colors.zinc[600]} />
-            </TouchableOpacity>
-
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={[styles.scrollContent, { paddingTop: topInset + 16, paddingBottom: bottomInset + 24 }]}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Header */}
-                <View style={styles.header}>
-                    <View style={styles.headerTop}>
-                        <Text style={styles.className} numberOfLines={1}>
-                            {classInfo?.className ?? 'Tournament'}
+                {/* Header Row with Close Button */}
+                <View style={styles.headerRow}>
+                    <View style={styles.headerLeft}>
+                        <View style={styles.headerTop}>
+                            <Text style={styles.className} numberOfLines={1}>
+                                {classInfo?.className ?? 'Tournament'}
+                            </Text>
+                            <StatusBadge status={status} isLocked={isLocked} />
+                        </View>
+                        <Text style={styles.subtitle}>
+                            Americano Tournament · {classInfo?.venueName ?? 'Venue'}
                         </Text>
-                        <StatusBadge status={status} isLocked={isLocked} />
                     </View>
-                    <Text style={styles.subtitle}>
-                        Americano Tournament · {classInfo?.venueName ?? 'Venue'}
-                    </Text>
+                    <TouchableOpacity
+                        style={styles.closeButton}
+                        onPress={() => navigation.goBack()}
+                    >
+                        <X size={24} color={theme.colors.zinc[600]} />
+                    </TouchableOpacity>
                 </View>
 
-                {/* Compact Stats Row */}
+                {/* Stats Row */}
                 <View style={styles.statsRow}>
-                    <View style={[styles.statItem, playersReady && styles.statItemAccent]}>
-                        <Users size={16} color={playersReady ? '#06b6d4' : theme.colors.zinc[400]} />
-                        <Text style={[styles.statValue, playersReady && styles.statValueAccent]}>
+                    <View style={styles.statItem}>
+                        <Text style={styles.statValue}>
                             {currentParticipantCount}/{config.numberOfPlayers}
                         </Text>
+                        <Text style={styles.statLabel}>players</Text>
                     </View>
+                    <View style={styles.statDivider} />
                     <View style={styles.statItem}>
-                        <Target size={16} color={theme.colors.zinc[400]} />
                         <Text style={styles.statValue}>{config.matchPoints}</Text>
+                        <Text style={styles.statLabel}>points</Text>
                     </View>
+                    <View style={styles.statDivider} />
                     <View style={styles.statItem}>
-                        <LayoutGrid size={16} color={theme.colors.zinc[400]} />
                         <Text style={styles.statValue}>{config.courts.length}</Text>
+                        <Text style={styles.statLabel}>courts</Text>
                     </View>
                 </View>
 
@@ -182,7 +184,7 @@ export function TournamentScreen() {
                             {isWaitingForNextRound && (
                                 <View style={styles.roundCompleteBanner}>
                                     <View style={styles.roundCompleteIcon}>
-                                        <Clock size={20} color="#06b6d4" />
+                                        <Clock size={20} color="#f97316" />
                                     </View>
                                     <View style={styles.roundCompleteContent}>
                                         <Text style={styles.roundCompleteTitle}>Round {currentRound} Complete!</Text>
@@ -225,7 +227,7 @@ export function TournamentScreen() {
                 ) : (
                     <View style={styles.waitingContainer}>
                         <View style={styles.waitingIcon}>
-                            <Trophy size={40} color="#06b6d4" />
+                            <Trophy size={40} color="#f97316" />
                         </View>
                         <Text style={styles.waitingTitle}>Ready to Play</Text>
                         <Text style={styles.waitingSubtitle}>
@@ -341,20 +343,23 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         fontSize: 15,
     },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        marginBottom: 24,
+        gap: 12,
+    },
+    headerLeft: {
+        flex: 1,
+    },
     closeButton: {
-        position: 'absolute',
-        right: 16,
         width: 40,
         height: 40,
         borderRadius: 20,
         backgroundColor: theme.colors.zinc[100],
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 100,
-    },
-    header: {
-        marginBottom: 16,
-        paddingRight: 44, // Space for close button
     },
     headerTop: {
         flexDirection: 'row',
@@ -440,35 +445,34 @@ const styles = StyleSheet.create({
         color: '#dc2626',
         letterSpacing: 0.5,
     },
-    // Compact Stats
+    // Stats Row
     statsRow: {
         flexDirection: 'row',
-        gap: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
         marginBottom: 20,
     },
     statItem: {
         flex: 1,
-        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        gap: 6,
-        backgroundColor: theme.colors.zinc[50],
-        borderRadius: 10,
-        paddingVertical: 10,
-        borderWidth: 1,
-        borderColor: theme.colors.zinc[200],
+        gap: 4,
     },
-    statItemAccent: {
-        borderColor: '#06b6d4',
-        backgroundColor: '#ecfeff',
+    statDivider: {
+        width: 1,
+        height: 32,
+        backgroundColor: theme.colors.zinc[200],
     },
     statValue: {
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: '800',
         color: theme.colors.zinc[900],
     },
-    statValueAccent: {
-        color: '#06b6d4',
+    statLabel: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: theme.colors.zinc[400],
+        textTransform: 'uppercase',
+        letterSpacing: 0.3,
     },
     // Tabs
     tabsContainer: {
@@ -485,7 +489,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     tabActive: {
-        backgroundColor: '#06b6d4',
+        backgroundColor: theme.colors.zinc[700],
     },
     tabText: {
         fontSize: 14,
@@ -502,10 +506,10 @@ const styles = StyleSheet.create({
         gap: 12,
         padding: 16,
         marginBottom: 20,
-        backgroundColor: '#ecfeff',
+        backgroundColor: '#fff7ed',
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: '#cffafe',
+        borderColor: '#fed7aa',
     },
     roundCompleteIcon: {
         width: 40,
@@ -515,7 +519,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
-        borderColor: '#cffafe',
+        borderColor: '#fed7aa',
     },
     roundCompleteContent: {
         flex: 1,
@@ -523,13 +527,13 @@ const styles = StyleSheet.create({
     roundCompleteTitle: {
         fontSize: 15,
         fontWeight: '800',
-        color: '#0891b2',
+        color: '#c2410c',
         marginBottom: 2,
     },
     roundCompleteSubtitle: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#06b6d4',
+        color: '#f97316',
     },
     // Tournament Finished Banner
     tournamentFinishedBanner: {
@@ -573,12 +577,12 @@ const styles = StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: 20,
-        backgroundColor: '#ecfeff',
+        backgroundColor: '#fff7ed',
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 20,
         borderWidth: 1,
-        borderColor: '#cffafe',
+        borderColor: '#fed7aa',
     },
     waitingTitle: {
         fontSize: 20,

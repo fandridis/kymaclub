@@ -247,7 +247,7 @@ export function QuestionnaireForm({
             <View key={question.id} style={styles.questionContainer}>
                 <View style={styles.questionHeader}>
                     <Text style={styles.questionText}>
-                        {question.question}
+                        {index + 1}. {question.question}
                         {question.required && <Text style={styles.required}> *</Text>}
                     </Text>
                 </View>
@@ -267,7 +267,6 @@ export function QuestionnaireForm({
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>{t('questionnaire.preBookingQuestions')}</Text>
             {questions.map((question, index) => renderQuestion(question, index))}
 
             {totalFees > 0 && (

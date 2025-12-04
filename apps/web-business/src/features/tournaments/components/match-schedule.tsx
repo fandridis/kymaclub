@@ -46,7 +46,7 @@ function InlineScoreControl({
             </button>
             <span className={cn(
                 "text-2xl font-black tabular-nums w-10 text-center",
-                isWinning ? "text-cyan-600" : "text-slate-900"
+                isWinning ? "text-orange-600" : "text-slate-900"
             )}>
                 {score}
             </span>
@@ -56,12 +56,12 @@ function InlineScoreControl({
                 disabled={score >= maxPoints}
                 className={cn(
                     "w-8 h-8 rounded-full flex items-center justify-center transition-all",
-                    "bg-cyan-500 hover:bg-cyan-600 border border-cyan-600",
+                    "bg-slate-100 hover:bg-slate-200 border border-slate-300",
                     "disabled:opacity-30 disabled:cursor-not-allowed",
                     "active:scale-95"
                 )}
             >
-                <Plus className="h-3.5 w-3.5 text-white" />
+                <Plus className="h-3.5 w-3.5 text-slate-600" />
             </button>
         </div>
     );
@@ -154,8 +154,8 @@ function MatchCard({
             <div className={cn(
                 "rounded-2xl p-3 transition-all duration-200",
                 "bg-white",
-                "border-2 border-cyan-500",
-                "shadow-xl shadow-cyan-500/20"
+                "border-2 border-orange-500",
+                "shadow-xl shadow-orange-500/20"
             )}>
                 {/* Teams & Scores */}
                 <div className="flex items-center justify-between gap-2">
@@ -165,7 +165,7 @@ function MatchCard({
                             {team1Names.map((name, i) => (
                                 <p key={i} className={cn(
                                     "text-sm font-bold truncate max-w-[100px]",
-                                    team1Winning ? "text-cyan-600" : "text-slate-700"
+                                    team1Winning ? "text-orange-600" : "text-slate-700"
                                 )}>
                                     {name}
                                 </p>
@@ -182,7 +182,7 @@ function MatchCard({
 
                     {/* Center: Court + VS */}
                     <div className="flex flex-col items-center gap-1 px-2">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-cyan-600 bg-cyan-50 px-3 py-1 rounded-full border border-cyan-200">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-orange-600 bg-orange-50 px-3 py-1 rounded-full border border-orange-200">
                             {getCourtName(match.courtId)}
                         </span>
                         <span className="text-3xl font-black text-slate-300 tracking-wider">VS</span>
@@ -194,7 +194,7 @@ function MatchCard({
                             {team2Names.map((name, i) => (
                                 <p key={i} className={cn(
                                     "text-sm font-bold truncate max-w-[100px]",
-                                    team2Winning ? "text-cyan-600" : "text-slate-700"
+                                    team2Winning ? "text-orange-600" : "text-slate-700"
                                 )}>
                                     {name}
                                 </p>
@@ -231,7 +231,7 @@ function MatchCard({
                             disabled={isSaving}
                             className={cn(
                                 "flex-1 h-11 rounded-xl font-bold text-sm transition-all",
-                                "bg-cyan-500 hover:bg-cyan-600 text-white",
+                                "bg-orange-500 hover:bg-orange-600 text-white",
                                 "flex items-center justify-center gap-2",
                                 "disabled:opacity-50 disabled:cursor-not-allowed"
                             )}
@@ -263,7 +263,7 @@ function MatchCard({
                                 key={i}
                                 className={cn(
                                     "text-sm font-bold truncate",
-                                    winner === 1 ? "text-cyan-600" : "text-slate-600"
+                                    winner === 1 ? "text-orange-600" : "text-slate-600"
                                 )}
                             >
                                 {name}
@@ -272,7 +272,7 @@ function MatchCard({
                     </div>
                     <p className={cn(
                         "text-5xl font-black tabular-nums tracking-tight",
-                        winner === 1 ? "text-cyan-600" : "text-slate-900"
+                        winner === 1 ? "text-orange-600" : "text-slate-900"
                     )}>
                         {isCompleted ? match.team1Score : "–"}
                     </p>
@@ -300,7 +300,7 @@ function MatchCard({
                                 key={i}
                                 className={cn(
                                     "text-sm font-bold truncate",
-                                    winner === 2 ? "text-cyan-600" : "text-slate-600"
+                                    winner === 2 ? "text-orange-600" : "text-slate-600"
                                 )}
                             >
                                 {name}
@@ -309,7 +309,7 @@ function MatchCard({
                     </div>
                     <p className={cn(
                         "text-5xl font-black tabular-nums tracking-tight",
-                        winner === 2 ? "text-cyan-600" : "text-slate-900"
+                        winner === 2 ? "text-orange-600" : "text-slate-900"
                     )}>
                         {isCompleted ? match.team2Score : "–"}
                     </p>
@@ -323,9 +323,9 @@ function MatchCard({
                         onClick={onStartEdit}
                         className={cn(
                             "px-6 py-2.5 rounded-xl font-bold text-sm transition-all",
-                            "bg-slate-100 hover:bg-cyan-500 text-slate-600 hover:text-white",
+                            "bg-slate-100 hover:bg-orange-500 text-slate-600 hover:text-white",
                             "flex items-center gap-2",
-                            "border border-slate-200 hover:border-cyan-500"
+                            "border border-slate-200 hover:border-orange-500"
                         )}
                     >
                         <Pencil className="h-4 w-4" />

@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, Alert, Platform } from 'react-native';
 import { Image } from 'expo-image';
-import { Calendar1Icon, ClockIcon, CalendarOffIcon, DiamondIcon, ChevronLeftIcon, CheckCircleIcon, ArrowLeftIcon } from 'lucide-react-native';
+import { Calendar1Icon, ClockIcon, CalendarOffIcon, DiamondIcon, ChevronLeftIcon, CheckCircleIcon, ArrowLeftIcon, Trophy } from 'lucide-react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Carousel from 'react-native-reanimated-carousel';
@@ -805,9 +805,7 @@ export function ClassDetailsModalScreen() {
                                 >
                                     <View style={styles.widgetBannerContent}>
                                         <View style={styles.widgetBannerLeft}>
-                                            <View style={styles.widgetBannerIcon}>
-                                                <Text style={styles.widgetBannerIconText}>🏆</Text>
-                                            </View>
+                                            <Trophy size={28} color="#ffffff" />
                                             <View>
                                                 <Text style={styles.widgetBannerTitle}>
                                                     {widget.widgetConfig.type === 'tournament_americano' ? 'Americano Tournament' : 'Tournament'}

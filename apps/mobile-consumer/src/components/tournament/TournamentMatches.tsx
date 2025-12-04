@@ -167,7 +167,7 @@ export function TournamentMatches({ matches, participants, currentRound, matchPo
                                     onPress={handleTeam1Increment}
                                     disabled={team1Score >= matchPoints}
                                 >
-                                    <Plus size={16} color={team1Score >= matchPoints ? '#fff' : '#fff'} />
+                                    <Plus size={16} color={team1Score >= matchPoints ? theme.colors.zinc[300] : theme.colors.zinc[600]} />
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -205,7 +205,7 @@ export function TournamentMatches({ matches, participants, currentRound, matchPo
                                     onPress={handleTeam2Increment}
                                     disabled={team2Score >= matchPoints}
                                 >
-                                    <Plus size={16} color="#fff" />
+                                    <Plus size={16} color={team2Score >= matchPoints ? theme.colors.zinc[300] : theme.colors.zinc[600]} />
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 16,
         borderWidth: 2,
-        borderColor: '#06b6d4',
+        borderColor: '#f97316',
     },
     matchContent: {
         flexDirection: 'row',
@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
         textAlign: 'right',
     },
     playerNameWinner: {
-        color: '#06b6d4',
+        color: '#f97316',
     },
     playerNameEditing: {
         fontSize: 13,
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
         color: theme.colors.zinc[700],
     },
     playerNameWinning: {
-        color: '#06b6d4',
+        color: '#f97316',
     },
     scoreValue: {
         fontSize: 42,
@@ -479,7 +479,7 @@ const styles = StyleSheet.create({
         textAlign: 'right',
     },
     scoreValueWinner: {
-        color: '#06b6d4',
+        color: '#f97316',
     },
     scoreValueEditing: {
         fontSize: 32,
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     scoreValueWinning: {
-        color: '#06b6d4',
+        color: '#f97316',
     },
     // Center
     center: {
@@ -513,9 +513,9 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: '700',
         letterSpacing: 0.5,
-        color: '#06b6d4',
+        color: '#f97316',
         textTransform: 'uppercase',
-        backgroundColor: '#ecfeff',
+        backgroundColor: '#fff7ed',
         paddingHorizontal: 8,
         paddingVertical: 3,
         borderRadius: 8,
@@ -569,8 +569,8 @@ const styles = StyleSheet.create({
         borderColor: theme.colors.zinc[200],
     },
     scoreBtnPlus: {
-        backgroundColor: '#06b6d4',
-        borderColor: '#06b6d4',
+        backgroundColor: theme.colors.zinc[100],
+        borderColor: theme.colors.zinc[200],
     },
     // Edit Button
     editButtonContainer: {
@@ -639,7 +639,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 6,
         paddingVertical: 12,
-        backgroundColor: '#06b6d4',
+        backgroundColor: '#f97316',
         borderRadius: 12,
     },
     saveBtnDisabled: {
