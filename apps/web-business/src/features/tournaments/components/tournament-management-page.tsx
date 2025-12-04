@@ -331,15 +331,33 @@ export function TournamentManagementPage({ widgetId }: TournamentManagementPageP
                             )}
 
                             {/* Team Assignment - only for fixed_teams mode during setup */}
-                            {isSetupOrReady && config.mode === 'fixed_teams' && setupParticipants.length >= 2 && (
-                                <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                                    <TeamAssignment
-                                        participants={setupParticipants}
-                                        widgetId={widgetId}
-                                        existingTeams={config.fixedTeams}
-                                        targetTeamCount={config.numberOfPlayers / 2}
-                                    />
-                                </div>
+                            {isSetupOrReady && config.mode === 'fixed_teams' && (
+                                setupParticipants.length >= 2 ? (
+                                    <div className="rounded-2xl border border-slate-200 bg-white p-6">
+                                        <TeamAssignment
+                                            participants={setupParticipants}
+                                            widgetId={widgetId}
+                                            existingTeams={config.fixedTeams}
+                                            targetTeamCount={config.numberOfPlayers / 2}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="rounded-2xl border border-slate-200 bg-white p-6">
+                                        <div className="text-center py-8">
+                                            <Users className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                                            <h3 className="text-lg font-bold text-slate-900 mb-2">Team Assignment</h3>
+                                            <p className="text-slate-500">
+                                                Add at least 2 players to start assigning teams.
+                                            </p>
+                                            <p className="text-sm text-slate-400 mt-2">
+                                                {setupParticipants.length === 0
+                                                    ? "No players registered yet."
+                                                    : `${setupParticipants.length} player registered. Need at least 2.`
+                                                }
+                                            </p>
+                                        </div>
+                                    </div>
+                                )
                             )}
 
                             {/* Participants list */}

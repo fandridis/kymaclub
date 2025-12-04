@@ -8,6 +8,31 @@ import {
     FixedTeam,
 } from '../types/widget';
 
+// Import generic utilities
+import {
+    // Core
+    getMatchesForRound as genericGetMatchesForRound,
+    isRoundComplete as genericIsRoundComplete,
+    getCurrentRound as genericGetCurrentRound,
+    isTournamentComplete as genericIsTournamentComplete,
+    shuffleArray,
+    // Standings
+    calculateStandings as genericCalculateStandings,
+    sortStandings as genericSortStandings,
+    // Teams
+    generateFixedTeams as genericGenerateFixedTeams,
+    generateRotatingPairs as genericGenerateRotatingPairs,
+    // Scheduling
+    generateSchedule as genericGenerateSchedule,
+    applyMatchResult as genericApplyMatchResult,
+    createDefaultCourts as genericCreateDefaultCourts,
+    // Types
+    GenericMatch,
+    GenericStanding,
+    GenericTeam,
+    SchedulingConfig,
+} from './tournaments';
+
 /**
  * Americano Tournament Operations - Pure Business Logic
  * 
@@ -20,7 +45,13 @@ import {
  * - Points-based scoring (typically 20, 21, 24, or 25 points per match)
  * - Multiple courts run matches in parallel
  * - Final standings based on total points scored
+ * 
+ * This module wraps the generic tournament utilities with Americano-specific
+ * configuration (teamSize=2 for doubles padel).
  */
+
+/** Team size for Americano (doubles padel) */
+const AMERICANO_TEAM_SIZE = 2;
 
 /***************************************************************
  * Configuration Validation
@@ -38,7 +69,7 @@ export const validateConfig = (config: TournamentAmericanoConfig): {
 } => {
     const errors: string[] = [];
 
-    // Validate number of players
+    // Validate number of players (Americano-specific valid counts)
     const validPlayerCounts: TournamentAmericanoPlayerCount[] = [8, 12, 16];
     if (!validPlayerCounts.includes(config.numberOfPlayers)) {
         errors.push(`Invalid number of players: ${config.numberOfPlayers}. Must be 8, 12, or 16.`);
@@ -74,11 +105,11 @@ export const validateConfig = (config: TournamentAmericanoConfig): {
  */
 export const getMinimumCourts = (numberOfPlayers: TournamentAmericanoPlayerCount): number => {
     // 4 players per match (2v2), need at least enough courts to play all at once
-    return Math.floor(numberOfPlayers / 4);
+    return Math.floor(numberOfPlayers / (AMERICANO_TEAM_SIZE * 2));
 };
 
 /***************************************************************
- * Team Generation
+ * Team Generation (Wrappers for generic utilities)
  ***************************************************************/
 
 /**
@@ -98,57 +129,19 @@ export const generateFixedTeams = (
     teamId: string;
     playerIds: [string, string];
 }> => {
-    if (participantIds.length % 2 !== 0) {
-        throw new Error('Fixed teams require an even number of players');
-    }
+    // Convert FixedTeam to GenericTeam if provided
+    const genericPredefined: GenericTeam<string>[] | undefined = predefinedTeams?.map(t => ({
+        teamId: t.teamId,
+        playerIds: [...t.playerIds],
+    }));
 
-    // If predefined teams are provided, validate and use them
-    if (predefinedTeams && predefinedTeams.length > 0) {
-        // Validate that all participants are assigned to exactly one team
-        const assignedPlayers = new Set<string>();
-        const validatedTeams: Array<{ teamId: string; playerIds: [string, string] }> = [];
+    const teams = genericGenerateFixedTeams(participantIds, AMERICANO_TEAM_SIZE, genericPredefined);
 
-        for (const team of predefinedTeams) {
-            if (team.playerIds.length !== 2) {
-                throw new Error(`Team ${team.teamId} must have exactly 2 players`);
-            }
-
-            for (const playerId of team.playerIds) {
-                if (!participantIds.includes(playerId)) {
-                    throw new Error(`Player ${playerId} in team ${team.teamId} is not a participant`);
-                }
-                if (assignedPlayers.has(playerId)) {
-                    throw new Error(`Player ${playerId} is assigned to multiple teams`);
-                }
-                assignedPlayers.add(playerId);
-            }
-
-            validatedTeams.push({
-                teamId: team.teamId,
-                playerIds: team.playerIds as [string, string],
-            });
-        }
-
-        // Check all participants are assigned
-        if (assignedPlayers.size !== participantIds.length) {
-            throw new Error('Not all participants are assigned to teams');
-        }
-
-        return validatedTeams;
-    }
-
-    // Fallback: Shuffle participants for random pairing
-    const shuffled = shuffleArray([...participantIds]);
-    const teams: Array<{ teamId: string; playerIds: [string, string] }> = [];
-
-    for (let i = 0; i < shuffled.length; i += 2) {
-        teams.push({
-            teamId: `team_${Math.floor(i / 2) + 1}`,
-            playerIds: [shuffled[i], shuffled[i + 1]],
-        });
-    }
-
-    return teams;
+    // Cast back to Americano-specific format with [string, string] tuple
+    return teams.map(t => ({
+        teamId: t.teamId,
+        playerIds: t.playerIds as [string, string],
+    }));
 };
 
 /**
@@ -164,31 +157,7 @@ export const generateRotatingPairs = (
     participantIds: string[],
     roundNumber: number
 ): Array<[string, string]> => {
-    const n = participantIds.length;
-    if (n < 4 || n % 2 !== 0) {
-        throw new Error('Need at least 4 players and an even count for rotating pairs');
-    }
-
-    // Use round-robin rotation: fix first player, rotate others
-    const fixed = participantIds[0];
-    const rotating = participantIds.slice(1);
-
-    // Rotate the non-fixed players based on round number
-    const rotationCount = (roundNumber - 1) % rotating.length;
-    const rotated = [
-        ...rotating.slice(rotationCount),
-        ...rotating.slice(0, rotationCount),
-    ];
-
-    // Create pairs: fixed with first rotated, then remaining in order
-    const allPlayers = [fixed, ...rotated];
-    const pairs: Array<[string, string]> = [];
-
-    for (let i = 0; i < allPlayers.length; i += 2) {
-        pairs.push([allPlayers[i], allPlayers[i + 1]]);
-    }
-
-    return pairs;
+    return genericGenerateRotatingPairs(participantIds, roundNumber);
 };
 
 /***************************************************************
@@ -214,291 +183,46 @@ interface GeneratedSchedule {
  */
 export const generateSchedule = (params: ScheduleParams): GeneratedSchedule => {
     const { participantIds, config } = params;
-    const matches: TournamentAmericanoMatch[] = [];
-    const playerMatchCounts = new Map<string, number>();
 
-    // Initialize match counts
-    participantIds.forEach(id => playerMatchCounts.set(id, 0));
-
-    if (config.mode === 'fixed_teams') {
-        return generateFixedTeamsSchedule(participantIds, config);
-    } else {
-        return generateRotatingSchedule(participantIds, config);
-    }
-};
-
-/**
- * Generate schedule for fixed_teams mode
- * Teams play against other teams with FAIRNESS-OPTIMIZED scheduling.
- * 
- * The algorithm prioritizes:
- * 1. Opponent Variety: Teams that have played each other the fewest times are matched first
- * 2. Workload Balance: When tied, matches involving players with fewer games are prioritized
- * 
- * This ensures maximum variety of opponents within the constraint limits.
- */
-const generateFixedTeamsSchedule = (
-    participantIds: string[],
-    config: TournamentAmericanoConfig
-): GeneratedSchedule => {
-    // Generate teams using predefined teams from config if available
-    const teams = generateFixedTeams(participantIds, config.fixedTeams);
-    const matches: TournamentAmericanoMatch[] = [];
-    const playerMatchCounts = new Map<string, number>(
-        participantIds.map(id => [id, 0])
-    );
-    const courtsPerRound = config.courts.length;
-
-    // Initialize opponent tracking: Map<TeamId, Map<OpponentTeamId, Count>>
-    const teamOpponentCounts = new Map<string, Map<string, number>>();
-    teams.forEach(t1 => {
-        const opponentMap = new Map<string, number>();
-        teams.forEach(t2 => {
-            if (t1.teamId !== t2.teamId) opponentMap.set(t2.teamId, 0);
-        });
-        teamOpponentCounts.set(t1.teamId, opponentMap);
-    });
-
-    // Generate ALL possible team matchups
-    const allMatchups: Array<{ team1Id: string; team2Id: string }> = [];
-    for (let i = 0; i < teams.length; i++) {
-        for (let j = i + 1; j < teams.length; j++) {
-            allMatchups.push({ team1Id: teams[i].teamId, team2Id: teams[j].teamId });
-        }
-    }
-
-    let roundNumber = 1;
-
-    // --- Dynamic Scheduling Loop ---
-    while (true) {
-        // A. Filter available matchups (not exceeding max matches)
-        const availableMatchups = allMatchups.filter(matchup => {
-            const team1 = teams.find(t => t.teamId === matchup.team1Id);
-            const team2 = teams.find(t => t.teamId === matchup.team2Id);
-            if (!team1 || !team2) return false;
-
-            // Check if any player would exceed max matches
-            const allPlayers = [...team1.playerIds, ...team2.playerIds];
-            return !allPlayers.some(
-                id => (playerMatchCounts.get(id) || 0) >= config.maxMatchesPerPlayer
-            );
-        });
-
-        if (availableMatchups.length === 0) break;
-
-        // B. Sort based on Fairness Metrics (Opponent Variety & Workload Balance)
-        availableMatchups.sort((matchA, matchB) => {
-            const team1A = teams.find(t => t.teamId === matchA.team1Id)!;
-            const team2A = teams.find(t => t.teamId === matchA.team2Id)!;
-            const team1B = teams.find(t => t.teamId === matchB.team1Id)!;
-            const team2B = teams.find(t => t.teamId === matchB.team2Id)!;
-
-            // Priority 1: Opponent Variety (minimize times these two teams have played)
-            const playsA = teamOpponentCounts.get(matchA.team1Id)?.get(matchA.team2Id) || 0;
-            const playsB = teamOpponentCounts.get(matchB.team1Id)?.get(matchB.team2Id) || 0;
-            if (playsA !== playsB) {
-                return playsA - playsB; // ASC: Matchup played least wins
-            }
-
-            // Priority 2: Workload Balance (minimize total player match counts)
-            const workloadA = [...team1A.playerIds, ...team2A.playerIds].reduce(
-                (sum, id) => sum + (playerMatchCounts.get(id) || 0), 0
-            );
-            const workloadB = [...team1B.playerIds, ...team2B.playerIds].reduce(
-                (sum, id) => sum + (playerMatchCounts.get(id) || 0), 0
-            );
-            return workloadA - workloadB; // ASC: Matchup with least played players wins
-        });
-
-        // C. Schedule the Round - greedy selection
-        const teamsPlayingThisRound = new Set<string>();
-        let courtIndex = 0;
-        let matchesInRound = 0;
-
-        for (const matchup of availableMatchups) {
-            if (courtIndex >= courtsPerRound) break;
-
-            const team1 = teams.find(t => t.teamId === matchup.team1Id)!;
-            const team2 = teams.find(t => t.teamId === matchup.team2Id)!;
-
-            // Check for conflict: ensure neither team is already scheduled for this round
-            if (teamsPlayingThisRound.has(team1.teamId) || teamsPlayingThisRound.has(team2.teamId)) {
-                continue;
-            }
-
-            // Create match
-            const match: TournamentAmericanoMatch = {
-                id: `match_r${roundNumber}_c${courtIndex + 1}`,
-                roundNumber,
-                courtId: config.courts[courtIndex].id,
-                team1: team1.playerIds,
-                team2: team2.playerIds,
-                status: 'scheduled',
-            };
-
-            matches.push(match);
-            matchesInRound++;
-            courtIndex++;
-
-            // Update tracking
-            teamsPlayingThisRound.add(team1.teamId);
-            teamsPlayingThisRound.add(team2.teamId);
-
-            // Update player match counts
-            [...team1.playerIds, ...team2.playerIds].forEach(id => {
-                playerMatchCounts.set(id, (playerMatchCounts.get(id) || 0) + 1);
-            });
-
-            // Update opponent tracking (for next round's scoring)
-            const count1 = teamOpponentCounts.get(team1.teamId)!;
-            count1.set(team2.teamId, (count1.get(team2.teamId) || 0) + 1);
-            const count2 = teamOpponentCounts.get(team2.teamId)!;
-            count2.set(team1.teamId, (count2.get(team1.teamId) || 0) + 1);
-        }
-
-        // If no matches were scheduled this round, we must stop to prevent infinite loop
-        if (matchesInRound === 0) {
-            // Check if all players have reached max matches
-            const allAtMax = participantIds.every(
-                id => (playerMatchCounts.get(id) || 0) >= config.maxMatchesPerPlayer
-            );
-            if (allAtMax) break;
-            // Otherwise, no more valid matchups can be scheduled
-            break;
-        }
-
-        roundNumber++;
-    }
-
-    // Determine actual total rounds used
-    const totalRounds = matches.length > 0
-        ? Math.max(...matches.map(m => m.roundNumber))
-        : 0;
-
-    return {
-        totalRounds,
-        matches,
-        playerMatchCounts,
+    // Convert to generic scheduling config
+    const schedulingConfig: SchedulingConfig<string> = {
+        participantIds,
+        courts: config.courts,
+        maxMatchesPerPlayer: config.maxMatchesPerPlayer,
+        teamSize: AMERICANO_TEAM_SIZE,
+        predefinedTeams: config.fixedTeams?.map(t => ({
+            teamId: t.teamId,
+            playerIds: [...t.playerIds],
+        })),
     };
-};
 
-/**
- * Generate schedule for individual_rotation mode
- * Players rotate partners each round, with GREEDY selection for fairness.
- */
-const generateRotatingSchedule = (
-    participantIds: string[],
-    config: TournamentAmericanoConfig
-): GeneratedSchedule => {
-    const matches: TournamentAmericanoMatch[] = [];
-    // Initialize or re-initialize match counts at the start of the process
-    const playerMatchCounts = new Map<string, number>(
-        participantIds.map(id => [id, 0])
-    );
-    const maxCourts = config.courts.length;
-    // Determine the max number of matches that can run in a round
-    const courtsPerRound = Math.min(maxCourts, Math.floor(participantIds.length / 4));
-    // Max rounds needed to cover all unique pairings
-    const maxCombinatorialRounds = participantIds.length - 1;
+    const mode = config.mode === 'fixed_teams' ? 'fixed_teams' : 'rotating';
+    const result = genericGenerateSchedule(schedulingConfig, mode);
 
-    for (let round = 1; round <= maxCombinatorialRounds; round++) {
-        const potentialPairs = generateRotatingPairs(participantIds, round);
-
-        // Transform pairs into potential matches for this round
-        const potentialMatches: {
-            team1: [string, string],
-            team2: [string, string],
-            players: string[]
-        }[] = [];
-
-        // Group pairs into matches (Pair 0 vs Pair 1, Pair 2 vs Pair 3, etc.)
-        for (let i = 0; i < potentialPairs.length; i += 2) {
-            const team1 = potentialPairs[i];
-            const team2 = potentialPairs[i + 1];
-
-            if (team1 && team2) {
-                potentialMatches.push({
-                    team1: team1,
-                    team2: team2,
-                    players: [...team1, ...team2],
-                });
-            }
-        }
-
-        // --- CORE FAIRNESS IMPROVEMENT: Greedy Selection ---
-
-        // 1. Filter out matches where any player is already at max
-        let availableMatches = potentialMatches.filter(match =>
-            !match.players.some(id =>
-                (playerMatchCounts.get(id) || 0) >= config.maxMatchesPerPlayer
-            )
-        );
-
-        // 2. Sort available matches based on player workload (fairness metric)
-        // Sort by the SUM of current match counts for all 4 players (ascending).
-        // Matches involving players who have played the LEAST will be prioritized.
-        availableMatches.sort((matchA, matchB) => {
-            const workloadA = matchA.players.reduce((sum, id) => sum + (playerMatchCounts.get(id) || 0), 0);
-            const workloadB = matchB.players.reduce((sum, id) => sum + (playerMatchCounts.get(id) || 0), 0);
-            return workloadA - workloadB;
-        });
-
-        // 3. Select the top N matches, where N is courtsPerRound, and handle conflicts.
-        const matchesInThisRound: TournamentAmericanoMatch[] = [];
-        const playersPlayingThisRound = new Set<string>();
-        let courtIndex = 0;
-
-        for (const potentialMatch of availableMatches) {
-            // Check for conflicts: ensure no player is already assigned a match in this round
-            const isConflict = potentialMatch.players.some(id => playersPlayingThisRound.has(id));
-
-            // Also check the court limit
-            if (isConflict || courtIndex >= courtsPerRound) {
-                continue;
-            }
-
-            // No conflict and court available: Schedule the match
-            const match: TournamentAmericanoMatch = {
-                id: `match_r${round}_c${courtIndex + 1}`,
-                roundNumber: round,
-                courtId: config.courts[courtIndex].id,
-                team1: potentialMatch.team1,
-                team2: potentialMatch.team2,
-                status: 'scheduled',
-            };
-
-            matchesInThisRound.push(match);
-            potentialMatch.players.forEach(id => {
-                playersPlayingThisRound.add(id);
-                // Update match counts immediately after selection
-                playerMatchCounts.set(id, (playerMatchCounts.get(id) || 0) + 1);
-            });
-            courtIndex++;
-        }
-
-        matches.push(...matchesInThisRound);
-
-        // 4. Stop Condition: Check if all players have reached max matches AFTER processing the round
-        const allAtMax = participantIds.every(
-            id => (playerMatchCounts.get(id) || 0) >= config.maxMatchesPerPlayer
-        );
-        if (allAtMax) break;
-    }
-
-    // Determine actual total rounds used
-    const totalRounds = matches.length > 0
-        ? Math.max(...matches.map(m => m.roundNumber))
-        : 0;
+    // Convert generic matches to Americano matches
+    // Note: Generic status includes 'cancelled' but Americano only has scheduled/in_progress/completed
+    // Since we're generating new matches, they will always be 'scheduled' initially
+    const americanoMatches: TournamentAmericanoMatch[] = result.matches.map(m => ({
+        id: m.id,
+        roundNumber: m.roundNumber,
+        courtId: m.courtId,
+        team1: m.team1 as [string, string],
+        team2: m.team2 as [string, string],
+        status: m.status as TournamentAmericanoMatch['status'],
+        team1Score: m.team1Score,
+        team2Score: m.team2Score,
+        completedAt: m.completedAt,
+    }));
 
     return {
-        totalRounds,
-        matches,
-        playerMatchCounts,
+        totalRounds: result.totalRounds,
+        matches: americanoMatches,
+        playerMatchCounts: result.playerMatchCounts,
     };
 };
 
 /***************************************************************
- * Standings Calculation
+ * Standings Calculation (Wrappers for generic utilities)
  ***************************************************************/
 
 /**
@@ -512,66 +236,31 @@ export const calculateStandings = (
     matches: TournamentAmericanoMatch[],
     participantIds: string[]
 ): TournamentAmericanoStanding[] => {
-    // Initialize standings for all participants
-    const standingsMap = new Map<string, TournamentAmericanoStanding>();
+    // Convert to generic matches
+    const genericMatches: GenericMatch<string>[] = matches.map(m => ({
+        id: m.id,
+        roundNumber: m.roundNumber,
+        courtId: m.courtId,
+        team1: [...m.team1],
+        team2: [...m.team2],
+        status: m.status,
+        team1Score: m.team1Score,
+        team2Score: m.team2Score,
+        completedAt: m.completedAt,
+    }));
 
-    participantIds.forEach(id => {
-        standingsMap.set(id, {
-            participantId: id,
-            matchesPlayed: 0,
-            matchesWon: 0,
-            matchesLost: 0,
-            pointsScored: 0,
-            pointsConceded: 0,
-            pointsDifference: 0,
-        });
-    });
+    const genericStandings = genericCalculateStandings(genericMatches, participantIds);
 
-    // Process completed matches
-    const completedMatches = matches.filter(m => m.status === 'completed');
-
-    for (const match of completedMatches) {
-        if (match.team1Score === undefined || match.team2Score === undefined) continue;
-
-        const team1Won = match.team1Score > match.team2Score;
-
-        // Update team 1 players
-        for (const playerId of match.team1) {
-            const standing = standingsMap.get(playerId);
-            if (standing) {
-                standing.matchesPlayed++;
-                standing.pointsScored += match.team1Score;
-                standing.pointsConceded += match.team2Score;
-                standing.pointsDifference = standing.pointsScored - standing.pointsConceded;
-                if (team1Won) {
-                    standing.matchesWon++;
-                } else {
-                    standing.matchesLost++;
-                }
-            }
-        }
-
-        // Update team 2 players
-        for (const playerId of match.team2) {
-            const standing = standingsMap.get(playerId);
-            if (standing) {
-                standing.matchesPlayed++;
-                standing.pointsScored += match.team2Score;
-                standing.pointsConceded += match.team1Score;
-                standing.pointsDifference = standing.pointsScored - standing.pointsConceded;
-                if (!team1Won) {
-                    standing.matchesWon++;
-                } else {
-                    standing.matchesLost++;
-                }
-            }
-        }
-    }
-
-    // Convert to array and sort
-    const standings = Array.from(standingsMap.values());
-
-    return sortStandings(standings);
+    // Convert back to Americano standings
+    return genericStandings.map(s => ({
+        participantId: s.participantId,
+        matchesPlayed: s.matchesPlayed,
+        matchesWon: s.matchesWon,
+        matchesLost: s.matchesLost,
+        pointsScored: s.pointsScored,
+        pointsConceded: s.pointsConceded,
+        pointsDifference: s.pointsDifference,
+    }));
 };
 
 /**
@@ -583,22 +272,32 @@ export const calculateStandings = (
 export const sortStandings = (
     standings: TournamentAmericanoStanding[]
 ): TournamentAmericanoStanding[] => {
-    return [...standings].sort((a, b) => {
-        // Primary: Points difference
-        if (b.pointsDifference !== a.pointsDifference) {
-            return b.pointsDifference - a.pointsDifference;
-        }
-        // Secondary: Points scored
-        if (b.pointsScored !== a.pointsScored) {
-            return b.pointsScored - a.pointsScored;
-        }
-        // Tertiary: Matches won
-        return b.matchesWon - a.matchesWon;
-    });
+    // Convert to generic and back
+    const genericStandings: GenericStanding<string>[] = standings.map(s => ({
+        participantId: s.participantId,
+        matchesPlayed: s.matchesPlayed,
+        matchesWon: s.matchesWon,
+        matchesLost: s.matchesLost,
+        pointsScored: s.pointsScored,
+        pointsConceded: s.pointsConceded,
+        pointsDifference: s.pointsDifference,
+    }));
+
+    const sorted = genericSortStandings(genericStandings);
+
+    return sorted.map(s => ({
+        participantId: s.participantId,
+        matchesPlayed: s.matchesPlayed,
+        matchesWon: s.matchesWon,
+        matchesLost: s.matchesLost,
+        pointsScored: s.pointsScored,
+        pointsConceded: s.pointsConceded,
+        pointsDifference: s.pointsDifference,
+    }));
 };
 
 /***************************************************************
- * Round Management
+ * Round Management (Wrappers for generic utilities)
  ***************************************************************/
 
 /**
@@ -645,7 +344,6 @@ export const getCurrentRound = (matches: TournamentAmericanoMatch[]): number => 
  */
 export const isTournamentComplete = (state: TournamentAmericanoState): boolean => {
     if (state.matches.length === 0) return false;
-
     return state.matches.every(m => m.status === 'completed');
 };
 
@@ -887,18 +585,6 @@ export const generatePreviewSchedule = (
  ***************************************************************/
 
 /**
- * Fisher-Yates shuffle algorithm
- */
-const shuffleArray = <T>(array: T[]): T[] => {
-    const result = [...array];
-    for (let i = result.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [result[i], result[j]] = [result[j], result[i]];
-    }
-    return result;
-};
-
-/**
  * Get statistics summary for display
  */
 export const getTournamentSummary = (state: TournamentAmericanoState): {
@@ -924,19 +610,12 @@ export const getTournamentSummary = (state: TournamentAmericanoState): {
 
 /**
  * Create default court configuration
+ * Note: Americano tournaments are limited to 8 courts maximum
  */
 export const createDefaultCourts = (count: number): TournamentCourt[] => {
-    const courtNames = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-    const courts: TournamentCourt[] = [];
-
-    for (let i = 0; i < count && i < courtNames.length; i++) {
-        courts.push({
-            id: `court_${courtNames[i].toLowerCase()}`,
-            name: `Court ${courtNames[i]}`,
-        });
-    }
-
-    return courts;
+    // Americano tournaments traditionally support up to 8 courts
+    const maxCourts = Math.min(count, 8);
+    return genericCreateDefaultCourts(maxCourts);
 };
 
 // Export all operations as a namespace
@@ -974,4 +653,3 @@ export const tournamentAmericanoOperations = {
     getTournamentSummary,
     createDefaultCourts,
 };
-

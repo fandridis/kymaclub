@@ -268,10 +268,11 @@ export const widgetService = {
         }
 
         // Add walk-in participants
+        // Note: walkIn.id already has "walkin_" prefix from generateWalkInId()
         const walkIns = widget.walkIns ?? [];
         for (const walkIn of walkIns) {
             participants.push({
-                id: `walkin_${walkIn.id}`,
+                id: walkIn.id,
                 displayName: walkIn.name,
                 isWalkIn: true,
                 walkInId: walkIn.id,
