@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetView, useBottomSheetModal } from '@gorhom/bottom-sheet';
 import { useAction } from 'convex/react';
 import { DiamondIcon } from 'lucide-react-native';
 
@@ -36,6 +36,7 @@ const formatCurrency = (amount: number) => `${amount.toFixed(2)}€`;
 export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyCreditsSheetProps>(
   ({ snapPoints, onChange }, ref) => {
     const { t } = useTypedTranslation();
+    const { dismiss } = useBottomSheetModal();
     const resolvedSnapPoints = useMemo(() => snapPoints ?? ['70%'], [snapPoints]);
 
     const [selectedCredits, setSelectedCredits] = useState<number>(CREDIT_PACKS[0]?.credits ?? 10);
@@ -75,6 +76,8 @@ export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyC
       try {
         const result = await createOneTimeCheckout({ creditAmount: selectedPack.credits });
         if (result.checkoutUrl) {
+          // Dismiss the bottom sheet before opening Stripe checkout
+          dismiss();
           await Linking.openURL(result.checkoutUrl);
         } else {
           Alert.alert(t('errors.error'), t('errors.unableToStartCheckout'));
@@ -85,7 +88,7 @@ export const QuickBuyCreditsSheet = React.forwardRef<BottomSheetModal, QuickBuyC
       } finally {
         setIsProcessing(false);
       }
-    }, [createOneTimeCheckout, selectedPack, t]);
+    }, [createOneTimeCheckout, selectedPack, t, dismiss]);
 
     return (
       <BottomSheetModal

@@ -1,4 +1,4 @@
-// App.tsx - Clean implementation with modal auth flows
+// App.tsx - Clean implementation with conditional screens and deep link handling
 import { Assets as NavigationAssets } from '@react-navigation/elements';
 import {
   DarkTheme,
@@ -9,17 +9,17 @@ import {
 import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import { Asset } from 'expo-asset';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Linking from 'expo-linking';
 import * as React from 'react';
 import { StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { ConvexProvider, ConvexReactClient, useMutation } from "convex/react";
 import i18n from './i18n';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { ErrorBoundary } from './components/error-boundary';
 import { convexAuthStorage } from './utils/storage';
 import { RootNavigator } from './navigation';
 import { useCurrentUser } from './hooks/useCurrentUser';
 import { useStorageSync } from './hooks/useStorageSync';
-import { DeepLinkGuard, usePendingDeepLink } from './features/core/components/deep-link-guard';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useTypedTranslation } from './i18n/typed';
@@ -30,7 +30,6 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { api } from '@repo/api/convex/_generated/api';
-import { parseDeepLink } from '@repo/api/utils/deep-linking';
 import { ConvexAuthProvider } from '@convex-dev/auth/react';
 
 
@@ -52,26 +51,6 @@ const convex = new ConvexReactClient(convexUrl || "https://MISSING_CONVEX_URL.co
 // Create navigation reference for deep linking
 const navigationRef = createNavigationContainerRef();
 
-/**
- * Check if a route requires authentication
- */
-function needsAuthentication(route: string): boolean {
-  const protectedRoutes = [
-    'ClassDetailsModal',
-    'Home',
-    'Settings',
-    'SettingsNotifications',
-    'SettingsSubscription',
-    'SettingsAccount',
-    'VenueDetailsScreen',
-    'PaymentSuccess',
-    'PaymentCancel',
-    'Conversation',
-  ];
-
-  return protectedRoutes.includes(route);
-}
-
 // Configure how notifications are displayed
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -92,6 +71,9 @@ Asset.loadAsync([
 
 SplashScreen.preventAutoHideAsync();
 
+// Linking prefixes
+const LINKING_PREFIXES = ['kymaclub://', 'https://kymaclub.com', 'https://*.kymaclub.com'];
+
 export function App() {
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
@@ -102,12 +84,10 @@ export function App() {
         <ConvexAuthProvider client={convex} storage={convexAuthStorage}>
           <SafeAreaProvider>
             <ActionSheetProvider>
-              <DeepLinkGuard>
-                <InnerApp
-                  theme={theme}
-                  onReady={() => { SplashScreen.hideAsync() }}
-                />
-              </DeepLinkGuard>
+              <InnerApp
+                theme={theme}
+                onReady={() => { SplashScreen.hideAsync() }}
+              />
             </ActionSheetProvider>
           </SafeAreaProvider>
         </ConvexAuthProvider>
@@ -121,13 +101,108 @@ interface InnerAppProps {
   onReady: () => void;
 }
 
+/**
+ * Hook to track pending deep links for handling after authentication.
+ * 
+ * This implements the "remount container" approach from React Navigation docs:
+ * - Stores incoming deep links when user is not authenticated
+ * - Clears the deep link after successful authentication
+ * - Passes the stored link via getInitialURL when remounting
+ * 
+ * Important: We wait for loading to complete before tracking auth state changes
+ * to avoid false "just logged in" detection during initial app load.
+ */
+function usePendingDeepLink(isAuthenticated: boolean, isLoading: boolean) {
+  const [pendingDeepLink, setPendingDeepLink] = useState<string | null>(null);
+  // null means "not yet initialized" - we only initialize after loading completes
+  const wasAuthenticated = useRef<boolean | null>(null);
+
+  // Track auth state changes and clear pending deep link after login
+  useEffect(() => {
+    // Don't do anything while loading - we don't know the true auth state yet
+    if (isLoading) return;
+
+    // Initialize wasAuthenticated only after loading is done
+    if (wasAuthenticated.current === null) {
+      wasAuthenticated.current = isAuthenticated;
+      return;
+    }
+
+    // Clear pending deep link after successful authentication
+    if (!wasAuthenticated.current && isAuthenticated && pendingDeepLink) {
+      // User just logged in - clear the pending link after a brief delay
+      // to allow navigation to process it
+      const timer = setTimeout(() => {
+        setPendingDeepLink(null);
+      }, 1000);
+      wasAuthenticated.current = isAuthenticated;
+      return () => clearTimeout(timer);
+    }
+
+    wasAuthenticated.current = isAuthenticated;
+  }, [isAuthenticated, isLoading, pendingDeepLink]);
+
+  // Listen for incoming deep links when not authenticated (and not loading)
+  useEffect(() => {
+    if (isLoading || isAuthenticated) return;
+
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      // Only store authenticated route deep links
+      if (isAuthenticatedRoute(url)) {
+        setPendingDeepLink(url);
+      }
+    });
+
+    return () => subscription.remove();
+  }, [isAuthenticated, isLoading]);
+
+  // Check initial URL after loading completes and user is not authenticated
+  useEffect(() => {
+    if (isLoading || isAuthenticated) return;
+
+    const checkInitialURL = async () => {
+      const url = await Linking.getInitialURL();
+      if (url && isAuthenticatedRoute(url)) {
+        setPendingDeepLink(url);
+      }
+    };
+    checkInitialURL();
+  }, [isAuthenticated, isLoading]);
+
+  // Custom getInitialURL that returns pending deep link after auth
+  const getInitialURL = useCallback(async (): Promise<string | null> => {
+    // After logging in, return the pending deep link
+    if (isAuthenticated && pendingDeepLink) {
+      return pendingDeepLink;
+    }
+    // Otherwise use default behavior
+    return Linking.getInitialURL();
+  }, [isAuthenticated, pendingDeepLink]);
+
+  return { pendingDeepLink, getInitialURL };
+}
+
+/**
+ * Check if a URL corresponds to an authenticated route
+ */
+function isAuthenticatedRoute(url: string): boolean {
+  const authenticatedPaths = [
+    '/news', '/explore', '/bookings', '/messages', '/settings',
+    '/chat/', '/class/', '/venue/', '/payment/',
+  ];
+  const path = url.toLowerCase();
+  return authenticatedPaths.some(p => path.includes(p));
+}
+
 export function InnerApp({ theme, onReady }: InnerAppProps) {
   const { user, isLoading } = useCurrentUser();
-  const { setPendingDeepLink } = usePendingDeepLink();
   const { t } = useTypedTranslation();
   const recordPushNotificationToken = useMutation(api.mutations.pushNotifications.recordPushNotificationToken);
   const [appReady, setAppReady] = useState(false);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
+
+  const isAuthenticated = !!user;
+  const { getInitialURL } = usePendingDeepLink(isAuthenticated, isLoading);
 
   // Sync storage cleanup on user changes
   useStorageSync();
@@ -164,59 +239,18 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
       });
   }, [recordPushNotificationToken, user?._id]);
 
-  // Helper: process a notification response and navigate appropriately
+  /**
+   * Process push notification response - simply open the deep link.
+   * Navigation container handles routing based on available screens.
+   */
   const processNotificationResponse = React.useCallback((response: Notifications.NotificationResponse | null) => {
     if (!response) return;
     const data: any = response.notification.request.content.data;
-    const tryNavigate = (route: string, params: any) => {
-      if (navigationRef.isReady()) {
-        // @ts-expect-error - navigation types are complex with nested navigators
-        navigationRef.navigate(route, params);
-      } else {
-        // Slight delay if nav container isn't ready yet
-        setTimeout(() => {
-          if (navigationRef.isReady()) {
-            // @ts-expect-error - navigation types are complex with nested navigators
-            navigationRef.navigate(route, params);
-          }
-        }, 200);
-      }
-    };
 
-    // Prefer deepLink when present
     if (data?.deepLink) {
-      const parsedLink = parseDeepLink(data.deepLink as string);
-      if (parsedLink) {
-        if (needsAuthentication(parsedLink.route)) {
-          if (user?._id) {
-            tryNavigate(parsedLink.route, parsedLink.params);
-          } else {
-            setPendingDeepLink(data.deepLink as string);
-            tryNavigate('SignInModal', {});
-          }
-        } else {
-          tryNavigate(parsedLink.route, parsedLink.params);
-        }
-      }
-      return;
+      Linking.openURL(data.deepLink as string);
     }
-
-    // Fallback for older notifications without deepLink (chat only)
-    if (data?.type === 'chat_message' && data?.threadId) {
-      if (user?._id) {
-        tryNavigate('Conversation', {
-          threadId: data.threadId,
-          venueName: data.venueName,
-          venueImage: data.venueImage,
-        });
-      } else {
-        // Construct a deep link so auth guard can handle after sign-in
-        const deepLink = `kymaclub://chat/${data.threadId}${data.venueName ? `?venueName=${encodeURIComponent(data.venueName)}` : ''}`;
-        setPendingDeepLink(deepLink);
-        tryNavigate('SignInModal', {});
-      }
-    }
-  }, [user?._id, setPendingDeepLink]);
+  }, []);
 
   // Handle notification interactions (when user taps on a notification)
   useEffect(() => {
@@ -286,16 +320,19 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
     return null;
   }
 
-  // Render navigation - it handles auth state internally
+  // Render navigation with key based on auth state
+  // This causes remount when auth changes, allowing pending deep links to be processed
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <BottomSheetModalProvider>
         <NavigationContainer
+          key={isAuthenticated ? 'authenticated' : 'unauthenticated'}
           ref={navigationRef}
           theme={theme}
           linking={{
             enabled: true,
-            prefixes: ['kymaclub://', 'https://kymaclub.com', 'https://*.kymaclub.com'],
+            prefixes: LINKING_PREFIXES,
+            getInitialURL,
             config: {
               screens: {
                 Landing: 'welcome',

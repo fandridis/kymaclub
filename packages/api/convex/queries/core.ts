@@ -85,3 +85,38 @@ export const isEmailAuthorizedForBusiness = query({
         return true;
     }
 });
+
+/**
+ * Get pending auth language for OTP email localization (internal use only)
+ * Called by ResendOTP providers to get user's language preference before sending OTP
+ */
+export const getPendingAuthLanguage = internalQuery({
+    args: { email: v.string() },
+    returns: v.union(
+        v.object({
+            language: v.string(),
+            expiresAt: v.number(),
+        }),
+        v.null()
+    ),
+    handler: async (ctx, { email }) => {
+        const pending = await ctx.db
+            .query("pendingAuthLanguages")
+            .withIndex("by_email", (q) => q.eq("email", email))
+            .first();
+
+        if (!pending) {
+            return null;
+        }
+
+        // Check if expired
+        if (pending.expiresAt < Date.now()) {
+            return null;
+        }
+
+        return {
+            language: pending.language,
+            expiresAt: pending.expiresAt,
+        };
+    },
+});

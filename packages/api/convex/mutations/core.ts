@@ -289,3 +289,99 @@ export const updateUserLanguage = mutationWithTriggers({
         return coreService.updateUserLanguage({ ctx, args, user });
     }
 });
+
+/***************************************************************
+ * Store Pending Auth Language
+ * Temporarily stores language preference before OTP email is sent.
+ * This allows the OTP email to be sent in the user's preferred language.
+ * Records expire after 12 hours and are cleaned up by cron.
+ ***************************************************************/
+const PENDING_AUTH_LANGUAGE_EXPIRY_MS = 12 * 60 * 60 * 1000; // 12 hours
+
+export const storePendingAuthLanguageArgs = v.object({
+    email: v.string(),
+    language: v.string(), // 'en' or 'el'
+});
+export type StorePendingAuthLanguageArgs = Infer<typeof storePendingAuthLanguageArgs>;
+
+export const storePendingAuthLanguage = mutation({
+    args: storePendingAuthLanguageArgs,
+    returns: v.object({ success: v.boolean() }),
+    handler: async (ctx, args) => {
+        // No auth required - this is called before user is authenticated
+        const normalizedEmail = args.email.toLowerCase().trim();
+        const expiresAt = Date.now() + PENDING_AUTH_LANGUAGE_EXPIRY_MS;
+
+        // Check if record already exists for this email
+        const existing = await ctx.db
+            .query("pendingAuthLanguages")
+            .withIndex("by_email", (q) => q.eq("email", normalizedEmail))
+            .first();
+
+        if (existing) {
+            // Update existing record
+            await ctx.db.patch(existing._id, {
+                language: args.language,
+                expiresAt,
+            });
+        } else {
+            // Create new record
+            await ctx.db.insert("pendingAuthLanguages", {
+                email: normalizedEmail,
+                language: args.language,
+                expiresAt,
+            });
+        }
+
+        return { success: true };
+    }
+});
+
+/***************************************************************
+ * Delete Pending Auth Language (Internal)
+ * Called by OTP providers after reading the language preference
+ ***************************************************************/
+export const deletePendingAuthLanguage = internalMutation({
+    args: { email: v.string() },
+    returns: v.null(),
+    handler: async (ctx, args) => {
+        const normalizedEmail = args.email.toLowerCase().trim();
+        
+        const pending = await ctx.db
+            .query("pendingAuthLanguages")
+            .withIndex("by_email", (q) => q.eq("email", normalizedEmail))
+            .first();
+
+        if (pending) {
+            await ctx.db.delete(pending._id);
+        }
+
+        return null;
+    }
+});
+
+/***************************************************************
+ * Cleanup Expired Pending Auth Languages (Internal)
+ * Called by cron job to remove expired records
+ ***************************************************************/
+export const cleanupExpiredPendingAuthLanguages = internalMutation({
+    args: {},
+    returns: v.object({ deletedCount: v.number() }),
+    handler: async (ctx) => {
+        const now = Date.now();
+        
+        // Find all expired records
+        const expired = await ctx.db
+            .query("pendingAuthLanguages")
+            .withIndex("by_expiresAt")
+            .filter((q) => q.lt(q.field("expiresAt"), now))
+            .collect();
+
+        // Delete them
+        for (const record of expired) {
+            await ctx.db.delete(record._id);
+        }
+
+        return { deletedCount: expired.length };
+    }
+});

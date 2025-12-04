@@ -227,28 +227,52 @@ export const createEmailTemplate = ({
   `;
 };
 
+// OTP Email translations interface
+export interface OTPEmailTranslations {
+  title: string;
+  body: string;
+  code_label: string;
+  warning: string;
+  ignore_notice: string;
+}
+
 // Specific email templates
-const createOTPEmail = ({ token }: { token: string }) => {
+const createOTPEmail = ({ 
+  token, 
+  translations 
+}: { 
+  token: string;
+  translations?: OTPEmailTranslations;
+}) => {
+  // Default translations (English) for backwards compatibility
+  const t: OTPEmailTranslations = translations ?? {
+    title: 'Welcome back!',
+    body: 'Use the verification code below to sign in to your KymaClub account. This code will expire in 15 minutes for your security.',
+    code_label: 'Verification Code',
+    warning: 'Never share this code with anyone. KymaClub will never ask you for this code via phone or email.',
+    ignore_notice: "If you didn't request this code, you can safely ignore this email.",
+  };
+
   return createEmailTemplate({
-    title: "Sign in to KymaClub",
+    title: t.title,
     preheader: `Your verification code is ${token}`,
     content: `
-      <h1 class="content-title">Welcome back!</h1>
+      <h1 class="content-title">${t.title}</h1>
       <p class="content-body">
-        Use the verification code below to sign in to your KymaClub account. This code will expire in 15 minutes for your security.
+        ${t.body}
       </p>
       
       <div class="otp-code">
         <div class="otp-digits">${token}</div>
-        <div class="otp-label">Verification Code</div>
+        <div class="otp-label">${t.code_label}</div>
       </div>
       
       <p style="text-align: center; color: #64748b; font-size: 14px; margin-top: 32px;">
-        Never share this code with anyone. KymaClub will never ask you for this code via phone or email.
+        ${t.warning}
       </p>
       
       <p style="text-align: center; color: #64748b; font-size: 14px; margin-top: 16px;">
-        If you didn't request this code, you can safely ignore this email.
+        ${t.ignore_notice}
       </p>
     `
   });

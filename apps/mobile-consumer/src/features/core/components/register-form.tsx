@@ -18,6 +18,7 @@ import { api } from '@repo/api/convex/_generated/api';
 import { getDeviceId } from '../../../utils/storage';
 import { checkRateLimit, clearRateLimit, formatTimeRemaining } from '../../../utils/rateLimiter';
 import { useTypedTranslation } from '../../../i18n/typed';
+import i18n from '../../../i18n';
 
 interface SimpleRegisterFormProps {
     onSuccess?: () => void;
@@ -35,6 +36,7 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
     const [checkingUser, setCheckingUser] = useState(false);
 
     const checkUserExistsMutation = useMutation(api.mutations.core.checkUserExistsByEmail);
+    const storePendingAuthLanguage = useMutation(api.mutations.core.storePendingAuthLanguage);
 
     const handleSendCode = async () => {
         if (!email.trim()) {
@@ -82,6 +84,17 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
 
             // User doesn't exist, proceed with OTP registration
             setSubmitting(true);
+
+            // Store language preference for OTP email localization
+            try {
+                await storePendingAuthLanguage({
+                    email: email.trim(),
+                    language: i18n.language || 'el',
+                });
+            } catch (langError) {
+                // Non-critical - continue even if this fails
+                console.warn('[RegisterForm] Failed to store pending language:', langError);
+            }
 
             // Create FormData equivalent for React Native
             const formData = new FormData();

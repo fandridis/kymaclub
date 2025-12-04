@@ -1,8 +1,7 @@
-// components/sign-in-modal.tsx
-import React, { useEffect } from 'react';
+// sign-in-modal-screen.tsx
+import React from 'react';
 import {
     View,
-    Text,
     StyleSheet,
     TouchableOpacity,
     KeyboardAvoidingView,
@@ -10,30 +9,22 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { CommonActions, useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { X } from 'lucide-react-native';
 import { SignInForm } from '../components/sign-in-form';
-import { api } from '@repo/api/convex/_generated/api';
-import { useConvexAuth, useQuery } from 'convex/react';
+import { HeaderLanguageSwitcher } from '../../../components/HeaderLanguageSwitcher';
 
+/**
+ * Sign In Modal Screen
+ * 
+ * No manual redirect logic needed - React Navigation 7's conditional screen groups
+ * handle navigation automatically:
+ * - When user authenticates, this screen disappears from the navigator
+ * - User is automatically shown the appropriate screen (Onboarding or News)
+ * - Any pending deep links are automatically retried via UNSTABLE_routeNamesChangeBehavior
+ */
 export function SignInModalScreen() {
     const navigation = useNavigation();
-    const { isAuthenticated } = useConvexAuth();
-    const data = useQuery(api.queries.core.getCurrentUserQuery, isAuthenticated ? {} : 'skip');
-    const user = data?.user;
-
-
-    useEffect(() => {
-        if (user) {
-            const redirectTo = user.hasConsumerOnboarded ? 'News' : 'Onboarding';
-            navigation.dispatch(
-                CommonActions.reset({
-                    index: 0,
-                    routes: [{ name: redirectTo }],
-                })
-            );
-        }
-    }, [user, navigation])
 
     return (
         <SafeAreaView style={styles.container}>
@@ -43,12 +34,16 @@ export function SignInModalScreen() {
             >
                 <View style={styles.header}>
                     <View style={styles.dragIndicator} />
-                    <TouchableOpacity
-                        style={styles.closeButton}
-                        onPress={() => navigation.goBack()}
-                    >
-                        <X size={24} color="#333" />
-                    </TouchableOpacity>
+                    <View style={styles.headerRow}>
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={() => navigation.goBack()}
+                        >
+                            <X size={24} color="#333" />
+                        </TouchableOpacity>
+                        <View style={styles.headerSpacer} />
+                        <HeaderLanguageSwitcher />
+                    </View>
                 </View>
 
                 <View style={styles.content}>
@@ -70,7 +65,7 @@ const styles = StyleSheet.create({
     header: {
         alignItems: 'center',
         paddingTop: 8,
-        paddingBottom: 16,
+        paddingBottom: 8,
     },
     dragIndicator: {
         width: 36,
@@ -78,10 +73,17 @@ const styles = StyleSheet.create({
         backgroundColor: '#E0E0E0',
         borderRadius: 3,
     },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        width: '100%',
+        paddingHorizontal: 8,
+        paddingTop: 8,
+    },
+    headerSpacer: {
+        flex: 1,
+    },
     closeButton: {
-        position: 'absolute',
-        right: 16,
-        top: 16,
         padding: 8,
     },
     content: {

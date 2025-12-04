@@ -1,5 +1,5 @@
-// components/landing-screen.tsx
-import React, { useEffect } from 'react';
+// landing-screen.tsx
+import React from 'react';
 import {
   View,
   Text,
@@ -9,34 +9,26 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../navigation';
 import { useTypedTranslation } from '../../../i18n/typed';
 import { theme } from '../../../theme';
-import { useCurrentUser } from '../../../hooks/useCurrentUser';
+import { HeaderLanguageSwitcher } from '../../../components/HeaderLanguageSwitcher';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Landing'>;
 
+/**
+ * Landing Screen - Entry point for unauthenticated users
+ * 
+ * No manual redirect logic needed - conditional screen rendering handles navigation:
+ * - This screen is only shown in the unauthenticated group
+ * - When user authenticates, the screen automatically disappears
+ * - The appropriate screen (Onboarding or News) is shown automatically
+ */
 export function LandingScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { t } = useTypedTranslation();
-  const { user } = useCurrentUser();
-
-
-  useEffect(() => {
-    if (user) {
-      const redirectTo = user.hasConsumerOnboarded ? 'News' : 'Onboarding';
-      // Reset the entire navigation stack and navigate to the next screen without history
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: redirectTo }],
-        })
-      );
-    }
-  }, [user, navigation])
-
 
   const handleSignIn = () => {
     navigation.navigate('SignInModal');
@@ -55,7 +47,13 @@ export function LandingScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
+        {/* Header Row with Language Switcher */}
+        <View style={styles.headerRow}>
+          <View style={styles.headerSpacer} />
+          <HeaderLanguageSwitcher />
+        </View>
+
         <View style={styles.content}>
           <View style={styles.headerSection}>
             <Text style={styles.title}>{t('auth.landing.title')}</Text>
@@ -101,17 +99,25 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.md,
+    paddingTop: theme.spacing.sm,
+  },
+  headerSpacer: {
+    flex: 1,
+  },
   content: {
     flex: 1,
     paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing['4xl'],
     paddingBottom: theme.spacing.xl,
   },
   headerSection: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: theme.spacing['5xl'],
   },
   bottomSection: {
     gap: theme.spacing.md,

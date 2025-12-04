@@ -92,6 +92,26 @@ const emailTranslations = {
             cta_button: 'Book a Class Now',
             footer: "Questions? We're here to help! Contact us at",
         },
+        otp_sign_in: {
+            subject: 'Sign in to KymaClub',
+            preheader: 'Your verification code is {{code}}',
+            title: 'Welcome back!',
+            body: 'Use the verification code below to sign in to your KymaClub account. This code will expire in 15 minutes for your security.',
+            code_label: 'Verification Code',
+            warning: 'Never share this code with anyone. KymaClub will never ask you for this code via phone or email.',
+            ignore_notice: "If you didn't request this code, you can safely ignore this email.",
+            plain_text: 'Welcome to KymaClub! Your verification code is: {{code}}. This code expires in 15 minutes.',
+        },
+        otp_password_reset: {
+            subject: 'Reset your password - KymaClub',
+            preheader: 'Your password reset code is {{code}}',
+            title: 'Reset your password',
+            body: 'Use the verification code below to reset your password. This code will expire in 24 hours.',
+            code_label: 'Reset Code',
+            warning: 'If you did not request a password reset, please ignore this email or contact support.',
+            ignore_notice: 'Your password will not change until you use this code.',
+            plain_text: 'Reset your password. Your verification code is: {{code}}. This code expires in 24 hours.',
+        },
     },
     el: {
         credits_gift: {
@@ -104,11 +124,34 @@ const emailTranslations = {
             cta_button: 'Κάνε Κράτηση Τώρα',
             footer: 'Ερωτήσεις; Είμαστε εδώ για να βοηθήσουμε! Επικοινωνήστε μαζί μας στο',
         },
+        otp_sign_in: {
+            subject: 'Σύνδεση στο KymaClub',
+            preheader: 'Ο κωδικός επαλήθευσής σου είναι {{code}}',
+            title: 'Καλώς ήρθες πίσω!',
+            body: 'Χρησιμοποίησε τον παρακάτω κωδικό επαλήθευσης για να συνδεθείς στον λογαριασμό σου KymaClub. Αυτός ο κωδικός λήγει σε 15 λεπτά για την ασφάλειά σου.',
+            code_label: 'Κωδικός Επαλήθευσης',
+            warning: 'Μην μοιράζεσαι ποτέ αυτόν τον κωδικό. Το KymaClub δεν θα σου ζητήσει ποτέ αυτόν τον κωδικό μέσω τηλεφώνου ή email.',
+            ignore_notice: 'Αν δεν ζήτησες αυτόν τον κωδικό, μπορείς να αγνοήσεις αυτό το email.',
+            plain_text: 'Καλώς ήρθες στο KymaClub! Ο κωδικός επαλήθευσής σου είναι: {{code}}. Αυτός ο κωδικός λήγει σε 15 λεπτά.',
+        },
+        otp_password_reset: {
+            subject: 'Επαναφορά κωδικού - KymaClub',
+            preheader: 'Ο κωδικός επαναφοράς σου είναι {{code}}',
+            title: 'Επαναφορά κωδικού',
+            body: 'Χρησιμοποίησε τον παρακάτω κωδικό επαλήθευσης για να επαναφέρεις τον κωδικό σου. Αυτός ο κωδικός λήγει σε 24 ώρες.',
+            code_label: 'Κωδικός Επαναφοράς',
+            warning: 'Αν δεν ζήτησες επαναφορά κωδικού, αγνόησε αυτό το email ή επικοινώνησε με την υποστήριξη.',
+            ignore_notice: 'Ο κωδικός σου δεν θα αλλάξει μέχρι να χρησιμοποιήσεις αυτόν τον κωδικό.',
+            plain_text: 'Επαναφορά κωδικού. Ο κωδικός επαλήθευσής σου είναι: {{code}}. Αυτός ο κωδικός λήγει σε 24 ώρες.',
+        },
     },
 } as const;
 
 type PushNotificationKey = keyof typeof pushNotificationTranslations['en'];
 type EmailKey = keyof typeof emailTranslations['en'];
+
+// Type-safe OTP email translations type
+export type OTPEmailTranslations = typeof emailTranslations['en']['otp_sign_in'];
 
 /**
  * Resolve language to a supported language, falling back to default
@@ -153,8 +196,8 @@ export function getPushNotificationText(
     return { title, body };
 }
 
-// Type for email translation content
-type EmailTranslationContent = {
+// Type for credits gift email translation content
+type CreditsGiftEmailContent = {
     subject: string;
     greeting: string;
     credits_text: string;
@@ -166,14 +209,25 @@ type EmailTranslationContent = {
 };
 
 /**
- * Get email content in the user's language
+ * Get email content in the user's language (legacy function for credits_gift)
  */
 export function getEmailTranslations(
     language: string | undefined | null,
-    key: EmailKey
-): EmailTranslationContent {
+    key: 'credits_gift'
+): CreditsGiftEmailContent {
     const lang = resolveLanguage(language);
-    return emailTranslations[lang][key] as EmailTranslationContent;
+    return emailTranslations[lang][key];
+}
+
+/**
+ * Get OTP email translations in the user's language
+ */
+export function getOTPEmailTranslations(
+    language: string | undefined | null,
+    key: 'otp_sign_in' | 'otp_password_reset'
+): OTPEmailTranslations {
+    const lang = resolveLanguage(language);
+    return emailTranslations[lang][key];
 }
 
 /**

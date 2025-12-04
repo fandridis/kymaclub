@@ -65,6 +65,20 @@ crons.interval(
     {}
 );
 
+/**
+ * Cleanup Expired Pending Auth Languages - Runs every 6 hours
+ * 
+ * Removes expired pendingAuthLanguages records to keep the table clean.
+ * These records are temporary storage for language preferences during the OTP flow
+ * and should be cleaned up after 12 hours (their expiry time).
+ */
+crons.interval(
+    "cleanup-expired-pending-auth-languages",
+    { hours: 6 },
+    internal.mutations.core.cleanupExpiredPendingAuthLanguages,
+    {}
+);
+
 
 /**
  * Mark No-Shows Internal Mutation

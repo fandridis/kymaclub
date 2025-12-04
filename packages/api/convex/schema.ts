@@ -1403,6 +1403,17 @@ export const subscriptionEventsFields = {
   ...auditFields,
 };
 
+/**
+ * Pending Auth Languages - Temporary storage for language preference during OTP auth flow
+ * Used to pass language context from client to sendVerificationRequest callback
+ * Records are automatically cleaned up after 12 hours
+ */
+export const pendingAuthLanguagesFields = {
+  email: v.string(),
+  language: v.string(), // 'en' | 'el'
+  expiresAt: v.number(), // Unix timestamp for auto-cleanup (12 hours from creation)
+};
+
 /***************************************************************
  * Database schema
  ***************************************************************/
@@ -1695,5 +1706,13 @@ export default defineSchema({
     .index("by_class_instance_deleted", ["classInstanceId", "deleted"])
     .index("by_business_status", ["businessId", "status"])
     .index("by_business_widget_config_type", ["businessId", "widgetConfig.type"]),
+
+  /**
+   * Pending Auth Languages - Temporary storage for language preference during OTP auth flow
+   * Records are automatically cleaned up after 12 hours via cron job
+   */
+  pendingAuthLanguages: defineTable(pendingAuthLanguagesFields)
+    .index("by_email", ["email"])
+    .index("by_expiresAt", ["expiresAt"]),
 
 });

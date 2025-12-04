@@ -8,7 +8,7 @@ import { StackScreenHeader } from '../../components/StackScreenHeader';
 import { useTypedTranslation } from '../../i18n/typed';
 import { useLogout } from '../../hooks/useLogout';
 import { DeleteAccountModal } from '../../components/DeleteAccountModal';
-import { CommonActions, NavigationProp, useNavigation } from '@react-navigation/native';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '..';
 
 export function SettingsAccountScreen() {
@@ -22,15 +22,8 @@ export function SettingsAccountScreen() {
         // 1. Soft delete the user (marks for permanent deletion in 7 days)
         await deleteUser();
 
-        // 2. Logout and navigate to landing
-        await logout(() => {
-            navigation.dispatch(
-                CommonActions.reset({
-                    index: 0,
-                    routes: [{ name: "Landing" }],
-                })
-            );
-        });
+        // 2. Logout - conditional screen rendering automatically shows Landing
+        await logout();
     };
 
     return (

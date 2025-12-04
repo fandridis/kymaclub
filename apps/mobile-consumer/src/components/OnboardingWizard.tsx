@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StatusBar, TextInput, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar, TextInput, Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
-import { CommonActions, useNavigation } from '@react-navigation/native';
 import { useLogout } from '../hooks/useLogout';
 import { getCityOptions } from '@repo/utils/constants';
+import { HeaderLanguageSwitcher } from './HeaderLanguageSwitcher';
 
 interface OnboardingData {
   userName?: string;
@@ -37,7 +37,6 @@ const THEME = {
 };
 
 export default function OnboardingWizard() {
-  const navigation = useNavigation();
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     city: CITY_OPTIONS[0]?.value
   });
@@ -70,12 +69,8 @@ export default function OnboardingWizard() {
         city: onboardingData.city,
       });
 
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: "News" }],
-        })
-      );
+      // No manual navigation needed - conditional screen rendering
+      // automatically shows News when hasConsumerOnboarded changes to true
 
     } catch (error) {
       console.error('Failed to complete onboarding:', error);
@@ -167,19 +162,13 @@ export default function OnboardingWizard() {
 
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: THEME.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: THEME.background }} edges={['top', 'left', 'right', 'bottom']}>
       <StatusBar barStyle="dark-content" backgroundColor={THEME.background} />
 
-      {/* Header */}
-      <View style={{
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 24,
-        paddingTop: 16,
-        paddingBottom: 24
-      }}>
-        {/* Progress Indicators - Hidden for single step */}
+      {/* Header Row with Language Switcher */}
+      <View style={onboardingStyles.headerRow}>
+        <View style={onboardingStyles.headerSpacer} />
+        <HeaderLanguageSwitcher />
       </View>
 
       {/* Content */}
@@ -276,14 +265,9 @@ export default function OnboardingWizard() {
           {/* Back to Sign In Link */}
           <TouchableOpacity
             onPress={async () => {
-              await logout(() => {
-                navigation.dispatch(
-                  CommonActions.reset({
-                    index: 0,
-                    routes: [{ name: "Landing" }],
-                  })
-                );
-              });
+              // No manual navigation needed - conditional screen rendering
+              // automatically shows Landing when auth state changes
+              await logout();
             }}
             disabled={isSubmitting}
             style={{
@@ -305,3 +289,16 @@ export default function OnboardingWizard() {
     </SafeAreaView>
   );
 }
+
+const onboardingStyles = StyleSheet.create({
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  headerSpacer: {
+    flex: 1,
+  },
+});

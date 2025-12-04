@@ -1,8 +1,7 @@
-// components/create-account-modal.tsx
-import React, { useState, useEffect } from 'react';
+// create-account-modal-screen.tsx
+import React, { useState } from 'react';
 import {
     View,
-    Text,
     StyleSheet,
     TouchableOpacity,
     KeyboardAvoidingView,
@@ -11,36 +10,31 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { CommonActions, useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { X } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import { LocationGate } from '../components/location-gate';
 import { WaitlistData, WaitlistForm } from '../components/waitlist-form';
 import { RegisterForm } from '../components/register-form';
 import { useTypedTranslation } from '../../../i18n/typed';
-import { useCurrentUser } from '../../../hooks/useCurrentUser';
+import { HeaderLanguageSwitcher } from '../../../components/HeaderLanguageSwitcher';
 
 type FlowState = 'location-check' | 'register' | 'waitlist';
 
+/**
+ * Create Account Modal Screen
+ * 
+ * No manual redirect logic needed - conditional screen rendering handles navigation:
+ * - This screen is only shown in the unauthenticated group
+ * - When user authenticates, the screen automatically disappears
+ * - The appropriate screen (Onboarding or News) is shown automatically
+ */
 export function CreateAccountModalScreen() {
     const navigation = useNavigation();
     const { t } = useTypedTranslation();
-    const { user } = useCurrentUser();
     const [flowState, setFlowState] = useState<FlowState>('location-check');
     const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
     const [serviceAreaCheck, setServiceAreaCheck] = useState<any>(null);
-
-    useEffect(() => {
-        if (user) {
-            const redirectTo = user.hasConsumerOnboarded ? 'News' : 'Onboarding';
-            navigation.dispatch(
-                CommonActions.reset({
-                    index: 0,
-                    routes: [{ name: redirectTo }],
-                })
-            );
-        }
-    }, [user, navigation]);
 
     const handleLocationVerified = () => {
         setFlowState('register');
@@ -113,12 +107,16 @@ export function CreateAccountModalScreen() {
             >
                 <View style={styles.header}>
                     <View style={styles.dragIndicator} />
-                    <TouchableOpacity
-                        style={styles.closeButton}
-                        onPress={() => navigation.goBack()}
-                    >
-                        <X size={24} color="#333" />
-                    </TouchableOpacity>
+                    <View style={styles.headerRow}>
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={() => navigation.goBack()}
+                        >
+                            <X size={24} color="#333" />
+                        </TouchableOpacity>
+                        <View style={styles.headerSpacer} />
+                        <HeaderLanguageSwitcher />
+                    </View>
                 </View>
 
                 <View style={styles.content}>
@@ -140,7 +138,7 @@ const styles = StyleSheet.create({
     header: {
         alignItems: 'center',
         paddingTop: 8,
-        paddingBottom: 16,
+        paddingBottom: 8,
     },
     dragIndicator: {
         width: 36,
@@ -148,10 +146,17 @@ const styles = StyleSheet.create({
         backgroundColor: '#E0E0E0',
         borderRadius: 3,
     },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        width: '100%',
+        paddingHorizontal: 8,
+        paddingTop: 8,
+    },
+    headerSpacer: {
+        flex: 1,
+    },
     closeButton: {
-        position: 'absolute',
-        right: 16,
-        top: 16,
         padding: 8,
     },
     content: {

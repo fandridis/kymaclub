@@ -21,7 +21,6 @@ import { MembershipCard } from '../../components/MembershipCard';
 import { QuickBuyCreditsSheet } from '../../components/QuickBuyCreditsSheet';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { RootStackParamList } from '../index';
-import { CommonActions } from "@react-navigation/native";
 import { useLogout } from '../../hooks/useLogout';
 import { useTypedTranslation } from '../../i18n/typed';
 
@@ -158,15 +157,9 @@ export function SettingsScreen() {
           text: t('auth.signOut'),
           style: 'destructive',
           onPress: async () => {
-            await logout(() => {
-              // Navigate to Landing screen after logout
-              navigation.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [{ name: "Landing" }],
-                })
-              );
-            });
+            // No manual navigation needed - conditional screen rendering
+            // automatically shows Landing when auth state changes
+            await logout();
           }
         }
       ]
