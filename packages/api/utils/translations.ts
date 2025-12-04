@@ -1,0 +1,188 @@
+/**
+ * Backend translations for push notifications and emails
+ * Mirrors the mobile app's supported languages (en, el)
+ */
+
+export const SUPPORTED_LANGUAGES = ['en', 'el'] as const;
+export type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number];
+export const DEFAULT_LANGUAGE: SupportedLanguage = 'el'; // Default to Greek for users without language preference
+
+// Push notification translations
+const pushNotificationTranslations = {
+    en: {
+        credits_arrived: {
+            title: 'Credits arrived!',
+            body: 'You have been gifted {{credits}} credits from KymaClub.',
+        },
+        booking_cancelled_by_business: {
+            title: 'Booking cancelled',
+            body: 'Your booking for {{className}} - {{venueName}} at {{classTime}} has been cancelled by the venue.',
+        },
+        booking_approved: {
+            title: 'Booking approved!',
+            body: 'Your booking for {{className}} at {{venueName}} has been approved.',
+        },
+        booking_rejected: {
+            title: 'Booking request declined',
+            body: 'Your booking request for {{className}} was declined.{{reason}} Your credits have been refunded.',
+        },
+        class_rebookable: {
+            title: 'Booking Available Again',
+            body: 'Your cancelled booking for {{className}} - {{venueName}} at {{classTime}} is now available to rebook.',
+        },
+        credits_received_subscription_renewal: {
+            title: 'Monthly credits renewed!',
+            body: "You've received {{credits}} credits from your {{planName}} subscription.",
+        },
+        credits_received_subscription_initial: {
+            title: 'Welcome credits received!',
+            body: "You've received {{credits}} credits from your {{planName}} subscription.",
+        },
+        welcome_bonus: {
+            title: 'Welcome to KymaClub!',
+            body: "You've received {{credits}} welcome bonus credits!",
+        },
+    },
+    el: {
+        credits_arrived: {
+            title: 'Τα credits έφτασαν!',
+            body: 'Μόλις λάβατε δώρο {{credits}} credits από το KymaClub.',
+        },
+        booking_cancelled_by_business: {
+            title: 'Η κράτηση ακυρώθηκε',
+            body: 'Η κράτησή σας για {{className}} - {{venueName}} στις {{classTime}} ακυρώθηκε από το κατάστημα.',
+        },
+        booking_approved: {
+            title: 'Η κράτηση εγκρίθηκε!',
+            body: 'Η κράτησή σας για {{className}} στο {{venueName}} εγκρίθηκε.',
+        },
+        booking_rejected: {
+            title: 'Το αίτημα κράτησης απορρίφθηκε',
+            body: 'Το αίτημα κράτησης για {{className}} απορρίφθηκε. Τα credits σας επιστράφηκαν.',
+        },
+        class_rebookable: {
+            title: 'Η κράτηση είναι ξανά διαθέσιμη',
+            body: 'Η ακυρωμένη κράτησή σας για {{className}} - {{venueName}} στις {{classTime}} είναι τώρα διαθέσιμη για νέα κράτηση.',
+        },
+        credits_received_subscription_renewal: {
+            title: 'Τα μηνιαία credits ανανεώθηκαν!',
+            body: 'Λάβατε {{credits}} credits από τη συνδρομή {{planName}}.',
+        },
+        credits_received_subscription_initial: {
+            title: 'Λήφθηκαν τα credits καλωσορίσματος!',
+            body: 'Λάβατε {{credits}} credits από τη συνδρομή {{planName}}.',
+        },
+        welcome_bonus: {
+            title: 'Καλώς ήρθατε στο KymaClub!',
+            body: 'Λάβατε {{credits}} bonus credits καλωσορίσματος!',
+        },
+    },
+} as const;
+
+// Email translations
+const emailTranslations = {
+    en: {
+        credits_gift: {
+            subject: "🎁 You've been gifted {{credits}} credits!",
+            greeting: 'Hi {{name}}, KymaClub have just sent you',
+            credits_text: '{{credits}} credits',
+            note_label: 'Note',
+            balance_title: '📊 Your Credit Balance',
+            balance_label: 'Total Credits Available',
+            cta_button: 'Book a Class Now',
+            footer: "Questions? We're here to help! Contact us at",
+        },
+    },
+    el: {
+        credits_gift: {
+            subject: '🎁 Σας δωρήθηκαν {{credits}} credits!',
+            greeting: 'Γεια σου {{name}}, το KymaClub μόλις σου έστειλε',
+            credits_text: '{{credits}} credits',
+            note_label: 'Σημείωση',
+            balance_title: '📊 Το Υπόλοιπό σου',
+            balance_label: 'Συνολικά Διαθέσιμα Credits',
+            cta_button: 'Κάνε Κράτηση Τώρα',
+            footer: 'Ερωτήσεις; Είμαστε εδώ για να βοηθήσουμε! Επικοινωνήστε μαζί μας στο',
+        },
+    },
+} as const;
+
+type PushNotificationKey = keyof typeof pushNotificationTranslations['en'];
+type EmailKey = keyof typeof emailTranslations['en'];
+
+/**
+ * Resolve language to a supported language, falling back to default
+ */
+export function resolveLanguage(language: string | undefined | null): SupportedLanguage {
+    if (language && SUPPORTED_LANGUAGES.includes(language as SupportedLanguage)) {
+        return language as SupportedLanguage;
+    }
+    return DEFAULT_LANGUAGE;
+}
+
+/**
+ * Simple string interpolation for templates
+ */
+function interpolate(template: string, params: Record<string, string | number>): string {
+    let result = template;
+    for (const [key, value] of Object.entries(params)) {
+        result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), String(value));
+    }
+    return result;
+}
+
+/**
+ * Get push notification text in the user's language
+ */
+export function getPushNotificationText(
+    language: string | undefined | null,
+    key: PushNotificationKey,
+    params?: Record<string, string | number>
+): { title: string; body: string } {
+    const lang = resolveLanguage(language);
+    const template = pushNotificationTranslations[lang][key];
+
+    let title: string = template.title;
+    let body: string = template.body;
+
+    if (params) {
+        title = interpolate(title, params);
+        body = interpolate(body, params);
+    }
+
+    return { title, body };
+}
+
+// Type for email translation content
+type EmailTranslationContent = {
+    subject: string;
+    greeting: string;
+    credits_text: string;
+    note_label: string;
+    balance_title: string;
+    balance_label: string;
+    cta_button: string;
+    footer: string;
+};
+
+/**
+ * Get email content in the user's language
+ */
+export function getEmailTranslations(
+    language: string | undefined | null,
+    key: EmailKey
+): EmailTranslationContent {
+    const lang = resolveLanguage(language);
+    return emailTranslations[lang][key] as EmailTranslationContent;
+}
+
+/**
+ * Interpolate a single text field with parameters
+ */
+export function interpolateText(
+    text: string,
+    params: Record<string, string | number>
+): string {
+    return interpolate(text, params);
+}
+

@@ -9,6 +9,7 @@ import { formatCentsAsEuros } from "@repo/utils/credits";
 import { createClassCancellationEmail } from "../emails/templates";
 import { createEmailTemplate } from "../emails/templates";
 import { createReviewNotificationEmail } from "../emails/templates";
+import { getEmailTranslations, interpolateText } from "../utils/translations";
 
 /***************************************************************
  * Email Service - Production-ready email operations with Resend
@@ -310,44 +311,50 @@ export const emailService = {
             creditsGifted: number;
             totalCredits: number;
             giftMessage?: string;
+            language?: string; // User's language preference for localized email
         };
     }): Promise<{ emailId: string; success: boolean }> => {
         try {
-            const subject = `🎁 You've been gifted ${args.creditsGifted} credits!`;
+            // Get translations for user's language
+            const t = getEmailTranslations(args.language, 'credits_gift');
+
+            const subject = interpolateText(t.subject, { credits: args.creditsGifted });
+            const greeting = interpolateText(t.greeting, { name: args.customerName });
+            const creditsText = interpolateText(t.credits_text, { credits: args.creditsGifted });
 
             const htmlContent = createEmailTemplate({
                 title: subject,
                 content: `
                     <div style="text-align: center; margin-bottom: 32px;">
                         <p style="font-size: 18px; color: #1e293b; margin: 0;">
-                            Hi ${args.customerName}, KymaClub have just sent you <strong style="color: #059669;">${args.creditsGifted} credits</strong>!
+                            ${greeting} <strong style="color: #059669;">${creditsText}</strong>!
                         </p>
                     </div>
 
                     ${args.giftMessage ? `
                     <div style="margin: 0 0 24px 0;">
-                        <p style="color: #6B7280; font-size: 14px; margin: 0 0 4px 0; font-weight: 500;">Note</p>
+                        <p style="color: #6B7280; font-size: 14px; margin: 0 0 4px 0; font-weight: 500;">${t.note_label}</p>
                         <p style="color: #374151; margin: 0; font-size: 14px;">${args.giftMessage}</p>
                     </div>
                     ` : ''}
 
                     <div style="background: #F9FAFB; border-radius: 12px; padding: 24px; margin-bottom: 32px;">
-                        <h3 style="color: #059669; font-size: 18px; margin: 0 0 16px 0;">📊 Your Credit Balance</h3>
+                        <h3 style="color: #059669; font-size: 18px; margin: 0 0 16px 0;">${t.balance_title}</h3>
                         <table width="100%" cellpadding="0" cellspacing="0" style="background: white; border-radius: 8px;">
                             <tr>
-                                <td style="padding: 16px; color: #4B5563; font-size: 16px;">Total Credits Available</td>
+                                <td style="padding: 16px; color: #4B5563; font-size: 16px;">${t.balance_label}</td>
                                 <td style="padding: 16px; color: #059669; font-size: 20px; font-weight: bold; text-align: right;">${args.totalCredits}</td>
                             </tr>
                         </table>
                     </div>
 
                     <div style="text-align: center; margin: 32px 0;">
-                        <a href="https://app.orcavo.com" style="background: #059669; color: white; padding: 16px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; display: inline-block;">Book a Class Now</a>
+                        <a href="https://app.orcavo.com" style="background: #059669; color: white; padding: 16px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; display: inline-block;">${t.cta_button}</a>
                     </div>
 
                     <div style="text-align: center; margin-top: 40px; padding-top: 24px; border-top: 1px solid #E5E7EB;">
                         <p style="color: #6B7280; font-size: 14px; margin: 0;">
-                            Questions? We're here to help! Contact us at 
+                            ${t.footer} 
                             <a href="mailto:support@orcavo.com" style="color: #059669; text-decoration: none;">support@orcavo.com</a>
                         </p>
                     </div>

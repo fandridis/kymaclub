@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useNavigation } from '@react-navigation/native';
 import { CheckIcon } from 'lucide-react-native';
+import { useMutation } from 'convex/react';
+import { api } from '@repo/api/convex/_generated/api';
 import { StackScreenHeader } from '../../components/StackScreenHeader';
 import { SettingsGroup } from '../../components/Settings';
 import { useTypedTranslation } from '../../i18n/typed';
@@ -17,10 +19,20 @@ const LANGUAGES = [
 export function LanguageSelectionScreen() {
     const navigation = useNavigation();
     const { t, i18n } = useTypedTranslation();
+    const updateUserLanguage = useMutation(api.mutations.core.updateUserLanguage);
 
     const handleLanguageChange = async (languageCode: string) => {
         try {
+            // Update local i18n first for immediate UI feedback
             await i18n.changeLanguage(languageCode);
+
+            // Sync to server for localized push notifications and emails
+            try {
+                await updateUserLanguage({ language: languageCode });
+            } catch (serverError) {
+                // Don't block on server error - local change is still saved
+                console.warn('Failed to sync language to server:', serverError);
+            }
         } catch (error) {
             console.error('Error changing language:', error);
             Alert.alert(t('settings.language.error'), t('settings.language.failedToChange'));

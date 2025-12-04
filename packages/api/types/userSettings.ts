@@ -2,6 +2,7 @@ import { Doc } from "../convex/_generated/dataModel";
 
 export type UserSettings = Doc<"userSettings">;
 export type UserSettingsNotifications = NonNullable<UserSettings['notifications']>;
+export type UserLanguage = UserSettings['language'];
 
 export const DEFAULT_USER_NOTIFICATION_PREFERENCES: UserSettingsNotifications['preferences'] = {
     booking_confirmation: { email: true, web: true, push: true },

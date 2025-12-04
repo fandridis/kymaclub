@@ -8,6 +8,26 @@ import { coreValidations } from "../validations/core";
 
 export const coreService = {
     /**
+     * Get user settings by user ID
+     * Returns null if no settings exist for the user
+     */
+    getUserSettings: async ({
+        ctx,
+        userId,
+    }: {
+        ctx: QueryCtx | MutationCtx;
+        userId: Id<"users">;
+    }): Promise<Doc<"userSettings"> | null> => {
+        const settings = await ctx.db
+            .query("userSettings")
+            .withIndex("by_user", q => q.eq("userId", userId))
+            .filter(q => q.neq(q.field("deleted"), true))
+            .first();
+
+        return settings;
+    },
+
+    /**
      * Create a new business and an initial venue for the authenticated user (onboarding)
      */
     createBusinessWithVenue: async ({ ctx, args, user }: { ctx: MutationCtx, args: CreateBusinessWithVenueArgs, user: Doc<"users"> }): Promise<{ createdBusinessId: Id<"businesses">; createdVenueId: Id<"venues"> }> => {
@@ -150,5 +170,46 @@ export const coreService = {
         if (!user) return { user: null, business: null };
         const business = user.businessId ? await ctx.db.get(user.businessId) : null;
         return { user, business };
+    },
+
+    /**
+     * Update user's language preference for notifications and emails
+     */
+    updateUserLanguage: async ({
+        ctx,
+        args,
+        user,
+    }: {
+        ctx: MutationCtx;
+        args: {
+            language: string;
+        };
+        user: Doc<"users">;
+    }): Promise<{ success: boolean }> => {
+        const now = Date.now();
+
+        // Check if settings exist
+        const existingSettings = await ctx.db
+            .query("userSettings")
+            .withIndex("by_user", q => q.eq("userId", user._id))
+            .filter(q => q.neq(q.field("deleted"), true))
+            .first();
+
+        if (existingSettings) {
+            await ctx.db.patch(existingSettings._id, {
+                language: args.language,
+                updatedAt: now,
+                updatedBy: user._id,
+            });
+        } else {
+            await ctx.db.insert("userSettings", {
+                userId: user._id,
+                language: args.language,
+                createdAt: now,
+                createdBy: user._id,
+            });
+        }
+
+        return { success: true };
     },
 };

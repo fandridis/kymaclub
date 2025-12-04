@@ -271,3 +271,21 @@ export const authorizeBusinessEmail = mutation({
         return { authorizedId, message: `Email ${args.email} authorized for business account creation` };
     }
 });
+
+/***************************************************************
+ * Update User Language Preference
+ * Used for localizing push notifications and emails
+ ***************************************************************/
+export const updateUserLanguageArgs = v.object({
+    language: v.string(),
+});
+export type UpdateUserLanguageArgs = Infer<typeof updateUserLanguageArgs>;
+
+export const updateUserLanguage = mutationWithTriggers({
+    args: updateUserLanguageArgs,
+    returns: v.object({ success: v.boolean() }),
+    handler: async (ctx, args) => {
+        const user = await getAuthenticatedUserOrThrow(ctx);
+        return coreService.updateUserLanguage({ ctx, args, user });
+    }
+});

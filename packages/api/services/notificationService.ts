@@ -9,6 +9,8 @@ import { PushNotifications } from "@convex-dev/expo-push-notifications";
 import { createNotificationWithDeepLink } from "../utils/deep-linking";
 import { UserSettingsNotifications, DEFAULT_USER_NOTIFICATION_PREFERENCES } from "../types/userSettings";
 import { NotificationType } from "../types/notification";
+import { getPushNotificationText } from "../utils/translations";
+import { coreService } from "./coreService";
 
 /***************************************************************
  * Notification Service - All notification-related operations
@@ -323,11 +325,7 @@ export const notificationService = {
         ctx: QueryCtx;
         user: Doc<"users">;
     }): Promise<Doc<"userSettings"> | null> => {
-        const settings = await ctx.db
-            .query("userSettings")
-            .withIndex("by_user", q => q.eq("userId", user._id))
-            .filter(q => q.neq(q.field("deleted"), true))
-            .first();
+        const settings = await coreService.getUserSettings({ ctx, userId: user._id });
 
         if (settings?.notifications) {
             settings.notifications.preferences = {
@@ -357,11 +355,7 @@ export const notificationService = {
         const now = Date.now();
 
         // Check if settings exist
-        const existingSettings = await ctx.db
-            .query("userSettings")
-            .withIndex("by_user", q => q.eq("userId", user._id))
-            .filter(q => q.neq(q.field("deleted"), true))
-            .first();
+        const existingSettings = await coreService.getUserSettings({ ctx, userId: user._id });
 
         if (existingSettings) {
             // Update existing settings
@@ -717,11 +711,7 @@ export const notificationService = {
         }
 
         // get the user notification settings
-        const userNotificationSettings = await ctx.db
-            .query("userSettings")
-            .withIndex("by_user", q => q.eq("userId", userId))
-            .filter(q => q.neq(q.field("deleted"), true))
-            .first();
+        const userNotificationSettings = await coreService.getUserSettings({ ctx, userId });
 
         if (userNotificationSettings?.notifications) {
             userNotificationSettings.notifications.preferences = {
@@ -842,13 +832,7 @@ export const notificationService = {
         }
 
         // Get user notification settings
-        const userNotificationSettings = await ctx.db
-            .query("userSettings")
-            .withIndex("by_user", q => q.eq("userId", userId))
-            .filter(q => q.neq(q.field("deleted"), true))
-            .first();
-
-
+        const userNotificationSettings = await coreService.getUserSettings({ ctx, userId });
 
         // Send web notification to user if they have opted in
         if (userNotificationSettings?.notifications?.preferences?.class_rebookable?.web) {
@@ -964,13 +948,7 @@ export const notificationService = {
         }
 
         // Get user notification settings
-        const userNotificationSettings = await ctx.db
-            .query("userSettings")
-            .withIndex("by_user", q => q.eq("userId", userId))
-            .filter(q => q.neq(q.field("deleted"), true))
-            .first();
-
-
+        const userNotificationSettings = await coreService.getUserSettings({ ctx, userId });
 
         // Determine if this is an initial subscription or renewal
         const isRenewal = eventType === "invoice.payment_succeeded" || eventType === "invoice.paid";
@@ -1072,15 +1050,18 @@ export const notificationService = {
             });
         }
 
-        // Get user notification settings
-        const userNotificationSettings = await ctx.db
-            .query("userSettings")
-            .withIndex("by_user", q => q.eq("userId", userId))
-            .filter(q => q.neq(q.field("deleted"), true))
-            .first();
+        // Get user notification settings (includes language preference)
+        const userNotificationSettings = await coreService.getUserSettings({ ctx, userId });
 
-        const title = "Credits Gifted";
-        const message = `You have been gifted ${creditsGifted} credits from KymaClub!`;
+        // Get user's language preference for localized notifications
+        const userLanguage = userNotificationSettings?.language;
+
+        // Get localized push notification text
+        const { title, body: message } = getPushNotificationText(
+            userLanguage,
+            'credits_arrived',
+            { credits: creditsGifted }
+        );
 
         // Send web notification if user has opted in (or use defaults if no settings exist)
         const shouldSendWeb = userNotificationSettings?.notifications?.preferences?.credits_received_admin_gift?.web ?? true;
@@ -1101,6 +1082,7 @@ export const notificationService = {
                     creditsGifted: creditsGifted,
                     totalCredits: newBalance,
                     giftMessage: payload.giftMessage,
+                    language: userLanguage, // Pass language for localized email
                 });
             } catch (error) {
                 console.error('Error sending credits gifted email notification:', error);
@@ -1113,8 +1095,8 @@ export const notificationService = {
         if (shouldSendPush) {
             const notificationContent = createNotificationWithDeepLink(
                 'credits_received_admin_gift',
-                title,
-                message,
+                title,   // Localized title
+                message, // Localized message
                 {
                     additionalData: {
                         creditsReceived: creditsGifted,
@@ -1161,11 +1143,7 @@ export const notificationService = {
         }
 
         // Get user notification settings (may not exist for new users)
-        const userNotificationSettings = await ctx.db
-            .query("userSettings")
-            .withIndex("by_user", q => q.eq("userId", userId))
-            .filter(q => q.neq(q.field("deleted"), true))
-            .first();
+        const userNotificationSettings = await coreService.getUserSettings({ ctx, userId });
 
         const title = "Welcome to KymaClub!";
         const message = `You've received ${welcomeCredits} welcome bonus credits!`;
@@ -1430,11 +1408,7 @@ export const notificationService = {
         }
 
         // Get user notification settings
-        const userNotificationSettings = await ctx.db
-            .query("userSettings")
-            .withIndex("by_user", q => q.eq("userId", userId))
-            .filter(q => q.neq(q.field("deleted"), true))
-            .first();
+        const userNotificationSettings = await coreService.getUserSettings({ ctx, userId });
 
         if (userNotificationSettings?.notifications) {
             userNotificationSettings.notifications.preferences = {
@@ -1560,11 +1534,7 @@ export const notificationService = {
         }
 
         // Get user notification settings
-        const userNotificationSettings = await ctx.db
-            .query("userSettings")
-            .withIndex("by_user", q => q.eq("userId", userId))
-            .filter(q => q.neq(q.field("deleted"), true))
-            .first();
+        const userNotificationSettings = await coreService.getUserSettings({ ctx, userId });
 
         if (userNotificationSettings?.notifications) {
             userNotificationSettings.notifications.preferences = {

@@ -153,6 +153,7 @@ export const sendCreditsGiftEmail = internalAction({
         creditsGifted: v.number(),
         totalCredits: v.number(),
         giftMessage: v.optional(v.string()),
+        language: v.optional(v.string()), // User's language preference for localized email
     }),
     handler: async (ctx, args) => {
         try {
@@ -164,6 +165,7 @@ export const sendCreditsGiftEmail = internalAction({
                     creditsGifted: args.creditsGifted,
                     totalCredits: args.totalCredits,
                     giftMessage: args.giftMessage,
+                    language: args.language,
                 }
             });
 

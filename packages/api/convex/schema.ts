@@ -1147,9 +1147,8 @@ export const userSettingsFields = {
     exampleNewFeatureBannerDismissed: v.optional(v.boolean()),
   })),
 
-  // Future settings can be added here
-  // theme: v.optional(v.string()),
-  // language: v.optional(v.string()),
+  // Language preference for notifications and emails (e.g., 'en', 'el')
+  language: v.optional(v.string()),
 
   ...auditFields,
   ...softDeleteFields,
