@@ -132,6 +132,39 @@ export const getSetupParticipants = query({
     },
 });
 
+// Validator for match objects (shared between state and preview)
+const matchValidator = v.object({
+    id: v.string(),
+    roundNumber: v.number(),
+    courtId: v.string(),
+    team1: v.array(v.string()),
+    team2: v.array(v.string()),
+    team1Score: v.optional(v.number()),
+    team2Score: v.optional(v.number()),
+    status: v.union(v.literal("scheduled"), v.literal("in_progress"), v.literal("completed")),
+    completedAt: v.optional(v.number()),
+});
+
+// Validator for standing objects (shared between state and preview)
+const standingValidator = v.object({
+    participantId: v.string(),
+    matchesPlayed: v.number(),
+    matchesWon: v.number(),
+    matchesLost: v.number(),
+    pointsScored: v.number(),
+    pointsConceded: v.number(),
+    pointsDifference: v.number(),
+});
+
+// Validator for preview schedule
+const previewScheduleValidator = v.object({
+    totalRounds: v.number(),
+    matches: v.array(matchValidator),
+    standings: v.array(standingValidator),
+    placeholderCount: v.number(),
+    isPreview: v.literal(true),
+});
+
 /**
  * Get Americano tournament state
  * Returns full tournament state with summary
@@ -156,26 +189,8 @@ export const getAmericanoTournamentState = query({
                 v.object({
                     currentRound: v.number(),
                     totalRounds: v.number(),
-                    matches: v.array(v.object({
-                        id: v.string(),
-                        roundNumber: v.number(),
-                        courtId: v.string(),
-                        team1: v.array(v.string()),
-                        team2: v.array(v.string()),
-                        team1Score: v.optional(v.number()),
-                        team2Score: v.optional(v.number()),
-                        status: v.union(v.literal("scheduled"), v.literal("in_progress"), v.literal("completed")),
-                        completedAt: v.optional(v.number()),
-                    })),
-                    standings: v.array(v.object({
-                        participantId: v.string(),
-                        matchesPlayed: v.number(),
-                        matchesWon: v.number(),
-                        matchesLost: v.number(),
-                        pointsScored: v.number(),
-                        pointsConceded: v.number(),
-                        pointsDifference: v.number(),
-                    })),
+                    matches: v.array(matchValidator),
+                    standings: v.array(standingValidator),
                     // Participants snapshot (after tournament starts)
                     participants: v.array(participantSnapshotValidator),
                     startedAt: v.optional(v.number()),
@@ -194,18 +209,7 @@ export const getAmericanoTournamentState = query({
                     completedMatches: v.number(),
                     totalMatches: v.number(),
                     isComplete: v.boolean(),
-                    leader: v.union(
-                        v.object({
-                            participantId: v.string(),
-                            matchesPlayed: v.number(),
-                            matchesWon: v.number(),
-                            matchesLost: v.number(),
-                            pointsScored: v.number(),
-                            pointsConceded: v.number(),
-                            pointsDifference: v.number(),
-                        }),
-                        v.null()
-                    ),
+                    leader: v.union(standingValidator, v.null()),
                 }),
                 v.null()
             ),
@@ -214,6 +218,18 @@ export const getAmericanoTournamentState = query({
                     className: v.string(),
                     venueName: v.string(),
                     startTime: v.number(),
+                }),
+                v.null()
+            ),
+            // Preview schedule - generated on-the-fly during setup/ready mode
+            previewSchedule: v.union(previewScheduleValidator, v.null()),
+            // Start time window check - whether tournament can be started now
+            startTimeCheck: v.union(
+                v.object({
+                    canStart: v.boolean(),
+                    reason: v.optional(v.string()),
+                    allowedStartTime: v.optional(v.number()),
+                    minutesUntilAllowed: v.optional(v.number()),
                 }),
                 v.null()
             ),

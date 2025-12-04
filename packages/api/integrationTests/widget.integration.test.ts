@@ -73,8 +73,9 @@ describe('Widget System Integration Tests', () => {
             color: '#FFD700',
         });
 
-        // Create test class instance (future date)
-        const startTime = Date.now() + (24 * 60 * 60 * 1000); // Tomorrow
+        // Create test class instance (within start time window - 1 hour from now)
+        // Tournament start rule allows starting within 2 hours of class time
+        const startTime = Date.now() + (1 * 60 * 60 * 1000); // 1 hour from now
         const endTime = startTime + (2 * 60 * 60 * 1000);
         instanceId = await createTestClassInstance(asUser, templateId, startTime, endTime);
     });

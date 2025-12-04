@@ -2,24 +2,28 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, LayoutAnimation, UIManager, Platform } from 'react-native';
 import { ChevronDown, Pencil, Minus, Plus, Check, X } from 'lucide-react-native';
 import { theme } from '../../theme';
-import type { TournamentAmericanoMatch, ParticipantSnapshot, TournamentAmericanoMatchPoints, TournamentCourt } from '@repo/api/types/widget';
+import type { TournamentAmericanoMatch, ParticipantSnapshot, TournamentAmericanoMatchPoints, TournamentCourt, SetupParticipant } from '@repo/api/types/widget';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-interface TournamentMatchesProps {
+// Type that works for both setup (SetupParticipant) and active (ParticipantSnapshot)
+type Participant = ParticipantSnapshot | SetupParticipant;
+
+export interface TournamentMatchesProps {
     matches: TournamentAmericanoMatch[];
-    participants: ParticipantSnapshot[]; // Participants snapshot from tournament state
+    participants: Participant[]; // Works for both setup and active modes
     currentRound: number;
     matchPoints: TournamentAmericanoMatchPoints;
     courts: TournamentCourt[];
     onSaveScore?: (matchId: string, team1Score: number, team2Score: number) => Promise<void>;
     canRecordScores?: boolean;
     currentUserParticipantId?: string | null; // Current user's participant ID for permission checks
+    isPreview?: boolean; // Whether this is showing a preview schedule
 }
 
-export function TournamentMatches({ matches, participants, currentRound, matchPoints, courts, onSaveScore, canRecordScores = false, currentUserParticipantId }: TournamentMatchesProps) {
+export function TournamentMatches({ matches, participants, currentRound, matchPoints, courts, onSaveScore, canRecordScores = false, currentUserParticipantId, isPreview = false }: TournamentMatchesProps) {
     const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set([currentRound]));
     const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
     const [team1Score, setTeam1Score] = useState(0);
@@ -34,8 +38,20 @@ export function TournamentMatches({ matches, participants, currentRound, matchPo
         courts.map(c => [c.id, c.name])
     );
 
+    // Helper to check if an ID is a placeholder
+    const isPlaceholder = (id: string): boolean => id.startsWith('placeholder_');
+
+    // Get display name for participant ID, handling placeholders
+    const getPlayerName = (id: string): string => {
+        if (isPlaceholder(id)) {
+            const num = id.replace('placeholder_', '');
+            return `TBD #${num}`;
+        }
+        return participantsMap.get(id) || '?';
+    };
+
     const getTeamNames = (teamIds: string[]) => {
-        return teamIds.map(id => participantsMap.get(id) || '?');
+        return teamIds.map(id => getPlayerName(id));
     };
 
     const getCourtName = (courtId: string) => {

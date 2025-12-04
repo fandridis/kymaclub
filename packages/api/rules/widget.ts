@@ -302,6 +302,79 @@ const canStartTournament = (
 };
 
 /***************************************************************
+ * Tournament Start Time Rules
+ ***************************************************************/
+
+/**
+ * Hours before class start time when tournament can be started
+ * This allows organizers to start tournaments shortly before class time
+ * while preventing premature starts that could cause participant sync issues
+ */
+const START_WINDOW_HOURS = 2;
+
+/**
+ * Result of start time check
+ */
+interface StartTimeCheckResult {
+    canStart: boolean;
+    reason?: string;
+    allowedStartTime?: number;
+    minutesUntilAllowed?: number;
+}
+
+/**
+ * Check if tournament can be started based on class start time
+ * 
+ * Rules:
+ * - Tournament can only be started within START_WINDOW_HOURS hours of class start time
+ * - This prevents premature starts that could cause participant sync issues
+ * - Returns detailed info about when start will be allowed
+ */
+const checkStartTimeWindow = (
+    classStartTime: number
+): StartTimeCheckResult => {
+    const now = Date.now();
+    const startWindowMs = START_WINDOW_HOURS * 60 * 60 * 1000;
+    const allowedStartTime = classStartTime - startWindowMs;
+
+    if (now >= allowedStartTime) {
+        return { canStart: true };
+    }
+
+    const minutesUntilAllowed = Math.ceil((allowedStartTime - now) / (60 * 1000));
+    const hoursUntilAllowed = Math.floor(minutesUntilAllowed / 60);
+    const remainingMinutes = minutesUntilAllowed % 60;
+
+    let reason: string;
+    if (hoursUntilAllowed > 0) {
+        reason = `Tournament can be started ${hoursUntilAllowed}h ${remainingMinutes}m before class starts`;
+    } else {
+        reason = `Tournament can be started in ${remainingMinutes} minutes`;
+    }
+
+    return {
+        canStart: false,
+        reason,
+        allowedStartTime,
+        minutesUntilAllowed,
+    };
+};
+
+/**
+ * Enforce start time window (throws error if not within window)
+ */
+const enforceStartTimeWindow = (classStartTime: number): void => {
+    const check = checkStartTimeWindow(classStartTime);
+    if (!check.canStart) {
+        throw new ConvexError({
+            message: check.reason ?? "Tournament cannot be started yet",
+            field: "startTime",
+            code: ERROR_CODES.ACTION_NOT_ALLOWED,
+        });
+    }
+};
+
+/***************************************************************
  * Match Result Rules
  ***************************************************************/
 
@@ -403,6 +476,11 @@ export const widgetRules = {
     // Tournament start
     canStartTournament,
     canStartAmericanoTournament,
+
+    // Start time window
+    checkStartTimeWindow,
+    enforceStartTimeWindow,
+    START_WINDOW_HOURS,
 
     // Match results
     canRecordMatchResult,

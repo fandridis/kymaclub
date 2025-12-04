@@ -13,14 +13,14 @@ import { TournamentMatches } from '../../components/tournament/TournamentMatches
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 
 type TournamentRoute = RouteProp<RootStackParamList, 'Tournament'>;
-type TabType = 'schedule' | 'leaderboard';
+type TabType = 'players' | 'schedule' | 'leaderboard';
 
 export function TournamentScreen() {
     const navigation = useNavigation();
     const route = useRoute<TournamentRoute>();
     const { widgetId } = route.params;
     const { top: topInset, bottom: bottomInset } = useSafeAreaInsets();
-    const [activeTab, setActiveTab] = useState<TabType>('schedule');
+    const [activeTab, setActiveTab] = useState<TabType>('players');
     const { user } = useCurrentUser();
 
     const tournamentState = useQuery(
@@ -83,6 +83,7 @@ export function TournamentScreen() {
     const status = widget.status;
     const isLocked = widget.isLocked === true;
     const isActive = status === 'active';
+    const isSetupOrReady = status === 'setup' || status === 'ready';
     const config = tournamentState.config;
     const state = tournamentState.state;
     const classInfo = tournamentState.classInstanceInfo;
@@ -152,61 +153,132 @@ export function TournamentScreen() {
                     </View>
                 </View>
 
-                {/* Tabs */}
-                {state && (
-                    <View style={styles.tabsContainer}>
-                        <TouchableOpacity
-                            style={[styles.tab, activeTab === 'schedule' && styles.tabActive]}
-                            onPress={() => setActiveTab('schedule')}
-                            activeOpacity={0.7}
-                        >
-                            <Text style={[styles.tabText, activeTab === 'schedule' && styles.tabTextActive]}>
-                                Schedule
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.tab, activeTab === 'leaderboard' && styles.tabActive]}
-                            onPress={() => setActiveTab('leaderboard')}
-                            activeOpacity={0.7}
-                        >
-                            <Text style={[styles.tabText, activeTab === 'leaderboard' && styles.tabTextActive]}>
-                                Leaderboard
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
+                {/* Tabs - Always show */}
+                <View style={styles.tabsContainer}>
+                    <TouchableOpacity
+                        style={[styles.tab, activeTab === 'players' && styles.tabActive]}
+                        onPress={() => setActiveTab('players')}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'players' && styles.tabTextActive]}>
+                            Players
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.tab, activeTab === 'schedule' && styles.tabActive]}
+                        onPress={() => setActiveTab('schedule')}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'schedule' && styles.tabTextActive]}>
+                            Schedule
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.tab, activeTab === 'leaderboard' && styles.tabActive]}
+                        onPress={() => setActiveTab('leaderboard')}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'leaderboard' && styles.tabTextActive]}>
+                            Leaderboard
+                        </Text>
+                    </TouchableOpacity>
+                </View>
 
                 {/* Content */}
-                {state ? (
-                    activeTab === 'schedule' ? (
-                        <>
-                            {/* Round Complete Banner */}
-                            {isWaitingForNextRound && (
-                                <View style={styles.roundCompleteBanner}>
-                                    <View style={styles.roundCompleteIcon}>
-                                        <Clock size={20} color="#f97316" />
-                                    </View>
-                                    <View style={styles.roundCompleteContent}>
-                                        <Text style={styles.roundCompleteTitle}>Round {currentRound} Complete!</Text>
-                                        <Text style={styles.roundCompleteSubtitle}>
-                                            Waiting for organizer to start Round {currentRound + 1}
-                                        </Text>
-                                    </View>
+                {activeTab === 'players' ? (
+                    // Players Tab
+                    <View style={styles.playersContainer}>
+                        {(isSetupOrReady ? setupParticipants : participants).length > 0 ? (
+                            <>
+                                <Text style={styles.sectionTitle}>
+                                    {isSetupOrReady ? 'Registered Players' : 'Tournament Players'}
+                                </Text>
+                                <View style={styles.participantsList}>
+                                    {isSetupOrReady ? (
+                                        setupParticipants.map((p, idx) => (
+                                            <View key={p.id} style={styles.participantRow}>
+                                                <View style={styles.participantNumber}>
+                                                    <Text style={styles.participantNumberText}>{idx + 1}</Text>
+                                                </View>
+                                                <Text style={styles.participantRowName}>{p.displayName}</Text>
+                                                {p.isWalkIn && (
+                                                    <View style={styles.walkInBadge}>
+                                                        <Text style={styles.walkInBadgeText}>Walk-in</Text>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        ))
+                                    ) : (
+                                        participants.map((p, idx) => (
+                                            <View key={p.id} style={styles.participantRow}>
+                                                <View style={styles.participantNumber}>
+                                                    <Text style={styles.participantNumberText}>{idx + 1}</Text>
+                                                </View>
+                                                <Text style={styles.participantRowName}>{p.displayName}</Text>
+                                            </View>
+                                        ))
+                                    )}
                                 </View>
-                            )}
-                            {isTournamentFinished && (
-                                <View style={styles.tournamentFinishedBanner}>
-                                    <View style={styles.tournamentFinishedIcon}>
-                                        <Trophy size={20} color="#10b981" />
-                                    </View>
-                                    <View style={styles.roundCompleteContent}>
-                                        <Text style={styles.tournamentFinishedTitle}>All Matches Complete!</Text>
-                                        <Text style={styles.tournamentFinishedSubtitle}>
-                                            Waiting for organizer to finalize results
-                                        </Text>
-                                    </View>
+                                <Text style={styles.participantCount}>
+                                    {(isSetupOrReady ? setupParticipants : participants).length} player{(isSetupOrReady ? setupParticipants : participants).length !== 1 ? 's' : ''} {isSetupOrReady ? 'registered' : 'in tournament'}
+                                </Text>
+                            </>
+                        ) : (
+                            <View style={styles.emptyPlayersContainer}>
+                                <Trophy size={40} color={theme.colors.zinc[300]} />
+                                <Text style={styles.emptyPlayersTitle}>No Players Yet</Text>
+                                <Text style={styles.emptyPlayersSubtitle}>
+                                    Players will appear here as they register
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                ) : activeTab === 'schedule' ? (
+                    // Schedule Tab
+                    <>
+                        {/* Preview Banner - during setup mode */}
+                        {isSetupOrReady && tournamentState.previewSchedule && (
+                            <View style={styles.previewBanner}>
+                                <Text style={styles.previewBannerTitle}>Preview Mode</Text>
+                                <Text style={styles.previewBannerText}>
+                                    This schedule may change as players join or leave.
+                                    {tournamentState.previewSchedule.placeholderCount > 0 && (
+                                        ` ${tournamentState.previewSchedule.placeholderCount} spot${tournamentState.previewSchedule.placeholderCount !== 1 ? 's' : ''} shown as TBD.`
+                                    )}
+                                </Text>
+                            </View>
+                        )}
+
+                        {/* Round Complete Banner - active mode */}
+                        {state && isWaitingForNextRound && (
+                            <View style={styles.roundCompleteBanner}>
+                                <View style={styles.roundCompleteIcon}>
+                                    <Clock size={20} color="#f97316" />
                                 </View>
-                            )}
+                                <View style={styles.roundCompleteContent}>
+                                    <Text style={styles.roundCompleteTitle}>Round {currentRound} Complete!</Text>
+                                    <Text style={styles.roundCompleteSubtitle}>
+                                        Waiting for organizer to start Round {currentRound + 1}
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
+                        {state && isTournamentFinished && (
+                            <View style={styles.tournamentFinishedBanner}>
+                                <View style={styles.tournamentFinishedIcon}>
+                                    <Trophy size={20} color="#10b981" />
+                                </View>
+                                <View style={styles.roundCompleteContent}>
+                                    <Text style={styles.tournamentFinishedTitle}>All Matches Complete!</Text>
+                                    <Text style={styles.tournamentFinishedSubtitle}>
+                                        Waiting for organizer to finalize results
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
+
+                        {/* Match Schedule - real or preview */}
+                        {state ? (
                             <TournamentMatches
                                 matches={state.matches}
                                 participants={participants}
@@ -217,36 +289,42 @@ export function TournamentScreen() {
                                 canRecordScores={canRecordScores}
                                 currentUserParticipantId={currentUserParticipantId}
                             />
-                        </>
-                    ) : (
+                        ) : tournamentState.previewSchedule ? (
+                            <TournamentMatches
+                                matches={tournamentState.previewSchedule.matches}
+                                participants={setupParticipants}
+                                currentRound={1}
+                                matchPoints={config.matchPoints}
+                                courts={config.courts}
+                                onSaveScore={handleSaveScore}
+                                canRecordScores={false}
+                                currentUserParticipantId={currentUserParticipantId}
+                                isPreview={true}
+                            />
+                        ) : (
+                            <View style={styles.emptyScheduleContainer}>
+                                <Text style={styles.emptyScheduleText}>
+                                    Schedule will be generated when tournament starts
+                                </Text>
+                            </View>
+                        )}
+                    </>
+                ) : (
+                    // Leaderboard Tab
+                    state ? (
                         <TournamentLeaderboard
                             standings={state.standings}
                             participants={participants}
                         />
-                    )
-                ) : (
-                    <View style={styles.waitingContainer}>
-                        <View style={styles.waitingIcon}>
-                            <Trophy size={40} color="#f97316" />
+                    ) : (
+                        <View style={styles.emptyLeaderboardContainer}>
+                            <Trophy size={40} color={theme.colors.zinc[300]} />
+                            <Text style={styles.emptyLeaderboardTitle}>Leaderboard</Text>
+                            <Text style={styles.emptyLeaderboardSubtitle}>
+                                Rankings will appear here when the tournament starts
+                            </Text>
                         </View>
-                        <Text style={styles.waitingTitle}>Ready to Play</Text>
-                        <Text style={styles.waitingSubtitle}>
-                            {setupParticipants.length === 0
-                                ? 'Waiting for players to register'
-                                : `${setupParticipants.length}/${config.numberOfPlayers} players registered`
-                            }
-                        </Text>
-
-                        {setupParticipants.length > 0 && (
-                            <View style={styles.participantsList}>
-                                {setupParticipants.map((p) => (
-                                    <View key={p.id} style={styles.participantChip}>
-                                        <Text style={styles.participantName}>{p.displayName}</Text>
-                                    </View>
-                                ))}
-                            </View>
-                        )}
-                    </View>
+                    )
                 )}
             </ScrollView>
         </View>
@@ -597,11 +675,7 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     participantsList: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
         gap: 8,
-        paddingHorizontal: 16,
     },
     participantChip: {
         backgroundColor: '#fff',
@@ -615,5 +689,127 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
         color: theme.colors.zinc[700],
+    },
+    // Players Tab
+    playersContainer: {
+        paddingBottom: 20,
+    },
+    sectionTitle: {
+        fontSize: 17,
+        fontWeight: '800',
+        color: theme.colors.zinc[900],
+        marginBottom: 12,
+    },
+    participantRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        padding: 12,
+        backgroundColor: theme.colors.zinc[50],
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: theme.colors.zinc[200],
+    },
+    participantNumber: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: theme.colors.zinc[200],
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    participantNumberText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: theme.colors.zinc[600],
+    },
+    participantRowName: {
+        flex: 1,
+        fontSize: 15,
+        fontWeight: '600',
+        color: theme.colors.zinc[900],
+    },
+    walkInBadge: {
+        backgroundColor: theme.colors.zinc[200],
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 4,
+    },
+    walkInBadgeText: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: theme.colors.zinc[600],
+    },
+    participantCount: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: theme.colors.zinc[400],
+        textAlign: 'center',
+        marginTop: 12,
+    },
+    emptyPlayersContainer: {
+        alignItems: 'center',
+        paddingVertical: 48,
+    },
+    emptyPlayersTitle: {
+        fontSize: 17,
+        fontWeight: '800',
+        color: theme.colors.zinc[900],
+        marginTop: 12,
+    },
+    emptyPlayersSubtitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: theme.colors.zinc[400],
+        marginTop: 4,
+    },
+    // Preview Banner
+    previewBanner: {
+        backgroundColor: '#fffbeb',
+        borderWidth: 1,
+        borderColor: '#fde68a',
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 16,
+    },
+    previewBannerTitle: {
+        fontSize: 14,
+        fontWeight: '800',
+        color: '#b45309',
+        marginBottom: 4,
+    },
+    previewBannerText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#d97706',
+        lineHeight: 18,
+    },
+    // Empty States
+    emptyScheduleContainer: {
+        alignItems: 'center',
+        paddingVertical: 48,
+    },
+    emptyScheduleText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: theme.colors.zinc[400],
+    },
+    emptyLeaderboardContainer: {
+        alignItems: 'center',
+        paddingVertical: 48,
+    },
+    emptyLeaderboardTitle: {
+        fontSize: 17,
+        fontWeight: '800',
+        color: theme.colors.zinc[900],
+        marginTop: 12,
+    },
+    emptyLeaderboardSubtitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: theme.colors.zinc[400],
+        marginTop: 4,
+        textAlign: 'center',
+        paddingHorizontal: 32,
     },
 });

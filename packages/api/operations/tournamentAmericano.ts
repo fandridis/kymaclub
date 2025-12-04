@@ -619,6 +619,75 @@ export const initializeTournamentState = (
 };
 
 /***************************************************************
+ * Preview Schedule Generation
+ ***************************************************************/
+
+/**
+ * Preview schedule result type
+ */
+export interface PreviewSchedule {
+    totalRounds: number;
+    matches: TournamentAmericanoMatch[];
+    standings: TournamentAmericanoStanding[];
+    placeholderCount: number;
+    isPreview: true;
+}
+
+/**
+ * Generate a preview schedule with placeholder players for unfilled spots
+ * 
+ * This is used during setup mode to show participants what the schedule
+ * will look like, even before all players have registered.
+ * 
+ * @param participantIds - Array of actual participant IDs (can be empty or partial)
+ * @param config - Tournament configuration
+ * @returns Preview schedule with placeholders for missing players
+ */
+export const generatePreviewSchedule = (
+    participantIds: string[],
+    config: TournamentAmericanoConfig
+): PreviewSchedule => {
+    const targetCount = config.numberOfPlayers;
+    const actualCount = participantIds.length;
+    const placeholderCount = Math.max(0, targetCount - actualCount);
+
+    // Create full participant list with placeholders
+    const allParticipantIds: string[] = [...participantIds];
+    for (let i = 0; i < placeholderCount; i++) {
+        allParticipantIds.push(`placeholder_${i + 1}`);
+    }
+
+    // Ensure we have exactly the right number of participants
+    // (truncate if somehow we have more than needed)
+    const finalParticipantIds = allParticipantIds.slice(0, targetCount);
+
+    // Generate schedule using existing logic
+    const schedule = generateSchedule({
+        participantIds: finalParticipantIds,
+        config,
+    });
+
+    // Initialize preview standings (all zeros)
+    const standings: TournamentAmericanoStanding[] = finalParticipantIds.map(id => ({
+        participantId: id,
+        matchesPlayed: 0,
+        matchesWon: 0,
+        matchesLost: 0,
+        pointsScored: 0,
+        pointsConceded: 0,
+        pointsDifference: 0,
+    }));
+
+    return {
+        totalRounds: schedule.totalRounds,
+        matches: schedule.matches,
+        standings,
+        placeholderCount,
+        isPreview: true,
+    };
+};
+
+/***************************************************************
  * Utility Functions
  ***************************************************************/
 
@@ -687,6 +756,7 @@ export const tournamentAmericanoOperations = {
 
     // Schedule
     generateSchedule,
+    generatePreviewSchedule,
 
     // Standings
     calculateStandings,

@@ -1,18 +1,22 @@
 "use client"
 
 import { useState } from "react";
-import type { TournamentAmericanoMatch, ParticipantSnapshot, TournamentAmericanoMatchPoints, TournamentCourt } from "@repo/api/types/widget";
+import type { TournamentAmericanoMatch, ParticipantSnapshot, TournamentAmericanoMatchPoints, TournamentCourt, SetupParticipant } from "@repo/api/types/widget";
 import { ChevronDown, Minus, Plus, Check, X, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface MatchScheduleProps {
+// Type for participant that works for both setup and active modes
+type Participant = ParticipantSnapshot | SetupParticipant;
+
+export interface MatchScheduleProps {
     matches: TournamentAmericanoMatch[];
-    participants: ParticipantSnapshot[]; // Participants snapshot from tournament state
+    participants: Participant[]; // Works for both setup (SetupParticipant) and active (ParticipantSnapshot)
     currentRound: number;
     onSaveScore: (matchId: string, team1Score: number, team2Score: number) => Promise<void>;
     canRecordScores: boolean;
     matchPoints: TournamentAmericanoMatchPoints;
     courts: TournamentCourt[];
+    isPreview?: boolean; // Whether this is showing a preview schedule
 }
 
 // Inline Score Control
@@ -426,7 +430,8 @@ export function MatchSchedule({
     onSaveScore,
     canRecordScores,
     matchPoints,
-    courts
+    courts,
+    isPreview = false
 }: MatchScheduleProps) {
     const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
 
@@ -440,8 +445,20 @@ export function MatchSchedule({
         courts.map(c => [c.id, c.name])
     );
 
+    // Helper to check if an ID is a placeholder
+    const isPlaceholder = (id: string): boolean => id.startsWith('placeholder_');
+
+    // Get display name for participant ID, handling placeholders
+    const getPlayerName = (id: string): string => {
+        if (isPlaceholder(id)) {
+            const num = id.replace('placeholder_', '');
+            return `TBD #${num}`;
+        }
+        return participantsMap.get(id) || "Unknown";
+    };
+
     const getTeamNames = (teamIds: string[]): string[] => {
-        return teamIds.map(id => participantsMap.get(id) || "Unknown");
+        return teamIds.map(id => getPlayerName(id));
     };
 
     const getCourtName = (courtId: string): string => {

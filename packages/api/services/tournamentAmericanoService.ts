@@ -13,6 +13,7 @@ import type {
     SetupParticipant,
     ParticipantSnapshot,
 } from "../types/widget";
+import type { PreviewSchedule } from "../operations/tournamentAmericano";
 
 /***************************************************************
  * Tournament Americano Service - DB-Aware Operations
@@ -65,6 +66,19 @@ export const tournamentAmericanoService = {
         }
 
         const config = widget.widgetConfig.config as TournamentAmericanoConfig;
+
+        // Get class instance to check start time
+        const classInstance = await ctx.db.get(widget.classInstanceId);
+        if (!classInstance) {
+            throw new ConvexError({
+                message: "Class instance not found",
+                field: "classInstanceId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND,
+            });
+        }
+
+        // Enforce start time window (can only start within X hours of class time)
+        widgetRules.enforceStartTimeWindow(classInstance.startTime);
 
         // Get setup participants (derived from bookings + walkIns)
         const setupParticipants = await widgetService.getSetupParticipants({ ctx, widget });
@@ -292,6 +306,13 @@ export const tournamentAmericanoService = {
             venueName: string;
             startTime: number;
         } | null;
+        previewSchedule: PreviewSchedule | null; // Preview schedule during setup
+        startTimeCheck: {
+            canStart: boolean;
+            reason?: string;
+            allowedStartTime?: number;
+            minutesUntilAllowed?: number;
+        } | null; // Start time window check
     } | null> => {
         const widget = await ctx.db.get(widgetId);
         if (!widget || widget.deleted) {
@@ -321,6 +342,17 @@ export const tournamentAmericanoService = {
             ? tournamentAmericanoOperations.getTournamentSummary(state)
             : null;
 
+        // Generate preview schedule during setup mode
+        // Shows what the schedule will look like with current + placeholder players
+        let previewSchedule: PreviewSchedule | null = null;
+        if (widget.status === 'setup' || widget.status === 'ready') {
+            const participantIds = setupParticipants.map(p => p.id);
+            previewSchedule = tournamentAmericanoOperations.generatePreviewSchedule(
+                participantIds,
+                config
+            );
+        }
+
         // Get class instance and venue info
         let classInstanceInfo: {
             className: string;
@@ -338,6 +370,18 @@ export const tournamentAmericanoService = {
             };
         }
 
+        // Check start time window (only relevant during setup/ready)
+        let startTimeCheck: {
+            canStart: boolean;
+            reason?: string;
+            allowedStartTime?: number;
+            minutesUntilAllowed?: number;
+        } | null = null;
+
+        if ((widget.status === 'setup' || widget.status === 'ready') && classInstance) {
+            startTimeCheck = widgetRules.checkStartTimeWindow(classInstance.startTime);
+        }
+
         return {
             config,
             state,
@@ -345,6 +389,8 @@ export const tournamentAmericanoService = {
             participants,
             summary,
             classInstanceInfo,
+            previewSchedule,
+            startTimeCheck,
         };
     },
 

@@ -26,13 +26,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
     Trophy, Play, CheckCircle, XCircle,
-    Plus, Loader2, ArrowLeft, Users, Target, LayoutGrid,
-    MoreVertical, Lock, Unlock, ChevronRight
+    Plus, Loader2, ArrowLeft,
+    MoreVertical, Lock, Unlock, ChevronRight, Clock
 } from "lucide-react";
 import { MatchSchedule } from './match-schedule';
 import { Leaderboard } from './leaderboard';
 import { AddWalkInDialog } from './add-walk-in-dialog';
 import { ParticipantsList } from './participants-list';
+import { PreviewBanner } from './preview-banner';
 import { cn } from "@/lib/utils";
 import { useNavigate } from '@tanstack/react-router';
 
@@ -43,7 +44,7 @@ interface TournamentManagementPageProps {
 export function TournamentManagementPage({ widgetId }: TournamentManagementPageProps) {
     const navigate = useNavigate();
     const [showAddWalkIn, setShowAddWalkIn] = useState(false);
-    const [activeTab, setActiveTab] = useState<string>("schedule");
+    const [activeTab, setActiveTab] = useState<string>("players");
     const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
 
     // Fetch tournament data
@@ -256,77 +257,142 @@ export function TournamentManagementPage({ widgetId }: TournamentManagementPageP
                 </p>
             </div>
 
-            {/* Stats Cards */}
-            <div className="max-w-2xl mx-auto px-4 pb-6">
-                <div className="grid grid-cols-3 gap-3">
-                    <StatCard
-                        icon={<Users className="h-5 w-5" />}
-                        label="Players"
-                        value={`${currentParticipantCount}/${config.numberOfPlayers}`}
-                    />
-                    <StatCard
-                        icon={<Target className="h-5 w-5" />}
-                        label="Points"
-                        value={String(config.matchPoints)}
-                    />
-                    <StatCard
-                        icon={<LayoutGrid className="h-5 w-5" />}
-                        label="Courts"
-                        value={String(config.courts?.length ?? 2)}
-                    />
+            {/* Stats Row - Minimal style like mobile */}
+            <div className="max-w-2xl mx-auto px-4 pb-5">
+                <div className="flex items-center justify-center">
+                    <div className="flex-1 text-center">
+                        <p className="text-xl font-extrabold text-slate-900 tabular-nums">
+                            {currentParticipantCount}/{config.numberOfPlayers}
+                        </p>
+                        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">players</p>
+                    </div>
+                    <div className="w-px h-10 bg-slate-200" />
+                    <div className="flex-1 text-center">
+                        <p className="text-xl font-extrabold text-slate-900 tabular-nums">{config.matchPoints}</p>
+                        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">points</p>
+                    </div>
+                    <div className="w-px h-10 bg-slate-200" />
+                    <div className="flex-1 text-center">
+                        <p className="text-xl font-extrabold text-slate-900 tabular-nums">{config.courts?.length ?? 2}</p>
+                        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">courts</p>
+                    </div>
                 </div>
             </div>
 
+            {/* Tabs and Content */}
             <div className="max-w-2xl mx-auto px-4 pb-12">
-                {/* Setup Panel - only show during setup */}
-                {isSetupOrReady && (
-                    <SetupPanel
-                        currentPlayers={setupParticipants.length}
-                        targetPlayers={tournamentState.config.numberOfPlayers}
-                        canStart={canStart}
-                        onAddWalkIn={() => setShowAddWalkIn(true)}
-                        onStart={handleStartTournament}
-                    />
-                )}
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    {/* Tab List */}
+                    <TabsList className="grid w-full grid-cols-3 bg-slate-100 border border-slate-200 rounded-xl p-1 h-12 mb-6">
+                        <TabsTrigger
+                            value="players"
+                            className="rounded-lg font-bold text-sm data-[state=active]:bg-slate-700 data-[state=active]:text-white data-[state=inactive]:text-slate-500 transition-all"
+                        >
+                            Players
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="schedule"
+                            className="rounded-lg font-bold text-sm data-[state=active]:bg-slate-700 data-[state=active]:text-white data-[state=inactive]:text-slate-500 transition-all"
+                        >
+                            Schedule
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="leaderboard"
+                            className="rounded-lg font-bold text-sm data-[state=active]:bg-slate-700 data-[state=active]:text-white data-[state=inactive]:text-slate-500 transition-all"
+                        >
+                            Leaderboard
+                        </TabsTrigger>
+                    </TabsList>
 
-                {/* Locked indicator banner */}
-                {isLocked && (
-                    <div className="flex items-center gap-2 px-4 py-3 mb-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-700">
-                        <Lock className="h-4 w-4" />
-                        <span className="text-sm font-semibold">Tournament is locked. Unlock to make changes.</span>
-                    </div>
-                )}
+                    {/* Locked indicator banner */}
+                    {isLocked && (
+                        <div className="flex items-center gap-2 px-4 py-3 mb-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-700">
+                            <Lock className="h-4 w-4" />
+                            <span className="text-sm font-semibold">Tournament is locked. Unlock to make changes.</span>
+                        </div>
+                    )}
 
-                {/* Main Content */}
-                {tournamentState.state ? (
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 mb-8 bg-slate-100 border border-slate-200 rounded-xl p-1 h-12">
-                            <TabsTrigger
-                                value="schedule"
-                                className="rounded-lg font-bold text-sm data-[state=active]:bg-slate-700 data-[state=active]:text-white data-[state=inactive]:text-slate-500 transition-all"
-                            >
-                                Schedule
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="leaderboard"
-                                className="rounded-lg font-bold text-sm data-[state=active]:bg-slate-700 data-[state=active]:text-white data-[state=inactive]:text-slate-500 transition-all"
-                            >
-                                Leaderboard
-                            </TabsTrigger>
-                        </TabsList>
-
-                        <TabsContent value="schedule" className="mt-0">
-                            {/* Round Complete Banner */}
-                            {isCurrentRoundComplete && isActive && (
-                                <RoundCompletePanel
-                                    currentRound={currentRound}
-                                    totalRounds={totalRounds}
-                                    isOnLastRound={isOnLastRound}
-                                    isLocked={isLocked}
-                                    onAdvance={handleAdvanceRound}
-                                    onComplete={() => setShowCompleteConfirm(true)}
+                    {/* Players Tab */}
+                    <TabsContent value="players" className="mt-0">
+                        <div className="space-y-6">
+                            {/* Setup Panel - only show during setup on Players tab */}
+                            {isSetupOrReady && (
+                                <SetupPanel
+                                    currentPlayers={setupParticipants.length}
+                                    targetPlayers={tournamentState.config.numberOfPlayers}
+                                    canStart={canStart}
+                                    onAddWalkIn={() => setShowAddWalkIn(true)}
+                                    onStart={handleStartTournament}
+                                    startTimeCheck={tournamentState.startTimeCheck}
                                 />
                             )}
+
+                            {/* Participants list */}
+                            {isSetupOrReady ? (
+                                // Setup mode - use full setup participants with management
+                                setupParticipants.length > 0 ? (
+                                    <div className="rounded-2xl border border-slate-200 bg-white p-6">
+                                        <h3 className="text-lg font-bold text-slate-900 mb-4">
+                                            Registered Players
+                                        </h3>
+                                        <ParticipantsList
+                                            participants={setupParticipants}
+                                            widgetId={widgetId}
+                                            canRemove={true}
+                                        />
+                                    </div>
+                                ) : (
+                                    <EmptyState playerCount={0} />
+                                )
+                            ) : (
+                                // Active/completed - show simple read-only list
+                                participants.length > 0 ? (
+                                    <div className="rounded-2xl border border-slate-200 bg-white p-6">
+                                        <h3 className="text-lg font-bold text-slate-900 mb-4">
+                                            Tournament Players
+                                        </h3>
+                                        <div className="space-y-2">
+                                            {participants.map((p, idx) => (
+                                                <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                                    <div className="h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                                                        <span className="text-sm font-bold text-slate-600">{idx + 1}</span>
+                                                    </div>
+                                                    <p className="font-semibold text-slate-900">{p.displayName}</p>
+                                                </div>
+                                            ))}
+                                            <p className="text-xs text-slate-400 text-center pt-2">
+                                                {participants.length} player{participants.length !== 1 ? "s" : ""} in tournament
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <EmptyState playerCount={0} />
+                                )
+                            )}
+                        </div>
+                    </TabsContent>
+
+                    {/* Schedule Tab */}
+                    <TabsContent value="schedule" className="mt-0">
+                        {/* Preview Banner - during setup mode */}
+                        {isSetupOrReady && tournamentState.previewSchedule && (
+                            <PreviewBanner placeholderCount={tournamentState.previewSchedule.placeholderCount} />
+                        )}
+
+                        {/* Round Complete Banner - active mode */}
+                        {isCurrentRoundComplete && isActive && (
+                            <RoundCompletePanel
+                                currentRound={currentRound}
+                                totalRounds={totalRounds}
+                                isOnLastRound={isOnLastRound}
+                                isLocked={isLocked}
+                                onAdvance={handleAdvanceRound}
+                                onComplete={() => setShowCompleteConfirm(true)}
+                            />
+                        )}
+
+                        {/* Match Schedule - preview or real */}
+                        {tournamentState.state ? (
                             <MatchSchedule
                                 matches={tournamentState.state.matches}
                                 participants={participants}
@@ -336,35 +402,41 @@ export function TournamentManagementPage({ widgetId }: TournamentManagementPageP
                                 matchPoints={tournamentState.config.matchPoints}
                                 courts={tournamentState.config.courts}
                             />
-                        </TabsContent>
+                        ) : tournamentState.previewSchedule ? (
+                            <MatchSchedule
+                                matches={tournamentState.previewSchedule.matches}
+                                participants={setupParticipants}
+                                currentRound={1}
+                                onSaveScore={handleSaveScore}
+                                canRecordScores={false}
+                                matchPoints={tournamentState.config.matchPoints}
+                                courts={tournamentState.config.courts}
+                                isPreview={true}
+                            />
+                        ) : (
+                            <div className="text-center py-12 text-slate-400">
+                                <p className="font-bold">Schedule will be generated when tournament starts</p>
+                            </div>
+                        )}
+                    </TabsContent>
 
-                        <TabsContent value="leaderboard" className="mt-0">
+                    {/* Leaderboard Tab */}
+                    <TabsContent value="leaderboard" className="mt-0">
+                        {tournamentState.state ? (
                             <Leaderboard
                                 standings={tournamentState.state.standings}
                                 participants={participants}
                                 isComplete={isCompleted}
                             />
-                        </TabsContent>
-                    </Tabs>
-                ) : (
-                    // Setup mode - show participants list
-                    <div className="space-y-6">
-                        {setupParticipants.length > 0 ? (
-                            <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                                <h3 className="text-lg font-bold text-slate-900 mb-4">
-                                    Registered Players
-                                </h3>
-                                <ParticipantsList
-                                    participants={setupParticipants}
-                                    widgetId={widgetId}
-                                    canRemove={isSetupOrReady}
-                                />
-                            </div>
                         ) : (
-                            <EmptyState playerCount={0} />
+                            <div className="text-center py-12">
+                                <Trophy className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                                <p className="text-slate-400 font-bold">Leaderboard will be populated when tournament starts</p>
+                                <p className="text-sm text-slate-300 mt-1">Rankings will update as matches are completed</p>
+                            </div>
                         )}
-                    </div>
-                )}
+                    </TabsContent>
+                </Tabs>
             </div>
 
             {/* Dialogs */}
@@ -396,41 +468,6 @@ export function TournamentManagementPage({ widgetId }: TournamentManagementPageP
     );
 }
 
-// Stat Card Component
-function StatCard({
-    icon,
-    label,
-    value,
-    accent = false
-}: {
-    icon: React.ReactNode;
-    label: string;
-    value: string;
-    accent?: boolean;
-}) {
-    return (
-        <div className={cn(
-            "rounded-xl p-4 transition-all",
-            "bg-white border shadow-sm",
-            accent ? "border-orange-300 bg-orange-50" : "border-slate-200"
-        )}>
-            <div className={cn(
-                "flex items-center gap-2 mb-2",
-                accent ? "text-orange-600" : "text-slate-400"
-            )}>
-                {icon}
-                <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
-            </div>
-            <p className={cn(
-                "text-2xl font-black tabular-nums",
-                accent ? "text-orange-600" : "text-slate-900"
-            )}>
-                {value}
-            </p>
-        </div>
-    );
-}
-
 // Status Badge Component
 function StatusBadge({ status, isLocked }: { status: string; isLocked?: boolean }) {
     if (status === "active") {
@@ -447,6 +484,14 @@ function StatusBadge({ status, isLocked }: { status: string; isLocked?: boolean 
                     </span>
                 )}
             </div>
+        );
+    }
+
+    if (status === "setup" || status === "ready") {
+        return (
+            <span className="text-[10px] font-black px-2.5 py-1 bg-slate-200 text-slate-500 rounded tracking-wider">
+                SETTING UP
+            </span>
         );
     }
 
@@ -476,15 +521,36 @@ function SetupPanel({
     canStart,
     onAddWalkIn,
     onStart,
+    startTimeCheck,
 }: {
     currentPlayers: number;
     targetPlayers: number;
     canStart: boolean;
     onAddWalkIn: () => void;
     onStart: () => void;
+    startTimeCheck: {
+        canStart: boolean;
+        reason?: string;
+        allowedStartTime?: number;
+        minutesUntilAllowed?: number;
+    } | null;
 }) {
     const remaining = targetPlayers - currentPlayers;
     const progress = (currentPlayers / targetPlayers) * 100;
+    const hasEnoughPlayers = currentPlayers === targetPlayers;
+    const canStartNow = canStart && startTimeCheck?.canStart !== false;
+
+    // Format time until allowed
+    const formatTimeUntilAllowed = () => {
+        if (!startTimeCheck?.minutesUntilAllowed) return null;
+        const mins = startTimeCheck.minutesUntilAllowed;
+        const hours = Math.floor(mins / 60);
+        const remainingMins = mins % 60;
+        if (hours > 0) {
+            return `${hours}h ${remainingMins}m`;
+        }
+        return `${mins}m`;
+    };
 
     return (
         <div className="rounded-2xl p-6 mb-8 bg-white border border-slate-200 shadow-sm">
@@ -518,6 +584,17 @@ function SetupPanel({
                 />
             </div>
 
+            {/* Start time restriction notice */}
+            {hasEnoughPlayers && startTimeCheck && !startTimeCheck.canStart && (
+                <div className="flex items-center gap-2 px-3 py-2 mb-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <Clock className="h-4 w-4 text-amber-600 flex-shrink-0" />
+                    <p className="text-sm text-amber-700">
+                        <span className="font-bold">Can start in {formatTimeUntilAllowed()}</span>
+                        <span className="text-amber-600"> · Tournament starts become available 2 hours before class time</span>
+                    </p>
+                </div>
+            )}
+
             <div className="flex gap-3">
                 <Button
                     variant="outline"
@@ -529,10 +606,10 @@ function SetupPanel({
                 </Button>
                 <Button
                     onClick={onStart}
-                    disabled={!canStart}
+                    disabled={!canStartNow}
                     className={cn(
                         "flex-1 h-12 font-bold transition-all",
-                        canStart
+                        canStartNow
                             ? "bg-orange-500 hover:bg-orange-600 text-white"
                             : "bg-slate-100 text-slate-400 cursor-not-allowed"
                     )}
