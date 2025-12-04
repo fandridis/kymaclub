@@ -264,58 +264,101 @@ const generateFixedTeamsSchedule = (
 
 /**
  * Generate schedule for individual_rotation mode
- * Players rotate partners each round
+ * Players rotate partners each round, with GREEDY selection for fairness.
  */
 const generateRotatingSchedule = (
     participantIds: string[],
     config: TournamentAmericanoConfig
 ): GeneratedSchedule => {
     const matches: TournamentAmericanoMatch[] = [];
-    const playerMatchCounts = new Map<string, number>();
+    // Initialize or re-initialize match counts at the start of the process
+    const playerMatchCounts = new Map<string, number>(
+        participantIds.map(id => [id, 0])
+    );
+    const maxCourts = config.courts.length;
+    // Determine the max number of matches that can run in a round
+    const courtsPerRound = Math.min(maxCourts, Math.floor(participantIds.length / 4));
+    // Max rounds needed to cover all unique pairings
+    const maxCombinatorialRounds = participantIds.length - 1;
 
-    // Initialize match counts
-    participantIds.forEach(id => playerMatchCounts.set(id, 0));
+    for (let round = 1; round <= maxCombinatorialRounds; round++) {
+        const potentialPairs = generateRotatingPairs(participantIds, round);
 
-    const courtsPerRound = Math.min(config.courts.length, Math.floor(participantIds.length / 4));
-    const maxRounds = participantIds.length - 1; // Maximum unique rotations
+        // Transform pairs into potential matches for this round
+        const potentialMatches: {
+            team1: [string, string],
+            team2: [string, string],
+            players: string[]
+        }[] = [];
 
-    for (let round = 1; round <= maxRounds; round++) {
-        const pairs = generateRotatingPairs(participantIds, round);
+        // Group pairs into matches (Pair 0 vs Pair 1, Pair 2 vs Pair 3, etc.)
+        for (let i = 0; i < potentialPairs.length; i += 2) {
+            const team1 = potentialPairs[i];
+            const team2 = potentialPairs[i + 1];
 
-        // Create matches from pairs (pair 0 vs pair 1, pair 2 vs pair 3, etc.)
-        for (let i = 0; i < pairs.length && i < courtsPerRound * 2; i += 2) {
-            const team1 = pairs[i];
-            const team2 = pairs[i + 1];
+            if (team1 && team2) {
+                potentialMatches.push({
+                    team1: team1,
+                    team2: team2,
+                    players: [...team1, ...team2],
+                });
+            }
+        }
 
-            if (!team1 || !team2) continue;
+        // --- CORE FAIRNESS IMPROVEMENT: Greedy Selection ---
 
-            // Check if any player would exceed max matches
-            const allPlayers = [...team1, ...team2];
-            const wouldExceed = allPlayers.some(
-                id => (playerMatchCounts.get(id) || 0) >= config.maxMatchesPerPlayer
-            );
+        // 1. Filter out matches where any player is already at max
+        let availableMatches = potentialMatches.filter(match =>
+            !match.players.some(id =>
+                (playerMatchCounts.get(id) || 0) >= config.maxMatchesPerPlayer
+            )
+        );
 
-            if (wouldExceed) continue;
+        // 2. Sort available matches based on player workload (fairness metric)
+        // Sort by the SUM of current match counts for all 4 players (ascending).
+        // Matches involving players who have played the LEAST will be prioritized.
+        availableMatches.sort((matchA, matchB) => {
+            const workloadA = matchA.players.reduce((sum, id) => sum + (playerMatchCounts.get(id) || 0), 0);
+            const workloadB = matchB.players.reduce((sum, id) => sum + (playerMatchCounts.get(id) || 0), 0);
+            return workloadA - workloadB;
+        });
 
-            const courtIndex = Math.floor(i / 2);
+        // 3. Select the top N matches, where N is courtsPerRound, and handle conflicts.
+        const matchesInThisRound: TournamentAmericanoMatch[] = [];
+        const playersPlayingThisRound = new Set<string>();
+        let courtIndex = 0;
+
+        for (const potentialMatch of availableMatches) {
+            // Check for conflicts: ensure no player is already assigned a match in this round
+            const isConflict = potentialMatch.players.some(id => playersPlayingThisRound.has(id));
+
+            // Also check the court limit
+            if (isConflict || courtIndex >= courtsPerRound) {
+                continue;
+            }
+
+            // No conflict and court available: Schedule the match
             const match: TournamentAmericanoMatch = {
                 id: `match_r${round}_c${courtIndex + 1}`,
                 roundNumber: round,
                 courtId: config.courts[courtIndex].id,
-                team1: [...team1],
-                team2: [...team2],
+                team1: potentialMatch.team1,
+                team2: potentialMatch.team2,
                 status: 'scheduled',
             };
 
-            matches.push(match);
-
-            // Update match counts
-            allPlayers.forEach(id => {
+            matchesInThisRound.push(match);
+            potentialMatch.players.forEach(id => {
+                playersPlayingThisRound.add(id);
+                // Update match counts immediately after selection
                 playerMatchCounts.set(id, (playerMatchCounts.get(id) || 0) + 1);
             });
+            courtIndex++;
         }
 
-        // Stop if all players have reached max matches
+        matches.push(...matchesInThisRound);
+
+        // 4. Stop Condition: Check if all players have reached max matches AFTER processing the round
         const allAtMax = participantIds.every(
             id => (playerMatchCounts.get(id) || 0) >= config.maxMatchesPerPlayer
         );
@@ -587,7 +630,7 @@ const extractParticipantIds = (matches: TournamentAmericanoMatch[]): string[] =>
 export const initializeTournamentState = (
     config: TournamentAmericanoConfig,
     participantIds: string[]
-): TournamentAmericanoState => {
+): Omit<TournamentAmericanoState, 'participants'> => {
     // Validate participant count
     if (participantIds.length !== config.numberOfPlayers) {
         throw new Error(
