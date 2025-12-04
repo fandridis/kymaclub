@@ -8,6 +8,7 @@ import {
     widgetStatusValidator,
     walkInEntryFields,
     participantSnapshotFields,
+    fixedTeamFields,
 } from "../schema";
 
 // Validator for setup participants (derived from bookings + walk-ins)
@@ -184,6 +185,8 @@ export const getAmericanoTournamentState = query({
                 })),
                 maxMatchesPerPlayer: v.number(),
                 mode: v.union(v.literal("individual_rotation"), v.literal("fixed_teams")),
+                // Fixed teams for fixed_teams mode (set during setup)
+                fixedTeams: v.optional(v.array(v.object(fixedTeamFields))),
             }),
             state: v.union(
                 v.object({

@@ -5,6 +5,7 @@ import {
     TournamentAmericanoState,
     TournamentAmericanoPlayerCount,
     TournamentCourt,
+    FixedTeam,
 } from '../types/widget';
 
 /**
@@ -83,10 +84,17 @@ export const getMinimumCourts = (numberOfPlayers: TournamentAmericanoPlayerCount
 /**
  * Generate teams for fixed_teams mode
  * 
+ * If predefined teams are provided, validates and uses them.
+ * Otherwise, generates random team pairings.
+ * 
  * @param participantIds - Array of participant IDs
+ * @param predefinedTeams - Optional array of predefined teams from config
  * @returns Array of team objects with two players each
  */
-export const generateFixedTeams = (participantIds: string[]): Array<{
+export const generateFixedTeams = (
+    participantIds: string[],
+    predefinedTeams?: FixedTeam[]
+): Array<{
     teamId: string;
     playerIds: [string, string];
 }> => {
@@ -94,7 +102,42 @@ export const generateFixedTeams = (participantIds: string[]): Array<{
         throw new Error('Fixed teams require an even number of players');
     }
 
-    // Shuffle participants for random pairing
+    // If predefined teams are provided, validate and use them
+    if (predefinedTeams && predefinedTeams.length > 0) {
+        // Validate that all participants are assigned to exactly one team
+        const assignedPlayers = new Set<string>();
+        const validatedTeams: Array<{ teamId: string; playerIds: [string, string] }> = [];
+
+        for (const team of predefinedTeams) {
+            if (team.playerIds.length !== 2) {
+                throw new Error(`Team ${team.teamId} must have exactly 2 players`);
+            }
+
+            for (const playerId of team.playerIds) {
+                if (!participantIds.includes(playerId)) {
+                    throw new Error(`Player ${playerId} in team ${team.teamId} is not a participant`);
+                }
+                if (assignedPlayers.has(playerId)) {
+                    throw new Error(`Player ${playerId} is assigned to multiple teams`);
+                }
+                assignedPlayers.add(playerId);
+            }
+
+            validatedTeams.push({
+                teamId: team.teamId,
+                playerIds: team.playerIds as [string, string],
+            });
+        }
+
+        // Check all participants are assigned
+        if (assignedPlayers.size !== participantIds.length) {
+            throw new Error('Not all participants are assigned to teams');
+        }
+
+        return validatedTeams;
+    }
+
+    // Fallback: Shuffle participants for random pairing
     const shuffled = shuffleArray([...participantIds]);
     const teams: Array<{ teamId: string; playerIds: [string, string] }> = [];
 
@@ -186,77 +229,154 @@ export const generateSchedule = (params: ScheduleParams): GeneratedSchedule => {
 
 /**
  * Generate schedule for fixed_teams mode
- * Teams play against other teams in a partial round-robin
+ * Teams play against other teams with FAIRNESS-OPTIMIZED scheduling.
+ * 
+ * The algorithm prioritizes:
+ * 1. Opponent Variety: Teams that have played each other the fewest times are matched first
+ * 2. Workload Balance: When tied, matches involving players with fewer games are prioritized
+ * 
+ * This ensures maximum variety of opponents within the constraint limits.
  */
 const generateFixedTeamsSchedule = (
     participantIds: string[],
     config: TournamentAmericanoConfig
 ): GeneratedSchedule => {
-    const teams = generateFixedTeams(participantIds);
+    // Generate teams using predefined teams from config if available
+    const teams = generateFixedTeams(participantIds, config.fixedTeams);
     const matches: TournamentAmericanoMatch[] = [];
-    const playerMatchCounts = new Map<string, number>();
+    const playerMatchCounts = new Map<string, number>(
+        participantIds.map(id => [id, 0])
+    );
+    const courtsPerRound = config.courts.length;
 
-    // Initialize match counts
-    participantIds.forEach(id => playerMatchCounts.set(id, 0));
+    // Initialize opponent tracking: Map<TeamId, Map<OpponentTeamId, Count>>
+    const teamOpponentCounts = new Map<string, Map<string, number>>();
+    teams.forEach(t1 => {
+        const opponentMap = new Map<string, number>();
+        teams.forEach(t2 => {
+            if (t1.teamId !== t2.teamId) opponentMap.set(t2.teamId, 0);
+        });
+        teamOpponentCounts.set(t1.teamId, opponentMap);
+    });
 
-    // Generate all possible team matchups
-    const matchups: Array<{ team1Idx: number; team2Idx: number }> = [];
+    // Generate ALL possible team matchups
+    const allMatchups: Array<{ team1Id: string; team2Id: string }> = [];
     for (let i = 0; i < teams.length; i++) {
         for (let j = i + 1; j < teams.length; j++) {
-            matchups.push({ team1Idx: i, team2Idx: j });
+            allMatchups.push({ team1Id: teams[i].teamId, team2Id: teams[j].teamId });
         }
     }
 
-    // Shuffle matchups for variety
-    const shuffledMatchups = shuffleArray(matchups);
-
-    // Assign matches to rounds based on court availability
-    const courtsPerRound = config.courts.length;
     let roundNumber = 1;
-    let courtIndex = 0;
-    let matchesThisRound = 0;
 
-    for (const matchup of shuffledMatchups) {
-        const team1 = teams[matchup.team1Idx];
-        const team2 = teams[matchup.team2Idx];
+    // --- Dynamic Scheduling Loop ---
+    while (true) {
+        // A. Filter available matchups (not exceeding max matches)
+        const availableMatchups = allMatchups.filter(matchup => {
+            const team1 = teams.find(t => t.teamId === matchup.team1Id);
+            const team2 = teams.find(t => t.teamId === matchup.team2Id);
+            if (!team1 || !team2) return false;
 
-        // Check if any player would exceed max matches
-        const wouldExceed = [...team1.playerIds, ...team2.playerIds].some(
-            id => (playerMatchCounts.get(id) || 0) >= config.maxMatchesPerPlayer
-        );
-
-        if (wouldExceed) continue;
-
-        // Create match
-        const match: TournamentAmericanoMatch = {
-            id: `match_r${roundNumber}_c${courtIndex + 1}`,
-            roundNumber,
-            courtId: config.courts[courtIndex].id,
-            team1: team1.playerIds,
-            team2: team2.playerIds,
-            status: 'scheduled',
-        };
-
-        matches.push(match);
-
-        // Update match counts
-        [...team1.playerIds, ...team2.playerIds].forEach(id => {
-            playerMatchCounts.set(id, (playerMatchCounts.get(id) || 0) + 1);
+            // Check if any player would exceed max matches
+            const allPlayers = [...team1.playerIds, ...team2.playerIds];
+            return !allPlayers.some(
+                id => (playerMatchCounts.get(id) || 0) >= config.maxMatchesPerPlayer
+            );
         });
 
-        // Advance court/round
-        courtIndex++;
-        matchesThisRound++;
+        if (availableMatchups.length === 0) break;
 
-        if (courtIndex >= courtsPerRound) {
-            courtIndex = 0;
-            roundNumber++;
-            matchesThisRound = 0;
+        // B. Sort based on Fairness Metrics (Opponent Variety & Workload Balance)
+        availableMatchups.sort((matchA, matchB) => {
+            const team1A = teams.find(t => t.teamId === matchA.team1Id)!;
+            const team2A = teams.find(t => t.teamId === matchA.team2Id)!;
+            const team1B = teams.find(t => t.teamId === matchB.team1Id)!;
+            const team2B = teams.find(t => t.teamId === matchB.team2Id)!;
+
+            // Priority 1: Opponent Variety (minimize times these two teams have played)
+            const playsA = teamOpponentCounts.get(matchA.team1Id)?.get(matchA.team2Id) || 0;
+            const playsB = teamOpponentCounts.get(matchB.team1Id)?.get(matchB.team2Id) || 0;
+            if (playsA !== playsB) {
+                return playsA - playsB; // ASC: Matchup played least wins
+            }
+
+            // Priority 2: Workload Balance (minimize total player match counts)
+            const workloadA = [...team1A.playerIds, ...team2A.playerIds].reduce(
+                (sum, id) => sum + (playerMatchCounts.get(id) || 0), 0
+            );
+            const workloadB = [...team1B.playerIds, ...team2B.playerIds].reduce(
+                (sum, id) => sum + (playerMatchCounts.get(id) || 0), 0
+            );
+            return workloadA - workloadB; // ASC: Matchup with least played players wins
+        });
+
+        // C. Schedule the Round - greedy selection
+        const teamsPlayingThisRound = new Set<string>();
+        let courtIndex = 0;
+        let matchesInRound = 0;
+
+        for (const matchup of availableMatchups) {
+            if (courtIndex >= courtsPerRound) break;
+
+            const team1 = teams.find(t => t.teamId === matchup.team1Id)!;
+            const team2 = teams.find(t => t.teamId === matchup.team2Id)!;
+
+            // Check for conflict: ensure neither team is already scheduled for this round
+            if (teamsPlayingThisRound.has(team1.teamId) || teamsPlayingThisRound.has(team2.teamId)) {
+                continue;
+            }
+
+            // Create match
+            const match: TournamentAmericanoMatch = {
+                id: `match_r${roundNumber}_c${courtIndex + 1}`,
+                roundNumber,
+                courtId: config.courts[courtIndex].id,
+                team1: team1.playerIds,
+                team2: team2.playerIds,
+                status: 'scheduled',
+            };
+
+            matches.push(match);
+            matchesInRound++;
+            courtIndex++;
+
+            // Update tracking
+            teamsPlayingThisRound.add(team1.teamId);
+            teamsPlayingThisRound.add(team2.teamId);
+
+            // Update player match counts
+            [...team1.playerIds, ...team2.playerIds].forEach(id => {
+                playerMatchCounts.set(id, (playerMatchCounts.get(id) || 0) + 1);
+            });
+
+            // Update opponent tracking (for next round's scoring)
+            const count1 = teamOpponentCounts.get(team1.teamId)!;
+            count1.set(team2.teamId, (count1.get(team2.teamId) || 0) + 1);
+            const count2 = teamOpponentCounts.get(team2.teamId)!;
+            count2.set(team1.teamId, (count2.get(team1.teamId) || 0) + 1);
         }
+
+        // If no matches were scheduled this round, we must stop to prevent infinite loop
+        if (matchesInRound === 0) {
+            // Check if all players have reached max matches
+            const allAtMax = participantIds.every(
+                id => (playerMatchCounts.get(id) || 0) >= config.maxMatchesPerPlayer
+            );
+            if (allAtMax) break;
+            // Otherwise, no more valid matchups can be scheduled
+            break;
+        }
+
+        roundNumber++;
     }
 
+    // Determine actual total rounds used
+    const totalRounds = matches.length > 0
+        ? Math.max(...matches.map(m => m.roundNumber))
+        : 0;
+
     return {
-        totalRounds: roundNumber,
+        totalRounds,
         matches,
         playerMatchCounts,
     };
@@ -682,6 +802,9 @@ export interface PreviewSchedule {
  * This is used during setup mode to show participants what the schedule
  * will look like, even before all players have registered.
  * 
+ * For fixed_teams mode, if teams are already configured, the preview will
+ * use those teams. Players not yet assigned to teams will appear as placeholders.
+ * 
  * @param participantIds - Array of actual participant IDs (can be empty or partial)
  * @param config - Tournament configuration
  * @returns Preview schedule with placeholders for missing players
@@ -704,10 +827,39 @@ export const generatePreviewSchedule = (
     // (truncate if somehow we have more than needed)
     const finalParticipantIds = allParticipantIds.slice(0, targetCount);
 
+    // For fixed_teams mode with pre-configured teams, create preview teams
+    // that include placeholders for unassigned players
+    let previewConfig = config;
+    if (config.mode === 'fixed_teams' && config.fixedTeams && config.fixedTeams.length > 0) {
+        // Create placeholder teams for players not yet in a team
+        const assignedPlayers = new Set<string>();
+        config.fixedTeams.forEach(team => {
+            team.playerIds.forEach(id => assignedPlayers.add(id));
+        });
+
+        const unassignedPlayers = finalParticipantIds.filter(id => !assignedPlayers.has(id));
+        const placeholderTeams: FixedTeam[] = [];
+
+        // Pair up unassigned players into placeholder teams
+        for (let i = 0; i < unassignedPlayers.length; i += 2) {
+            if (i + 1 < unassignedPlayers.length) {
+                placeholderTeams.push({
+                    teamId: `preview_team_${Math.floor(i / 2) + config.fixedTeams.length + 1}`,
+                    playerIds: [unassignedPlayers[i], unassignedPlayers[i + 1]],
+                });
+            }
+        }
+
+        previewConfig = {
+            ...config,
+            fixedTeams: [...config.fixedTeams, ...placeholderTeams],
+        };
+    }
+
     // Generate schedule using existing logic
     const schedule = generateSchedule({
         participantIds: finalParticipantIds,
-        config,
+        config: previewConfig,
     });
 
     // Initialize preview standings (all zeros)

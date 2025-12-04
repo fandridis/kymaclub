@@ -10,6 +10,8 @@ import type {
     WalkInEntry,
     SetupParticipant,
     ClassInstanceWidget,
+    FixedTeam,
+    TournamentAmericanoConfig,
 } from "../types/widget";
 
 // Widget display names by type
@@ -591,6 +593,116 @@ export const widgetService = {
         // Update lock state
         await ctx.db.patch(args.widgetId, {
             isLocked: false,
+            updatedAt: Date.now(),
+            updatedBy: user._id,
+        });
+    },
+
+    /***************************************************************
+     * Set Americano Fixed Teams
+     * Sets the fixed teams for an Americano tournament during setup
+     * This is only allowed for fixed_teams mode, before the tournament starts
+     ***************************************************************/
+    setAmericanoFixedTeams: async ({
+        ctx,
+        args,
+        user,
+    }: {
+        ctx: MutationCtx;
+        args: {
+            widgetId: Id<"classInstanceWidgets">;
+            teams: FixedTeam[];
+        };
+        user: Doc<"users">;
+    }): Promise<void> => {
+        const widget = await ctx.db.get(args.widgetId);
+        if (!widget || widget.deleted) {
+            throw new ConvexError({
+                message: "Widget not found",
+                field: "widgetId",
+                code: ERROR_CODES.RESOURCE_NOT_FOUND,
+            });
+        }
+
+        // Authorization check
+        widgetRules.userMustBeWidgetOwner(widget, user);
+
+        // Must be in setup or ready status
+        widgetRules.widgetMustBeInStatus(widget, ["setup", "ready"]);
+
+        // Verify this is an Americano widget
+        if (widget.widgetConfig.type !== "tournament_americano") {
+            throw new ConvexError({
+                message: "Widget is not an Americano tournament",
+                field: "widgetConfig.type",
+                code: ERROR_CODES.VALIDATION_ERROR,
+            });
+        }
+
+        const config = widget.widgetConfig.config as TournamentAmericanoConfig;
+
+        // Verify mode is fixed_teams
+        if (config.mode !== "fixed_teams") {
+            throw new ConvexError({
+                message: "Teams can only be set for fixed_teams mode",
+                field: "mode",
+                code: ERROR_CODES.ACTION_NOT_ALLOWED,
+            });
+        }
+
+        // Get current participants to validate teams
+        const setupParticipants = await widgetService.getSetupParticipants({ ctx, widget });
+        const participantIds = setupParticipants.map(p => p.id);
+
+        // Validate teams
+        if (args.teams.length > 0) {
+            const assignedPlayers = new Set<string>();
+
+            for (const team of args.teams) {
+                // Validate team has exactly 2 players (for padel)
+                if (team.playerIds.length !== 2) {
+                    throw new ConvexError({
+                        message: `Team ${team.teamId} must have exactly 2 players`,
+                        field: "teams",
+                        code: ERROR_CODES.VALIDATION_ERROR,
+                    });
+                }
+
+                for (const playerId of team.playerIds) {
+                    // Validate player is a participant
+                    if (!participantIds.includes(playerId)) {
+                        throw new ConvexError({
+                            message: `Player ${playerId} is not a registered participant`,
+                            field: "teams",
+                            code: ERROR_CODES.VALIDATION_ERROR,
+                        });
+                    }
+
+                    // Validate player is not in multiple teams
+                    if (assignedPlayers.has(playerId)) {
+                        throw new ConvexError({
+                            message: `Player ${playerId} is assigned to multiple teams`,
+                            field: "teams",
+                            code: ERROR_CODES.VALIDATION_ERROR,
+                        });
+                    }
+
+                    assignedPlayers.add(playerId);
+                }
+            }
+        }
+
+        // Update the config with the new fixed teams
+        const updatedConfig: TournamentAmericanoConfig = {
+            ...config,
+            fixedTeams: args.teams,
+        };
+
+        await ctx.db.patch(args.widgetId, {
+            widgetConfig: {
+                type: "tournament_americano" as const,
+                config: updatedConfig,
+            },
             updatedAt: Date.now(),
             updatedBy: user._id,
         });

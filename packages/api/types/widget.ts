@@ -21,6 +21,7 @@ import {
     walkInFields,
     walkInEntryFields,
     participantSnapshotFields,
+    fixedTeamFields,
 } from "../convex/schema";
 
 /***************************************************************
@@ -79,6 +80,13 @@ export type BracketsWidgetState = Extract<WidgetState, { type: 'tournament_brack
 
 const tournamentCourtFieldObject = v.object(tournamentCourtFields);
 export type TournamentCourt = Infer<typeof tournamentCourtFieldObject>;
+
+/***************************************************************
+ * Fixed Team Types (for fixed_teams mode)
+ ***************************************************************/
+
+const fixedTeamFieldObject = v.object(fixedTeamFields);
+export type FixedTeam = Infer<typeof fixedTeamFieldObject>;
 
 /***************************************************************
  * Americano Tournament Types

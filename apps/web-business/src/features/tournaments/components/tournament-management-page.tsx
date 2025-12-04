@@ -27,13 +27,14 @@ import {
 import {
     Trophy, Play, CheckCircle, XCircle,
     Plus, Loader2, ArrowLeft,
-    MoreVertical, Lock, Unlock, ChevronRight, Clock
+    MoreVertical, Lock, Unlock, ChevronRight, Clock, Users
 } from "lucide-react";
 import { MatchSchedule } from './match-schedule';
 import { Leaderboard } from './leaderboard';
 import { AddWalkInDialog } from './add-walk-in-dialog';
 import { ParticipantsList } from './participants-list';
 import { PreviewBanner } from './preview-banner';
+import { TeamAssignment } from './team-assignment';
 import { cn } from "@/lib/utils";
 import { useNavigate } from '@tanstack/react-router';
 
@@ -324,13 +325,28 @@ export function TournamentManagementPage({ widgetId }: TournamentManagementPageP
                                     onAddWalkIn={() => setShowAddWalkIn(true)}
                                     onStart={handleStartTournament}
                                     startTimeCheck={tournamentState.startTimeCheck}
+                                    isFixedTeamsMode={config.mode === 'fixed_teams'}
+                                    hasTeamsAssigned={Boolean(config.fixedTeams && config.fixedTeams.length > 0 && config.fixedTeams.every(t => t.playerIds.length === 2))}
                                 />
+                            )}
+
+                            {/* Team Assignment - only for fixed_teams mode during setup */}
+                            {isSetupOrReady && config.mode === 'fixed_teams' && setupParticipants.length >= 2 && (
+                                <div className="rounded-2xl border border-slate-200 bg-white p-6">
+                                    <TeamAssignment
+                                        participants={setupParticipants}
+                                        widgetId={widgetId}
+                                        existingTeams={config.fixedTeams}
+                                        targetTeamCount={config.numberOfPlayers / 2}
+                                    />
+                                </div>
                             )}
 
                             {/* Participants list */}
                             {isSetupOrReady ? (
                                 // Setup mode - use full setup participants with management
-                                setupParticipants.length > 0 ? (
+                                // Only show for individual_rotation mode (team mode shows TeamAssignment instead)
+                                config.mode === 'individual_rotation' && setupParticipants.length > 0 ? (
                                     <div className="rounded-2xl border border-slate-200 bg-white p-6">
                                         <h3 className="text-lg font-bold text-slate-900 mb-4">
                                             Registered Players
@@ -341,9 +357,9 @@ export function TournamentManagementPage({ widgetId }: TournamentManagementPageP
                                             canRemove={true}
                                         />
                                     </div>
-                                ) : (
+                                ) : config.mode === 'individual_rotation' && setupParticipants.length === 0 ? (
                                     <EmptyState playerCount={0} />
-                                )
+                                ) : null
                             ) : (
                                 // Active/completed - show simple read-only list
                                 participants.length > 0 ? (
@@ -522,6 +538,8 @@ function SetupPanel({
     onAddWalkIn,
     onStart,
     startTimeCheck,
+    isFixedTeamsMode,
+    hasTeamsAssigned,
 }: {
     currentPlayers: number;
     targetPlayers: number;
@@ -534,11 +552,15 @@ function SetupPanel({
         allowedStartTime?: number;
         minutesUntilAllowed?: number;
     } | null;
+    isFixedTeamsMode?: boolean;
+    hasTeamsAssigned?: boolean;
 }) {
     const remaining = targetPlayers - currentPlayers;
     const progress = (currentPlayers / targetPlayers) * 100;
     const hasEnoughPlayers = currentPlayers === targetPlayers;
-    const canStartNow = canStart && startTimeCheck?.canStart !== false;
+    // For fixed_teams mode, also require teams to be assigned
+    const teamsReady = !isFixedTeamsMode || hasTeamsAssigned;
+    const canStartNow = canStart && startTimeCheck?.canStart !== false && teamsReady;
 
     // Format time until allowed
     const formatTimeUntilAllowed = () => {
@@ -584,8 +606,19 @@ function SetupPanel({
                 />
             </div>
 
+            {/* Teams not assigned notice (for fixed_teams mode) */}
+            {hasEnoughPlayers && isFixedTeamsMode && !hasTeamsAssigned && (
+                <div className="flex items-center gap-2 px-3 py-2 mb-4 bg-orange-50 border border-orange-200 rounded-lg">
+                    <Users className="h-4 w-4 text-orange-600 flex-shrink-0" />
+                    <p className="text-sm text-orange-700">
+                        <span className="font-bold">Teams need to be assigned</span>
+                        <span className="text-orange-600"> · Assign all players to teams below before starting</span>
+                    </p>
+                </div>
+            )}
+
             {/* Start time restriction notice */}
-            {hasEnoughPlayers && startTimeCheck && !startTimeCheck.canStart && (
+            {hasEnoughPlayers && teamsReady && startTimeCheck && !startTimeCheck.canStart && (
                 <div className="flex items-center gap-2 px-3 py-2 mb-4 bg-amber-50 border border-amber-200 rounded-lg">
                     <Clock className="h-4 w-4 text-amber-600 flex-shrink-0" />
                     <p className="text-sm text-amber-700">
@@ -620,7 +653,10 @@ function SetupPanel({
             </div>
 
             <p className="text-xs text-slate-400 mt-4 text-center">
-                Bookings are automatically included. Add walk-ins for non-booked players.
+                {isFixedTeamsMode
+                    ? "Bookings are auto-included. Assign players to teams below."
+                    : "Bookings are automatically included. Add walk-ins for non-booked players."
+                }
             </p>
         </div>
     );

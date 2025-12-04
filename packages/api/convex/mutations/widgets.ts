@@ -7,6 +7,7 @@ import {
     widgetConfigValidator,
     widgetStatusValidator,
     walkInFields,
+    fixedTeamFields,
 } from "../schema";
 
 /***************************************************************
@@ -270,6 +271,31 @@ export const cancelAmericanoTournament = mutation({
             args: { widgetId: args.widgetId },
             user,
         });
+    },
+});
+
+/**
+ * Set fixed teams for an Americano tournament
+ * This is used in fixed_teams mode to assign players to teams before starting
+ * Each team should have exactly 2 players for padel
+ */
+export const setAmericanoFixedTeams = mutation({
+    args: {
+        widgetId: v.id("classInstanceWidgets"),
+        teams: v.array(v.object(fixedTeamFields)),
+    },
+    returns: v.null(),
+    handler: async (ctx, args) => {
+        const user = await getAuthenticatedUserOrThrow(ctx);
+        await widgetService.setAmericanoFixedTeams({
+            ctx,
+            args: {
+                widgetId: args.widgetId,
+                teams: args.teams,
+            },
+            user,
+        });
+        return null;
     },
 });
 

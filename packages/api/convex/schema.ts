@@ -144,6 +144,12 @@ export const tournamentCourtFields = {
   name: v.string(), // "Court A", "Court B", etc.
 };
 
+// Fixed team definition for fixed_teams mode
+export const fixedTeamFields = {
+  teamId: v.string(),
+  playerIds: v.array(v.string()), // Exactly 2 player IDs for padel
+};
+
 // Americano-specific configuration
 export const tournamentAmericanoConfigFields = {
   numberOfPlayers: v.union(v.literal(8), v.literal(12), v.literal(16)),
@@ -154,6 +160,9 @@ export const tournamentAmericanoConfigFields = {
     v.literal("individual_rotation"),  // Solo players, rotating partners
     v.literal("fixed_teams"),          // Fixed team pairs throughout
   ),
+  // Fixed teams for fixed_teams mode (set during setup before starting)
+  // Each team has exactly 2 players for padel americano
+  fixedTeams: v.optional(v.array(v.object(fixedTeamFields))),
 };
 
 // Round Robin-specific configuration
