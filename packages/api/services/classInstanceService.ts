@@ -605,28 +605,6 @@ export const classInstanceService = {
                 booking => booking.classInstanceId === classInstance._id
             );
 
-            // Enrich bookings with related data
-            // const enrichedBookings: BookingWithDetails[] = [];
-
-            // for (const booking of instanceBookings) {
-            //     const enrichedBooking: BookingWithDetails = {
-            //         ...booking,
-            //         classInstance: classInstance
-            //     };
-
-            //     // Get class template
-            //     if (classInstance.templateId) {
-            //         enrichedBooking.classTemplate = await ctx.db.get(classInstance.templateId) || undefined;
-            //     }
-
-            //     // Get venue
-            //     if (classInstance.venueId) {
-            //         enrichedBooking.venue = await ctx.db.get(classInstance.venueId) || undefined;
-            //     }
-
-            //     enrichedBookings.push(enrichedBooking);
-            // }
-
             result.push({
                 classInstance,
                 bookings: instanceBookings

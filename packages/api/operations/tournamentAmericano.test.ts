@@ -144,7 +144,7 @@ describe('Tournament Americano Operations', () => {
 
             expect(result.totalRounds).toBeGreaterThan(0);
             expect(result.matches.length).toBeGreaterThan(0);
-            expect(result.playerMatchCounts.size).toBe(8);
+            expect(Object.keys(result.playerMatchCounts)).toHaveLength(8);
         });
 
         it('should generate schedule for fixed teams', () => {
@@ -167,7 +167,7 @@ describe('Tournament Americano Operations', () => {
             const participants = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'];
             const result = generateSchedule({ participantIds: participants, config: limitedConfig });
 
-            result.playerMatchCounts.forEach((count) => {
+            Object.values(result.playerMatchCounts).forEach((count) => {
                 expect(count).toBeLessThanOrEqual(3);
             });
         });

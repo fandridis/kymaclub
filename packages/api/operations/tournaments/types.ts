@@ -139,8 +139,8 @@ export interface GeneratedSchedule<TPlayerId = string> {
     totalRounds: number;
     /** All matches in the tournament */
     matches: GenericMatch<TPlayerId>[];
-    /** Map of player ID to number of matches they play */
-    playerMatchCounts: Map<TPlayerId, number>;
+    /** Record of player ID (as string) to number of matches they play */
+    playerMatchCounts: Record<string, number>;
 }
 
 /***************************************************************

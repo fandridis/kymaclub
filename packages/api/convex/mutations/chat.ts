@@ -64,6 +64,10 @@ export type ArchiveThreadArgs = Infer<typeof archiveThreadArgs>;
  */
 export const sendMessage = mutationWithTriggers({
   args: sendMessageArgs,
+  returns: v.object({
+    threadId: v.id("chatMessageThreads"),
+    messageId: v.id("chatMessages"),
+  }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
 
@@ -79,6 +83,9 @@ export const sendMessage = mutationWithTriggers({
  */
 export const markMessagesAsRead = mutation({
   args: markMessagesAsReadArgs,
+  returns: v.object({
+    updatedCount: v.number(),
+  }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
 
@@ -93,6 +100,10 @@ export const markMessagesAsRead = mutation({
  */
 export const createSystemMessage = mutationWithTriggers({
   args: createSystemMessageArgs,
+  returns: v.object({
+    threadId: v.id("chatMessageThreads"),
+    messageId: v.id("chatMessages"),
+  }),
   handler: async (ctx, args) => {
     // Note: This doesn't require authentication as it's called internally
     // The service will validate the caller has appropriate permissions
@@ -108,6 +119,9 @@ export const createSystemMessage = mutationWithTriggers({
  */
 export const archiveThread = mutation({
   args: archiveThreadArgs,
+  returns: v.object({
+    success: v.boolean(),
+  }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
 
@@ -123,6 +137,10 @@ export const archiveThread = mutation({
 export const getOrCreateThread = mutation({
   args: v.object({
     venueId: v.id("venues"),
+  }),
+  returns: v.object({
+    threadId: v.id("chatMessageThreads"),
+    isNew: v.boolean(),
   }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
@@ -150,6 +168,10 @@ const sendReplyArgs = v.object({
 
 export const sendReply = mutationWithTriggers({
   args: sendReplyArgs,
+  returns: v.object({
+    threadId: v.id("chatMessageThreads"),
+    messageId: v.id("chatMessages"),
+  }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
     const result = await chatService.sendReply({ ctx, args, user });
@@ -164,6 +186,9 @@ export const sendReply = mutationWithTriggers({
 export const deleteThread = mutation({
   args: v.object({
     threadId: v.id("chatMessageThreads"),
+  }),
+  returns: v.object({
+    success: v.boolean(),
   }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);

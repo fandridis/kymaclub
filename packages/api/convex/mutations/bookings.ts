@@ -27,6 +27,10 @@ export type BookClassArgs = Infer<typeof bookClassArgs>;
 
 export const bookClass = mutationWithTriggers({
   args: bookClassArgs,
+  returns: v.object({
+    bookingId: v.id("bookings"),
+    transactionId: v.string(),
+  }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
 
@@ -42,6 +46,9 @@ export const cancelBooking = mutationWithTriggers({
     reason: v.optional(v.string()),
     cancelledBy: v.union(v.literal("consumer"), v.literal("business")),
   }),
+  returns: v.object({
+    success: v.boolean(),
+  }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
 
@@ -55,6 +62,9 @@ export const deleteBooking = mutationWithTriggers({
   args: v.object({
     bookingId: v.id("bookings"),
   }),
+  returns: v.object({
+    success: v.boolean(),
+  }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
     const result = await bookingService.deleteBooking({ ctx, args, user });
@@ -65,6 +75,9 @@ export const deleteBooking = mutationWithTriggers({
 export const allowRebooking = mutationWithTriggers({
   args: v.object({
     bookingId: v.id("bookings"),
+  }),
+  returns: v.object({
+    success: v.boolean(),
   }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
@@ -80,6 +93,9 @@ export const allowRebooking = mutationWithTriggers({
 export const approveBooking = mutationWithTriggers({
   args: v.object({
     bookingId: v.id("bookings"),
+  }),
+  returns: v.object({
+    success: v.boolean(),
   }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
@@ -98,6 +114,9 @@ export const rejectBooking = mutationWithTriggers({
     bookingId: v.id("bookings"),
     reason: v.optional(v.string()),
   }),
+  returns: v.object({
+    success: v.boolean(),
+  }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
     const result = await bookingService.rejectBooking({ ctx, args, user });
@@ -108,6 +127,9 @@ export const rejectBooking = mutationWithTriggers({
 export const completeBooking = mutationWithTriggers({
   args: v.object({
     bookingId: v.id("bookings"),
+  }),
+  returns: v.object({
+    success: v.boolean(),
   }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);

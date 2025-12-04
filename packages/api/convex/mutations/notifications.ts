@@ -22,6 +22,9 @@ export type CreateNotificationArgs = Infer<typeof createNotificationArgs>;
 
 export const createNotification = mutationWithTriggers({
     args: createNotificationArgs,
+    returns: v.object({
+        createdNotificationId: v.id("notifications"),
+    }),
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
         return notificationService.createNotification({ ctx, args: args.notification, user });
@@ -38,6 +41,9 @@ export type MarkNotificationSeenArgs = Infer<typeof markNotificationSeenArgs>;
 
 export const markNotificationSeen = mutationWithTriggers({
     args: markNotificationSeenArgs,
+    returns: v.object({
+        success: v.boolean(),
+    }),
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
         return notificationService.markNotificationSeen({ ctx, args, user });
@@ -59,6 +65,9 @@ export type UpdateNotificationDeliveryStatusArgs = Infer<typeof updateNotificati
 
 export const updateNotificationDeliveryStatus = mutationWithTriggers({
     args: updateNotificationDeliveryStatusArgs,
+    returns: v.object({
+        success: v.boolean(),
+    }),
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
         return notificationService.updateNotificationDeliveryStatus({ ctx, args, user });
@@ -78,6 +87,9 @@ export const handleNewClassBookingEvent = internalMutation({
             creditsPaid: v.number(),
         })
     }),
+    returns: v.object({
+        createdNotificationId: v.union(v.id("notifications"), v.null()),
+    }),
     handler: async (ctx, args) => {
         return await notificationService.handleNewClassBookingEvent({ ctx, payload: args.payload });
     }
@@ -95,6 +107,9 @@ export const handleUserCancelledBookingEvent = internalMutation({
             businessId: v.id("businesses"),
             creditsPaid: v.number(),
         })
+    }),
+    returns: v.object({
+        createdNotificationId: v.union(v.id("notifications"), v.null()),
     }),
     handler: async (ctx, args) => {
         return await notificationService.handleUserCancelledBookingEvent({ ctx, payload: args.payload });
@@ -114,6 +129,9 @@ export const handleBusinessCancelledBookingEvent = internalMutation({
             creditsPaid: v.number(),
         })
     }),
+    returns: v.object({
+        success: v.boolean(),
+    }),
     handler: async (ctx, args) => {
         return await notificationService.handleBusinessCancelledBookingEvent({ ctx, payload: args.payload });
     }
@@ -131,6 +149,9 @@ export const handleRebookableBookingEvent = internalMutation({
             businessId: v.id("businesses"),
             creditsPaid: v.number(),
         })
+    }),
+    returns: v.object({
+        success: v.boolean(),
     }),
     handler: async (ctx, args) => {
         return await notificationService.handleBookingBecameRebookableEvent({ ctx, payload: args.payload });
@@ -151,6 +172,9 @@ export const handleSubscriptionCreditsReceivedEvent = internalMutation({
             planName: v.string(),
         })
     }),
+    returns: v.object({
+        success: v.boolean(),
+    }),
     handler: async (ctx, args) => {
         return await notificationService.handleSubscriptionCreditsReceivedEvent({ ctx, payload: args.payload });
     }
@@ -166,6 +190,9 @@ export const handleWelcomeBonusEvent = internalMutation({
             welcomeCredits: v.number(),
         }),
     }),
+    returns: v.object({
+        success: v.boolean(),
+    }),
     handler: async (ctx, args) => {
         return await notificationService.handleWelcomeBonusEvent({ ctx, payload: args.payload });
     },
@@ -180,6 +207,9 @@ export const handleReviewApprovedEvent = internalMutation({
             reviewId: v.id("venueReviews"),
             businessId: v.id("businesses"),
         })
+    }),
+    returns: v.object({
+        createdNotificationId: v.union(v.id("notifications"), v.null()),
     }),
     handler: async (ctx, args) => {
         return await notificationService.handleReviewApprovedEvent({ ctx, payload: args.payload });
@@ -200,6 +230,9 @@ export const handleBookingAwaitingApprovalEvent = internalMutation({
             creditsPaid: v.number(),
         })
     }),
+    returns: v.object({
+        createdNotificationId: v.union(v.id("notifications"), v.null()),
+    }),
     handler: async (ctx, args) => {
         return await notificationService.handleBookingAwaitingApprovalEvent({ ctx, payload: args.payload });
     }
@@ -218,6 +251,9 @@ export const handleBookingApprovedEvent = internalMutation({
             businessId: v.id("businesses"),
             creditsPaid: v.number(),
         })
+    }),
+    returns: v.object({
+        success: v.boolean(),
     }),
     handler: async (ctx, args) => {
         return await notificationService.handleBookingApprovedEvent({ ctx, payload: args.payload });
@@ -238,6 +274,9 @@ export const handleBookingRejectedEvent = internalMutation({
             creditsPaid: v.number(),
             reason: v.optional(v.string()),
         })
+    }),
+    returns: v.object({
+        success: v.boolean(),
     }),
     handler: async (ctx, args) => {
         return await notificationService.handleBookingRejectedEvent({ ctx, payload: args.payload });

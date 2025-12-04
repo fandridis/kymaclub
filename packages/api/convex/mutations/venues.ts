@@ -19,6 +19,9 @@ export type CreateVenueArgs = Infer<typeof createVenueArgs>;
 
 export const createVenue = mutationWithTriggers({
     args: createVenueArgs,
+    returns: v.object({
+        createdVenueId: v.id("venues"),
+    }),
     handler: async (ctx, args) => {
         const { user } = await getAuthenticatedUserAndBusinessOrThrow(ctx);
         return venueService.create({ ctx, args, user });
@@ -39,6 +42,9 @@ export type UpdateVenueArgs = Infer<typeof updateVenueArgs>;
 
 export const updateVenue = mutationWithTriggers({
     args: updateVenueArgs,
+    returns: v.object({
+        updatedVenueId: v.id("venues"),
+    }),
     handler: async (ctx, args) => {
         const { user } = await getAuthenticatedUserAndBusinessOrThrow(ctx);
         return venueService.update({ ctx, args, user });
@@ -56,6 +62,9 @@ export type DeleteVenueArgs = Infer<typeof deleteVenueArgs>;
 
 export const deleteVenue = mutationWithTriggers({
     args: deleteVenueArgs,
+    returns: v.object({
+        deletedVenueId: v.id("venues"),
+    }),
     handler: async (ctx, args) => {
         const { user } = await getAuthenticatedUserAndBusinessOrThrow(ctx);
         return venueService.delete({ ctx, args, user });
@@ -75,6 +84,7 @@ export type UpdateVenueCoordinatesArgs = Infer<typeof updateVenueCoordinatesArgs
 
 export const updateVenueCoordinates = internalMutation({
     args: updateVenueCoordinatesArgs,
+    returns: v.null(),
     handler: async (ctx, args) => {
 
         const existingVenue = await ctx.db.get(args.venueId);
@@ -95,6 +105,6 @@ export const updateVenueCoordinates = internalMutation({
             },
         };
 
-        return ctx.db.patch(args.venueId, updateArgs.venue);
+        await ctx.db.patch(args.venueId, updateArgs.venue);
     }
 });

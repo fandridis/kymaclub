@@ -16,6 +16,9 @@ export type CreateVenueReviewArgs = Infer<typeof createVenueReviewArgs>;
 
 export const createVenueReview = mutationWithTriggers({
   args: createVenueReviewArgs,
+  returns: v.object({
+    createdReviewId: v.id("venueReviews"),
+  }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
     return reviewsService.createVenueReview({ ctx, args, user });
@@ -34,6 +37,9 @@ export type UpdateVenueReviewArgs = Infer<typeof updateVenueReviewArgs>;
 
 export const updateVenueReview = mutationWithTriggers({
   args: updateVenueReviewArgs,
+  returns: v.object({
+    updatedReviewId: v.id("venueReviews"),
+  }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
 
@@ -82,6 +88,9 @@ export type DeleteVenueReviewArgs = Infer<typeof deleteVenueReviewArgs>;
 
 export const deleteVenueReview = mutationWithTriggers({
   args: deleteVenueReviewArgs,
+  returns: v.object({
+    deletedReviewId: v.id("venueReviews"),
+  }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
 
@@ -121,6 +130,7 @@ export type UpdateReviewForModerationArgs = Infer<typeof updateReviewForModerati
 
 export const updateReviewForModeration = internalMutationWithTriggers({
   args: updateReviewForModerationArgs,
+  returns: v.null(),
   handler: async (ctx, args) => {
     await ctx.db.patch(args.reviewId, args.updateData);
   }
@@ -133,6 +143,7 @@ export type UpdateVenueRatingStatsArgs = Infer<typeof updateVenueRatingStatsArgs
 
 export const updateVenueRatingStats = internalMutation({
   args: updateVenueRatingStatsArgs,
+  returns: v.null(),
   handler: async (ctx, args) => {
     await reviewsService._updateVenueRatingStats(ctx, args.venueId);
   }

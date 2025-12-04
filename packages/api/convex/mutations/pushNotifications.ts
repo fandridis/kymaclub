@@ -8,6 +8,7 @@ const pushNotifications = new PushNotifications(components.pushNotifications);
 
 export const recordPushNotificationToken = mutation({
     args: { token: v.string() },
+    returns: v.null(),
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
 
@@ -20,6 +21,7 @@ export const recordPushNotificationToken = mutation({
 
 export const pausePushNotifications = mutation({
     args: { userId: v.id("users") },
+    returns: v.null(),
     handler: async (ctx, args) => {
         await pushNotifications.pauseNotificationsForUser(ctx, { userId: args.userId });
     },
@@ -27,6 +29,7 @@ export const pausePushNotifications = mutation({
 
 export const resumePushNotifications = mutation({
     args: { userId: v.id("users") },
+    returns: v.null(),
     handler: async (ctx, args) => {
         await pushNotifications.unpauseNotificationsForUser(ctx, { userId: args.userId });
     },
@@ -57,6 +60,7 @@ export type SendPushNotificationArgs = Infer<typeof sendPushNotificationArgs>;
 
 export const sendPushNotification = internalMutation({
     args: sendPushNotificationArgs,
+    returns: v.optional(v.string()),
     handler: async (ctx, args) => {
         const pushId = await pushNotifications.sendPushNotification(ctx, {
             userId: args.to,

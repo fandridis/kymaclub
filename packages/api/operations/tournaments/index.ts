@@ -29,6 +29,8 @@ export {
     shuffleArray,
     isValidParticipantCount,
     getMinimumCourts,
+    assertTeamSize,
+    asDoublesTeam,
 } from './core';
 
 // Standings

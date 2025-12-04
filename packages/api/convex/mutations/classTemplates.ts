@@ -22,6 +22,9 @@ export type CreateClassTemplateArgs = Infer<typeof createClassTemplateArgs>;
 
 export const createClassTemplate = mutationWithTriggers({
     args: createClassTemplateArgs,
+    returns: v.object({
+        createdTemplateId: v.id("classTemplates"),
+    }),
     handler: async (ctx, args) => {
         const { user, business } = await getAuthenticatedUserAndBusinessOrThrow(ctx);
         return classTemplateService.create({ ctx, args, user });
@@ -42,6 +45,9 @@ export type UpdateClassTemplateArgs = Infer<typeof updateClassTemplateArgs>;
 
 export const updateClassTemplate = mutationWithTriggers({
     args: updateClassTemplateArgs,
+    returns: v.object({
+        updatedTemplateId: v.id("classTemplates"),
+    }),
     handler: async (ctx, args) => {
         const { user, business } = await getAuthenticatedUserAndBusinessOrThrow(ctx);
         return classTemplateService.update({ ctx, args, user });
@@ -59,6 +65,9 @@ export type DeleteClassTemplateArgs = Infer<typeof deleteClassTemplateArgs>;
 
 export const deleteClassTemplate = mutationWithTriggers({
     args: deleteClassTemplateArgs,
+    returns: v.object({
+        deletedTemplateId: v.id("classTemplates"),
+    }),
     handler: async (ctx, args) => {
         const { user, business } = await getAuthenticatedUserAndBusinessOrThrow(ctx);
         return classTemplateService.delete({ ctx, args, user });
@@ -71,6 +80,9 @@ export const deleteClassTemplate = mutationWithTriggers({
 
 export const hardDeleteClassTemplate = mutationWithTriggers({
     args: deleteClassTemplateArgs,
+    returns: v.object({
+        success: v.boolean(),
+    }),
     handler: async (ctx, args) => {
         const { user, business } = await getAuthenticatedUserAndBusinessOrThrow(ctx);
         return classTemplateService.hardDelete({ ctx, args, user });

@@ -60,12 +60,22 @@ const generateFixedTeamsSchedule = <TPlayerId = string>(
 ): GeneratedSchedule<TPlayerId> => {
     const { participantIds, courts, maxMatchesPerPlayer, teamSize, predefinedTeams } = config;
 
+    // Input validation
+    if (courts.length === 0) {
+        throw new Error('At least one court is required for scheduling');
+    }
+    if (participantIds.length === 0) {
+        throw new Error('At least one participant is required');
+    }
+
     // Generate teams
     const teams = generateFixedTeams(participantIds, teamSize, predefinedTeams);
     const matches: GenericMatch<TPlayerId>[] = [];
-    const playerMatchCounts = new Map<TPlayerId, number>(
-        participantIds.map(id => [id, 0])
-    );
+    
+    // Use Record instead of Map for Convex compatibility
+    const playerMatchCounts: Record<string, number> = {};
+    participantIds.forEach(id => { playerMatchCounts[String(id)] = 0; });
+    
     const courtsPerRound = courts.length;
 
     // Initialize opponent tracking: Map<TeamId, Map<OpponentTeamId, Count>>
@@ -94,7 +104,7 @@ const generateFixedTeamsSchedule = <TPlayerId = string>(
             // Check if any player would exceed max matches
             const allPlayers = [...team1.playerIds, ...team2.playerIds];
             return !allPlayers.some(
-                id => (playerMatchCounts.get(id) || 0) >= maxMatchesPerPlayer
+                id => (playerMatchCounts[String(id)] || 0) >= maxMatchesPerPlayer
             );
         });
 
@@ -116,10 +126,10 @@ const generateFixedTeamsSchedule = <TPlayerId = string>(
 
             // Priority 2: Workload Balance (minimize total player match counts)
             const workloadA = [...team1A.playerIds, ...team2A.playerIds].reduce(
-                (sum, id) => sum + (playerMatchCounts.get(id) || 0), 0
+                (sum, id) => sum + (playerMatchCounts[String(id)] || 0), 0
             );
             const workloadB = [...team1B.playerIds, ...team2B.playerIds].reduce(
-                (sum, id) => sum + (playerMatchCounts.get(id) || 0), 0
+                (sum, id) => sum + (playerMatchCounts[String(id)] || 0), 0
             );
             return workloadA - workloadB; // ASC: Matchup with least played players wins
         });
@@ -160,7 +170,7 @@ const generateFixedTeamsSchedule = <TPlayerId = string>(
 
             // Update player match counts
             [...team1.playerIds, ...team2.playerIds].forEach(id => {
-                playerMatchCounts.set(id, (playerMatchCounts.get(id) || 0) + 1);
+                playerMatchCounts[String(id)] = (playerMatchCounts[String(id)] || 0) + 1;
             });
 
             // Update opponent tracking (for next round's scoring)
@@ -204,10 +214,20 @@ const generateRotatingSchedule = <TPlayerId = string>(
 ): GeneratedSchedule<TPlayerId> => {
     const { participantIds, courts, maxMatchesPerPlayer, teamSize } = config;
 
+    // Input validation
+    if (courts.length === 0) {
+        throw new Error('At least one court is required for scheduling');
+    }
+    if (participantIds.length === 0) {
+        throw new Error('At least one participant is required');
+    }
+
     const matches: GenericMatch<TPlayerId>[] = [];
-    const playerMatchCounts = new Map<TPlayerId, number>(
-        participantIds.map(id => [id, 0])
-    );
+    
+    // Use Record instead of Map for Convex compatibility
+    const playerMatchCounts: Record<string, number> = {};
+    participantIds.forEach(id => { playerMatchCounts[String(id)] = 0; });
+    
     const maxCourts = courts.length;
     const playersPerMatch = teamSize * 2;
 
@@ -245,17 +265,17 @@ const generateRotatingSchedule = <TPlayerId = string>(
         // 1. Filter out matches where any player is already at max
         let availableMatches = potentialMatches.filter(match =>
             !match.players.some(id =>
-                (playerMatchCounts.get(id) || 0) >= maxMatchesPerPlayer
+                (playerMatchCounts[String(id)] || 0) >= maxMatchesPerPlayer
             )
         );
 
         // 2. Sort available matches based on player workload (fairness metric)
         availableMatches.sort((matchA, matchB) => {
             const workloadA = matchA.players.reduce(
-                (sum, id) => sum + (playerMatchCounts.get(id) || 0), 0
+                (sum, id) => sum + (playerMatchCounts[String(id)] || 0), 0
             );
             const workloadB = matchB.players.reduce(
-                (sum, id) => sum + (playerMatchCounts.get(id) || 0), 0
+                (sum, id) => sum + (playerMatchCounts[String(id)] || 0), 0
             );
             return workloadA - workloadB;
         });
@@ -287,7 +307,7 @@ const generateRotatingSchedule = <TPlayerId = string>(
             matchesInThisRound.push(match);
             potentialMatch.players.forEach(id => {
                 playersPlayingThisRound.add(id);
-                playerMatchCounts.set(id, (playerMatchCounts.get(id) || 0) + 1);
+                playerMatchCounts[String(id)] = (playerMatchCounts[String(id)] || 0) + 1;
             });
             courtIndex++;
         }
@@ -296,7 +316,7 @@ const generateRotatingSchedule = <TPlayerId = string>(
 
         // Stop if all players have reached max matches
         const allAtMax = participantIds.every(
-            id => (playerMatchCounts.get(id) || 0) >= maxMatchesPerPlayer
+            id => (playerMatchCounts[String(id)] || 0) >= maxMatchesPerPlayer
         );
         if (allAtMax) break;
     }
@@ -324,13 +344,15 @@ const generateRotatingSchedule = <TPlayerId = string>(
  * @param matchId - ID of match to update
  * @param team1Score - Score for team 1
  * @param team2Score - Score for team 2
+ * @param timestamp - Optional timestamp for completion (defaults to Date.now())
  * @returns New matches array with the result applied
  */
 export const applyMatchResult = <TPlayerId = string>(
     matches: GenericMatch<TPlayerId>[],
     matchId: string,
     team1Score: number,
-    team2Score: number
+    team2Score: number,
+    timestamp: number = Date.now()
 ): GenericMatch<TPlayerId>[] => {
     return matches.map(match => {
         if (match.id !== matchId) return match;
@@ -340,7 +362,7 @@ export const applyMatchResult = <TPlayerId = string>(
             team1Score,
             team2Score,
             status: 'completed' as const,
-            completedAt: Date.now(),
+            completedAt: timestamp,
         };
     });
 };

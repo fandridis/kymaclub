@@ -192,6 +192,32 @@ export const shuffleArray = <T>(array: T[]): T[] => {
  ***************************************************************/
 
 /**
+ * Assert that a team has the expected number of players
+ * 
+ * @param team - Array of player IDs
+ * @param expectedSize - Expected team size
+ * @throws Error if team size doesn't match
+ */
+export const assertTeamSize = <T>(team: T[], expectedSize: number): void => {
+    if (team.length !== expectedSize) {
+        throw new Error(`Expected team of ${expectedSize} players, got ${team.length}`);
+    }
+};
+
+/**
+ * Safely cast an array to a tuple of specific size after validation
+ * 
+ * @param team - Array of player IDs
+ * @param expectedSize - Expected team size (must be 2 for doubles)
+ * @returns The team as a validated tuple
+ * @throws Error if team size doesn't match
+ */
+export const asDoublesTeam = <T>(team: T[]): [T, T] => {
+    assertTeamSize(team, 2);
+    return [team[0], team[1]];
+};
+
+/**
  * Check if participant count is valid for the given team size
  * 
  * @param participantCount - Number of participants

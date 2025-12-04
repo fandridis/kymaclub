@@ -64,6 +64,9 @@ export const upsertUserSettingsArgs = v.object({
 
 export const upsertUserSettings = mutation({
     args: upsertUserSettingsArgs,
+    returns: v.object({
+        settingsId: v.id("userSettings"),
+    }),
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
         return await settingsService.upsertUserSettings({ ctx, args, user });
@@ -80,6 +83,9 @@ export const updateUserBannerSettingsArgs = v.object({
 
 export const updateUserBannerSettings = mutation({
     args: updateUserBannerSettingsArgs,
+    returns: v.object({
+        success: v.boolean(),
+    }),
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
         return await settingsService.updateUserBannerSettings({ ctx, args, user });
@@ -119,6 +125,9 @@ export const upsertBusinessSettingsArgs = v.object({
 
 export const upsertBusinessSettings = mutation({
     args: upsertBusinessSettingsArgs,
+    returns: v.object({
+        settingsId: v.id("businessSettings"),
+    }),
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
         return await settingsService.upsertBusinessSettings({ ctx, args, user });

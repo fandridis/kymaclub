@@ -12,6 +12,7 @@ export const updateUserForModerationArgs = v.object({
 
 export const updateUserForModeration = internalMutationWithTriggers({
     args: updateUserForModerationArgs,
+    returns: v.null(),
     handler: async (ctx, args) => {
         await ctx.db.patch(args.userId, args.updateData);
     }

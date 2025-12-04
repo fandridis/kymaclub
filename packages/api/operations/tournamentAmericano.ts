@@ -16,6 +16,7 @@ import {
     getCurrentRound as genericGetCurrentRound,
     isTournamentComplete as genericIsTournamentComplete,
     shuffleArray,
+    assertTeamSize,
     // Standings
     calculateStandings as genericCalculateStandings,
     sortStandings as genericSortStandings,
@@ -137,11 +138,14 @@ export const generateFixedTeams = (
 
     const teams = genericGenerateFixedTeams(participantIds, AMERICANO_TEAM_SIZE, genericPredefined);
 
-    // Cast back to Americano-specific format with [string, string] tuple
-    return teams.map(t => ({
-        teamId: t.teamId,
-        playerIds: t.playerIds as [string, string],
-    }));
+    // Validate and cast to Americano-specific format with [string, string] tuple
+    return teams.map(t => {
+        assertTeamSize(t.playerIds, AMERICANO_TEAM_SIZE);
+        return {
+            teamId: t.teamId,
+            playerIds: [t.playerIds[0], t.playerIds[1]] as [string, string],
+        };
+    });
 };
 
 /**
@@ -172,7 +176,8 @@ interface ScheduleParams {
 interface GeneratedSchedule {
     totalRounds: number;
     matches: TournamentAmericanoMatch[];
-    playerMatchCounts: Map<string, number>;
+    /** Record of player ID to match count (compatible with Convex storage) */
+    playerMatchCounts: Record<string, number>;
 }
 
 /**
@@ -202,17 +207,23 @@ export const generateSchedule = (params: ScheduleParams): GeneratedSchedule => {
     // Convert generic matches to Americano matches
     // Note: Generic status includes 'cancelled' but Americano only has scheduled/in_progress/completed
     // Since we're generating new matches, they will always be 'scheduled' initially
-    const americanoMatches: TournamentAmericanoMatch[] = result.matches.map(m => ({
-        id: m.id,
-        roundNumber: m.roundNumber,
-        courtId: m.courtId,
-        team1: m.team1 as [string, string],
-        team2: m.team2 as [string, string],
-        status: m.status as TournamentAmericanoMatch['status'],
-        team1Score: m.team1Score,
-        team2Score: m.team2Score,
-        completedAt: m.completedAt,
-    }));
+    const americanoMatches: TournamentAmericanoMatch[] = result.matches.map(m => {
+        // Validate team sizes for doubles (Americano)
+        assertTeamSize(m.team1, AMERICANO_TEAM_SIZE);
+        assertTeamSize(m.team2, AMERICANO_TEAM_SIZE);
+
+        return {
+            id: m.id,
+            roundNumber: m.roundNumber,
+            courtId: m.courtId,
+            team1: [m.team1[0], m.team1[1]] as [string, string],
+            team2: [m.team2[0], m.team2[1]] as [string, string],
+            status: m.status as TournamentAmericanoMatch['status'],
+            team1Score: m.team1Score,
+            team2Score: m.team2Score,
+            completedAt: m.completedAt,
+        };
+    });
 
     return {
         totalRounds: result.totalRounds,

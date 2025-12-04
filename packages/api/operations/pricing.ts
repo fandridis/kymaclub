@@ -1,6 +1,7 @@
 import type { Doc } from '../convex/_generated/dataModel';
 import { PricingResult } from '../types/pricing';
 import { logger } from '../utils/logger';
+import { doesRuleApply } from '../utils/classDiscount';
 
 /**
  * Business logic for flexible pricing calculations with configurable discount rules
@@ -201,7 +202,8 @@ const calculateDiscount = async (
   let bestRuleName = null;
 
   for (const rule of discountRules) {
-    const isValid = evaluateDiscountCondition(rule.condition, hoursUntilClass);
+    // Use shared doesRuleApply from utils/classDiscount.ts
+    const isValid = doesRuleApply(rule, hoursUntilClass);
 
     if (isValid && rule.discount.value > bestDiscountAmount) {
       bestDiscountAmount = rule.discount.value;
@@ -232,49 +234,6 @@ const calculateDiscount = async (
   });
 
   return bestDiscountAmount;
-};
-
-/**
- * Evaluates if a discount condition is met based on current timing
- * 
- * @param condition - The discount rule condition to evaluate
- * @param hoursUntilClass - Hours until class starts (can be negative for past classes)
- * @returns boolean indicating if condition is satisfied
- * 
- * @example
- * // hours_before_min: must book at least X hours in advance
- * evaluateDiscountCondition({ type: "hours_before_min", hours: 48 }, 72); // true (72 > 48)
- * evaluateDiscountCondition({ type: "hours_before_min", hours: 48 }, 24); // false (24 < 48)
- * 
- * @example  
- * // hours_before_max: must book within X hours of class
- * evaluateDiscountCondition({ type: "hours_before_max", hours: 24 }, 12); // true (12 < 24)
- * evaluateDiscountCondition({ type: "hours_before_max", hours: 24 }, 48); // false (48 > 24)
- * 
- * @example
- * // always: condition is always met
- * evaluateDiscountCondition({ type: "always" }, -10); // true (even for past classes)
- */
-const evaluateDiscountCondition = (
-  condition: { type: "hours_before_min" | "hours_before_max" | "always", hours?: number },
-  hoursUntilClass: number
-): boolean => {
-  switch (condition.type) {
-    case "always":
-      return true;
-
-    case "hours_before_min":
-      // Must book at least X hours in advance
-      return condition.hours !== undefined && hoursUntilClass >= condition.hours;
-
-    case "hours_before_max":
-      // Must book within X hours of class start
-      return condition.hours !== undefined && hoursUntilClass <= condition.hours;
-
-    default:
-      logger.debug("Unknown condition type", { conditionType: condition.type });
-      return false;
-  }
 };
 
 /**
@@ -409,7 +368,8 @@ const calculateDiscountFromInstance = async (
   let bestRuleName = null;
 
   for (const rule of discountRules) {
-    const isValid = evaluateDiscountCondition(rule.condition, hoursUntilClass);
+    // Use shared doesRuleApply from utils/classDiscount.ts
+    const isValid = doesRuleApply(rule, hoursUntilClass);
 
     if (isValid && rule.discount.value > bestDiscountAmount) {
       bestDiscountAmount = rule.discount.value;

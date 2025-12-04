@@ -39,20 +39,27 @@ export type DiscountCalculationResult = {
 };
 
 /**
- * Apply a fixed amount discount to a price
- */
-function applyDiscountToPrice(
-  originalPrice: number,
-  discountAmount: number
-): number {
-  // originalPrice - discountAmount (e.g., 10 - 2 = 8)
-  return Math.max(0, originalPrice - discountAmount);
-}
-
-/**
  * Check if a discount rule applies based on booking time and class start time
+ * 
+ * @param rule - The discount rule to evaluate
+ * @param hoursUntilClass - Hours until class starts (can be negative for past classes)
+ * @returns boolean indicating if the rule's condition is satisfied
+ * 
+ * @example
+ * // hours_before_min: must book at least X hours in advance
+ * doesRuleApply({ condition: { type: "hours_before_min", hours: 48 }}, 72); // true (72 >= 48)
+ * doesRuleApply({ condition: { type: "hours_before_min", hours: 48 }}, 24); // false (24 < 48)
+ * 
+ * @example  
+ * // hours_before_max: must book within X hours of class (and not past)
+ * doesRuleApply({ condition: { type: "hours_before_max", hours: 24 }}, 12); // true (12 <= 24 && >= 0)
+ * doesRuleApply({ condition: { type: "hours_before_max", hours: 24 }}, 48); // false (48 > 24)
+ * 
+ * @example
+ * // always: condition is always met
+ * doesRuleApply({ condition: { type: "always" }}, -10); // true (even for past classes)
  */
-function doesRuleApply(
+export function doesRuleApply(
   rule: ClassDiscountRule,
   hoursUntilClass: number
 ): boolean {

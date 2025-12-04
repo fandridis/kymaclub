@@ -12,6 +12,12 @@ export const purchaseCredits = mutation({
     paymentRef: v.string(),
     description: v.optional(v.string()),
   }),
+  returns: v.object({
+    success: v.boolean(),
+    transactionId: v.string(),
+    newBalance: v.number(),
+    message: v.string(),
+  }),
   handler: async (ctx, args) => {
     const { userId, amount, paymentRef, description = `Purchased ${amount} credits` } = args;
 
@@ -43,6 +49,12 @@ export const refundCredits = mutation({
     reason: v.string(),
     businessId: v.optional(v.id("businesses")),
     classInstanceId: v.optional(v.id("classInstances")),
+  }),
+  returns: v.object({
+    success: v.boolean(),
+    transactionId: v.string(),
+    newBalance: v.number(),
+    message: v.string(),
   }),
   handler: async (ctx, args) => {
     const { userId, amount, reason, businessId, classInstanceId } = args;
@@ -76,6 +88,7 @@ export const addCreditsForSubscription = internalMutation({
     subscriptionId: v.id("subscriptions"),
     description: v.string(),
   }),
+  returns: v.string(),
   handler: async (ctx, { userId, amount, subscriptionId, description }) => {
     const result = await creditService.addCredits(ctx, {
       userId,
@@ -105,6 +118,7 @@ export const createPendingCreditPurchase = internalMutation({
     currency: v.string(),
     description: v.string(),
   }),
+  returns: v.id("creditTransactions"),
   handler: async (ctx, args) => {
     const result = await creditService.createPendingPurchase(ctx, args);
     return result.transactionId;
@@ -117,6 +131,10 @@ export const createPendingCreditPurchase = internalMutation({
 export const completeCreditPurchase = internalMutation({
   args: v.object({
     stripePaymentIntentId: v.string(),
+  }),
+  returns: v.object({
+    newBalance: v.number(),
+    transactionId: v.id("creditTransactions"),
   }),
   handler: async (ctx, { stripePaymentIntentId }) => {
     const result = await creditService.completePurchase(ctx, {
@@ -134,6 +152,7 @@ export const updateCreditTransactionPaymentIntent = internalMutation({
     transactionId: v.id("creditTransactions"),
     stripePaymentIntentId: v.string(),
   }),
+  returns: v.id("creditTransactions"),
   handler: async (ctx, { transactionId, stripePaymentIntentId }) => {
     await ctx.db.patch(transactionId, {
       stripePaymentIntentId,

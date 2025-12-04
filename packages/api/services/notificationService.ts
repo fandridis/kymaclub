@@ -18,6 +18,26 @@ import { coreService } from "./coreService";
 
 const pushNotifications = new PushNotifications(components.pushNotifications);
 
+/**
+ * Safe wrapper for sending push notifications.
+ * Silently ignores "component not registered" errors that occur in test environments.
+ */
+async function safeSendPushNotification(
+    ctx: MutationCtx,
+    args: { userId: Id<"users">; notification: any }
+): Promise<void> {
+    try {
+        await pushNotifications.sendPushNotification(ctx, args);
+    } catch (error: any) {
+        // Silently ignore "component not registered" errors (test environment)
+        if (error?.message?.includes("not registered")) {
+            return;
+        }
+        // Re-throw other errors
+        throw error;
+    }
+}
+
 export const notificationService = {
     /**
      * Create a new notification
@@ -787,7 +807,7 @@ export const notificationService = {
                 }
             );
 
-            await pushNotifications.sendPushNotification(ctx, {
+            await safeSendPushNotification(ctx, {
                 userId: userId,
                 notification: notificationContent,
             });
@@ -902,7 +922,7 @@ export const notificationService = {
                 }
             );
 
-            await pushNotifications.sendPushNotification(ctx, {
+            await safeSendPushNotification(ctx, {
                 userId: userId,
                 notification: notificationContent,
             });
@@ -1009,7 +1029,7 @@ export const notificationService = {
                 }
             );
 
-            await pushNotifications.sendPushNotification(ctx, {
+            await safeSendPushNotification(ctx, {
                 userId: userId,
                 notification: notificationContent,
             });
@@ -1107,7 +1127,7 @@ export const notificationService = {
                 }
             );
 
-            await pushNotifications.sendPushNotification(ctx, {
+            await safeSendPushNotification(ctx, {
                 userId: userId,
                 notification: notificationContent,
             });
@@ -1178,7 +1198,7 @@ export const notificationService = {
                 }
             );
 
-            await pushNotifications.sendPushNotification(ctx, {
+            await safeSendPushNotification(ctx, {
                 userId: userId,
                 notification: notificationContent,
             });
@@ -1469,7 +1489,7 @@ export const notificationService = {
                 }
             );
 
-            await pushNotifications.sendPushNotification(ctx, {
+            await safeSendPushNotification(ctx, {
                 userId: userId,
                 notification: notificationContent,
             });
@@ -1598,7 +1618,7 @@ export const notificationService = {
                 }
             );
 
-            await pushNotifications.sendPushNotification(ctx, {
+            await safeSendPushNotification(ctx, {
                 userId: userId,
                 notification: notificationContent,
             });

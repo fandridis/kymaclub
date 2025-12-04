@@ -45,6 +45,10 @@ export type CreateBusinessWithVenueArgs = Infer<typeof createBusinessWithVenueAr
 
 export const createBusinessWithVenue = mutationWithTriggers({
     args: createBusinessWithVenueArgs,
+    returns: v.object({
+        createdBusinessId: v.id("businesses"),
+        createdVenueId: v.id("venues"),
+    }),
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
         return coreService.createBusinessWithVenue({ ctx, args, user });
@@ -68,6 +72,9 @@ export type UpdateBusinessSocialArgs = Infer<typeof updateBusinessSocialArgs>;
 
 export const updateBusinessSocial = mutationWithTriggers({
     args: updateBusinessSocialArgs,
+    returns: v.object({
+        updatedBusinessId: v.id("businesses"),
+    }),
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
         return coreService.updateBusinessSocial({ ctx, args, user });
@@ -85,6 +92,9 @@ export type UpdateBusinessDetailsArgs = Infer<typeof updateBusinessDetailsArgs>;
 
 export const updateBusinessDetails = mutationWithTriggers({
     args: updateBusinessDetailsArgs,
+    returns: v.object({
+        updatedBusinessId: v.id("businesses"),
+    }),
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
         return coreService.updateBusinessDetails({ ctx, args, user });
@@ -101,6 +111,9 @@ export type UpdateCurrentUserProfileArgs = Infer<typeof updateCurrentUserProfile
 
 export const updateCurrentUserProfile = mutationWithTriggers({
     args: updateCurrentUserProfileArgs,
+    returns: v.object({
+        updatedUserId: v.id("users"),
+    }),
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
         return coreService.updateCurrentUserProfile({ ctx, args, user });
@@ -118,6 +131,9 @@ export type CompleteConsumerOnboardingArgs = Infer<typeof completeConsumerOnboar
 
 export const completeConsumerOnboarding = mutationWithTriggers({
     args: completeConsumerOnboardingArgs,
+    returns: v.object({
+        updatedUserId: v.id("users"),
+    }),
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
         return coreService.completeConsumerOnboarding({ ctx, args, user });
@@ -134,6 +150,7 @@ export type CheckUserExistsByEmailArgs = Infer<typeof checkUserExistsByEmailArgs
 
 export const checkUserExistsByEmail = mutationWithTriggers({
     args: checkUserExistsByEmailArgs,
+    returns: v.boolean(),
     handler: async (ctx, args) => {
         const user = await ctx.db
             .query("users")
@@ -154,6 +171,9 @@ export type UpdateStripeCustomerIdArgs = Infer<typeof updateStripeCustomerIdArgs
 
 export const updateStripeCustomerId = internalMutation({
     args: updateStripeCustomerIdArgs,
+    returns: v.object({
+        success: v.boolean(),
+    }),
     handler: async (ctx, args) => {
         // This is an internal mutation called by webhooks, so no auth check needed
         // Just verify the user exists
@@ -176,6 +196,9 @@ export const updateStripeCustomerId = internalMutation({
  ***************************************************************/
 export const removeAllSessions = mutation({
     args: {},
+    returns: v.object({
+        success: v.boolean(),
+    }),
     handler: async (ctx) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
         // remove all records from authSessions table with column userId equal to user._id
@@ -199,6 +222,10 @@ export type UpdateUserCityArgs = Infer<typeof updateUserCityArgs>;
 
 export const updateUserCity = mutationWithTriggers({
     args: updateUserCityArgs,
+    returns: v.object({
+        success: v.boolean(),
+        city: v.string(),
+    }),
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
 
@@ -233,6 +260,10 @@ export type AuthorizeBusinessEmailArgs = Infer<typeof authorizeBusinessEmailArgs
 
 export const authorizeBusinessEmail = mutation({
     args: authorizeBusinessEmailArgs,
+    returns: v.object({
+        authorizedId: v.id("authorizedBusinessEmails"),
+        message: v.string(),
+    }),
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
 

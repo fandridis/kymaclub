@@ -90,6 +90,13 @@ export const generateFixedTeams = <TPlayerId = string>(
     teamSize: number,
     predefinedTeams?: GenericTeam<TPlayerId>[]
 ): GenericTeam<TPlayerId>[] => {
+    // Input validation
+    if (teamSize < 1) {
+        throw new Error('Team size must be at least 1');
+    }
+    if (participantIds.length === 0) {
+        throw new Error('At least one participant is required');
+    }
     if (participantIds.length % teamSize !== 0) {
         throw new Error(
             `Cannot create teams of ${teamSize} with ${participantIds.length} players ` +
@@ -141,6 +148,14 @@ export const generateRotatingTeams = <TPlayerId = string>(
     roundNumber: number,
     teamSize: number
 ): GenericTeam<TPlayerId>[] => {
+    // Input validation
+    if (teamSize < 1) {
+        throw new Error('Team size must be at least 1');
+    }
+    if (roundNumber < 1) {
+        throw new Error('Round number must be at least 1');
+    }
+    
     const n = participantIds.length;
     const playersPerMatch = teamSize * 2;
 

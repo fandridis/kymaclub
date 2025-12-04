@@ -32,6 +32,10 @@ export type CleanupStalePresenceArgs = Infer<typeof cleanupStalePresenceArgs>;
  */
 export const updateUserPresence = mutation({
   args: updatePresenceArgs,
+  returns: v.object({
+    success: v.boolean(),
+    presenceId: v.id("userPresence"),
+  }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
     
@@ -55,6 +59,9 @@ export const updateUserPresence = mutation({
  */
 export const clearUserPresence = mutation({
   args: {},
+  returns: v.object({
+    success: v.boolean(),
+  }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
     
@@ -72,6 +79,10 @@ export const clearUserPresence = mutation({
  */
 export const cleanupStalePresence = mutation({
   args: cleanupStalePresenceArgs,
+  returns: v.object({
+    deletedCount: v.number(),
+    remainingCount: v.number(),
+  }),
   handler: async (ctx, args) => {
     // No authentication required - this is an internal cleanup function
     return await presenceService.cleanupStalePresence({

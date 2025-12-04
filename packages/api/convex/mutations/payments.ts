@@ -100,6 +100,7 @@ export const createSubscription = internalMutation({
     canceledAt: v.optional(v.number()),
     endedAt: v.optional(v.number()),
   }),
+  returns: v.id("subscriptions"),
   handler: async (ctx, args) => {
     return await ctx.db.insert("subscriptions", {
       ...args,
@@ -132,6 +133,7 @@ export const updateSubscription = internalMutation({
     pricePerCycle: v.optional(v.number()),
     planName: v.optional(v.string()),
   }),
+  returns: v.id("subscriptions"),
   handler: async (ctx, args) => {
     const { stripeSubscriptionId, ...updateData } = args;
 
@@ -162,6 +164,7 @@ export const markSubscriptionCanceling = internalMutation({
   args: v.object({
     subscriptionId: v.id("subscriptions"),
   }),
+  returns: v.id("subscriptions"),
   handler: async (ctx, { subscriptionId }) => {
     await ctx.db.patch(subscriptionId, {
       cancelAtPeriodEnd: true,
@@ -179,6 +182,7 @@ export const reactivateSubscription = internalMutation({
   args: v.object({
     subscriptionId: v.id("subscriptions"),
   }),
+  returns: v.id("subscriptions"),
   handler: async (ctx, { subscriptionId }) => {
     const updateData: any = {
       cancelAtPeriodEnd: false,
@@ -206,6 +210,7 @@ export const recordSubscriptionEvent = internalMutation({
     creditTransactionId: v.optional(v.id("creditTransactions")),
     eventData: v.any(),
   }),
+  returns: v.id("subscriptionEvents"),
   handler: async (ctx, args) => {
     return await ctx.db.insert("subscriptionEvents", {
       stripeEventId: args.stripeEventId,
@@ -249,6 +254,12 @@ export const handlePaymentSucceededTransaction = internalMutation({
       subscriptionId: v.optional(v.id("subscriptions")),
       creditsAllocated: v.optional(v.number()),
     }),
+  }),
+  returns: v.object({
+    success: v.boolean(),
+    subscriptionId: v.optional(v.id("subscriptions")),
+    creditTransactionId: v.optional(v.id("creditTransactions")),
+    creditsAllocated: v.number(),
   }),
   handler: async (ctx, args) => {
     // 🛡️ IDEMPOTENCY CHECK: Prevent duplicate processing of the same Stripe event
@@ -410,6 +421,10 @@ export const createSubscriptionWithEvent = internalMutation({
       startDate: v.number(),
     }),
   }),
+  returns: v.object({
+    success: v.boolean(),
+    subscriptionId: v.id("subscriptions"),
+  }),
   handler: async (ctx, args) => {
     // 1. Create subscription record
     const subscriptionId = await ctx.db.insert("subscriptions", {
@@ -462,6 +477,10 @@ export const updateSubscriptionWithEvent = internalMutation({
       endedAt: v.optional(v.number()),
     }),
     eventType: v.string(),
+  }),
+  returns: v.object({
+    success: v.boolean(),
+    subscriptionId: v.id("subscriptions"),
   }),
   handler: async (ctx, args) => {
     // 1. Find and update subscription

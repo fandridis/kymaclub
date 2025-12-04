@@ -19,6 +19,9 @@ export type CreateClassInstanceArgs = Infer<typeof createClassInstanceArgs>;
 
 export const createClassInstance = mutationWithTriggers({
     args: createClassInstanceArgs,
+    returns: v.object({
+        createdInstanceId: v.id("classInstances"),
+    }),
     handler: async (ctx, args) => {
         const { user } = await getAuthenticatedUserAndBusinessOrThrow(ctx);
         return classInstanceService.create({ ctx, args, user });
@@ -42,6 +45,10 @@ export type CreateMultipleClassInstancesArgs = Infer<typeof createMultipleClassI
 
 export const createMultipleClassInstances = mutationWithTriggers({
     args: createMultipleClassInstancesArgs,
+    returns: v.object({
+        createdInstanceIds: v.array(v.id("classInstances")),
+        totalCreated: v.number(),
+    }),
     handler: async (ctx, args) => {
         const { user } = await getAuthenticatedUserAndBusinessOrThrow(ctx);
         return classInstanceService.createMultiple({ ctx, args, user });
@@ -67,6 +74,10 @@ export type UpdateSingleInstanceArgs = Infer<typeof updateSingleInstanceArgs>;
 
 export const updateSingleInstance = mutationWithTriggers({
     args: updateSingleInstanceArgs,
+    returns: v.object({
+        updatedInstanceId: v.id("classInstances"),
+        bookingsAffected: v.number(),
+    }),
     handler: async (ctx, args) => {
         const { user } = await getAuthenticatedUserAndBusinessOrThrow(ctx);
         return classInstanceService.updateSingle({ ctx, args, user });
@@ -92,6 +103,11 @@ export type UpdateMultipleInstancesArgs = Infer<typeof updateMultipleInstancesAr
 
 export const updateMultipleInstances = mutationWithTriggers({
     args: updateMultipleInstancesArgs,
+    returns: v.object({
+        updatedInstanceIds: v.array(v.id("classInstances")),
+        totalUpdated: v.number(),
+        bookingsAffected: v.number(),
+    }),
     handler: async (ctx, args) => {
         const { user } = await getAuthenticatedUserAndBusinessOrThrow(ctx);
         return classInstanceService.updateMultiple({ ctx, args, user });
@@ -109,6 +125,9 @@ export type DeleteSingleInstanceArgs = Infer<typeof deleteSingleInstanceArgs>;
 
 export const deleteSingleInstance = mutationWithTriggers({
     args: deleteSingleInstanceArgs,
+    returns: v.object({
+        deletedInstanceId: v.id("classInstances"),
+    }),
     handler: async (ctx, args) => {
         const { user } = await getAuthenticatedUserAndBusinessOrThrow(ctx);
         return classInstanceService.deleteSingle({ ctx, args, user });
@@ -126,6 +145,10 @@ export type DeleteSimilarFutureInstancesArgs = Infer<typeof deleteSimilarFutureI
 
 export const deleteSimilarFutureInstances = mutationWithTriggers({
     args: deleteSimilarFutureInstancesArgs,
+    returns: v.object({
+        deletedInstanceIds: v.array(v.id("classInstances")),
+        totalDeleted: v.number(),
+    }),
     handler: async (ctx, args) => {
         const { user } = await getAuthenticatedUserAndBusinessOrThrow(ctx);
         return classInstanceService.deleteSimilarFuture({ ctx, args, user });
