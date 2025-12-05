@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { useQuery, useMutation } from 'convex/react';
@@ -14,6 +14,21 @@ import { useCurrentUser } from '../../hooks/useCurrentUser';
 
 type TournamentRoute = RouteProp<RootStackParamList, 'Tournament'>;
 type TabType = 'players' | 'schedule' | 'leaderboard';
+
+/**
+ * Format a full name to show first name + initials of remaining names
+ * e.g., "George Fandri" → "George F."
+ *       "Billy The Kid" → "Billy T. K."
+ */
+function formatPlayerBadgeName(fullName: string): string {
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length === 0) return '';
+    if (parts.length === 1) return parts[0];
+
+    const firstName = parts[0];
+    const initials = parts.slice(1).map(name => `${name[0].toUpperCase()}.`).join(' ');
+    return `${firstName} ${initials}`;
+}
 
 export function TournamentScreen() {
     const navigation = useNavigation();
@@ -83,7 +98,16 @@ export function TournamentScreen() {
     const status = widget.status;
     const isLocked = widget.isLocked === true;
     const isActive = status === 'active';
+    const isSetup = status === 'setup';
     const isSetupOrReady = status === 'setup' || status === 'ready';
+    const showPlayersTab = isSetup; // Only show players tab during setup
+
+    // Switch away from players tab when tournament starts
+    useEffect(() => {
+        if (!showPlayersTab && activeTab === 'players') {
+            setActiveTab('schedule');
+        }
+    }, [showPlayersTab, activeTab]);
     const config = tournamentState.config;
     const state = tournamentState.state;
     const classInfo = tournamentState.classInstanceInfo;
@@ -153,17 +177,19 @@ export function TournamentScreen() {
                     </View>
                 </View>
 
-                {/* Tabs - Always show */}
+                {/* Tabs */}
                 <View style={styles.tabsContainer}>
-                    <TouchableOpacity
-                        style={[styles.tab, activeTab === 'players' && styles.tabActive]}
-                        onPress={() => setActiveTab('players')}
-                        activeOpacity={0.7}
-                    >
-                        <Text style={[styles.tabText, activeTab === 'players' && styles.tabTextActive]}>
-                            Players
-                        </Text>
-                    </TouchableOpacity>
+                    {showPlayersTab && (
+                        <TouchableOpacity
+                            style={[styles.tab, activeTab === 'players' && styles.tabActive]}
+                            onPress={() => setActiveTab('players')}
+                            activeOpacity={0.7}
+                        >
+                            <Text style={[styles.tabText, activeTab === 'players' && styles.tabTextActive]}>
+                                Players
+                            </Text>
+                        </TouchableOpacity>
+                    )}
                     <TouchableOpacity
                         style={[styles.tab, activeTab === 'schedule' && styles.tabActive]}
                         onPress={() => setActiveTab('schedule')}
@@ -185,42 +211,23 @@ export function TournamentScreen() {
                 </View>
 
                 {/* Content */}
-                {activeTab === 'players' ? (
-                    // Players Tab
+                {activeTab === 'players' && showPlayersTab ? (
+                    // Players Tab - Only shown during setup, displays badges
                     <View style={styles.playersContainer}>
-                        {(isSetupOrReady ? setupParticipants : participants).length > 0 ? (
+                        {setupParticipants.length > 0 ? (
                             <>
-                                <Text style={styles.sectionTitle}>
-                                    {isSetupOrReady ? 'Registered Players' : 'Tournament Players'}
-                                </Text>
-                                <View style={styles.participantsList}>
-                                    {isSetupOrReady ? (
-                                        setupParticipants.map((p, idx) => (
-                                            <View key={p.id} style={styles.participantRow}>
-                                                <View style={styles.participantNumber}>
-                                                    <Text style={styles.participantNumberText}>{idx + 1}</Text>
-                                                </View>
-                                                <Text style={styles.participantRowName}>{p.displayName}</Text>
-                                                {p.isWalkIn && (
-                                                    <View style={styles.walkInBadge}>
-                                                        <Text style={styles.walkInBadgeText}>Walk-in</Text>
-                                                    </View>
-                                                )}
-                                            </View>
-                                        ))
-                                    ) : (
-                                        participants.map((p, idx) => (
-                                            <View key={p.id} style={styles.participantRow}>
-                                                <View style={styles.participantNumber}>
-                                                    <Text style={styles.participantNumberText}>{idx + 1}</Text>
-                                                </View>
-                                                <Text style={styles.participantRowName}>{p.displayName}</Text>
-                                            </View>
-                                        ))
-                                    )}
+                                <Text style={styles.sectionTitle}>Registered Players</Text>
+                                <View style={styles.playerBadgesContainer}>
+                                    {setupParticipants.map((p) => (
+                                        <View key={p.id} style={styles.playerBadge}>
+                                            <Text style={styles.playerBadgeText}>
+                                                {formatPlayerBadgeName(p.displayName)}
+                                            </Text>
+                                        </View>
+                                    ))}
                                 </View>
                                 <Text style={styles.participantCount}>
-                                    {(isSetupOrReady ? setupParticipants : participants).length} player{(isSetupOrReady ? setupParticipants : participants).length !== 1 ? 's' : ''} {isSetupOrReady ? 'registered' : 'in tournament'}
+                                    {setupParticipants.length} player{setupParticipants.length !== 1 ? 's' : ''} registered
                                 </Text>
                             </>
                         ) : (
@@ -700,45 +707,24 @@ const styles = StyleSheet.create({
         color: theme.colors.zinc[900],
         marginBottom: 12,
     },
-    participantRow: {
+    // Player Badges (used during setup)
+    playerBadgesContainer: {
         flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-        padding: 12,
-        backgroundColor: theme.colors.zinc[50],
-        borderRadius: 12,
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    playerBadge: {
+        backgroundColor: theme.colors.zinc[100],
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 20,
         borderWidth: 1,
         borderColor: theme.colors.zinc[200],
     },
-    participantNumber: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: theme.colors.zinc[200],
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    participantNumberText: {
+    playerBadgeText: {
         fontSize: 14,
-        fontWeight: '700',
-        color: theme.colors.zinc[600],
-    },
-    participantRowName: {
-        flex: 1,
-        fontSize: 15,
         fontWeight: '600',
-        color: theme.colors.zinc[900],
-    },
-    walkInBadge: {
-        backgroundColor: theme.colors.zinc[200],
-        paddingHorizontal: 8,
-        paddingVertical: 3,
-        borderRadius: 4,
-    },
-    walkInBadgeText: {
-        fontSize: 10,
-        fontWeight: '700',
-        color: theme.colors.zinc[600],
+        color: theme.colors.zinc[700],
     },
     participantCount: {
         fontSize: 12,
