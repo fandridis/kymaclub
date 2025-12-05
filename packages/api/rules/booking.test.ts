@@ -12,6 +12,7 @@ import {
   countActiveBookings,
   validateActiveBookingsLimit,
   getActiveBookingsDetails,
+  canBookClassInstance,
 } from "./booking";
 import { ERROR_CODES } from "../utils/errorCodes";
 import { BOOKING_LIMITS } from "../utils/constants";
@@ -589,6 +590,335 @@ describe("Booking Rules", () => {
       } catch (error: any) {
         expect(error.data.message).toContain(`${BOOKING_LIMITS.MAX_ACTIVE_BOOKINGS_PER_USER}`);
       }
+    });
+  });
+});
+
+// Helper to create mock class instance objects for canBookClassInstance tests
+const createMockClassInstance = (overrides: Partial<Doc<"classInstances">> = {}): Doc<"classInstances"> => ({
+  _id: "classInstance123" as any,
+  _creationTime: Date.now(),
+  businessId: "business123" as any,
+  templateId: "template123" as any,
+  venueId: "venue123" as any,
+  startTime: Date.now() + 86400000, // 24 hours in future by default
+  endTime: Date.now() + 90000000,   // 25 hours in future
+  status: "scheduled",
+  name: "Test Class",
+  instructor: "Test Instructor",
+  capacity: 20,
+  bookedCount: 0,
+  price: 2000,
+  cancellationWindowHours: 24,
+  timePattern: "09:00-10:00",
+  dayOfWeek: 1,
+  citySlug: "athens",
+  timezone: "Europe/Athens",
+  createdAt: Date.now(),
+  createdBy: "user123" as any,
+  updatedAt: Date.now(),
+  updatedBy: "user123" as any,
+  templateSnapshot: {
+    name: "Test Template",
+    instructor: "Test Instructor",
+    primaryCategory: "yoga_studio",
+    imageStorageIds: [],
+    questionnaire: undefined,
+    discountRules: [],
+  },
+  venueSnapshot: {
+    name: "Test Venue",
+    address: {
+      street: "123 Test St",
+      city: "Athens",
+      zipCode: "10552",
+      country: "Greece",
+    },
+    imageStorageIds: [],
+  },
+  ...overrides
+});
+
+describe("canBookClassInstance", () => {
+  describe("Basic eligibility checks", () => {
+    test("should return true for a bookable future class without restrictions", () => {
+      const futureTime = Date.now() + 86400000; // 24 hours in future
+      const instance = createMockClassInstance({
+        startTime: futureTime,
+        disableBookings: undefined,
+        bookingWindow: undefined,
+      });
+
+      expect(canBookClassInstance(instance)).toBe(true);
+    });
+
+    test("should return false when bookings are disabled", () => {
+      const futureTime = Date.now() + 86400000;
+      const instance = createMockClassInstance({
+        startTime: futureTime,
+        disableBookings: true,
+      });
+
+      expect(canBookClassInstance(instance)).toBe(false);
+    });
+
+    test("should return true when disableBookings is explicitly false", () => {
+      const futureTime = Date.now() + 86400000;
+      const instance = createMockClassInstance({
+        startTime: futureTime,
+        disableBookings: false,
+      });
+
+      expect(canBookClassInstance(instance)).toBe(true);
+    });
+
+    test("should return false when class has already started", () => {
+      const pastTime = Date.now() - 3600000; // 1 hour in past
+      const instance = createMockClassInstance({
+        startTime: pastTime,
+      });
+
+      expect(canBookClassInstance(instance)).toBe(false);
+    });
+
+    test("should return false when class starts exactly at current time", () => {
+      const currentTime = Date.now();
+      const instance = createMockClassInstance({
+        startTime: currentTime,
+      });
+
+      expect(canBookClassInstance(instance, currentTime)).toBe(false);
+    });
+  });
+
+  describe("Booking window checks", () => {
+    test("should return true when within booking window", () => {
+      const currentTime = Date.now();
+      // Class starts in 12 hours (within 2-48 hour window)
+      const startTime = currentTime + 12 * 60 * 60 * 1000;
+
+      const instance = createMockClassInstance({
+        startTime,
+        bookingWindow: {
+          minHours: 2,  // Can't book within 2 hours
+          maxHours: 48, // Can't book more than 48 hours ahead
+        },
+      });
+
+      expect(canBookClassInstance(instance, currentTime)).toBe(true);
+    });
+
+    test("should return false when too close to class start (within minHours)", () => {
+      const currentTime = Date.now();
+      // Class starts in 1 hour (within the 2 hour minimum)
+      const startTime = currentTime + 1 * 60 * 60 * 1000;
+
+      const instance = createMockClassInstance({
+        startTime,
+        bookingWindow: {
+          minHours: 2,  // Can't book within 2 hours
+          maxHours: 48,
+        },
+      });
+
+      expect(canBookClassInstance(instance, currentTime)).toBe(false);
+    });
+
+    test("should return false when too far from class start (beyond maxHours)", () => {
+      const currentTime = Date.now();
+      // Class starts in 72 hours (beyond the 48 hour maximum)
+      const startTime = currentTime + 72 * 60 * 60 * 1000;
+
+      const instance = createMockClassInstance({
+        startTime,
+        bookingWindow: {
+          minHours: 2,
+          maxHours: 48, // Can't book more than 48 hours ahead
+        },
+      });
+
+      expect(canBookClassInstance(instance, currentTime)).toBe(false);
+    });
+
+    test("should return true at exact minHours boundary", () => {
+      const currentTime = Date.now();
+      // Class starts in exactly 2 hours (at the boundary)
+      const startTime = currentTime + 2 * 60 * 60 * 1000 + 1; // Just over 2 hours
+
+      const instance = createMockClassInstance({
+        startTime,
+        bookingWindow: {
+          minHours: 2,
+          maxHours: 48,
+        },
+      });
+
+      expect(canBookClassInstance(instance, currentTime)).toBe(true);
+    });
+
+    test("should return true at exact maxHours boundary", () => {
+      const currentTime = Date.now();
+      // Class starts in exactly 48 hours (at the boundary)
+      const startTime = currentTime + 48 * 60 * 60 * 1000 - 1; // Just under 48 hours
+
+      const instance = createMockClassInstance({
+        startTime,
+        bookingWindow: {
+          minHours: 2,
+          maxHours: 48,
+        },
+      });
+
+      expect(canBookClassInstance(instance, currentTime)).toBe(true);
+    });
+
+    test("should allow booking when no bookingWindow is set", () => {
+      const futureTime = Date.now() + 86400000; // 24 hours in future
+      const instance = createMockClassInstance({
+        startTime: futureTime,
+        bookingWindow: undefined,
+      });
+
+      expect(canBookClassInstance(instance)).toBe(true);
+    });
+  });
+
+  describe("Edge cases", () => {
+    test("should use provided currentTime parameter correctly", () => {
+      // Set up a class that starts at a specific time
+      const classStartTime = 1700000000000; // Fixed timestamp
+      const customCurrentTime = classStartTime - 12 * 60 * 60 * 1000; // 12 hours before class
+
+      const instance = createMockClassInstance({
+        startTime: classStartTime,
+        bookingWindow: {
+          minHours: 2,
+          maxHours: 48,
+        },
+      });
+
+      // With custom current time (12 hours before), should be bookable
+      expect(canBookClassInstance(instance, customCurrentTime)).toBe(true);
+
+      // With current time right before class (1 hour), should not be bookable
+      const tooLateTime = classStartTime - 1 * 60 * 60 * 1000;
+      expect(canBookClassInstance(instance, tooLateTime)).toBe(false);
+    });
+
+    test("should handle very short booking windows", () => {
+      const currentTime = Date.now();
+      // Class starts in 30 minutes
+      const startTime = currentTime + 30 * 60 * 1000;
+
+      const instance = createMockClassInstance({
+        startTime,
+        bookingWindow: {
+          minHours: 0.25, // 15 minutes
+          maxHours: 1,    // 1 hour
+        },
+      });
+
+      expect(canBookClassInstance(instance, currentTime)).toBe(true);
+    });
+
+    test("should handle very long booking windows", () => {
+      const currentTime = Date.now();
+      // Class starts in 60 days
+      const startTime = currentTime + 60 * 24 * 60 * 60 * 1000;
+
+      const instance = createMockClassInstance({
+        startTime,
+        bookingWindow: {
+          minHours: 1,
+          maxHours: 90 * 24, // 90 days
+        },
+      });
+
+      expect(canBookClassInstance(instance, currentTime)).toBe(true);
+    });
+
+    test("should prioritize disableBookings check over booking window", () => {
+      const currentTime = Date.now();
+      // Class is within booking window but bookings are disabled
+      const startTime = currentTime + 12 * 60 * 60 * 1000;
+
+      const instance = createMockClassInstance({
+        startTime,
+        disableBookings: true,
+        bookingWindow: {
+          minHours: 2,
+          maxHours: 48,
+        },
+      });
+
+      expect(canBookClassInstance(instance, currentTime)).toBe(false);
+    });
+
+    test("should handle zero minHours (last-minute bookings allowed)", () => {
+      const currentTime = Date.now();
+      // Class starts in 5 minutes
+      const startTime = currentTime + 5 * 60 * 1000;
+
+      const instance = createMockClassInstance({
+        startTime,
+        bookingWindow: {
+          minHours: 0, // Allow last-minute bookings
+          maxHours: 48,
+        },
+      });
+
+      expect(canBookClassInstance(instance, currentTime)).toBe(true);
+    });
+  });
+
+  describe("Combination scenarios", () => {
+    test("should check all conditions: enabled, future, within window", () => {
+      const currentTime = Date.now();
+      const startTime = currentTime + 24 * 60 * 60 * 1000; // 24 hours
+
+      // All conditions met
+      const bookableInstance = createMockClassInstance({
+        startTime,
+        disableBookings: false,
+        bookingWindow: {
+          minHours: 2,
+          maxHours: 48,
+        },
+      });
+      expect(canBookClassInstance(bookableInstance, currentTime)).toBe(true);
+
+      // Bookings disabled
+      const disabledInstance = createMockClassInstance({
+        startTime,
+        disableBookings: true,
+        bookingWindow: {
+          minHours: 2,
+          maxHours: 48,
+        },
+      });
+      expect(canBookClassInstance(disabledInstance, currentTime)).toBe(false);
+
+      // Class in past
+      const pastInstance = createMockClassInstance({
+        startTime: currentTime - 1000,
+        disableBookings: false,
+        bookingWindow: {
+          minHours: 2,
+          maxHours: 48,
+        },
+      });
+      expect(canBookClassInstance(pastInstance, currentTime)).toBe(false);
+
+      // Outside booking window (too soon)
+      const tooSoonInstance = createMockClassInstance({
+        startTime: currentTime + 1 * 60 * 60 * 1000, // 1 hour
+        disableBookings: false,
+        bookingWindow: {
+          minHours: 2,
+          maxHours: 48,
+        },
+      });
+      expect(canBookClassInstance(tooSoonInstance, currentTime)).toBe(false);
     });
   });
 });

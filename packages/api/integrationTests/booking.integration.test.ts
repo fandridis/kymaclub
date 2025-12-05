@@ -96,10 +96,10 @@ describe('Booking System Integration Tests', () => {
             const { userId, businessId } = await initAuth();
             const asUser = testT.withIdentity({ subject: userId });
 
-            // Give user insufficient credits (class costs 5 credits, give only 4)
+            // Give user insufficient credits (class costs 5 credits, give only 3)
             await asUser.mutation(api.internal.mutations.credits.giftCredits, {
                 userId: userId,
-                amount: 4 // Class costs 5 credits, insufficient
+                amount: 3
             });
 
             const { instanceId } = await setupClassForBooking(asUser, businessId, userId);

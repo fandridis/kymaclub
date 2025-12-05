@@ -15,7 +15,36 @@ const venueCategoryField = v.union(
   v.literal("outdoor_fitness"),
   v.literal("personal_training"),
   v.literal("rehabilitation_center"),
-  v.literal("workshop")
+  v.literal("creative_studio"),
+  v.literal("sport_facility")
+);
+
+const classCategoryField = v.union(
+  v.literal("yoga"),
+  v.literal("pilates"),
+  v.literal("strength"),
+  v.literal("cardio"),
+  v.literal("hiit"),
+  v.literal("dance"),
+  v.literal("martial_arts"),
+  v.literal("swimming"),
+  v.literal("cycling"),
+  v.literal("crossfit"),
+  v.literal("barre"),
+  v.literal("meditation"),
+  v.literal("breathwork"),
+  v.literal("climbing"),
+  v.literal("boxing"),
+  v.literal("functional_training"),
+  v.literal("stretching"),
+  v.literal("aqua_fitness"),
+  v.literal("running"),
+  v.literal("personal_training"),
+  v.literal("workshop"),
+  v.literal("art"),
+  v.literal("cooking"),
+  v.literal("rehabilitation"),
+  v.literal("other")
 );
 
 /***************************************************************
@@ -653,7 +682,7 @@ export const classTemplatesFields = {
   shortDescription: v.optional(v.string()),
   instructor: v.string(),
 
-  primaryCategory: v.optional(venueCategoryField),
+  primaryCategory: v.optional(classCategoryField),
 
   // Class details
   duration: v.number(), // minutes
@@ -702,7 +731,7 @@ export const classInstancesFields = {
   // City slug for efficient city-based filtering (denormalized from venue)
   citySlug: v.optional(v.string()),
 
-  primaryCategory: v.optional(venueCategoryField),
+  primaryCategory: v.optional(classCategoryField),
 
   // Scheduling (REQUIRED for every instance)
   startTime: v.number(), // Unix timestamp
@@ -762,7 +791,7 @@ export const classInstancesFields = {
     questionnaire: v.optional(v.array(v.object(questionFields))),
     widgetSnapshots: v.optional(v.array(v.object(widgetSnapshotFields))),
     deleted: v.optional(v.boolean()),
-    primaryCategory: venueCategoryField,
+    primaryCategory: classCategoryField,
   }),
 
   // Venue Snapshot
@@ -1043,6 +1072,45 @@ export const notificationsFields = {
 
   ...auditFields,
   ...softDeleteFields,
+};
+
+/***************************************************************
+ * Scheduled Notifications - Generic scheduled notification system
+ * Supports polymorphic entity references for different notification types
+ ***************************************************************/
+export const scheduledNotificationFields = {
+  type: v.union(
+    v.literal("class_reminder_1h"),
+    v.literal("class_reminder_3h"),
+    v.literal("class_reminder_30m"),
+    // Future: v.literal("marketing_push_promo"), etc.
+  ),
+  scheduledJobId: v.id("_scheduled_functions"),
+  scheduledFor: v.number(),
+  status: v.union(
+    v.literal("pending"),
+    v.literal("sent"),
+    v.literal("cancelled"),
+    v.literal("failed")
+  ),
+  // Polymorphic entity reference
+  relatedEntity: v.union(
+    v.object({
+      entityType: v.literal("bookings"),
+      entityId: v.id("bookings"),
+    }),
+    v.object({
+      entityType: v.literal("classInstances"),
+      entityId: v.id("classInstances"),
+    }),
+    // Future entity types can be added here
+  ),
+  // Recipient
+  recipientUserId: v.id("users"),
+  // Optional error tracking
+  errorMessage: v.optional(v.string()),
+  sentAt: v.optional(v.number()),
+  createdAt: v.number(),
 };
 
 // Business settings - All business-specific preferences and settings
@@ -1723,5 +1791,16 @@ export default defineSchema({
   pendingAuthLanguages: defineTable(pendingAuthLanguagesFields)
     .index("by_email", ["email"])
     .index("by_expiresAt", ["expiresAt"]),
+
+  /**
+   * Scheduled Notifications - Generic scheduled notification system
+   * Supports class reminders and future notification types with polymorphic entity references
+   */
+  scheduledNotifications: defineTable(scheduledNotificationFields)
+    .index("by_status", ["status"])
+    .index("by_type_status", ["type", "status"])
+    .index("by_recipient", ["recipientUserId"])
+    .index("by_scheduled_for", ["scheduledFor"])
+    .index("by_entity", ["relatedEntity.entityType", "relatedEntity.entityId"]),
 
 });

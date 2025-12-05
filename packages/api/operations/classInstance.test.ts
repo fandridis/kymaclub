@@ -190,7 +190,7 @@ describe('Class Instance Operations - Safety Tests', () => {
           discount: { type: "fixed_amount" as const, value: 150 }
         }
       ],
-      primaryCategory: 'wellness_center' as any,
+      primaryCategory: 'yoga' as any,
     } as Doc<"classTemplates">;
 
     const mockVenue: Doc<"venues"> = {
@@ -531,13 +531,13 @@ describe('Class Instance Operations - Safety Tests', () => {
       const instances = [{
         _id: "instance_1" as any,
         name: "Old Name",
-        primaryCategory: 'wellness_center' as any,
+        primaryCategory: 'yoga' as any,
         templateSnapshot: {
           name: "Old Name",
           description: "Old description",
           instructor: "Old instructor",
           imageStorageIds: ["old_img"],
-          primaryCategory: 'wellness_center' as any,
+          primaryCategory: 'yoga' as any,
         }
       }] as Doc<"classInstances">[];
 
@@ -571,12 +571,12 @@ describe('Class Instance Operations - Safety Tests', () => {
       const instances = [{
         _id: "instance_1" as any,
         name: "Current Name",
-        primaryCategory: 'wellness_center' as any,
+        primaryCategory: 'yoga' as any,
         templateSnapshot: {
           name: "Current Name",
           description: "Current description",
           instructor: "Current instructor",
-          primaryCategory: 'wellness_center' as any,
+          primaryCategory: 'yoga' as any,
         }
       }] as Doc<"classInstances">[];
 
@@ -591,7 +591,7 @@ describe('Class Instance Operations - Safety Tests', () => {
       expect(updates[0].changes.templateSnapshot?.name).toBe("Updated Name");
       // Other fields should be preserved from original template snapshot
       expect(updates[0].changes.templateSnapshot?.description).toBe("Current description");
-      expect(updates[0].changes.templateSnapshot?.primaryCategory).toBe('wellness_center');
+      expect(updates[0].changes.templateSnapshot?.primaryCategory).toBe('yoga');
     });
   });
 

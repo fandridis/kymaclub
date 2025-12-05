@@ -9,7 +9,11 @@ import { classInstanceOperations } from "../operations/classInstance";
 import { timeUtils } from "../utils/timeGeneration";
 import type { CreateClassInstanceArgs, CreateMultipleClassInstancesArgs, DeleteSimilarFutureInstancesArgs, DeleteSingleInstanceArgs, UpdateMultipleInstancesArgs, UpdateSingleInstanceArgs } from "../convex/mutations/classInstances";
 import { bookingService } from "./bookingService";
-import { filterTestClassInstances, isClassInstanceVisible } from "../utils/testDataFilter";
+import { filterTestClassInstances, isClassInstanceVisible, isUserTester } from "../utils/testDataFilter";
+import { canBookClassInstance } from "../rules/booking";
+import { pricingOperations } from "../operations/pricing";
+import { normalizeCityInput } from "@repo/utils/constants";
+import type { HappeningClassInstance } from "../types/classInstance";
 
 /**
  * Update bookings when class time changes:
@@ -687,6 +691,130 @@ export const classInstanceService = {
         }
 
         return result;
+    },
+
+    /**
+     * Get class instances happening within a date range for consumer display
+     * 
+     * This method is used for "Happening Today" and "Happening Tomorrow" sections.
+     * It filters by city, booking eligibility, and enriches with pricing info.
+     * 
+     * Features:
+     * - City-based filtering with normalization
+     * - Tester-aware index selection (excludes test instances for non-testers)
+     * - Booking eligibility filtering (booking windows, disabled bookings)
+     * - Pricing calculation with discounts
+     * - Minimal response shape optimized for card display
+     * 
+     * @param ctx - Query context
+     * @param args - Query arguments (startDate, endDate, cityFilter, limit)
+     * @param user - Authenticated user
+     * @returns Array of HappeningClassInstance with pricing
+     */
+    getHappeningClassInstances: async ({
+        ctx,
+        args,
+        user
+    }: {
+        ctx: QueryCtx;
+        args: {
+            startDate: number;
+            endDate: number;
+            cityFilter: string;
+            limit?: number;
+        };
+        user: Doc<"users">;
+    }): Promise<HappeningClassInstance[]> => {
+        const limit = args.limit || 10;
+        const cityFilter = args.cityFilter;
+
+        // Validate city filter is provided
+        if (!cityFilter || cityFilter.trim() === "") {
+            throw new ConvexError({
+                message: "City filter is required",
+                field: "cityFilter",
+                code: ERROR_CODES.VALIDATION_ERROR
+            });
+        }
+
+        // Normalize and validate city
+        const normalizedCitySlug = normalizeCityInput(cityFilter);
+        if (!normalizedCitySlug) {
+            throw new ConvexError({
+                message: "City is not supported",
+                field: "cityFilter",
+                code: ERROR_CODES.VALIDATION_ERROR,
+            });
+        }
+
+        // Query using optimized index based on user's tester status
+        // For non-testers: Use index that includes isTest to exclude test instances at DB level
+        // For testers: Use city-based index without isTest filter to get all instances
+        const isTester = isUserTester(user);
+        let instances;
+
+        if (!isTester) {
+            // Non-testers: Query with isTest=undefined to exclude test instances efficiently
+            // Most instances have isTest=undefined, so this index query is very efficient
+            // Note: Convex indexes undefined values, so we can query for them directly
+            instances = await ctx.db
+                .query("classInstances")
+                .withIndex("by_city_slug_status_deleted_isTest_start_time", (q) =>
+                    q.eq("citySlug", normalizedCitySlug)
+                        .eq("status", "scheduled")
+                        .eq("deleted", undefined)
+                        .eq("isTest", undefined) // Query for undefined (non-test instances)
+                        .gte("startTime", args.startDate)
+                )
+                .filter(q => q.lte(q.field("startTime"), args.endDate))
+                .order("asc")
+                .take(limit);
+        } else {
+            // Testers: Use city-based index without isTest filter to get all instances (including test)
+            instances = await ctx.db
+                .query("classInstances")
+                .withIndex("by_city_slug_status_deleted_start_time", (q) =>
+                    q.eq("citySlug", normalizedCitySlug)
+                        .eq("status", "scheduled")
+                        .eq("deleted", undefined)
+                        .gte("startTime", args.startDate)
+                )
+                .filter(q => q.lte(q.field("startTime"), args.endDate))
+                .order("asc")
+                .take(limit);
+        }
+
+        const currentTime = Date.now();
+        const enrichedInstances: HappeningClassInstance[] = [];
+
+        // Calculate pricing for each instance and filter by booking eligibility
+        // Note: Test instances are already filtered at DB level for non-testers via index
+        for (const instance of instances) {
+            // Skip instances that can't be booked using the consolidated rule
+            if (!canBookClassInstance(instance, currentTime)) {
+                continue;
+            }
+
+            const pricingResult = await pricingOperations.calculateFinalPriceFromInstance(instance);
+
+            enrichedInstances.push({
+                _id: instance._id,
+                startTime: instance.startTime,
+                name: instance.name || 'Class',
+                instructor: instance.instructor,
+                venueName: instance.venueSnapshot.name,
+                venueCity: instance.venueSnapshot.address.city,
+                templateImageId: instance.templateSnapshot.imageStorageIds?.[0],
+                venueImageId: instance.venueSnapshot.imageStorageIds?.[0],
+                pricing: {
+                    originalPrice: pricingResult.originalPrice,
+                    finalPrice: pricingResult.finalPrice,
+                    discountPercentage: pricingResult.discountPercentage, // Keep as 0-1 decimal
+                },
+            });
+        }
+
+        return enrichedInstances;
     },
 
     /**

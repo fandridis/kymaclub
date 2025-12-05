@@ -25,6 +25,63 @@ export const canBookClass = (
   return true;
 };
 
+/**
+ * Check if a class instance can be booked based on its configuration
+ * 
+ * This is an improved version that uses the instance's dynamic booking window
+ * configuration rather than hardcoded values. Use this for consumer-facing
+ * booking eligibility checks.
+ * 
+ * Checks performed:
+ * 1. Bookings are not disabled on the instance
+ * 2. Class hasn't already started
+ * 3. Current time is within the booking window (if configured)
+ * 
+ * @param instance - The class instance to check
+ * @param currentTime - Current timestamp (defaults to Date.now())
+ * @returns true if the class can be booked, false otherwise
+ * 
+ * @example
+ * ```typescript
+ * const instance = await ctx.db.get(instanceId);
+ * if (canBookClassInstance(instance)) {
+ *   // Show booking button
+ * }
+ * ```
+ */
+export const canBookClassInstance = (
+  instance: Doc<"classInstances">,
+  currentTime: number = Date.now()
+): boolean => {
+  // Check if bookings are disabled on this instance
+  if (instance.disableBookings === true) {
+    return false;
+  }
+
+  // Check if class has already started
+  if (instance.startTime <= currentTime) {
+    return false;
+  }
+
+  // Check booking window if it exists on the instance
+  if (instance.bookingWindow) {
+    const timeUntilStartMs = instance.startTime - currentTime;
+    const hoursUntilStart = timeUntilStartMs / (1000 * 60 * 60);
+
+    // Too late to book (within minimum advance time)
+    if (hoursUntilStart < instance.bookingWindow.minHours) {
+      return false;
+    }
+
+    // Too early to book (beyond maximum advance time)
+    if (hoursUntilStart > instance.bookingWindow.maxHours) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
 export const canCancelBooking = (
   instance: Doc<"classInstances">,
   template: Doc<"classTemplates">,
@@ -168,6 +225,7 @@ export function getActiveBookingsDetails(
 
 export const bookingRules = {
   canBookClass,
+  canBookClassInstance,
   canCancelBooking,
   countActiveBookings,
   validateActiveBookingsLimit,

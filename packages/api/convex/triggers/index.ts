@@ -145,6 +145,7 @@ triggers.register("bookings", async (ctx, change) => {
                     creditsPaid: newDoc.finalPrice / 100,
                 },
             });
+            // Note: Don't schedule reminder yet - wait for approval
         } else {
             // Regular booking - notify business about new booking
             await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleNewClassBookingEvent, {
@@ -156,6 +157,17 @@ triggers.register("bookings", async (ctx, change) => {
                     creditsPaid: newDoc.finalPrice / 100,
                 },
             });
+
+            // Schedule class reminder (1 hour before) for confirmed bookings
+            const classStartTime = newDoc.classInstanceSnapshot?.startTime;
+            if (classStartTime) {
+                await ctx.scheduler.runAfter(0, internal.mutations.scheduledNotifications.scheduleClassReminder, {
+                    bookingId: id,
+                    userId: newDoc.userId,
+                    classStartTime,
+                    reminderType: "class_reminder_1h",
+                });
+            }
         }
     }
 
@@ -163,13 +175,13 @@ triggers.register("bookings", async (ctx, change) => {
     const wasCancelled = oldDoc?.status === 'cancelled_by_consumer' || oldDoc?.status === 'cancelled_by_business';
     const becameCancelled = !wasCancelled && (newDoc?.status === 'cancelled_by_consumer' || newDoc?.status === 'cancelled_by_business');
     const becameRebookable = oldDoc?.status !== 'cancelled_by_business_rebookable' && newDoc?.status === 'cancelled_by_business_rebookable';
-    
+
     // New approval/rejection transitions
     const wasAwaitingApproval = oldDoc?.status === 'awaiting_approval';
     const becameApproved = wasAwaitingApproval && newDoc?.status === 'pending';
     const becameRejected = wasAwaitingApproval && newDoc?.status === 'rejected_by_business';
 
-    // Handle approval - notify consumer
+    // Handle approval - notify consumer and schedule class reminder
     if (operation === 'update' && becameApproved) {
         await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleBookingApprovedEvent, {
             payload: {
@@ -180,9 +192,20 @@ triggers.register("bookings", async (ctx, change) => {
                 creditsPaid: newDoc.finalPrice / 100,
             },
         });
+
+        // Schedule class reminder now that booking is approved
+        const classStartTime = newDoc.classInstanceSnapshot?.startTime;
+        if (classStartTime) {
+            await ctx.scheduler.runAfter(0, internal.mutations.scheduledNotifications.scheduleClassReminder, {
+                bookingId: id,
+                userId: newDoc.userId,
+                classStartTime,
+                reminderType: "class_reminder_1h",
+            });
+        }
     }
 
-    // Handle rejection - notify consumer
+    // Handle rejection - notify consumer and cancel any scheduled reminders
     if (operation === 'update' && becameRejected) {
         await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleBookingRejectedEvent, {
             payload: {
@@ -194,9 +217,22 @@ triggers.register("bookings", async (ctx, change) => {
                 reason: newDoc.rejectByBusinessReason,
             },
         });
+
+        // Cancel any scheduled reminders for this booking
+        await ctx.scheduler.runAfter(0, internal.mutations.scheduledNotifications.handleCancelScheduledNotifications, {
+            entityType: "bookings",
+            entityId: id,
+        });
     }
 
+    // Handle cancellation - cancel scheduled reminders
     if (operation === 'update' && becameCancelled) {
+        // Cancel any scheduled reminders for this booking
+        await ctx.scheduler.runAfter(0, internal.mutations.scheduledNotifications.handleCancelScheduledNotifications, {
+            entityType: "bookings",
+            entityId: id,
+        });
+
         if (newDoc.cancelledBy === "consumer") {
             await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleUserCancelledBookingEvent, {
                 payload: {
@@ -231,6 +267,27 @@ triggers.register("bookings", async (ctx, change) => {
                 creditsPaid: newDoc.finalPrice / 100,
             },
         });
+    }
+});
+
+/***************************************************************
+ * CLASS INSTANCE TRIGGERS
+ ***************************************************************/
+triggers.register("classInstances", async (ctx, change) => {
+    const { id, oldDoc, newDoc, operation } = change;
+
+    if (operation === 'update' && oldDoc && newDoc) {
+        // Detect when a class becomes cancelled
+        const wasCancelled = oldDoc.status === 'cancelled';
+        const becameCancelled = !wasCancelled && newDoc.status === 'cancelled';
+
+        if (becameCancelled) {
+            // Cancel all scheduled reminders for all bookings of this class
+            await ctx.scheduler.runAfter(0, internal.mutations.scheduledNotifications.handleCancelScheduledNotifications, {
+                entityType: "classInstances",
+                entityId: id,
+            });
+        }
     }
 });
 

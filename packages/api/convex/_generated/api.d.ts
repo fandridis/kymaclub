@@ -22,6 +22,7 @@ import type * as internal_queries_businesses from "../internal/queries/businesse
 import type * as internal_queries_classInstances from "../internal/queries/classInstances.js";
 import type * as internal_queries_consumers from "../internal/queries/consumers.js";
 import type * as internal_queries_dashboardMetrics from "../internal/queries/dashboardMetrics.js";
+import type * as internal_queries_scheduledNotifications from "../internal/queries/scheduledNotifications.js";
 import type * as internal_queries_search from "../internal/queries/search.js";
 import type * as migrations from "../migrations.js";
 import type * as mutations_bookings from "../mutations/bookings.js";
@@ -35,6 +36,7 @@ import type * as mutations_payments from "../mutations/payments.js";
 import type * as mutations_presence from "../mutations/presence.js";
 import type * as mutations_pushNotifications from "../mutations/pushNotifications.js";
 import type * as mutations_reviews from "../mutations/reviews.js";
+import type * as mutations_scheduledNotifications from "../mutations/scheduledNotifications.js";
 import type * as mutations_settings from "../mutations/settings.js";
 import type * as mutations_uploads from "../mutations/uploads.js";
 import type * as mutations_users from "../mutations/users.js";
@@ -94,6 +96,7 @@ declare const fullApi: ApiFromModules<{
   "internal/queries/classInstances": typeof internal_queries_classInstances;
   "internal/queries/consumers": typeof internal_queries_consumers;
   "internal/queries/dashboardMetrics": typeof internal_queries_dashboardMetrics;
+  "internal/queries/scheduledNotifications": typeof internal_queries_scheduledNotifications;
   "internal/queries/search": typeof internal_queries_search;
   migrations: typeof migrations;
   "mutations/bookings": typeof mutations_bookings;
@@ -107,6 +110,7 @@ declare const fullApi: ApiFromModules<{
   "mutations/presence": typeof mutations_presence;
   "mutations/pushNotifications": typeof mutations_pushNotifications;
   "mutations/reviews": typeof mutations_reviews;
+  "mutations/scheduledNotifications": typeof mutations_scheduledNotifications;
   "mutations/settings": typeof mutations_settings;
   "mutations/uploads": typeof mutations_uploads;
   "mutations/users": typeof mutations_users;

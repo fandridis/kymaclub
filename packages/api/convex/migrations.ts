@@ -38,3 +38,53 @@ export const renameCancelReasonField = migrations.define({
     },
 });
 
+/**
+ * Migration: Update class template primaryCategory to class categories
+ * 
+ * This migration updates all class templates that have venue-style categories
+ * (like 'wellness_center', 'yoga_studio') to use the new class category format ('yoga').
+ * 
+ * Run with:
+ *   npx convex run migrations:run '{"fn": "migrations:migrateClassTemplatePrimaryCategory"}'
+ * 
+ * Check status with:
+ *   npx convex run --component migrations lib:getStatus --watch
+ */
+export const migrateClassTemplatePrimaryCategory = migrations.define({
+    table: "classTemplates",
+    migrateOne: async (ctx, doc) => {
+        // Update to 'yoga' as the default class category
+        // This replaces old venue-style categories like 'wellness_center', 'yoga_studio', etc.
+        await ctx.db.patch(doc._id, {
+            primaryCategory: "yoga",
+        });
+    },
+});
+
+/**
+ * Migration: Update class instance primaryCategory to class categories
+ * 
+ * This migration updates all class instances that have venue-style categories
+ * to use the new class category format ('yoga').
+ * Also updates the templateSnapshot.primaryCategory embedded field.
+ * 
+ * Run with:
+ *   npx convex run migrations:run '{"fn": "migrations:migrateClassInstancePrimaryCategory"}'
+ * 
+ * Check status with:
+ *   npx convex run --component migrations lib:getStatus --watch
+ */
+export const migrateClassInstancePrimaryCategory = migrations.define({
+    table: "classInstances",
+    migrateOne: async (ctx, doc) => {
+        // Update primaryCategory and templateSnapshot.primaryCategory to 'yoga'
+        await ctx.db.patch(doc._id, {
+            primaryCategory: "yoga",
+            templateSnapshot: {
+                ...doc.templateSnapshot,
+                primaryCategory: "yoga",
+            },
+        });
+    },
+});
+

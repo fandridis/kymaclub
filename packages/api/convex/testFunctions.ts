@@ -2,6 +2,7 @@ import { v } from "convex/values"
 import { internalMutation, internalQuery, internalAction, mutation } from "./_generated/server";
 import { getAuthenticatedUserAndBusinessOrThrow } from "./utils";
 import { creditService } from "../services/creditService";
+import { internalMutationWithTriggers } from "./triggers";
 
 export const createTestUser = internalMutation({
     args: {
@@ -149,7 +150,8 @@ export const createTestVenue = internalMutation({
                 v.literal("outdoor_fitness"),
                 v.literal("personal_training"),
                 v.literal("rehabilitation_center"),
-                v.literal("workshop")
+                v.literal("creative_studio"),
+                v.literal("sport_facility")
             )),
         }),
     },
@@ -210,7 +212,7 @@ export const createTestClassTemplate = internalMutation({
             price: args.template.price,
             tags: args.template.tags,
             color: args.template.color,
-            primaryCategory: (args.template.primaryCategory as any) || 'wellness_center',
+            primaryCategory: (args.template.primaryCategory as any) || 'yoga',
             requiresConfirmation: args.template.requiresConfirmation,
             allowWaitlist: true,
             isActive: true,
@@ -440,7 +442,7 @@ export const createTestClassInstance = internalMutation({
             throw new Error("Venue not found");
         }
 
-        const primaryCategory = template.primaryCategory ?? venue.primaryCategory ?? 'wellness_center';
+        const primaryCategory = template.primaryCategory ?? 'yoga';
 
         const instanceId = await ctx.db.insert("classInstances", {
             businessId: business._id,
@@ -480,6 +482,30 @@ export const createTestClassInstance = internalMutation({
             createdBy: user._id,
         });
         return instanceId;
+    },
+});
+
+/**
+ * Cancel a class instance for testing purposes.
+ * Uses internalMutationWithTriggers to ensure triggers fire when status changes.
+ */
+export const cancelTestClassInstance = internalMutationWithTriggers({
+    args: {
+        instanceId: v.id("classInstances"),
+    },
+    returns: v.id("classInstances"),
+    handler: async (ctx, args) => {
+        const instance = await ctx.db.get(args.instanceId);
+        if (!instance) {
+            throw new Error("Class instance not found");
+        }
+
+        await ctx.db.patch(args.instanceId, {
+            status: "cancelled",
+            updatedAt: Date.now(),
+        });
+
+        return args.instanceId;
     },
 });
 

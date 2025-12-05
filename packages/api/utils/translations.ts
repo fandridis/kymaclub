@@ -42,6 +42,18 @@ const pushNotificationTranslations = {
             title: 'Welcome to KymaClub!',
             body: "You've received {{credits}} welcome bonus credits!",
         },
+        class_reminder_1h: {
+            title: 'Class starting soon!',
+            body: '{{className}} starts in 1 hour. Get ready!',
+        },
+        class_reminder_3h: {
+            title: 'Reminder: Class in 3 hours',
+            body: '{{className}} starts in 3 hours. Don\'t forget!',
+        },
+        class_reminder_30m: {
+            title: 'Class starting very soon!',
+            body: '{{className}} starts in 30 minutes. Time to head out!',
+        },
     },
     el: {
         credits_arrived: {
@@ -75,6 +87,18 @@ const pushNotificationTranslations = {
         welcome_bonus: {
             title: 'Καλώς ήρθατε στο KymaClub!',
             body: 'Λάβατε {{credits}} bonus credits καλωσορίσματος!',
+        },
+        class_reminder_1h: {
+            title: 'Το μάθημα ξεκινά σύντομα!',
+            body: 'Το {{className}} ξεκινά σε 1 ώρα. Ετοιμαστείτε!',
+        },
+        class_reminder_3h: {
+            title: 'Υπενθύμιση: Μάθημα σε 3 ώρες',
+            body: 'Το {{className}} ξεκινά σε 3 ώρες. Μην το ξεχάσετε!',
+        },
+        class_reminder_30m: {
+            title: 'Το μάθημα ξεκινά πολύ σύντομα!',
+            body: 'Το {{className}} ξεκινά σε 30 λεπτά. Ώρα να ξεκινήσετε!',
         },
     },
 } as const;

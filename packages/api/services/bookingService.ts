@@ -486,6 +486,20 @@ export const bookingService = {
             });
         }
 
+        // 🔒 IMPORTANT: Check credit balance BEFORE creating booking
+        // This prevents triggers from firing on a booking that will fail due to insufficient credits.
+        // The booking insert triggers notifications/reminders, so we must validate credits first.
+        if (finalPriceWithFees > 0) {
+            const currentBalance = user.credits ?? 0;
+            if (currentBalance < creditsUsed) {
+                throw new ConvexError({
+                    message: "Insufficient credits",
+                    field: "credits",
+                    code: ERROR_CODES.INSUFFICIENT_CREDITS,
+                });
+            }
+        }
+
 
 
         // Determine booking status based on requiresConfirmation

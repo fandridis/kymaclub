@@ -87,7 +87,7 @@ export async function createTestClassTemplate(
             price: template.price || 750, // 15.00 in business currency (default)
             tags: template.tags || ["test", "fitness"],
             color: template.color || "#3B82F6",
-            primaryCategory: template.primaryCategory || 'wellness_center',
+            primaryCategory: template.primaryCategory || 'yoga',
             requiresConfirmation: template.requiresConfirmation,
         }
     });
@@ -108,7 +108,17 @@ export async function createTestClassInstance(
     });
 }
 
-export async function setupClassForBooking(asUser: TestConvexForDataModel<GenericDataModel>, businessId: Id<"businesses">, userId: Id<"users">) {
+export async function setupClassForBooking(
+    asUser: TestConvexForDataModel<GenericDataModel>,
+    businessId: Id<"businesses">,
+    userId: Id<"users">,
+    options: {
+        requiresConfirmation?: boolean;
+        hoursFromNow?: number;
+    } = {}
+) {
+    const { requiresConfirmation, hoursFromNow = 14 } = options;
+
     // Create venue
     const venueId = await createTestVenue(asUser, "Test Yoga Studio");
 
@@ -119,10 +129,11 @@ export async function setupClassForBooking(asUser: TestConvexForDataModel<Generi
         duration: 60,
         capacity: 20,
         price: 500, // 5.00 in business currency (5 credits * 100 cents/credit)
+        requiresConfirmation,
     });
 
-    // Create class instance (2 hours from now)
-    const startTime = Date.now() + (14 * 60 * 60 * 1000);
+    // Create class instance
+    const startTime = Date.now() + (hoursFromNow * 60 * 60 * 1000);
     const endTime = startTime + (60 * 60 * 1000);
 
     const instanceId = await createTestClassInstance(asUser, templateId, startTime, endTime, "UTC");

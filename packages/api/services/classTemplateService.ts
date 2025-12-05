@@ -39,14 +39,9 @@ export const classTemplateService = {
             }
         }
 
-        const primaryCategory = cleanTemplate.primaryCategory ?? venue?.primaryCategory;
-        if (!primaryCategory) {
-            throw new ConvexError({
-                message: "Primary category is required",
-                field: "primaryCategory",
-                code: ERROR_CODES.VALIDATION_ERROR,
-            });
-        }
+        // primaryCategory is now a class category (e.g., 'yoga'), not a venue category
+        // Default to 'other' if not provided
+        const primaryCategory = cleanTemplate.primaryCategory ?? 'other';
 
         const templateId = await ctx.db.insert("classTemplates", {
             ...defaults,

@@ -23,7 +23,7 @@ describe('Class Template Operations', () => {
                 cancellationWindowHours: 24,
                 waitlistCapacity: 5,
                 venueId: 'venue123' as any,
-                primaryCategory: 'wellness_center',
+                primaryCategory: 'yoga',
             }
         };
 

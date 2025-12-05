@@ -9,6 +9,30 @@ import { filterTestClassInstances, isClassInstanceVisible, isUserTester } from "
 import { normalizeCityInput } from "@repo/utils/constants";
 
 /***************************************************************
+ * Shared Validators
+ ***************************************************************/
+
+/**
+ * Validator for HappeningClassInstance response shape
+ * Used by getHappeningTodayClassInstances and getHappeningTomorrowClassInstances
+ */
+const happeningClassInstanceValidator = v.object({
+    _id: v.id("classInstances"),
+    startTime: v.number(),
+    name: v.string(),
+    instructor: v.optional(v.string()),
+    venueName: v.string(),
+    venueCity: v.string(),
+    templateImageId: v.optional(v.id("_storage")),
+    venueImageId: v.optional(v.id("_storage")),
+    pricing: v.object({
+        originalPrice: v.number(),
+        finalPrice: v.number(),
+        discountPercentage: v.number(),
+    }),
+});
+
+/***************************************************************
  * Get Class Instance By ID
  ***************************************************************/
 
@@ -251,143 +275,56 @@ export const getHappeningTodayClassInstancesArgs = v.object({
 
 export const getHappeningTodayClassInstances = query({
     args: getHappeningTodayClassInstancesArgs,
-    returns: v.array(v.object({
-        _id: v.id("classInstances"),
-        startTime: v.number(),
-        name: v.string(),
-        instructor: v.optional(v.string()),
-        venueName: v.string(),
-        venueCity: v.string(),
-        templateImageId: v.optional(v.id("_storage")),
-        venueImageId: v.optional(v.id("_storage")),
-        pricing: v.object({
-            originalPrice: v.number(),
-            finalPrice: v.number(),
-            discountPercentage: v.number(),
-        }),
-    })),
+    returns: v.array(happeningClassInstanceValidator),
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUserOrThrow(ctx);
+        return classInstanceService.getHappeningClassInstances({
+            ctx,
+            args: {
+                startDate: args.startDate,
+                endDate: args.endDate,
+                cityFilter: args.cityFilter || '',
+                limit: args.limit,
+            },
+            user,
+        });
+    }
+});
 
-        const limit = args.limit || 10;
-        const cityFilter = args.cityFilter;
+/***************************************************************
+ * Get Happening Tomorrow Class Instances
+ * 
+ * Returns class instances happening tomorrow (00:00 to 23:59),
+ * ordered by start time (earliest first). Only includes classes
+ * that can be booked based on booking windows. Returns minimal
+ * data needed for NewsClassCard rendering.
+ * 
+ * Uses the same service method as getHappeningTodayClassInstances
+ * with different date parameters.
+ ***************************************************************/
 
-        if (!cityFilter || cityFilter.trim() === "") {
-            throw new ConvexError({
-                message: "City filter is required",
-                field: "cityFilter",
-                code: ERROR_CODES.VALIDATION_ERROR
-            });
-        }
+export const getHappeningTomorrowClassInstancesArgs = v.object({
+    startDate: v.number(), // Start of tomorrow (00:00:00)
+    endDate: v.number(),   // End of tomorrow (23:59:59)
+    limit: v.optional(v.number()),
+    cityFilter: v.optional(v.string()),
+});
 
-        const normalizedCitySlug = normalizeCityInput(cityFilter);
-        if (!normalizedCitySlug) {
-            throw new ConvexError({
-                message: "City is not supported",
-                field: "cityFilter",
-                code: ERROR_CODES.VALIDATION_ERROR,
-            });
-        }
-
-        // Helper function to check if a class instance can be booked
-        const canBookClass = (instance: any, currentTime: number): boolean => {
-            // Check if bookings are disabled
-            if (instance.disableBookings === true) {
-                return false;
-            }
-
-            // Check if class has already started
-            if (instance.startTime <= currentTime) {
-                return false;
-            }
-
-            // Check booking window if it exists
-            if (instance.bookingWindow) {
-                const timeUntilStartMs = instance.startTime - currentTime;
-                const hoursUntilStart = timeUntilStartMs / (1000 * 60 * 60);
-
-                // Too late to book (within minimum advance time)
-                if (hoursUntilStart < instance.bookingWindow.minHours) {
-                    return false;
-                }
-
-                // Too early to book (beyond maximum advance time)
-                if (hoursUntilStart > instance.bookingWindow.maxHours) {
-                    return false;
-                }
-            }
-
-            return true;
-        };
-
-        // Query using optimized index based on user's tester status
-        // For non-testers: Use index that includes isTest to exclude test instances at DB level
-        // For testers: Use city-based index without isTest filter to get all instances
-        const isTester = isUserTester(user);
-        let instances;
-
-        if (!isTester) {
-            // Non-testers: Query with isTest=undefined to exclude test instances efficiently
-            // Most instances have isTest=undefined, so this index query is very efficient
-            // Note: Convex indexes undefined values, so we can query for them directly
-            instances = await ctx.db
-                .query("classInstances")
-                .withIndex("by_city_slug_status_deleted_isTest_start_time", (q) =>
-                    q.eq("citySlug", normalizedCitySlug)
-                        .eq("status", "scheduled")
-                        .eq("deleted", undefined)
-                        .eq("isTest", undefined) // Query for undefined (non-test instances)
-                        .gte("startTime", args.startDate)
-                )
-                .filter(q => q.lte(q.field("startTime"), args.endDate))
-                .order("asc")
-                .take(limit);
-        } else {
-            // Testers: Use city-based index without isTest filter to get all instances (including test)
-            instances = await ctx.db
-                .query("classInstances")
-                .withIndex("by_city_slug_status_deleted_start_time", (q) =>
-                    q.eq("citySlug", normalizedCitySlug)
-                        .eq("status", "scheduled")
-                        .eq("deleted", undefined)
-                        .gte("startTime", args.startDate)
-                )
-                .filter(q => q.lte(q.field("startTime"), args.endDate))
-                .order("asc")
-                .take(limit);
-        }
-
-        const currentTime = Date.now();
-        const enrichedInstances = [];
-
-        // Calculate pricing for each instance and filter by booking windows
-        // Note: Test instances are already filtered at DB level for non-testers via index
-        for (const instance of instances) {
-            // Skip instances that can't be booked (same logic for all instances, including test)
-            if (!canBookClass(instance, currentTime)) {
-                continue;
-            }
-
-            const pricingResult = await pricingOperations.calculateFinalPriceFromInstance(instance);
-
-            enrichedInstances.push({
-                _id: instance._id,
-                startTime: instance.startTime,
-                name: instance.name || 'Class',
-                instructor: instance.instructor,
-                venueName: instance.venueSnapshot.name,
-                venueCity: instance.venueSnapshot.address.city,
-                templateImageId: instance.templateSnapshot.imageStorageIds?.[0],
-                venueImageId: instance.venueSnapshot.imageStorageIds?.[0],
-                pricing: {
-                    originalPrice: pricingResult.originalPrice,
-                    finalPrice: pricingResult.finalPrice,
-                    discountPercentage: pricingResult.discountPercentage, // Keep as 0-1 decimal
-                },
-            });
-        }
-
-        return enrichedInstances;
+export const getHappeningTomorrowClassInstances = query({
+    args: getHappeningTomorrowClassInstancesArgs,
+    returns: v.array(happeningClassInstanceValidator),
+    handler: async (ctx, args) => {
+        const user = await getAuthenticatedUserOrThrow(ctx);
+        return classInstanceService.getHappeningClassInstances({
+            ctx,
+            args: {
+                startDate: args.startDate,
+                endDate: args.endDate,
+                cityFilter: args.cityFilter || '',
+                limit: args.limit,
+            },
+            user,
+        });
     }
 });
 

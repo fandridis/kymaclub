@@ -62,7 +62,7 @@ export const classTemplate = {
     isActive: true,
     tags: ["yoga", "wellness"],
     color: "#FF5733",
-    primaryCategory: 'wellness_center',
+    primaryCategory: 'yoga',
     bookingWindow: {
         minHours: 2,
         maxHours: 168
@@ -126,7 +126,7 @@ export const classInstance = {
     instructor: "John Doe",
     capacity: 20,
     price: 500, // 5.00 in business currency (5 credits * 100 cents/credit)
-    primaryCategory: 'wellness_center',
+    primaryCategory: 'yoga',
     bookedCount: 0,
     waitlistCount: 0,
     discountRules: undefined, // No default instance discounts - tests will set this explicitly when needed
@@ -135,7 +135,7 @@ export const classInstance = {
         instructor: "John Doe",
         description: "A test description",
         imageStorageIds: [],
-        primaryCategory: 'wellness_center',
+        primaryCategory: 'yoga',
     },
     venueSnapshot: {
         name: "Test Venue",

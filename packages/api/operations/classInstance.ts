@@ -437,14 +437,9 @@ export const createInstanceFromTemplate = (
 
     // Calculate endTime deterministically from template duration (in minutes)
     const endTime = validatedStartTime + (template.duration * 60 * 1000);
-    const primaryCategory = template.primaryCategory ?? venue.primaryCategory;
-    if (!primaryCategory) {
-        throw new ConvexError({
-            message: "Class template is missing a primary category",
-            field: "primaryCategory",
-            code: ERROR_CODES.VALIDATION_ERROR,
-        });
-    }
+    // primaryCategory is now a class category (e.g., 'yoga'), not a venue category
+    // Default to 'other' if template doesn't have one set
+    const primaryCategory = template.primaryCategory ?? 'other';
 
     const now = Date.now();
 

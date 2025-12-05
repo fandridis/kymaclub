@@ -156,7 +156,7 @@ describe('Notification System Integration Tests', () => {
             const instanceId = await createTestClassInstance(asUser, templateId, startTime, endTime, "UTC");
 
             // Book the class 
-            const bookingResult = await asUser.mutation(api.mutations.bookings.bookClass, {
+            await asUser.mutation(api.mutations.bookings.bookClass, {
                 classInstanceId: instanceId,
                 description: "My advanced practice session"
             });
