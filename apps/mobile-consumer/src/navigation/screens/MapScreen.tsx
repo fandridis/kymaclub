@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps';
-import { StyleSheet, View, Text, ActivityIndicator, Alert, TouchableOpacity, Platform } from 'react-native';
+import { StyleSheet, View, Text, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import * as Location from 'expo-location';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -174,7 +174,7 @@ export function MapScreen() {
                 <MapView
                     style={styles.map}
                     // customMapStyle={mapStyleMinimal}
-                    provider={Platform.OS === 'ios' ? PROVIDER_GOOGLE : undefined}
+                    provider={PROVIDER_GOOGLE}
                     initialRegion={{
                         latitude: ATHENS_FALLBACK.latitude, // location?.coords.latitude ?? ATHENS_FALLBACK.latitude,
                         longitude: ATHENS_FALLBACK.longitude, // location?.coords.longitude ?? ATHENS_FALLBACK.longitude,

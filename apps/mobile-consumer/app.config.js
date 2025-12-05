@@ -26,7 +26,7 @@ export default ({ config }) => ({
       ITSAppUsesNonExemptEncryption: false,
     },
     config: {
-      googleMapsApiKey: process.env.IOS_GOOGLE_MAPS_KEY,
+      googleMapsApiKey: process.env.GOOGLE_MAPS_KEY,
     },
   },
   android: {
@@ -46,7 +46,7 @@ export default ({ config }) => ({
     ],
     config: {
       googleMaps: {
-        apiKey: process.env.ANDROID_GOOGLE_MAPS_KEY,
+        apiKey: process.env.GOOGLE_MAPS_KEY,
       },
     },
   },

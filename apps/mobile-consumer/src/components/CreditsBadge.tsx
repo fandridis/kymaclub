@@ -31,10 +31,10 @@ export function CreditsBadge({ creditBalance }: CreditsBadgeProps) {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.creditsBadgeGradient}
-        >
+            >
                 <View style={styles.creditsBadgeContent}>
-                    <DiamondIcon size={18} color={theme.colors.zinc[50]} />
-            <Text style={styles.creditsBadgeText}>{creditBalance || 0}</Text>
+                    <DiamondIcon size={20} color={theme.colors.zinc[50]} />
+                    <Text style={styles.creditsBadgeText}>{creditBalance || 0}</Text>
                 </View>
             </LinearGradient>
         </TouchableOpacity>
@@ -43,13 +43,13 @@ export function CreditsBadge({ creditBalance }: CreditsBadgeProps) {
 
 const styles = StyleSheet.create({
     creditsBadgeContainer: {
-        borderRadius: 20,
+        borderRadius: 22,
         overflow: 'hidden',
     },
     creditsBadgeGradient: {
-        borderRadius: 20,
-        paddingVertical: 6,
-        paddingHorizontal: 8,
+        borderRadius: 22,
+        paddingVertical: 8,
+        paddingHorizontal: 10,
     },
     creditsBadgeContent: {
         flexDirection: 'row',
