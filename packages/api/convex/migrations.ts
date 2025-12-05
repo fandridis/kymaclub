@@ -53,11 +53,11 @@ export const renameCancelReasonField = migrations.define({
 export const migrateClassTemplatePrimaryCategory = migrations.define({
     table: "classTemplates",
     migrateOne: async (ctx, doc) => {
-        // Update to 'yoga' as the default class category
-        // This replaces old venue-style categories like 'wellness_center', 'yoga_studio', etc.
-        await ctx.db.patch(doc._id, {
-            primaryCategory: "yoga",
-        });
+        // // Update to 'yoga' as the default class category
+        // // This replaces old venue-style categories like 'wellness_center', 'yoga_studio', etc.
+        // await ctx.db.patch(doc._id, {
+        //     primaryCategory: "yoga",
+        // });
     },
 });
 

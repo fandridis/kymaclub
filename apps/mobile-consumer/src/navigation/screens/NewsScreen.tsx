@@ -119,6 +119,17 @@ export function NewsScreen() {
         return end;
     }, [now]);
 
+    const { startOfTomorrow, endOfTomorrow } = useMemo(() => {
+        const start = new Date(now);
+        start.setDate(start.getDate() + 1);
+        start.setHours(0, 0, 0, 0);
+
+        const end = new Date(start);
+        end.setHours(23, 59, 59, 999);
+
+        return { startOfTomorrow: start, endOfTomorrow: end };
+    }, [now]);
+
     // Query for user settings to check if welcome banner was dismissed
     // TODO: Update to use api.queries.settings.getUserSettings once API is regenerated
     const userSettings = useQuery(
@@ -146,6 +157,16 @@ export function NewsScreen() {
         userCity ? {
             startDate: now.getTime(),
             endDate: endOfToday.getTime(),
+            cityFilter: userCity,
+        } : "skip"
+    );
+
+    // Query for happening tomorrow classes (00:00 to 23:59 tomorrow)
+    const happeningTomorrowInstances = useQuery(
+        api.queries.classInstances.getHappeningTomorrowClassInstances,
+        userCity ? {
+            startDate: startOfTomorrow.getTime(),
+            endDate: endOfTomorrow.getTime(),
             cityFilter: userCity,
         } : "skip"
     );
@@ -201,8 +222,17 @@ export function NewsScreen() {
             }
         });
 
+        happeningTomorrowInstances?.forEach(instance => {
+            if (instance.templateImageId) {
+                ids.push(instance.templateImageId);
+            }
+            if (instance.venueImageId) {
+                ids.push(instance.venueImageId);
+            }
+        });
+
         return [...new Set(ids)];
-    }, [upcomingClassInstances, happeningTodayInstances]);
+    }, [upcomingClassInstances, happeningTodayInstances, happeningTomorrowInstances]);
 
     // Fetch image URLs
     const classImageUrlsQuery = useQuery(
@@ -336,6 +366,40 @@ export function NewsScreen() {
             });
     }, [happeningTodayInstances, combinedStorageIdToUrl, t]);
 
+    // Process happening tomorrow classes
+    const happeningTomorrowClasses = useMemo(() => {
+        const instancesData = happeningTomorrowInstances || [];
+        if (!instancesData.length) return [];
+
+        return instancesData
+            .slice(0, 10)
+            .map(instance => {
+                const imageUrl = instance.templateImageId
+                    ? combinedStorageIdToUrl.get(instance.templateImageId)
+                    : instance.venueImageId
+                        ? combinedStorageIdToUrl.get(instance.venueImageId)
+                        : null;
+
+                return {
+                    id: instance._id,
+                    title: instance.name || t('news.class'),
+                    subtitle: instance.instructor
+                        ? t('news.withInstructor', { instructor: instance.instructor })
+                        : instance.venueName || undefined,
+                    originalPrice: `${centsToCredits(instance.pricing.originalPrice)}`,
+                    discountedPrice: `${centsToCredits(instance.pricing.finalPrice)}`,
+                    discountPercentage: instance.pricing.discountPercentage > 0
+                        ? `${Math.round(instance.pricing.discountPercentage * 100)}%`
+                        : null,
+                    venueName: instance.venueName,
+                    venueCity: instance.venueCity,
+                    imageUrl,
+                    startTime: instance.startTime,
+                    classInstanceId: instance._id,
+                };
+            });
+    }, [happeningTomorrowInstances, combinedStorageIdToUrl, t]);
+
     // Get new venues for VenueCard
     const newVenuesForCards = useMemo(() => {
         const venuesData = allVenues || [];
@@ -390,6 +454,7 @@ export function NewsScreen() {
     const isInitialLoading = user && (
         userBookings === undefined &&
         happeningTodayInstances === undefined &&
+        happeningTomorrowInstances === undefined &&
         (allVenues === undefined || venuesLoading)
     );
 
@@ -567,6 +632,97 @@ export function NewsScreen() {
                                                             minute: '2-digit',
                                                             hour12: true,
                                                         })}
+                                                    </Text>
+                                                </View>
+                                                {item.venueCity ? (
+                                                    <View style={styles.newsClassCardFooterMetric}>
+                                                        <View style={styles.newsClassCardFooterIcon}>
+                                                            <MapPinIcon
+                                                                size={14}
+                                                                color={theme.colors.zinc[600]}
+                                                                strokeWidth={2}
+                                                            />
+                                                        </View>
+                                                        <Text
+                                                            style={styles.newsClassCardFooterText}
+                                                            numberOfLines={1}
+                                                        >
+                                                            {item.venueCity}
+                                                        </Text>
+                                                    </View>
+                                                ) : null}
+                                            </View>
+                                        )}
+                                        onPress={() => {
+                                            if (item.classInstanceId) {
+                                                navigation.navigate('ClassDetailsModal', {
+                                                    classInstanceId: item.classInstanceId,
+                                                });
+                                            }
+                                        }}
+                                        style={styles.lastMinuteCarouselCard}
+                                    />
+                                );
+                            })}
+                        </ScrollView>
+                    </View>
+                )}
+
+                {/* Happening Tomorrow Section */}
+                {happeningTomorrowClasses.length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>{t('news.happeningTomorrow')}</Text>
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.carouselScrollContent}
+                        >
+                            {happeningTomorrowClasses.map((item) => {
+                                const discountBadge = item.discountPercentage ? `-${item.discountPercentage}` : null;
+
+                                return (
+                                    <NewsClassCard
+                                        key={item.id}
+                                        title={item.title}
+                                        subtitle={item.subtitle}
+                                        imageUrl={item.imageUrl}
+                                        renderTopLeft={() => (
+                                            <View style={styles.lastMinuteStartsPill}>
+                                                <Text style={styles.lastMinuteStartsText}>
+                                                    {new Date(item.startTime).toLocaleTimeString('en-US', {
+                                                        hour: 'numeric',
+                                                        minute: '2-digit',
+                                                        hour12: true,
+                                                    })}
+                                                </Text>
+                                            </View>
+                                        )}
+                                        renderTopRight={() => {
+                                            if (!discountBadge) {
+                                                return null;
+                                            }
+
+                                            return (
+                                                <View style={[styles.lastMinuteBadge, styles.offerBadge]}>
+                                                    <Text style={styles.badgeText}>{discountBadge}</Text>
+                                                </View>
+                                            );
+                                        }}
+                                        renderFooter={() => (
+                                            <View style={styles.newsClassCardFooterRow}>
+                                                <View style={styles.newsClassCardFooterMetric}>
+                                                    <View style={styles.newsClassCardFooterIcon}>
+                                                        <DiamondIcon
+                                                            size={14}
+                                                            color={theme.colors.zinc[700]}
+                                                            strokeWidth={2}
+                                                        />
+                                                    </View>
+                                                    <Text
+                                                        style={styles.newsClassCardFooterText}
+                                                        numberOfLines={1}
+                                                    >
+                                                        {item.discountedPrice}
                                                     </Text>
                                                 </View>
                                                 {item.venueCity ? (

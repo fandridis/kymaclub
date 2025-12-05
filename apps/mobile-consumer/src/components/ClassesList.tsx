@@ -8,7 +8,7 @@ import { useTypedTranslation } from '../i18n/typed';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation';
 import { theme } from '../theme';
-import { ExploreCategoryId, getExploreCategoryTag } from '@repo/utils/exploreFilters';
+import { ExploreCategoryId } from '@repo/utils/exploreFilters';
 import * as Location from 'expo-location';
 import { calculateDistance, sortByDistance } from '../utils/location';
 import { useCurrentUser } from '../hooks/useCurrentUser';

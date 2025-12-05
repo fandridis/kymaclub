@@ -18,7 +18,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import { Calendar, BookOpen, ExternalLink, RotateCcw } from 'lucide-react';
+import { Calendar, BookOpen, ExternalLink, RotateCcw, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useActiveClassTemplates } from '../hooks/use-class-templates';
 import type { Doc } from '@repo/api/convex/_generated/dataModel';
@@ -194,13 +194,22 @@ export function CreateInstanceFromTemplateDialog({
     const weeksOptions = Array.from({ length: 15 }, (_, i) => i + 2);
 
     return (
-        <Drawer open={open} onOpenChange={onClose} direction={isMobile ? 'bottom' : 'right'}>
+        <Drawer dismissible={false} open={open} onOpenChange={onClose} direction={isMobile ? 'bottom' : 'right'}>
             <DrawerContent className={`w-full h-full flex flex-col ${!isMobile ? 'max-w-[500px]' : ''}`}>
                 <DrawerHeader className="text-left shrink-0">
-                    <DrawerTitle className="flex items-center gap-2">
-                        <Calendar className="h-5 w-5" />
-                        {t('routes.calendar.scheduleClass.title')}
-                    </DrawerTitle>
+                    <div className="flex items-center justify-between">
+                        <DrawerTitle className="flex items-center gap-2">
+                            <Calendar className="h-5 w-5" />
+                            {t('routes.calendar.scheduleClass.title')}
+                        </DrawerTitle>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onClose}
+                        >
+                            <X />
+                        </Button>
+                    </div>
                     <DrawerDescription>
                         {t('routes.calendar.scheduleClass.description')}
                     </DrawerDescription>

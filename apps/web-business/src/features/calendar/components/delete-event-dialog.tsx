@@ -8,7 +8,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Calendar, Trash2 } from 'lucide-react';
+import { Calendar, Trash2, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -117,17 +117,26 @@ export function DeleteEventDialog({
 
   return (
     <>
-      <Drawer direction={isMobile ? "bottom" : "right"} open={open} onOpenChange={(isOpen) => {
+      <Drawer dismissible={false} direction={isMobile ? "bottom" : "right"} open={open} onOpenChange={(isOpen) => {
         if (!isOpen) {
           onClose();
         }
       }}>
         <DrawerContent className="flex flex-col h-screen">
           <DrawerHeader className="h-[64px] border-b">
-            <DrawerTitle className="flex items-center gap-2 text-red-600">
-              <Trash2 className="h-5 w-5" />
-              Delete Event
-            </DrawerTitle>
+            <div className="flex items-center justify-between">
+              <DrawerTitle className="flex items-center gap-2 text-red-600">
+                <Trash2 className="h-5 w-5" />
+                Delete Event
+              </DrawerTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+              >
+                <X />
+              </Button>
+            </div>
           </DrawerHeader>
 
           <div className="flex-1 overflow-y-auto p-6">

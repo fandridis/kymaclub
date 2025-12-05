@@ -430,14 +430,23 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
 
     return (
         <>
-            <Drawer direction={isMobile ? "bottom" : "right"} open={open} onOpenChange={(isOpen) => {
+            <Drawer dismissible={false} direction={isMobile ? "bottom" : "right"} open={open} onOpenChange={(isOpen) => {
                 if (!isOpen) {
                     onClose();
                 }
             }}>
                 <DrawerContent className="flex flex-col h-screen data-[vaul-drawer-direction=right]:sm:max-w-md">
                     <DrawerHeader className="h-[64px] border-b">
-                        <DrawerTitle className="text-xl">{t('routes.calendar.editClass.title')}</DrawerTitle>
+                        <div className="flex items-center justify-between">
+                            <DrawerTitle className="text-xl">{t('routes.calendar.editClass.title')}</DrawerTitle>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={onClose}
+                            >
+                                <X />
+                            </Button>
+                        </div>
                     </DrawerHeader>
 
                     <Form {...form}>

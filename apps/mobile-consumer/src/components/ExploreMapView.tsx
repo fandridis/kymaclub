@@ -10,7 +10,7 @@ import { useTypedTranslation } from '../i18n/typed';
 import { Image } from 'expo-image';
 import { Doc } from '@repo/api/convex/_generated/dataModel';
 import { calculateDistance } from '../utils/location';
-import { getVenueCategoryDisplay } from '@repo/utils/constants';
+import { getVenueCategoryTranslationKey } from '@repo/utils/constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -78,8 +78,10 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
         );
       }
 
-      // Get venue type from primaryCategory
-      const type = venue.primaryCategory ? getVenueCategoryDisplay(venue.primaryCategory) : 'Fitness Center';
+      // Get venue type from primaryCategory (translated)
+      const type = venue.primaryCategory
+        ? t(getVenueCategoryTranslationKey(venue.primaryCategory) as keyof typeof t)
+        : t('venueCategories.fitness_center');
 
       // Get image URLs from storage IDs
       const imageUrls = venue.imageStorageIds?.map(id => storageIdToUrl?.get(id)).filter(Boolean) as string[] || [];

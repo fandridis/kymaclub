@@ -7,7 +7,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { ConvexError } from 'convex/values';
 import type { Doc } from '@repo/api/convex/_generated/dataModel';
-import { Plus, MapPin, Mail, Phone, Globe } from 'lucide-react';
+import { Plus, MapPin, Mail, Phone, Globe, X } from 'lucide-react';
 import { useTypedTranslation } from '@/lib/typed';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -19,7 +19,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { getVenueCategoryOptions, getCityOptions, normalizeCityInput, type VenueCategory } from '@repo/utils/constants';
+import { VENUE_CATEGORIES, getCityOptions, normalizeCityInput, type VenueCategory } from '@repo/utils/constants';
 
 const CITY_OPTIONS = getCityOptions();
 
@@ -298,7 +298,7 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                 </Button>
             )}
 
-            <Drawer direction={isMobile ? 'bottom' : 'right'} open={isDrawerOpen ?? isOpen} onOpenChange={(open) => {
+            <Drawer dismissible={false} direction={isMobile ? 'bottom' : 'right'} open={isDrawerOpen ?? isOpen} onOpenChange={(open) => {
                 if (!open) {
                     onClose?.();
                 }
@@ -306,9 +306,21 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
             }}>
                 <DrawerContent className={`flex flex-col h-screen ${!isMobile ? 'data-[vaul-drawer-direction=right]:sm:max-w-md' : ''}`}>
                     <DrawerHeader className="h-[64px] border-b">
-                        <DrawerTitle className="text-xl">
-                            {isEditMode ? t('routes.settings.venueDialog.editVenueTitle') : t('routes.settings.venueDialog.addVenueTitle')}
-                        </DrawerTitle>
+                        <div className="flex items-center justify-between">
+                            <DrawerTitle className="text-xl">
+                                {isEditMode ? t('routes.settings.venueDialog.editVenueTitle') : t('routes.settings.venueDialog.addVenueTitle')}
+                            </DrawerTitle>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                    setIsDrawerOpen(false);
+                                    onClose?.();
+                                }}
+                            >
+                                <X />
+                            </Button>
+                        </div>
                     </DrawerHeader>
 
                     <div className="flex-1 overflow-y-auto">
@@ -382,9 +394,9 @@ export function CreateVenueDialog({ venue, isOpen, hideTrigger, onClose }: Creat
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
-                                                        {getVenueCategoryOptions().map((option) => (
-                                                            <SelectItem key={option.value} value={option.value}>
-                                                                {option.label}
+                                                        {VENUE_CATEGORIES.map((category) => (
+                                                            <SelectItem key={category} value={category}>
+                                                                {t(`venueCategories.${category}` as keyof typeof t)}
                                                             </SelectItem>
                                                         ))}
                                                     </SelectContent>

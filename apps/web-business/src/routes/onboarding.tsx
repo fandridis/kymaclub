@@ -18,7 +18,7 @@ import { toast } from 'sonner';
 import { ConvexError } from 'convex/values';
 import { getAuthState, useAuthStore } from '@/components/stores/auth';
 import { useRedirectGuard } from '@/hooks/use-redirect-guard';
-import { getCityOptions, getVenueCategoryOptions, type VenueCategory } from '@repo/utils/constants';
+import { getCityOptions, VENUE_CATEGORIES, type VenueCategory } from '@repo/utils/constants';
 import { useTypedTranslation } from '@/lib/typed';
 
 export const Route = createFileRoute('/onboarding')({
@@ -328,9 +328,9 @@ function Onboarding() {
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
-                                                    {getVenueCategoryOptions().map((option) => (
-                                                        <SelectItem key={option.value} value={option.value}>
-                                                            {option.label}
+                                                    {VENUE_CATEGORIES.map((category) => (
+                                                        <SelectItem key={category} value={category}>
+                                                            {t(`venueCategories.${category}` as keyof typeof t)}
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>

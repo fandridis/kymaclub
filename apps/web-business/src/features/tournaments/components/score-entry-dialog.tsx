@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Minus, Plus, Check } from "lucide-react";
+import { MapPin, Minus, Plus, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ScoreEntryDialogProps {
@@ -199,13 +199,23 @@ export function ScoreEntryDialog({
     const team2Winning = team2Score > team1Score;
 
     return (
-        <Drawer open={open} onOpenChange={onOpenChange}>
+        <Drawer dismissible={false} open={open} onOpenChange={onOpenChange}>
             <DrawerContent className="max-h-[90vh]">
                 <DrawerHeader className="text-center pb-2">
-                    <DrawerTitle className="flex items-center justify-center gap-2">
-                        {isEditing ? "Edit Score" : "Enter Score"}
-                        {isEditing && <Badge variant="secondary">Editing</Badge>}
-                    </DrawerTitle>
+                    <div className="flex items-center justify-between">
+                        <div className="w-10" /> {/* Spacer for centering */}
+                        <DrawerTitle className="flex items-center justify-center gap-2">
+                            {isEditing ? "Edit Score" : "Enter Score"}
+                            {isEditing && <Badge variant="secondary">Editing</Badge>}
+                        </DrawerTitle>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            <X />
+                        </Button>
+                    </div>
                     <DrawerDescription className="flex items-center justify-center gap-2">
                         <span>Round {match.roundNumber}</span>
                         <span>•</span>

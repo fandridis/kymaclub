@@ -7,8 +7,8 @@ import { X, SlidersHorizontalIcon } from 'lucide-react-native';
 import { useTypedTranslation } from '../../i18n/typed';
 import { theme } from '../../theme';
 import {
-  EXPLORE_CATEGORY_FILTERS,
   ExploreCategoryId,
+  EXPLORE_CATEGORY_IDS,
   isExploreCategoryId,
 } from '@repo/utils/exploreFilters';
 import { useExploreFiltersStore } from '../../stores/explore-filters-store';
@@ -36,11 +36,11 @@ export function ExploreFiltersModalScreen() {
 
   const availableCategories = useMemo(
     () =>
-      EXPLORE_CATEGORY_FILTERS.filter(({ id }) => isExploreCategoryId(id)).map(({ id, label }) => ({
+      EXPLORE_CATEGORY_IDS.filter((id) => isExploreCategoryId(id)).map((id) => ({
         id,
-        label,
+        label: t(`venueCategories.${id}`),
       })),
-    [],
+    [t],
   );
 
   const [selectedCategories, setSelectedCategories] = useState<ExploreCategoryId[]>(

@@ -27,7 +27,7 @@ export function DialogOrDrawer(props: any) {
     if (isMobile) {
         const { children, ...rest } = props
         return (
-            <Drawer direction="bottom" {...rest}>
+            <Drawer dismissible={false} direction="bottom" {...rest}>
                 {children}
             </Drawer>
         )

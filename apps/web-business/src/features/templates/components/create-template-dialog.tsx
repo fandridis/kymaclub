@@ -42,7 +42,7 @@ import { cn } from '@/lib/utils';
 import { TEMPLATE_COLORS_MAP } from '@/utils/colors';
 import { ClassDiscountRulesForm } from '@/components/class-discount-rules-form';
 import { QuestionnaireBuilder } from '@/components/questionnaire-builder';
-import { VENUE_CATEGORIES, VENUE_CATEGORY_DISPLAY_NAMES, type VenueCategory } from '@repo/utils/constants';
+import { CLASS_CATEGORIES, type ClassCategory } from '@repo/utils/constants';
 import { useTypedTranslation } from '@/lib/typed';
 import type { Question } from '@repo/api/types/questionnaire';
 
@@ -192,7 +192,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
             cancellationWindowHours: "2",
             requiresConfirmation: false,
             discountRules: [],
-            primaryCategory: '' as VenueCategory,
+            primaryCategory: '' as ClassCategory,
         },
     });
 
@@ -201,7 +201,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
         if (venues.length === 1 && !form.getValues("venueId") && !isEditMode) {
             const defaultVenue = venues[0]!;
             form.setValue("venueId", defaultVenue._id);
-            form.setValue("primaryCategory", defaultVenue.primaryCategory as VenueCategory);
+            form.setValue("primaryCategory", defaultVenue.primaryCategory as ClassCategory);
         }
     }, [venues, form, isEditMode]);
 
@@ -227,7 +227,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                 cancellationWindowHours: classTemplate!.cancellationWindowHours?.toString() || "2",
                 requiresConfirmation: classTemplate!.requiresConfirmation || false,
                 discountRules: classTemplate!.discountRules || [],
-                primaryCategory: (classTemplate!.primaryCategory as VenueCategory) || '' as VenueCategory,
+                primaryCategory: (classTemplate!.primaryCategory as ClassCategory) || '' as ClassCategory,
             });
             // Also update the discount rules and questionnaire state
             setDiscountRules(classTemplate!.discountRules || []);
@@ -244,7 +244,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
         // Re-auto-select venue after reset if only one exists
         if (venues.length === 1 && !isEditMode) {
             form.setValue("venueId", venues[0]!._id);
-            form.setValue("primaryCategory", venues[0]!.primaryCategory as VenueCategory);
+            form.setValue("primaryCategory", venues[0]!.primaryCategory as ClassCategory);
         }
     };
 
@@ -278,7 +278,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
             const templateData = {
                 name: data.name.trim(),
                 venueId: data.venueId as Id<"venues">,
-                primaryCategory: data.primaryCategory as VenueCategory,
+                primaryCategory: data.primaryCategory as ClassCategory,
                 description: data.description?.trim(),
                 shortDescription: data.shortDescription?.trim(),
                 instructor: data.instructor.trim(),
@@ -341,7 +341,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
     useEffect(() => {
         const selectedVenue = venues.find((venue) => venue._id === formData.venueId);
         if (selectedVenue && !formData.primaryCategory) {
-            form.setValue('primaryCategory', selectedVenue.primaryCategory as VenueCategory);
+            form.setValue('primaryCategory', selectedVenue.primaryCategory as ClassCategory);
         }
     }, [formData.venueId, formData.primaryCategory, venues, form]);
 
@@ -355,7 +355,7 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                 </Button>
             )}
 
-            <Drawer direction={isMobile ? 'bottom' : 'right'} open={open ?? isOpen} onOpenChange={(isOpen) => {
+            <Drawer dismissible={false} direction={isMobile ? 'bottom' : 'right'} open={open ?? isOpen} onOpenChange={(isOpen) => {
                 if (!isOpen) {
                     onClose?.();
                 }
@@ -363,9 +363,21 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
             }}>
                 <DrawerContent className={`flex flex-col h-screen ${!isMobile ? 'data-[vaul-drawer-direction=right]:sm:max-w-md' : ''}`}>
                     <DrawerHeader className="h-[64px] border-b">
-                        <DrawerTitle className="text-xl">
-                            {isEditMode ? t('routes.templates.dialog.editTitle') : t('routes.templates.dialog.createTitle')}
-                        </DrawerTitle>
+                        <div className="flex items-center justify-between">
+                            <DrawerTitle className="text-xl">
+                                {isEditMode ? t('routes.templates.dialog.editTitle') : t('routes.templates.dialog.createTitle')}
+                            </DrawerTitle>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                    setOpen(false);
+                                    onClose?.();
+                                }}
+                            >
+                                <X />
+                            </Button>
+                        </div>
                     </DrawerHeader>
 
                     <Form {...form}>
@@ -423,9 +435,9 @@ export default function CreateTemplateDialog({ classTemplate, isOpen, hideTrigge
                                                                     </SelectTrigger>
                                                                 </FormControl>
                                                                 <SelectContent>
-                                                                    {VENUE_CATEGORIES.map((category) => (
+                                                                    {CLASS_CATEGORIES.map((category) => (
                                                                         <SelectItem key={category} value={category}>
-                                                                            {VENUE_CATEGORY_DISPLAY_NAMES[category]}
+                                                                            {t(`classCategories.${category}` as keyof typeof t)}
                                                                         </SelectItem>
                                                                     ))}
                                                                 </SelectContent>

@@ -1,10 +1,10 @@
 /**
- * Venue category types and display utilities
+ * Venue category types (type of business/studio)
  */
 
 export const VENUE_CATEGORIES = [
   "yoga_studio",
-  "fitness_center", 
+  "fitness_center",
   "dance_studio",
   "pilates_studio",
   "swimming_facility",
@@ -14,48 +14,73 @@ export const VENUE_CATEGORIES = [
   "wellness_center",
   "outdoor_fitness",
   "personal_training",
-  "rehabilitation_center"
+  "rehabilitation_center",
+  "creative_studio",
+  "sport_facility"
 ] as const;
 
 export type VenueCategory = typeof VENUE_CATEGORIES[number];
-
-export const VENUE_CATEGORY_DISPLAY_NAMES: Record<VenueCategory, string> = {
-  yoga_studio: 'Yoga Studio',
-  fitness_center: 'Fitness Center',
-  dance_studio: 'Dance Studio',
-  pilates_studio: 'Pilates Studio',
-  swimming_facility: 'Swimming Facility',
-  martial_arts_studio: 'Martial Arts Studio',
-  climbing_gym: 'Climbing Gym',
-  crossfit_box: 'CrossFit Box',
-  wellness_center: 'Wellness Center',
-  outdoor_fitness: 'Outdoor Fitness',
-  personal_training: 'Personal Training',
-  rehabilitation_center: 'Rehabilitation Center'
-} as const;
-
-/**
- * Get display name for a venue category
- */
-export function getVenueCategoryDisplay(category: VenueCategory | string): string {
-  return VENUE_CATEGORY_DISPLAY_NAMES[category as VenueCategory] || 'Fitness Center';
-}
-
-/**
- * Get all venue categories with their display names for form selects
- */
-export function getVenueCategoryOptions(): Array<{ value: VenueCategory; label: string }> {
-  return VENUE_CATEGORIES.map(category => ({
-    value: category,
-    label: VENUE_CATEGORY_DISPLAY_NAMES[category]
-  }));
-}
 
 /**
  * Check if a string is a valid venue category
  */
 export function isValidVenueCategory(category: string): category is VenueCategory {
   return VENUE_CATEGORIES.includes(category as VenueCategory);
+}
+
+/**
+ * Get i18n translation key for a venue category
+ */
+export function getVenueCategoryTranslationKey(category: VenueCategory | string): string {
+  return `venueCategories.${category}`;
+}
+
+/**
+ * Class category types (type of activity/class)
+ * These are different from venue categories - a yoga_studio (venue) offers yoga (class category)
+ */
+export const CLASS_CATEGORIES = [
+  "yoga",
+  "pilates",
+  "strength",
+  "cardio",
+  "hiit",
+  "dance",
+  "martial_arts",
+  "swimming",
+  "cycling",
+  "crossfit",
+  "barre",
+  "meditation",
+  "breathwork",
+  "climbing",
+  "boxing",
+  "functional_training",
+  "stretching",
+  "aqua_fitness",
+  "running",
+  "personal_training",
+  "workshop",
+  "art",
+  "cooking",
+  "rehabilitation",
+  "other"
+] as const;
+
+export type ClassCategory = typeof CLASS_CATEGORIES[number];
+
+/**
+ * Check if a string is a valid class category
+ */
+export function isValidClassCategory(category: string): category is ClassCategory {
+  return CLASS_CATEGORIES.includes(category as ClassCategory);
+}
+
+/**
+ * Get i18n translation key for a class category
+ */
+export function getClassCategoryTranslationKey(category: ClassCategory | string): string {
+  return `classCategories.${category}`;
 }
 
 /**
