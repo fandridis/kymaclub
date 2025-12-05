@@ -250,8 +250,6 @@ export function ClassDetailsModalScreen() {
         classInstance || !classInstanceId ? "skip" : { instanceId: classInstanceId }
     );
 
-    console.log('fetchedClassInstance', fetchedClassInstance?.disableBookings);
-
     // Use either the provided classInstance or the fetched one
     const finalClassInstance = classInstance || fetchedClassInstance;
 
@@ -274,7 +272,7 @@ export function ClassDetailsModalScreen() {
     // Fetch template to get questionnaire (use public query for consumer access)
     const template = useQuery(
         api.queries.classTemplates.getClassTemplateByIdPublic,
-        finalClassInstance ? { templateId: finalClassInstance.templateId } : "skip"
+        finalClassInstance?.templateId ? { templateId: finalClassInstance.templateId } : "skip"
     );
 
     // Get effective questionnaire (instance overrides template)
@@ -291,8 +289,6 @@ export function ClassDetailsModalScreen() {
         finalClassInstance ? { classInstanceId: finalClassInstance._id } : "skip"
     );
     const hasTournament = widget && widget.status !== 'cancelled';
-
-    console.log('widget', finalClassInstance?._id, widget);
 
     // Get image IDs with null-safe access
     const templateSnapshot = finalClassInstance?.templateSnapshot;
