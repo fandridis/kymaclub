@@ -1,13 +1,28 @@
-import type { Doc, Id } from "../convex/_generated/dataModel";
-import type { 
-    UserPresence, 
-    PresenceUpdatePayload, 
-    NotificationDeliveryContext, 
+import type { Id } from "../convex/_generated/dataModel";
+import type {
+    PresenceUpdatePayload,
+    NotificationDeliveryContext,
     NotificationDeliveryDecision,
-    ActiveUserPresence
+    ActiveUserPresence,
+    PresenceAppState,
+    PresenceDeviceType
 } from "../types/presence";
 import { presenceValidations } from "../validations/presence";
 import { throwIfError } from "../utils/core";
+
+/**
+ * Prepared presence update data ready for database operations
+ * This excludes Convex system fields (_id, _creationTime) and audit fields
+ */
+export interface PreparedPresenceUpdate {
+    userId: Id<"users">;
+    isActive: boolean;
+    activeThreadId: Id<"chatMessageThreads"> | null | undefined;
+    appState: PresenceAppState;
+    deviceId: string | undefined;
+    deviceType: PresenceDeviceType | undefined;
+    lastSeen: number;
+}
 
 /**
  * Presence Operations - Business Logic for Real-time User Presence Management
@@ -71,13 +86,13 @@ import { throwIfError } from "../utils/core";
  * @data_integrity Timestamps are auto-generated to prevent client-side manipulation
  * @validation_layer Uses presence-specific validation functions
  */
-export const preparePresenceUpdate = (userId: string, payload: PresenceUpdatePayload): Omit<UserPresence, 'createdAt' | 'createdBy' | 'updatedAt' | 'updatedBy'> => {
+export const preparePresenceUpdate = (userId: string, payload: PresenceUpdatePayload): PreparedPresenceUpdate => {
     // Validate user ID
     const validUserId = throwIfError(presenceValidations.validateUserId(userId), 'userId');
-    
+
     // Validate full payload
     const validatedPayload = throwIfError(presenceValidations.validatePresenceUpdatePayload(payload), 'payload');
-    
+
     return {
         userId: validUserId as Id<"users">,
         isActive: validatedPayload.isActive,
@@ -134,12 +149,12 @@ export const shouldDeliverNotification = (
             reason: "No presence data available - fail-safe delivery",
         };
     }
-    
+
     const currentTime = context.messageTimestamp;
     const timeSinceLastSeen = currentTime - userPresence.lastSeen;
     const RECENT_ACTIVITY_THRESHOLD = 30000; // 30 seconds
     const STALE_PRESENCE_THRESHOLD = 60000; // 60 seconds
-    
+
     // Check if presence data is stale (user might be disconnected)
     if (timeSinceLastSeen > STALE_PRESENCE_THRESHOLD) {
         return {
@@ -148,7 +163,7 @@ export const shouldDeliverNotification = (
             presenceData: userPresence,
         };
     }
-    
+
     // User is not active in any app state
     if (!userPresence.isActive || userPresence.appState === 'inactive') {
         return {
@@ -157,10 +172,10 @@ export const shouldDeliverNotification = (
             presenceData: userPresence,
         };
     }
-    
+
     // User is active and in the same conversation as the incoming message
-    if (context.threadId && 
-        userPresence.activeThreadId === context.threadId && 
+    if (context.threadId &&
+        userPresence.activeThreadId === context.threadId &&
         timeSinceLastSeen <= RECENT_ACTIVITY_THRESHOLD) {
         return {
             shouldSend: false,
@@ -168,12 +183,12 @@ export const shouldDeliverNotification = (
             presenceData: userPresence,
         };
     }
-    
+
     // User is active but not in target conversation or not recently active
     return {
         shouldSend: true,
-        reason: userPresence.activeThreadId 
-            ? "User active but in different conversation" 
+        reason: userPresence.activeThreadId
+            ? "User active but in different conversation"
             : "User active but not in any specific conversation",
         presenceData: userPresence,
     };
@@ -220,13 +235,13 @@ export const calculatePresenceCleanupThreshold = (currentTime: number = Date.now
 export const validateNotificationContext = (context: NotificationDeliveryContext): NotificationDeliveryContext => {
     const validRecipientId = throwIfError(presenceValidations.validateUserId(context.recipientUserId), 'recipientUserId');
     const validTimestamp = throwIfError(presenceValidations.validateLastSeen(context.messageTimestamp), 'messageTimestamp');
-    
+
     let validThreadId: string | undefined = undefined;
     if (context.threadId) {
         const threadResult = presenceValidations.validateThreadId(context.threadId);
         validThreadId = throwIfError(threadResult, 'threadId') || undefined;
     }
-    
+
     return {
         recipientUserId: validRecipientId,
         messageTimestamp: validTimestamp,

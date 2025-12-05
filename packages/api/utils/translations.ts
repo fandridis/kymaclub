@@ -115,7 +115,7 @@ const emailTranslations = {
     },
     el: {
         credits_gift: {
-            subject: '🎁 Σας δωρήθηκαν {{credits}} credits!',
+            subject: '🎁 {{credits}} credits από εμάς. Go crazy!',
             greeting: 'Γεια σου {{name}}, το KymaClub μόλις σου έστειλε',
             credits_text: '{{credits}} credits',
             note_label: 'Σημείωση',
@@ -150,8 +150,18 @@ const emailTranslations = {
 type PushNotificationKey = keyof typeof pushNotificationTranslations['en'];
 type EmailKey = keyof typeof emailTranslations['en'];
 
-// Type-safe OTP email translations type
-export type OTPEmailTranslations = typeof emailTranslations['en']['otp_sign_in'];
+// Type-safe OTP email translations interface
+// Both otp_sign_in and otp_password_reset share this structure
+export interface OTPEmailTranslations {
+    readonly subject: string;
+    readonly preheader: string;
+    readonly title: string;
+    readonly body: string;
+    readonly code_label: string;
+    readonly warning: string;
+    readonly ignore_notice: string;
+    readonly plain_text: string;
+}
 
 /**
  * Resolve language to a supported language, falling back to default

@@ -231,20 +231,23 @@ export const updateUserCity = mutationWithTriggers({
 
         // Validate city
         const validationResult = coreValidations.validateCitySelection(args.city);
-        if (!validationResult.success) {
+        if (!validationResult.success || !validationResult.value) {
             throw new ConvexError({
-                message: validationResult.error,
+                message: validationResult.error ?? "Invalid city",
                 field: "city",
                 code: ERROR_CODES.VALIDATION_ERROR,
             });
         }
 
+        // Now TypeScript knows validationResult.value is defined
+        const validatedCity = validationResult.value;
+
         // Update user's active city slug
         await ctx.db.patch(user._id, {
-            activeCitySlug: validationResult.value,
+            activeCitySlug: validatedCity,
         });
 
-        return { success: true, city: validationResult.value };
+        return { success: true, city: validatedCity };
     }
 });
 
@@ -377,7 +380,7 @@ export const deletePendingAuthLanguage = internalMutation({
     returns: v.null(),
     handler: async (ctx, args) => {
         const normalizedEmail = args.email.toLowerCase().trim();
-        
+
         const pending = await ctx.db
             .query("pendingAuthLanguages")
             .withIndex("by_email", (q) => q.eq("email", normalizedEmail))
@@ -400,7 +403,7 @@ export const cleanupExpiredPendingAuthLanguages = internalMutation({
     returns: v.object({ deletedCount: v.number() }),
     handler: async (ctx) => {
         const now = Date.now();
-        
+
         // Find all expired records
         const expired = await ctx.db
             .query("pendingAuthLanguages")

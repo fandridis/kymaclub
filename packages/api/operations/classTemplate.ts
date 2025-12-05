@@ -97,6 +97,7 @@ const createDefaultTemplate = (
         businessId,
         isActive: true,
         allowWaitlist: false,
+        cancellationWindowHours: 0, // Default: no restriction, can cancel anytime up to class start
         createdBy: userId,
         createdAt: Date.now(),
     };

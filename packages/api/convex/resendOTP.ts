@@ -7,6 +7,14 @@ import { internal } from "./_generated/api";
 import type { GenericActionCtx } from "convex/server";
 import type { DataModel } from "./_generated/dataModel";
 
+// Type for the email verification request params
+// @convex-dev/auth extends Auth.js types but passes ctx as second parameter
+interface EmailVerificationParams {
+    identifier: string;
+    provider: { apiKey?: string };
+    token: string;
+}
+
 export const ResendOTP = Email({
     id: "resend-otp",
     apiKey: process.env.AUTH_RESEND_KEY,
@@ -15,25 +23,29 @@ export const ResendOTP = Email({
     generateVerificationToken() {
         return generateOTP6();
     },
-    async sendVerificationRequest({ identifier: email, provider, token }, ctx) {
+    // Note: @convex-dev/auth passes ctx as second parameter at runtime,
+    // but Auth.js types don't reflect this. Using type assertion.
+    sendVerificationRequest: (async (
+        params: EmailVerificationParams,
+        ctx: GenericActionCtx<DataModel>
+    ) => {
+        const { identifier: email, provider, token } = params;
         const resend = new ResendAPI(provider.apiKey);
-        
+
         // Get language preference from pending auth languages table
         let language: string = DEFAULT_LANGUAGE;
-        
+
         try {
-            // ctx is passed as the second parameter by @convex-dev/auth
-            const actionCtx = ctx as GenericActionCtx<DataModel>;
-            const pendingLang = await actionCtx.runQuery(
+            const pendingLang = await ctx.runQuery(
                 internal.queries.core.getPendingAuthLanguage,
                 { email: email.toLowerCase().trim() }
             );
-            
+
             if (pendingLang?.language) {
                 language = pendingLang.language;
-                
+
                 // Clean up the pending language record
-                await actionCtx.runMutation(
+                await ctx.runMutation(
                     internal.mutations.core.deletePendingAuthLanguage,
                     { email: email.toLowerCase().trim() }
                 );
@@ -42,12 +54,12 @@ export const ResendOTP = Email({
             // Log but don't fail - fallback to default language
             console.warn('[ResendOTP] Failed to get pending auth language:', error);
         }
-        
+
         // Get translated content
         const t = getOTPEmailTranslations(language, 'otp_sign_in');
-        
-        const htmlContent = createOTPEmail({ 
-            token, 
+
+        const htmlContent = createOTPEmail({
+            token,
             translations: {
                 title: t.title,
                 body: t.body,
@@ -68,5 +80,5 @@ export const ResendOTP = Email({
         if (error) {
             throw new Error(JSON.stringify(error));
         }
-    },
+    }) as any,
 });

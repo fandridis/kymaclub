@@ -60,13 +60,13 @@ export type SendPushNotificationArgs = Infer<typeof sendPushNotificationArgs>;
 
 export const sendPushNotification = internalMutation({
     args: sendPushNotificationArgs,
-    returns: v.optional(v.string()),
+    returns: v.union(v.string(), v.null()),
     handler: async (ctx, args) => {
         const pushId = await pushNotifications.sendPushNotification(ctx, {
             userId: args.to,
             notification: args.notification,
         });
 
-        return pushId;
+        return pushId ?? null;
     },
 });

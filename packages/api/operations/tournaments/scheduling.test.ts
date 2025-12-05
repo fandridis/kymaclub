@@ -31,7 +31,7 @@ describe('Tournament Scheduling Utilities', () => {
             it('should generate schedule for fixed teams', () => {
                 const participants = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'];
                 const config = createConfig(participants, 7);
-                
+
                 const result = generateSchedule(config, 'fixed_teams');
 
                 expect(result.totalRounds).toBeGreaterThan(0);
@@ -42,7 +42,7 @@ describe('Tournament Scheduling Utilities', () => {
             it('should respect max matches per player', () => {
                 const participants = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'];
                 const config = createConfig(participants, 3);
-                
+
                 const result = generateSchedule(config, 'fixed_teams');
 
                 Object.values(result.playerMatchCounts).forEach(count => {
@@ -53,7 +53,7 @@ describe('Tournament Scheduling Utilities', () => {
             it('should assign matches to valid courts', () => {
                 const participants = ['p1', 'p2', 'p3', 'p4'];
                 const config = createConfig(participants, 5);
-                
+
                 const result = generateSchedule(config, 'fixed_teams');
                 const courtIds = defaultCourts.map(c => c.id);
 
@@ -65,7 +65,7 @@ describe('Tournament Scheduling Utilities', () => {
             it('should throw for empty courts', () => {
                 const participants = ['p1', 'p2', 'p3', 'p4'];
                 const config = createConfig(participants, 5, 2, []);
-                
+
                 expect(() => generateSchedule(config, 'fixed_teams')).toThrow(
                     'At least one court is required'
                 );
@@ -73,7 +73,7 @@ describe('Tournament Scheduling Utilities', () => {
 
             it('should throw for empty participants', () => {
                 const config = createConfig([], 5);
-                
+
                 expect(() => generateSchedule(config, 'fixed_teams')).toThrow(
                     'At least one participant is required'
                 );
@@ -82,7 +82,7 @@ describe('Tournament Scheduling Utilities', () => {
             it('should create matches with correct team sizes', () => {
                 const participants = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'];
                 const config = createConfig(participants, 5, 2);
-                
+
                 const result = generateSchedule(config, 'fixed_teams');
 
                 result.matches.forEach(match => {
@@ -96,7 +96,7 @@ describe('Tournament Scheduling Utilities', () => {
             it('should generate schedule for rotating teams', () => {
                 const participants = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'];
                 const config = createConfig(participants, 7);
-                
+
                 const result = generateSchedule(config, 'rotating');
 
                 expect(result.totalRounds).toBeGreaterThan(0);
@@ -106,7 +106,7 @@ describe('Tournament Scheduling Utilities', () => {
             it('should respect max matches per player in rotating mode', () => {
                 const participants = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'];
                 const config = createConfig(participants, 3);
-                
+
                 const result = generateSchedule(config, 'rotating');
 
                 Object.values(result.playerMatchCounts).forEach(count => {
@@ -117,7 +117,7 @@ describe('Tournament Scheduling Utilities', () => {
             it('should throw for empty courts in rotating mode', () => {
                 const participants = ['p1', 'p2', 'p3', 'p4'];
                 const config = createConfig(participants, 5, 2, []);
-                
+
                 expect(() => generateSchedule(config, 'rotating')).toThrow(
                     'At least one court is required'
                 );
@@ -125,7 +125,7 @@ describe('Tournament Scheduling Utilities', () => {
 
             it('should throw for empty participants in rotating mode', () => {
                 const config = createConfig([], 5);
-                
+
                 expect(() => generateSchedule(config, 'rotating')).toThrow(
                     'At least one participant is required'
                 );
@@ -134,7 +134,7 @@ describe('Tournament Scheduling Utilities', () => {
             it('should balance player workloads', () => {
                 const participants = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'];
                 const config = createConfig(participants, 5);
-                
+
                 const result = generateSchedule(config, 'rotating');
                 const counts = Object.values(result.playerMatchCounts);
                 const minCount = Math.min(...counts);
@@ -149,7 +149,7 @@ describe('Tournament Scheduling Utilities', () => {
             it('should not schedule same player in multiple matches per round', () => {
                 const participants = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'];
                 const config = createConfig(participants, 7);
-                
+
                 const result = generateSchedule(config, 'rotating');
 
                 // Group matches by round
@@ -190,7 +190,7 @@ describe('Tournament Scheduling Utilities', () => {
 
         it('should update match with score and status', () => {
             const matches: GenericMatch[] = [createMatch('m1'), createMatch('m2')];
-            
+
             const updated = applyMatchResult(matches, 'm1', 21, 15);
 
             const m1 = updated.find(m => m.id === 'm1');
@@ -202,7 +202,7 @@ describe('Tournament Scheduling Utilities', () => {
         it('should set completedAt timestamp', () => {
             const matches: GenericMatch[] = [createMatch('m1')];
             const customTimestamp = 1234567890;
-            
+
             const updated = applyMatchResult(matches, 'm1', 21, 15, customTimestamp);
 
             const m1 = updated.find(m => m.id === 'm1');
@@ -212,9 +212,9 @@ describe('Tournament Scheduling Utilities', () => {
         it('should use current time when timestamp not provided', () => {
             const matches: GenericMatch[] = [createMatch('m1')];
             const beforeTime = Date.now();
-            
+
             const updated = applyMatchResult(matches, 'm1', 21, 15);
-            
+
             const afterTime = Date.now();
             const m1 = updated.find(m => m.id === 'm1');
             expect(m1?.completedAt).toBeGreaterThanOrEqual(beforeTime);
@@ -224,7 +224,7 @@ describe('Tournament Scheduling Utilities', () => {
         it('should not mutate original array', () => {
             const matches: GenericMatch[] = [createMatch('m1')];
             const originalStatus = matches[0].status;
-            
+
             applyMatchResult(matches, 'm1', 21, 15);
 
             expect(matches[0].status).toBe(originalStatus);
@@ -232,7 +232,7 @@ describe('Tournament Scheduling Utilities', () => {
 
         it('should not modify other matches', () => {
             const matches: GenericMatch[] = [createMatch('m1'), createMatch('m2')];
-            
+
             const updated = applyMatchResult(matches, 'm1', 21, 15);
 
             const m2 = updated.find(m => m.id === 'm2');
@@ -242,7 +242,7 @@ describe('Tournament Scheduling Utilities', () => {
 
         it('should handle non-existent match id gracefully', () => {
             const matches: GenericMatch[] = [createMatch('m1')];
-            
+
             const updated = applyMatchResult(matches, 'nonexistent', 21, 15);
 
             // Should return all matches unchanged
@@ -279,10 +279,10 @@ describe('Tournament Scheduling Utilities', () => {
 
         it('should handle more than 12 courts with numbers', () => {
             const courts = createDefaultCourts(15);
-            
+
             // First 12 should be letters
             expect(courts[11].name).toBe('Court L');
-            
+
             // After 12 should be numbers
             expect(courts[12].name).toBe('Court 13');
             expect(courts[12].id).toBe('court_13');
@@ -312,7 +312,7 @@ describe('Tournament Scheduling Utilities', () => {
 
         it('should filter matches by court', () => {
             const courtAMatches = getMatchesForCourt(matches, 'court_a');
-            
+
             expect(courtAMatches).toHaveLength(3);
             courtAMatches.forEach(match => {
                 expect(match.courtId).toBe('court_a');
@@ -321,7 +321,7 @@ describe('Tournament Scheduling Utilities', () => {
 
         it('should return correct matches for different court', () => {
             const courtBMatches = getMatchesForCourt(matches, 'court_b');
-            
+
             expect(courtBMatches).toHaveLength(1);
             expect(courtBMatches[0].id).toBe('m2');
         });
@@ -338,7 +338,7 @@ describe('Tournament Scheduling Utilities', () => {
 
         it('should include all match statuses', () => {
             const courtAMatches = getMatchesForCourt(matches, 'court_a');
-            
+
             const statuses = courtAMatches.map(m => m.status);
             expect(statuses).toContain('scheduled');
             expect(statuses).toContain('completed');

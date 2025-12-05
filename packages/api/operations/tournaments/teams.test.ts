@@ -206,7 +206,7 @@ describe('Tournament Team Utilities', () => {
 
         it('should return tuple type', () => {
             const pairs = generateRotatingPairs(participants, 1);
-            
+
             pairs.forEach(pair => {
                 expect(typeof pair[0]).toBe('string');
                 expect(typeof pair[1]).toBe('string');

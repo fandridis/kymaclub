@@ -340,7 +340,7 @@ describe('Tournament Core Utilities', () => {
         it('should produce different order (statistically)', () => {
             const original = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
             let differentOrder = false;
-            
+
             // Try multiple times - at least once should be different
             for (let i = 0; i < 10; i++) {
                 const shuffled = shuffleArray(original);
