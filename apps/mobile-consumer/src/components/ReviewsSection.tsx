@@ -21,8 +21,8 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
 }) => {
   const { t } = useTypedTranslation();
   const [isWriteReviewModalVisible, setIsWriteReviewModalVisible] = useState(false);
-  const { reviews, ratingsSummary, userReview, isLoading } = useBusinessReviews(venueId);
-  const { isEligible, reason } = useReviewEligibility(venueId);
+  const { reviews, ratingsSummary, isLoading } = useBusinessReviews(venueId);
+  const { isEligible, reason, ineligibilityReason } = useReviewEligibility(venueId);
 
   const handleWriteReviewPress = () => {
     if (!isEligible) {
@@ -57,13 +57,13 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
           onPress={handleWriteReviewPress}
           activeOpacity={0.7}
         >
-          {!isEligible ? (
+          {ineligibilityReason === 'recent_review' ? (
             <CheckIcon size={14} color={theme.colors.zinc[700]} />
           ) : (
             <PenIcon size={14} color={theme.colors.zinc[700]} />
           )}
           <Text style={[styles.writeReviewText, !isEligible && styles.writeReviewTextDisabled]}>
-            {!isEligible && userReview ? t('reviews.reviewedRecently') : t('reviews.writeReview')}
+            {ineligibilityReason === 'recent_review' ? t('reviews.reviewedRecently') : t('reviews.writeReview')}
           </Text>
         </TouchableOpacity>
       </View>

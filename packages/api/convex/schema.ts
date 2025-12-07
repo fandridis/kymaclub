@@ -786,6 +786,7 @@ export const classInstancesFields = {
     description: v.optional(v.string()),
     shortDescription: v.optional(v.string()),
     instructor: v.string(),
+    duration: v.optional(v.number()), // Duration in minutes
     imageStorageIds: v.optional(v.array(v.id("_storage"))),
     discountRules: v.optional(v.array(v.object(classDiscountRuleFields))),
     questionnaire: v.optional(v.array(v.object(questionFields))),

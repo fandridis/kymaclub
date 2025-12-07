@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps';
-import { StyleSheet, View, Text, ActivityIndicator, TouchableOpacity, Dimensions, ScrollView, Platform } from 'react-native';
+import { StyleSheet, View, Text, ActivityIndicator, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
 import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Location from 'expo-location';
@@ -45,17 +45,10 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
   const sheetSnapPoints = useMemo(() => ['45%', '85%'], []);
   const insets = useSafeAreaInsets();
 
-  // Early return if required props are missing
-  if (!storageIdToUrl || !venues) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#ff4747" />
-      </View>
-    );
-  }
-
   // Transform venues to include coordinates and other needed properties
+  // NOTE: All hooks must be called before any conditional returns
   const venuesWithCoordinates = useMemo((): VenueWithCoordinate[] => {
+    if (!venues || !storageIdToUrl) return [];
     return venues.map(venue => {
       // Extract coordinates from venue.address
       let coordinate = ATHENS_FALLBACK;
@@ -94,7 +87,7 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
         imageUrls,
       };
     });
-  }, [venues, userLocation, storageIdToUrl]);
+  }, [venues, userLocation, storageIdToUrl, t]);
 
   // Calculate map region to show all venues
   const mapRegion = useMemo(() => {
@@ -170,12 +163,21 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
     return `${distance.toFixed(1)}km`;
   };
 
+  // Early return if required props are missing (after all hooks)
+  if (!storageIdToUrl || !venues) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#ff4747" />
+      </View>
+    );
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
         <MapView
           style={styles.map}
-          provider={Platform.OS === 'ios' ? PROVIDER_GOOGLE : undefined}
+          provider={PROVIDER_GOOGLE}
           initialRegion={mapRegion}
           showsUserLocation={true}
           showsMyLocationButton={true}
@@ -240,7 +242,7 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
                       {selectedVenue.rating.toFixed(1)}
                     </Text>
                     <Text style={styles.reviewCount}>
-                      ({selectedVenue.reviewCount || 0} reviews)
+                      ({selectedVenue.reviewCount || 0} {t('reviews.reviews')})
                     </Text>
                   </View>
                 )}
@@ -281,7 +283,7 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
                   }}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.seeStudioButtonText}>See Studio</Text>
+                  <Text style={styles.seeStudioButtonText}>{t('venues.seeStudio')}</Text>
                 </TouchableOpacity>
               </>
             )}

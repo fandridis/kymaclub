@@ -140,17 +140,29 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
 
   const className = booking.classInstanceSnapshot?.name ?? t('classes.title');
   const instructorName = booking.classInstanceSnapshot?.instructor ?? t('classes.instructor');
-  const venueName = booking.venueSnapshot?.name ?? booking.venueSnapshot?.name ?? t('venues.venue');
+  const venueName = booking.venueSnapshot?.name ?? t('venues.venue');
 
   const startTimeValue = booking.classInstanceSnapshot?.startTime;
   const startDate = startTimeValue ? new Date(startTimeValue) : null;
 
-  const formattedDate = startDate
-    ? format(startDate, 'MMM d', { in: tz(GREECE_TZ) })
-    : t('ticket.tbd');
-  const formattedTime = startDate
-    ? format(startDate, 'HH:mm', { in: tz(GREECE_TZ) })
-    : t('ticket.tbd');
+  let formattedDate = t('ticket.tbd');
+  let formattedTime = t('ticket.tbd');
+
+  if (startDate) {
+    try {
+      formattedDate = format(startDate, 'MMM d', { in: tz(GREECE_TZ) });
+    } catch (e) {
+      console.warn('Error formatting date with tz:', e);
+      formattedDate = format(startDate, 'MMM d');
+    }
+
+    try {
+      formattedTime = format(startDate, 'HH:mm', { in: tz(GREECE_TZ) });
+    } catch (e) {
+      console.warn('Error formatting time with tz:', e);
+      formattedTime = format(startDate, 'HH:mm');
+    }
+  }
 
   const statusVariant = useMemo<TicketStatusVariant>(() => {
     if (!booking.status) {
@@ -305,7 +317,7 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
                   <View style={styles.attendeeSection}>
                     <Text style={styles.attendeeLabel}>{t('ticket.attendee').toUpperCase()}</Text>
                     <Text style={styles.attendeeName}>
-                      {booking.userSnapshot?.name ?? booking.userSnapshot?.name ?? t('ticket.member')}
+                      {booking.userSnapshot?.name ?? t('ticket.member')}
                     </Text>
                   </View>
 
@@ -372,7 +384,7 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
                   </View>
                   <View style={styles.stubRight}>
                     <Text style={styles.stubName}>
-                      {booking.userSnapshot?.name ?? booking.userSnapshot?.name ?? t('ticket.member')}
+                      {booking.userSnapshot?.name ?? t('ticket.member')}
                     </Text>
                     <View
                       style={[

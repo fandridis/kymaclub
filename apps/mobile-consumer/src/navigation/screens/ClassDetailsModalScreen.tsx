@@ -15,6 +15,8 @@ import type { RootStackParamList } from '..';
 import { useActionSheet } from '@expo/react-native-action-sheet';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { centsToCredits } from '@repo/utils/credits';
+import { useVenueClassOfferings } from '../../hooks/use-venue-class-offerings';
+import { Divider } from '../../components/Divider';
 import { theme } from '../../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCancellationInfo, getCancellationMessage, getCancellationTranslations } from '../../utils/cancellationUtils';
@@ -269,6 +271,11 @@ export function ClassDetailsModalScreen() {
         finalClassInstance ? { venueId: finalClassInstance.venueId } : "skip"
     );
 
+    // Fetch class offerings (unique class types) for this venue
+    const { offerings: classOfferings, loading: offeringsLoading } = useVenueClassOfferings({
+        venueId: finalClassInstance?.venueId ?? ('' as any),
+    });
+
     // Fetch template to get questionnaire (use public query for consumer access)
     const template = useQuery(
         api.queries.classTemplates.getClassTemplateByIdPublic,
@@ -300,6 +307,34 @@ export function ClassDetailsModalScreen() {
         api.queries.uploads.getUrls,
         allImageIds.length > 0 ? { storageIds: allImageIds } : "skip"
     );
+
+    // Collect all image storage IDs from class offerings
+    const offeringImageStorageIds = useMemo(() => {
+        const ids: Id<"_storage">[] = [];
+        classOfferings.forEach(offering => {
+            if (offering.imageStorageIds?.length) {
+                ids.push(offering.imageStorageIds[0]); // Only first image per offering
+            }
+        });
+        return ids;
+    }, [classOfferings]);
+
+    // Fetch image URLs for class offerings
+    const offeringImageUrlsQuery = useQuery(
+        api.queries.uploads.getUrls,
+        offeringImageStorageIds.length > 0 ? { storageIds: offeringImageStorageIds } : "skip"
+    );
+
+    // Create storage ID to URL mapping for offerings
+    const offeringStorageIdToUrl = useMemo(() => {
+        const map = new Map<string, string | null>();
+        if (offeringImageUrlsQuery) {
+            for (const { storageId, url } of offeringImageUrlsQuery) {
+                map.set(storageId, url);
+            }
+        }
+        return map;
+    }, [offeringImageUrlsQuery]);
 
     // useMemo hooks - MUST be called unconditionally
     const storageIdToUrl = useMemo(() => {
@@ -917,6 +952,59 @@ export function ClassDetailsModalScreen() {
                                 </View>
                             )}
 
+                            {/* Other Classes from Venue Section */}
+                            {venue && classOfferings.length > 0 && (
+                                <>
+                                    <Divider />
+                                    <View style={styles.otherClassesSection}>
+                                        <Text style={styles.sectionTitle}>
+                                            {t('venues.otherLessonsFrom')} <Text style={styles.sectionTitleBold}>{venue.name}</Text>
+                                        </Text>
+                                        {classOfferings.map((offering) => {
+                                            const imageId = offering.imageStorageIds?.[0];
+                                            const imageUrl = imageId ? offeringStorageIdToUrl.get(imageId) : null;
+
+                                            return (
+                                                <TouchableOpacity
+                                                    key={offering.templateId}
+                                                    style={styles.offeringItem}
+                                                    activeOpacity={0.7}
+                                                    onPress={() => {
+                                                        navigation.navigate('VenueClassInstancesModal', {
+                                                            venueId: venue._id,
+                                                            venueName: venue.name,
+                                                            templateId: offering.templateId,
+                                                        });
+                                                    }}
+                                                >
+                                                    <Image
+                                                        source={imageUrl ? { uri: imageUrl } : undefined}
+                                                        style={styles.offeringImage}
+                                                        contentFit="cover"
+                                                        transition={200}
+                                                    />
+                                                    <View style={styles.offeringInfo}>
+                                                        <Text style={styles.offeringName}>{offering.name}</Text>
+                                                        <View style={styles.offeringDetailsRow}>
+                                                            <DiamondIcon size={14} color={theme.colors.zinc[500]} />
+                                                            <Text style={styles.offeringPrice}>{centsToCredits(offering.price)}</Text>
+                                                            <View style={styles.offeringDotSeparator} />
+                                                            <ClockIcon size={14} color={theme.colors.zinc[500]} />
+                                                            <Text style={styles.offeringDuration}>{offering.duration} min</Text>
+                                                        </View>
+                                                        {offering.shortDescription && (
+                                                            <Text style={styles.offeringDescription} numberOfLines={2}>
+                                                                {offering.shortDescription}
+                                                            </Text>
+                                                        )}
+                                                    </View>
+                                                </TouchableOpacity>
+                                            );
+                                        })}
+                                    </View>
+                                </>
+                            )}
+
                         </View>
                         {/* Bottom padding to account for sticky button */}
                         <View style={styles.bottomPadding} />
@@ -1464,6 +1552,9 @@ const styles = StyleSheet.create({
         color: '#111827',
         marginBottom: 10,
     },
+    sectionTitleBold: {
+        fontWeight: '700',
+    },
     descriptionText: {
         fontSize: 16,
         lineHeight: 24,
@@ -1784,5 +1875,62 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 2,
+    },
+    // Other Classes Section styles
+    otherClassesSection: {
+        paddingHorizontal: 20,
+        paddingTop: 12,
+        paddingBottom: 24,
+    },
+    offeringItem: {
+        flexDirection: 'row',
+        marginBottom: 16,
+        alignItems: 'center',
+    },
+    offeringImage: {
+        width: 80,
+        height: 76,
+        borderRadius: 12,
+        marginRight: 14,
+        backgroundColor: '#f3f4f6',
+    },
+    offeringInfo: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    offeringName: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: theme.colors.zinc[900],
+        marginBottom: 6,
+    },
+    offeringDetailsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 6,
+    },
+    offeringPrice: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: theme.colors.zinc[600],
+        marginLeft: 6,
+    },
+    offeringDuration: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: theme.colors.zinc[600],
+        marginLeft: 6,
+    },
+    offeringDotSeparator: {
+        width: 4,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: '#d1d5db',
+        marginHorizontal: 10,
+    },
+    offeringDescription: {
+        fontSize: 14,
+        color: '#6b7280',
+        lineHeight: 20,
     },
 });

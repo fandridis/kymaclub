@@ -24,6 +24,12 @@ export const canUserReviewVenue = query({
   args: {
     venueId: v.id("venues")
   },
+  returns: v.object({
+    canReview: v.boolean(),
+    reason: v.optional(v.union(v.literal("no_attendance"), v.literal("recent_review"))),
+    nextReviewDate: v.optional(v.number()),
+    lastReviewDate: v.optional(v.number())
+  }),
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUserOrThrow(ctx);
     return reviewsService.canUserReviewVenue({

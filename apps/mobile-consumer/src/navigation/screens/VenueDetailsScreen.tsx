@@ -4,34 +4,24 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Image } from 'expo-image';
 import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
-import { StarIcon, ShowerHeadIcon, AccessibilityIcon, UserIcon, ClockIcon, CheckCircleIcon, MessageCircleIcon, PhoneIcon, MailIcon, GlobeIcon, MapPinIcon, ChevronLeftIcon } from 'lucide-react-native';
+import { StarIcon, ShowerHeadIcon, AccessibilityIcon, ClockIcon, MessageCircleIcon, PhoneIcon, MailIcon, GlobeIcon, MapPinIcon, ChevronLeftIcon, DiamondIcon } from 'lucide-react-native';
 import Carousel from 'react-native-reanimated-carousel';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
-import { ClassCard } from '../../components/ClassCard';
 import { Divider } from '../../components/Divider';
 import { ReviewsSection } from '../../components/ReviewsSection';
-import { useVenueClassInstances } from '../../hooks/use-venue-class-instances';
+import { useVenueClassOfferings } from '../../hooks/use-venue-class-offerings';
 import type { RootStackParamListWithNestedTabs } from '..';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
 import * as Location from 'expo-location';
 import { formatDistance as formatDistanceMeters, calculateDistance } from '../../utils/location';
 import { useTypedTranslation } from '../../i18n/typed';
 import { theme } from '../../theme';
-import i18n from '../../i18n';
-
-const now = Date.now();
+import { centsToCredits } from '@repo/utils/credits';
 
 type VenueDetailsRoute = RouteProp<RootStackParamListWithNestedTabs, 'VenueDetailsScreen'>;
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-
-// Carousel constants
-const ITEM_GAP = 8;
-const SECTION_PADDING = 0;
-const CAROUSEL_PADDING = SECTION_PADDING - (ITEM_GAP / 2);
-const CAROUSEL_ITEM_WIDTH = (screenWidth - (SECTION_PADDING * 2)) / 2.4;
-const UPCOMING_CAROUSEL_HEIGHT = 140;
+const { width: screenWidth } = Dimensions.get('window');
 
 
 
@@ -93,6 +83,7 @@ export function VenueDetailsScreen() {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const { t } = useTypedTranslation();
     const [distanceLabel, setDistanceLabel] = useState<string | null>(null);
+    const [rawDistance, setRawDistance] = useState<string | null>(null);
     const [isHeaderWhite, setIsHeaderWhite] = useState(false);
     const [headerOpacity, setHeaderOpacity] = useState(0);
     const { bottom: bottomInset } = useSafeAreaInsets();
@@ -123,6 +114,7 @@ export function VenueDetailsScreen() {
                     lng
                 );
                 const formatted = formatDistanceMeters(meters);
+                setRawDistance(formatted);
                 setDistanceLabel(t('explore.distance', { distance: formatted }));
             } catch (_) {
                 // ignore distance errors
@@ -132,86 +124,11 @@ export function VenueDetailsScreen() {
     }, [venue?.address?.latitude, venue?.address?.longitude, t]);
 
 
-    // Fetch next 7 days of class instances for upcoming cards
-    const sevenDaysFromNow = useMemo(() => {
-        const now = new Date();
-        const sevenDays = new Date(now);
-        sevenDays.setDate(now.getDate() + 7);
-        sevenDays.setHours(23, 59, 59, 999); // End of 7th day
-        return sevenDays.getTime();
-    }, []);
-
-    // 🚀 OPTIMIZED: Use venue-specific hook instead of filtering all classes
-    const { classInstances: venueClasses } = useVenueClassInstances({
+    // Fetch class offerings (unique class types) for this venue
+    const { offerings: classOfferings, loading: offeringsLoading } = useVenueClassOfferings({
         venueId: venueId as Id<"venues">,
-        startDate: now,
-        endDate: sevenDaysFromNow,
-        includeBookingStatus: true,
+        limit: 10,
     });
-
-    // Process venue classes for upcoming cards
-    const upcomingVenueClasses = useMemo(() => {
-        if (!venueClasses?.length) return [];
-
-        return venueClasses
-            .slice(0, 10) // Limit to 10 cards max for 7 days
-            .map((classInstance: any) => {
-                const startTime = new Date(classInstance.startTime);
-                const endTime = new Date(classInstance.endTime);
-                const today = new Date();
-                const tomorrow = new Date(today);
-                tomorrow.setDate(today.getDate() + 1);
-                const dayAfterTomorrow = new Date(today);
-                dayAfterTomorrow.setDate(today.getDate() + 2);
-
-                // Format date display
-                let dateDisplay = '';
-                const classDate = startTime.toDateString();
-                const currentLanguage = i18n.language || 'en';
-                const locale = currentLanguage === 'el' ? 'el-GR' : 'en-US';
-
-                if (classDate === today.toDateString()) {
-                    dateDisplay = t('news.today') + ', ' + startTime.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
-                } else if (classDate === tomorrow.toDateString()) {
-                    dateDisplay = t('news.tomorrow') + ', ' + startTime.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
-                } else {
-                    dateDisplay = startTime.toLocaleDateString(locale, {
-                        weekday: 'long',
-                        month: 'short',
-                        day: 'numeric'
-                    });
-                }
-
-                // Format time range
-                const timeRange = `${startTime.toLocaleTimeString(locale, {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                })}-${endTime.toLocaleTimeString(locale, {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                })}`;
-
-                // Calculate spots available
-                const spotsLeft = Math.max(0, (classInstance.capacity ?? 0) - (classInstance.bookedCount ?? 0));
-
-                // Check if user has booked this class
-                const isBookedByUser = 'isBookedByUser' in classInstance ? Boolean(classInstance.isBookedByUser) : false;
-
-                return {
-                    id: classInstance._id,
-                    date: dateDisplay,
-                    timeRange,
-                    name: classInstance.name,
-                    spotsLeft,
-                    isBookedByUser,
-                    classInstance
-                };
-            });
-
-        return venueClasses;
-    }, [venueClasses, venueId, t]);
 
     // Get image storage IDs
     const imageStorageIds = venue?.imageStorageIds ?? [];
@@ -242,6 +159,34 @@ export function VenueDetailsScreen() {
         });
         return urls;
     }, [imageStorageIds, storageIdToUrl]);
+
+    // Collect all image storage IDs from class offerings
+    const offeringImageStorageIds = useMemo(() => {
+        const ids: Id<"_storage">[] = [];
+        classOfferings.forEach(offering => {
+            if (offering.imageStorageIds?.length) {
+                ids.push(offering.imageStorageIds[0]); // Only first image per offering
+            }
+        });
+        return ids;
+    }, [classOfferings]);
+
+    // Fetch image URLs for class offerings
+    const offeringImageUrlsQuery = useQuery(
+        api.queries.uploads.getUrls,
+        offeringImageStorageIds.length > 0 ? { storageIds: offeringImageStorageIds } : "skip"
+    );
+
+    // Create storage ID to URL mapping for offerings
+    const offeringStorageIdToUrl = useMemo(() => {
+        const map = new Map<string, string | null>();
+        if (offeringImageUrlsQuery) {
+            for (const { storageId, url } of offeringImageUrlsQuery) {
+                map.set(storageId, url);
+            }
+        }
+        return map;
+    }, [offeringImageUrlsQuery]);
 
     // Loading state
     const isLoading = !venue || (imageStorageIds.length > 0 && !imageUrlsQuery);
@@ -412,10 +357,15 @@ export function VenueDetailsScreen() {
                         </View>
                     </View>
 
-                    {/* JUST ARRIVED! Badge Column */}
+                    {/* Distance Badge Column */}
                     <View style={styles.statsColumn}>
-                        <View style={styles.newBadge}>
-                            <Text style={styles.newBadgeText}>{t('venues.justArrived')}</Text>
+                        <View style={styles.distanceBadge}>
+                            <Text style={styles.distanceBadgeText}>
+                                {rawDistance
+                                    ? t('venues.distanceAway', { distance: rawDistance })
+                                    : t('venues.justArrived')
+                                }
+                            </Text>
                         </View>
                     </View>
 
@@ -511,110 +461,58 @@ export function VenueDetailsScreen() {
 
             <Divider />
 
-            {/* Upcoming Section */}
-            <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>{t('venues.upcomingClasses')}</Text>
-                    {upcomingVenueClasses && upcomingVenueClasses.length > 0 && (
-                        <TouchableOpacity
-                            onPress={() => {
-                                navigation.navigate('VenueClassInstancesModal', {
-                                    venueId,
-                                    venueName: venue?.name || t('venues.venue')
-                                });
-                            }}
-                            activeOpacity={0.7}
-                        >
-                            <Text style={styles.seeAllButton}>{t('venues.seeAll')}</Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
+            {/* Classes Offered Section */}
+            {classOfferings.length > 0 && (
+                <View style={styles.section}>
+                    <View style={styles.otherClassesSection}>
+                        <Text style={styles.sectionTitle}>{t('venues.classesOffered')}</Text>
+                        {classOfferings.map((offering) => {
+                            const imageId = offering.imageStorageIds?.[0];
+                            const imageUrl = imageId ? offeringStorageIdToUrl.get(imageId) : null;
 
-                {upcomingVenueClasses && upcomingVenueClasses.length > 0 ? (
-                    <View style={styles.carouselContainer}>
-                        <Carousel
-                            loop={false}
-                            width={CAROUSEL_ITEM_WIDTH + ITEM_GAP}
-                            height={UPCOMING_CAROUSEL_HEIGHT}
-                            data={[...(upcomingVenueClasses || []), { type: 'seeMore' }]}
-                            scrollAnimationDuration={500}
-                            style={styles.carousel}
-                            snapEnabled
-                            renderItem={({ item }) => {
-                                if ('type' in item && item.type === 'seeMore') {
-                                    return (
-                                        <TouchableOpacity
-                                            style={[styles.baseCarouselCard, styles.upcomingCarouselCard, styles.seeMoreCard]}
-                                            onPress={() => {
-                                                navigation.navigate('VenueClassInstancesModal', {
-                                                    venueId,
-                                                    venueName: venue?.name || t('venues.venue')
-                                                });
-                                            }}
-                                            activeOpacity={0.7}
-                                        >
-                                            <View style={styles.seeMoreCardContent}>
-                                                <Text style={styles.seeMoreText}>{t('venues.seeMore')}</Text>
-                                                <Text style={styles.seeMoreSubtext}>{t('venues.viewAllClasses')}</Text>
-                                            </View>
-                                        </TouchableOpacity>
-                                    );
-                                }
+                            return (
+                                <TouchableOpacity
+                                    key={offering.templateId}
+                                    style={styles.otherClassItem}
+                                    activeOpacity={0.7}
+                                    onPress={() => {
+                                        navigation.navigate('VenueClassInstancesModal', {
+                                            venueId,
+                                            venueName: venue?.name || t('venues.venue'),
+                                            templateId: offering.templateId,
+                                        });
+                                    }}
+                                >
+                                    <Image
+                                        source={imageUrl ? { uri: imageUrl } : undefined}
+                                        style={styles.otherClassImage}
+                                        contentFit="cover"
+                                        transition={200}
+                                    />
+                                    <View style={styles.otherClassInfo}>
+                                        <Text style={styles.otherClassName}>{offering.name}</Text>
+                                        <View style={styles.otherClassDetailsRow}>
+                                            <DiamondIcon size={14} color={theme.colors.zinc[500]} />
+                                            <Text style={styles.otherClassPrice}>{centsToCredits(offering.price)}</Text>
 
-                                // Type assertion: item is a class instance at this point
-                                const classItem = item as any;
+                                            <View style={styles.dotSeparator} />
 
-                                return (
-                                    <TouchableOpacity
-                                        style={[
-                                            styles.baseCarouselCard,
-                                            styles.upcomingCarouselCard,
-                                            classItem.isBookedByUser && styles.bookedCarouselCard
-                                        ]}
-                                        onPress={() => {
-                                            navigation.navigate('ClassDetailsModal', {
-                                                classInstance: classItem.classInstance
-                                            });
-                                        }}
-                                        activeOpacity={0.7}
-                                    >
-                                        <View style={styles.upcomingCardContent}>
-                                            <Text style={styles.upcomingDate} numberOfLines={1}>
-                                                {classItem.date}
-                                            </Text>
-                                            <Text style={styles.upcomingTime}>
-                                                {classItem.timeRange}
-                                            </Text>
-                                            <Text style={styles.upcomingClassName} numberOfLines={2}>
-                                                {classItem.name}
-                                            </Text>
-                                            <View style={styles.upcomingSpotsContainer}>
-                                                {classItem.isBookedByUser ? (
-                                                    <View style={styles.bookedBadge}>
-                                                        <CheckCircleIcon size={12} color={theme.colors.emerald[950]} strokeWidth={2} />
-                                                        <Text style={styles.bookedText}>{t('venues.alreadyBooked')}</Text>
-                                                    </View>
-                                                ) : (
-                                                    <Text style={styles.upcomingSpotsText}>
-                                                        {t('venues.spotsAvailable', { count: classItem.spotsLeft })}
-                                                    </Text>
-                                                )}
-                                            </View>
+                                            <ClockIcon size={14} color={theme.colors.zinc[500]} />
+                                            <Text style={styles.otherClassSpots}>{offering.duration} min</Text>
                                         </View>
-                                    </TouchableOpacity>
-                                );
-                            }}
-                            onConfigurePanGesture={(gestureChain) => {
-                                gestureChain
-                                    .activeOffsetX([-10, 10])
-                                    .failOffsetY([-15, 15]);
-                            }}
-                        />
+                                        {offering.shortDescription && (
+                                            <Text style={styles.otherClassDescription} numberOfLines={2}>
+                                                {offering.shortDescription}
+                                            </Text>
+                                        )}
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
                     </View>
-                ) : (
-                    <Text style={styles.descriptionText}>{t('venues.noUpcomingClassesFound')}</Text>
-                )}
-            </View>
+                </View>
+            )}
+
             <Divider />
 
             {/* Reviews Section */}
@@ -798,26 +696,67 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: theme.colors.zinc[50],
     },
+    otherClassesSection: {
+        paddingHorizontal: 0,
+        paddingBottom: 8,
+    },
+    otherClassItem: {
+        flexDirection: 'row',
+        marginBottom: 16,
+        alignItems: 'center',
+    },
+    otherClassImage: {
+        width: 88,
+        height: 84,
+        borderRadius: 12,
+        marginRight: 16,
+        backgroundColor: '#f3f4f6',
+    },
+    otherClassInfo: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    otherClassName: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: theme.colors.zinc[900],
+        marginBottom: 6,
+    },
+    otherClassDetailsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 6,
+    },
+    otherClassPrice: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: theme.colors.zinc[600],
+        marginLeft: 6,
+    },
+    otherClassSpots: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: theme.colors.zinc[600],
+        marginLeft: 6,
+    },
+    dotSeparator: {
+        width: 4,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: '#d1d5db',
+        marginHorizontal: 10,
+    },
+    otherClassDescription: {
+        fontSize: 14,
+        color: '#6b7280',
+        lineHeight: 20,
+    },
     contentContainer: {
         paddingBottom: 24,
     },
     section: {
         paddingHorizontal: 20,
         paddingBottom: 8,
-    },
-    sectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    seeAllButton: {
-        marginBottom: 10,
-        fontSize: 14,
-        fontWeight: '600',
-        color: theme.colors.emerald[600],
-        paddingVertical: 8,
-        paddingHorizontal: 12
     },
     teamMember: {
         flexDirection: 'row',
@@ -875,86 +814,6 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
 
-    // Upcoming carousel styles
-    carouselContainer: {
-        paddingHorizontal: CAROUSEL_PADDING,
-    },
-    carousel: {
-        width: screenWidth,
-    },
-    baseCarouselCard: {
-        backgroundColor: '#ffffff',
-        borderRadius: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 3,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: theme.colors.zinc[100],
-    },
-    upcomingCarouselCard: {
-        width: CAROUSEL_ITEM_WIDTH,
-        height: UPCOMING_CAROUSEL_HEIGHT,
-    },
-    bookedCarouselCard: {
-        backgroundColor: theme.colors.emerald[50],
-        borderColor: theme.colors.emerald[200],
-    },
-    upcomingCardContent: {
-        flex: 1,
-        padding: 16,
-        justifyContent: 'space-between',
-    },
-    upcomingDate: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: theme.colors.zinc[600],
-        marginBottom: 4,
-    },
-    upcomingTime: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: theme.colors.zinc[950],
-        marginBottom: 8,
-    },
-    upcomingClassName: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: theme.colors.zinc[800],
-        flex: 1,
-        marginBottom: 8,
-    },
-    upcomingSpotsContainer: {
-        alignSelf: 'flex-start',
-    },
-    upcomingSpotsText: {
-        fontSize: 12,
-        fontWeight: '500',
-        color: theme.colors.emerald[600],
-    },
-    seeMoreCard: {
-        backgroundColor: theme.colors.zinc[100],
-        borderColor: theme.colors.zinc[200],
-    },
-    seeMoreCardContent: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 16,
-    },
-    seeMoreText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: theme.colors.zinc[800],
-        marginBottom: 4,
-    },
-    seeMoreSubtext: {
-        fontSize: 12,
-        fontWeight: '500',
-        color: theme.colors.zinc[600],
-    },
     imageContainer: {
         width: screenWidth,
         height: 200,
@@ -1088,8 +947,7 @@ const styles = StyleSheet.create({
     // New full-width image styles (aligned with ClassDetailsModal)
     fullWidthCarouselContainer: {
         marginBottom: 0,
-        position: 'relative',
-        borderWidth: 1,
+        position: 'relative'
     },
     fullWidthImage: {
         width: screenWidth,
@@ -1345,6 +1203,19 @@ const styles = StyleSheet.create({
         color: theme.colors.zinc[950],
         letterSpacing: 0.5,
     },
+    distanceBadge: {
+        backgroundColor: theme.colors.emerald[50],
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: theme.colors.emerald[200],
+    },
+    distanceBadgeText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: theme.colors.emerald[700],
+    },
     reviewsNumber: {
         fontSize: 18,
         fontWeight: '700',
@@ -1355,20 +1226,5 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '500',
         color: '#6b7280',
-    },
-    bookedBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        backgroundColor: theme.colors.emerald[100],
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
-        alignSelf: 'flex-start',
-    },
-    bookedText: {
-        fontSize: 10,
-        fontWeight: '600',
-        color: theme.colors.emerald[950],
     },
 });

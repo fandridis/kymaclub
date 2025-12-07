@@ -336,7 +336,7 @@ export type RootStackParamList = {
   Messages: undefined;
   Settings: undefined;
   VenueDetailsScreen: { venueId: string };
-  VenueClassInstancesModal: { venueId: string; venueName: string };
+  VenueClassInstancesModal: { venueId: string; venueName: string; templateId?: string };
   ExploreFiltersModal: undefined;
   ClassDetailsModal: {
     classInstance?: import('@repo/api/convex/_generated/dataModel').Doc<"classInstances">;
@@ -404,7 +404,7 @@ export type RootStackParamListWithNestedTabs = {
   Messages: undefined;
   Settings: undefined;
   VenueDetailsScreen: { venueId: string };
-  VenueClassInstancesModal: { venueId: string; venueName: string };
+  VenueClassInstancesModal: { venueId: string; venueName: string; templateId?: string };
   ExploreFiltersModal: undefined;
   ClassDetailsModal: {
     classInstance?: import('../hooks/use-class-instances').ClassInstance;

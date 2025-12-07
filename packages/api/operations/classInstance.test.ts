@@ -281,6 +281,7 @@ describe('Class Instance Operations - Safety Tests', () => {
         name: mockTemplate.name,
         description: mockTemplate.description,
         instructor: mockTemplate.instructor,
+        duration: mockTemplate.duration,
         imageStorageIds: mockTemplate.imageStorageIds,
         discountRules: mockTemplate.discountRules,
         primaryCategory: mockTemplate.primaryCategory,

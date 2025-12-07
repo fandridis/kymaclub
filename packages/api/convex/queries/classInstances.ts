@@ -7,6 +7,7 @@ import { ERROR_CODES } from "../../utils/errorCodes";
 import { rateLimiter } from "../utils/rateLimiter";
 import { filterTestClassInstances, isClassInstanceVisible, isUserTester } from "../../utils/testDataFilter";
 import { normalizeCityInput } from "@repo/utils/constants";
+import type { Id } from "../_generated/dataModel";
 
 /***************************************************************
  * Shared Validators
@@ -604,6 +605,7 @@ export const getVenueClassInstancesOptimized = query({
             return filteredInstances.map(instance => ({
                 _id: instance._id,
                 venueId: instance.venueId, // Include venueId for navigation
+                templateId: instance.templateId, // Include templateId for filtering by class type
                 startTime: instance.startTime,
                 endTime: instance.endTime,
                 name: instance.name,
@@ -643,6 +645,7 @@ export const getVenueClassInstancesOptimized = query({
         return filteredInstances.map(instance => ({
             _id: instance._id,
             venueId: instance.venueId, // Include venueId for navigation
+            templateId: instance.templateId, // Include templateId for filtering by class type
             startTime: instance.startTime,
             endTime: instance.endTime,
             name: instance.name,
@@ -672,5 +675,128 @@ export const getVenueClassInstancesOptimized = query({
                 imageStorageIds: instance.venueSnapshot.imageStorageIds,
             },
         }));
+    }
+});
+
+/***************************************************************
+ * Get Venue Class Instances Grouped By Template
+ * 
+ * Fetches class instances for a specific date range and groups them
+ * by template. Used for venue schedule screens where classes are
+ * displayed with their available time slots.
+ * 
+ * Performance: Uses efficient by_venue_deleted_start_time index
+ ***************************************************************/
+
+const groupedClassInstanceValidator = v.object({
+    templateId: v.id("classTemplates"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    shortDescription: v.optional(v.string()),
+    price: v.number(),
+    duration: v.number(),
+    imageStorageIds: v.optional(v.array(v.id("_storage"))),
+    instances: v.array(v.object({
+        _id: v.id("classInstances"),
+        startTime: v.number(),
+        endTime: v.number(),
+        spotsAvailable: v.number(),
+        hasSpots: v.boolean(),
+        isBookedByUser: v.boolean(),
+    })),
+});
+
+export const getVenueClassInstancesGroupedByTemplateArgs = v.object({
+    venueId: v.id("venues"),
+    startDate: v.number(),
+    endDate: v.number(),
+});
+
+export const getVenueClassInstancesGroupedByTemplate = query({
+    args: getVenueClassInstancesGroupedByTemplateArgs,
+    returns: v.array(groupedClassInstanceValidator),
+    handler: async (ctx, args) => {
+        const user = await getAuthenticatedUserOrThrow(ctx);
+
+        // Query instances for date range using efficient index
+        const instances = await ctx.db
+            .query("classInstances")
+            .withIndex("by_venue_deleted_start_time", (q) =>
+                q.eq("venueId", args.venueId)
+                    .eq("deleted", undefined)
+                    .gte("startTime", args.startDate)
+            )
+            .filter(q => q.and(
+                q.lte(q.field("startTime"), args.endDate),
+                q.eq(q.field("status"), "scheduled")
+            ))
+            .collect();
+
+        // Filter test instances based on user tester status
+        const filteredInstances = filterTestClassInstances(instances, user);
+
+        // Get user's active bookings for these instances
+        const instanceIds = filteredInstances.map(i => i._id);
+        const userBookings = instanceIds.length > 0 ? await ctx.db
+            .query("bookings")
+            .withIndex("by_user", q => q.eq("userId", user._id))
+            .filter(q =>
+                q.and(
+                    q.neq(q.field("deleted"), true),
+                    q.neq(q.field("status"), "cancelled_by_consumer"),
+                    q.neq(q.field("status"), "cancelled_by_business"),
+                    q.or(...instanceIds.map(id => q.eq(q.field("classInstanceId"), id)))
+                )
+            )
+            .collect() : [];
+
+        // Create a set of booked instance IDs for efficient lookup
+        const bookedInstanceIds = new Set(userBookings.map(b => b.classInstanceId));
+
+        // Group instances by templateId
+        const groupedMap = new Map<string, {
+            templateId: string;
+            snapshot: typeof filteredInstances[0]["templateSnapshot"];
+            instances: typeof filteredInstances;
+        }>();
+
+        for (const instance of filteredInstances) {
+            const key = instance.templateId;
+            if (!groupedMap.has(key)) {
+                groupedMap.set(key, {
+                    templateId: key,
+                    snapshot: instance.templateSnapshot,
+                    instances: [],
+                });
+            }
+            groupedMap.get(key)!.instances.push(instance);
+        }
+
+        // Transform to return format - use templateSnapshot data to avoid N+1 queries
+        const results = Array.from(groupedMap.entries()).map(([templateId, data]) => {
+            // Use the first instance to get price (all instances from same template have same price)
+            const firstInstance = data.instances[0];
+            return {
+                templateId: templateId as Id<"classTemplates">,
+                name: data.snapshot.name,
+                description: data.snapshot.description,
+                shortDescription: data.snapshot.shortDescription,
+                price: firstInstance?.price ?? 0,
+                duration: data.snapshot.duration ?? 0,
+                imageStorageIds: data.snapshot.imageStorageIds,
+                instances: data.instances
+                    .sort((a, b) => a.startTime - b.startTime)
+                    .map(i => ({
+                        _id: i._id,
+                        startTime: i.startTime,
+                        endTime: i.endTime,
+                        spotsAvailable: Math.max(0, (i.capacity ?? 0) - (i.bookedCount ?? 0)),
+                        hasSpots: (i.capacity ?? 0) > (i.bookedCount ?? 0),
+                        isBookedByUser: bookedInstanceIds.has(i._id),
+                    })),
+            };
+        });
+
+        return results;
     }
 });

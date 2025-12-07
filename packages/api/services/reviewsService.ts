@@ -58,6 +58,20 @@ export const reviewsService = {
       });
     }
 
+    // Check if user has attended at least one class at this venue
+    const hasAttended = await reviewsService.hasUserAttendedVenue({
+      ctx,
+      venueId: args.venueId,
+      userId: user._id
+    });
+    if (!hasAttended) {
+      throw new ConvexError({
+        message: "You must attend at least one class at this studio before writing a review",
+        field: "venueId",
+        code: ERROR_CODES.VALIDATION_ERROR
+      });
+    }
+
     // Check if user has reviewed this venue within the last 6 months
     const sixMonthsAgo = now - (6 * 30 * 24 * 60 * 60 * 1000); // 6 months in milliseconds
     const recentReview = await ctx.db
@@ -177,6 +191,43 @@ export const reviewsService = {
   },
 
   /**
+   * Check if user has attended at least one class at a venue
+   */
+  hasUserAttendedVenue: async ({
+    ctx,
+    venueId,
+    userId
+  }: {
+    ctx: QueryCtx,
+    venueId: Id<"venues">,
+    userId: Id<"users">
+  }): Promise<boolean> => {
+    // Get user's completed bookings
+    const completedBookings = await ctx.db
+      .query("bookings")
+      .withIndex("by_user_status_deleted", (q) =>
+        q.eq("userId", userId)
+          .eq("status", "completed")
+          .eq("deleted", false)
+      )
+      .collect();
+
+    if (completedBookings.length === 0) {
+      return false;
+    }
+
+    // Check if any of the completed bookings are for class instances at this venue
+    for (const booking of completedBookings) {
+      const classInstance = await ctx.db.get(booking.classInstanceId);
+      if (classInstance && classInstance.venueId === venueId) {
+        return true;
+      }
+    }
+
+    return false;
+  },
+
+  /**
    * Check if user can review a venue (helper for UI)
    */
   canUserReviewVenue: async ({
@@ -187,7 +238,16 @@ export const reviewsService = {
     ctx: QueryCtx,
     venueId: Id<"venues">,
     userId: Id<"users">
-  }): Promise<{ canReview: boolean; nextReviewDate?: number; lastReviewDate?: number }> => {
+  }): Promise<{ canReview: boolean; reason?: "no_attendance" | "recent_review"; nextReviewDate?: number; lastReviewDate?: number }> => {
+
+    // First check if user has attended at least one class at this venue
+    const hasAttended = await reviewsService.hasUserAttendedVenue({ ctx, venueId, userId });
+    if (!hasAttended) {
+      return {
+        canReview: false,
+        reason: "no_attendance"
+      };
+    }
 
     // Check if user has reviewed this venue within the last 6 months
     const now = Date.now();
@@ -210,6 +270,7 @@ export const reviewsService = {
       const nextReviewTimestamp = recentReview.createdAt + (6 * 30 * 24 * 60 * 60 * 1000);
       return {
         canReview: false,
+        reason: "recent_review",
         nextReviewDate: nextReviewTimestamp,
         lastReviewDate: recentReview.createdAt
       };

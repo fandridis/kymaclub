@@ -460,6 +460,7 @@ export const createTestClassInstance = internalMutation({
                 name: template.name,
                 description: template.description,
                 instructor: template.instructor,
+                duration: template.duration,
                 imageStorageIds: template.imageStorageIds,
                 deleted: template.deleted,
                 primaryCategory,

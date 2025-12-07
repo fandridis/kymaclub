@@ -134,6 +134,7 @@ export const classInstance = {
         name: "Yoga Class",
         instructor: "John Doe",
         description: "A test description",
+        duration: 60,
         imageStorageIds: [],
         primaryCategory: 'yoga',
     },

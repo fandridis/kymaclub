@@ -477,15 +477,10 @@
         "addressNotAvailable": "Address not available",
         "noImagesAvailable": "No Images Available",
         "justArrived": "JUST ARRIVED!",
+        "distanceAway": "{{distance}} away",
         "aboutTheStudio": "About the studio",
-        "upcomingClasses": "Upcoming classes",
-        "seeAll": "See all",
-        "seeMore": "See more",
-        "viewAllClasses": "View all classes",
-        "alreadyBooked": "Already Booked",
-        "spotsAvailable": "{{count}} spots available",
-        "spotsAvailable_one": "{{count}} spot available",
-        "spotsAvailable_other": "{{count}} spots available",
+        "classesOffered": "Classes Offered",
+        "otherLessonsFrom": "Other lessons from",
         "contact": "Contact",
         "address": "Address",
         "phone": "Phone",
@@ -501,7 +496,11 @@
         "amenityAccessible": "Accessible",
         "amenityMats": "Mats",
         "noAmenitiesFound": "No amenities found",
-        "noUpcomingClassesFound": "No upcoming classes found"
+        "noUpcomingClassesFound": "No upcoming classes found",
+        "schedule": "Schedule",
+        "loadingSchedule": "Loading schedule...",
+        "noClassesOnDate": "No classes scheduled for this day",
+        "seeStudio": "See Studio"
     },
     "explore": {
         "title": "Explore",
@@ -580,7 +579,9 @@
         "helpful": "Helpful",
         "notHelpful": "Not helpful",
         "readMore": "Read more",
-        "readLess": "Read less"
+        "readLess": "Read less",
+        "mustAttendFirst": "You must attend at least one class at this studio before writing a review",
+        "canReviewAfter": "You can review this venue again after {{date}}"
     },
     "map": {
         "title": "Map",
