@@ -49,7 +49,7 @@ export const getBusinessDetails = query({
                 .take(100), // Limit to last 100 bookings
             ctx.db
                 .query("creditTransactions")
-                .withIndex("by_business_type", (q) => q.eq("businessId", args.businessId))
+                .withIndex("by_business_created", (q) => q.eq("businessId", args.businessId))
                 .filter((q) => q.eq(q.field("deleted"), undefined))
                 .order("desc")
                 .take(100), // Limit to last 100 earnings

@@ -509,7 +509,7 @@ export const permanentlyDeleteUsers = internalMutation({
                 // 2d. Reassign credit transactions (maintains audit trail)
                 const userTransactions = await ctx.db
                     .query("creditTransactions")
-                    .withIndex("by_user_type", (q) => q.eq("userId", user._id))
+                    .withIndex("by_user_created", (q) => q.eq("userId", user._id))
                     .collect();
 
                 for (const tx of userTransactions) {

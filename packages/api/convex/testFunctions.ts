@@ -271,7 +271,7 @@ export const getCreditTransactionsByUser = internalQuery({
     handler: async (ctx, args) => {
         const transactions = await ctx.db
             .query("creditTransactions")
-            .withIndex("by_user_type", q => q.eq("userId", args.userId))
+            .withIndex("by_user_created", q => q.eq("userId", args.userId))
             .collect();
         return transactions;
     },

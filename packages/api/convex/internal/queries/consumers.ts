@@ -24,7 +24,7 @@ export const getConsumerDetails = query({
                 .take(100), // Limit to last 100 bookings for performance
             ctx.db
                 .query("creditTransactions")
-                .withIndex("by_user_type", (q) => q.eq("userId", args.userId))
+                .withIndex("by_user_created", (q) => q.eq("userId", args.userId))
                 .filter((q) => q.eq(q.field("deleted"), undefined))
                 .order("desc")
                 .take(100), // Limit to last 100 transactions

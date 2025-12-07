@@ -314,7 +314,7 @@ export const creditService = {
     } else {
       query = ctx.db
         .query("creditTransactions")
-        .withIndex("by_user_type", q => q.eq("userId", userId));
+        .withIndex("by_user_created", q => q.eq("userId", userId));
     }
 
     const transactions = await query

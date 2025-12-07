@@ -46,7 +46,7 @@ export const getUserTransactions = query({
     } else {
       query = ctx.db
         .query("creditTransactions")
-        .withIndex("by_user_type", q => q.eq("userId", args.userId));
+        .withIndex("by_user_created", q => q.eq("userId", args.userId));
     }
 
     return query
@@ -256,13 +256,13 @@ export const getUserTransactionsOptimized = query({
     } else if (args.type) {
       query = ctx.db
         .query("creditTransactions")
-        .withIndex("by_user_type", (q) =>
+        .withIndex("by_user_type_created", (q) =>
           q.eq("userId", args.userId).eq("type", args.type!)
         );
     } else {
       query = ctx.db
         .query("creditTransactions")
-        .withIndex("by_user", (q) => q.eq("userId", args.userId));
+        .withIndex("by_user_created", (q) => q.eq("userId", args.userId));
     }
 
     // Apply end date filter if specified (can't be in compound index)
@@ -348,7 +348,7 @@ export const getUserExpiringCredits = query({
     // For demo purposes, show that 15 credits expire in 12 days for users with credits
     const userBalance = await ctx.db
       .query("creditTransactions")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .withIndex("by_user_created", (q) => q.eq("userId", args.userId))
       .collect();
 
     const totalCredits = userBalance.reduce((sum, tx) => sum + tx.amount, 0);

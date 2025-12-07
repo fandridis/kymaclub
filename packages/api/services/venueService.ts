@@ -289,13 +289,13 @@ export const venueService = {
         // Get upcoming class instances
         const allInstances = await ctx.db
             .query("classInstances")
-            .withIndex("by_venue", q => q.eq("venueId", args.venueId))
-            .filter(q => q.and(
-                q.gte(q.field("startTime"), now),
-                q.lte(q.field("startTime"), endDate),
-                q.neq(q.field("deleted"), true),
-                q.eq(q.field("status"), "scheduled")
-            ))
+            .withIndex("by_venue_deleted_start_time", q =>
+                q.eq("venueId", args.venueId)
+                    .eq("deleted", false)
+                    .gte("startTime", now)
+                    .lte("startTime", endDate)
+            )
+            .filter(q => q.eq(q.field("status"), "scheduled"))
             .collect();
 
         // Filter test class instances
