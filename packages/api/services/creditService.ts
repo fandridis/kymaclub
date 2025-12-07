@@ -310,11 +310,11 @@ export const creditService = {
       // 🔥 OPTIMIZED: Use compound index for user + type
       query = ctx.db
         .query("creditTransactions")
-        .withIndex("by_user_type", q => q.eq("userId", userId).eq("type", type));
+        .withIndex("by_user_type_created", q => q.eq("userId", userId).eq("type", type));
     } else {
       query = ctx.db
         .query("creditTransactions")
-        .withIndex("by_user", q => q.eq("userId", userId));
+        .withIndex("by_user_type", q => q.eq("userId", userId));
     }
 
     const transactions = await query
@@ -364,13 +364,13 @@ export const creditService = {
     } else {
       bookingsQuery = ctx.db
         .query("creditTransactions")
-        .withIndex("by_business_type", q =>
+        .withIndex("by_business_type_created", q =>
           q.eq("businessId", businessId).eq("type", "spend")
         );
 
       refundsQuery = ctx.db
         .query("creditTransactions")
-        .withIndex("by_business_type", q =>
+        .withIndex("by_business_type_created", q =>
           q.eq("businessId", businessId).eq("type", "refund")
         );
     }

@@ -118,7 +118,7 @@ export const bookingService = {
         };
     }): Promise<Doc<"bookings">[]> => {
         const bookings = await ctx.db.query("bookings")
-            .withIndex("by_class_instance", q => q.eq("classInstanceId", args.classInstanceId))
+            .withIndex("by_class_instance_status", q => q.eq("classInstanceId", args.classInstanceId))
             .filter(q => q.eq(q.field("status"), "pending"))
             .collect();
 
@@ -147,7 +147,7 @@ export const bookingService = {
         // Get user's pending bookings
         const bookings = await ctx.db
             .query("bookings")
-            .withIndex("by_user", q => q.eq("userId", user._id))
+            .withIndex("by_user_class", q => q.eq("userId", user._id))
             .filter(q => q.and(
                 q.neq(q.field("deleted"), true),
                 q.eq(q.field("status"), "pending")
@@ -188,7 +188,7 @@ export const bookingService = {
 
         const result = await ctx.db
             .query("bookings")
-            .withIndex("by_user", q => q.eq("userId", user._id))
+            .withIndex("by_user_class", q => q.eq("userId", user._id))
             .filter(q => q.and(
                 q.neq(q.field("deleted"), true),
                 q.eq(q.field("status"), dbStatus)
@@ -453,7 +453,7 @@ export const bookingService = {
         // Only validate booking limits after confirming this is not a duplicate booking
         const userBookings = await ctx.db
             .query("bookings")
-            .withIndex("by_user", q => q.eq("userId", user._id))
+            .withIndex("by_user_class", q => q.eq("userId", user._id))
             .filter(q => q.neq(q.field("deleted"), true))
             .collect();
 
@@ -1129,7 +1129,7 @@ export const bookingService = {
         // Get user's bookings
         const userBookings = await ctx.db
             .query("bookings")
-            .withIndex("by_user", q => q.eq("userId", user._id))
+            .withIndex("by_user_class", q => q.eq("userId", user._id))
             .filter(q => q.neq(q.field("deleted"), true))
             .collect();
 
@@ -1157,7 +1157,7 @@ export const bookingService = {
         // Get user's bookings
         const userBookings = await ctx.db
             .query("bookings")
-            .withIndex("by_user", q => q.eq("userId", user._id))
+            .withIndex("by_user_class", q => q.eq("userId", user._id))
             .filter(q => q.neq(q.field("deleted"), true))
             .collect();
 

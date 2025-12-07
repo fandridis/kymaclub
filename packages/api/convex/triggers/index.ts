@@ -30,7 +30,7 @@ triggers.register("venues", async (ctx, change) => {
         if (classInstanceRules.venueChangesRequireInstanceUpdate({ existingVenue: oldDoc, updatedVenue: newDoc })) {
             const instancesToUpdate = await ctx.db
                 .query("classInstances")
-                .withIndex("by_venue", q => q.eq("venueId", id))
+                .withIndex("by_venue_deleted_start_time", q => q.eq("venueId", id))
                 .filter(q => q.eq(q.field("status"), "scheduled"))
                 .collect();
 
@@ -67,7 +67,7 @@ triggers.register("classTemplates", async (ctx, change) => {
         if (classInstanceRules.templateChangesRequireInstanceUpdate({ existingTemplate: oldDoc, updatedTemplate: newDoc })) {
             const instancesToUpdate = await ctx.db
                 .query("classInstances")
-                .withIndex("by_template", q => q.eq("templateId", id))
+                .withIndex("by_template_deleted_status_start_time", q => q.eq("templateId", id))
                 .filter(q => q.eq(q.field("status"), "scheduled"))
                 .collect();
 

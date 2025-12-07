@@ -464,7 +464,7 @@ export const permanentlyDeleteUsers = internalMutation({
                 // 2a. Reassign bookings (maintains business booking history)
                 const userBookings = await ctx.db
                     .query("bookings")
-                    .withIndex("by_user", (q) => q.eq("userId", user._id))
+                    .withIndex("by_user_class", (q) => q.eq("userId", user._id))
                     .collect();
 
                 for (const booking of userBookings) {
@@ -479,7 +479,7 @@ export const permanentlyDeleteUsers = internalMutation({
                 // 2b. Reassign venue reviews (maintains review history)
                 const userReviews = await ctx.db
                     .query("venueReviews")
-                    .withIndex("by_user", (q) => q.eq("userId", user._id))
+                    .withIndex("by_user_venue", (q) => q.eq("userId", user._id))
                     .collect();
 
                 for (const review of userReviews) {
@@ -494,7 +494,7 @@ export const permanentlyDeleteUsers = internalMutation({
                 // 2c. Reassign chat message threads (maintains conversation history for businesses)
                 const userThreads = await ctx.db
                     .query("chatMessageThreads")
-                    .withIndex("by_user", (q) => q.eq("userId", user._id))
+                    .withIndex("by_user_venue", (q) => q.eq("userId", user._id))
                     .collect();
 
                 for (const thread of userThreads) {
@@ -509,7 +509,7 @@ export const permanentlyDeleteUsers = internalMutation({
                 // 2d. Reassign credit transactions (maintains audit trail)
                 const userTransactions = await ctx.db
                     .query("creditTransactions")
-                    .withIndex("by_user", (q) => q.eq("userId", user._id))
+                    .withIndex("by_user_type", (q) => q.eq("userId", user._id))
                     .collect();
 
                 for (const tx of userTransactions) {
@@ -523,7 +523,7 @@ export const permanentlyDeleteUsers = internalMutation({
                 // 2e. Reassign subscriptions (maintains billing history for auditing)
                 const userSubscriptions = await ctx.db
                     .query("subscriptions")
-                    .withIndex("by_user", (q) => q.eq("userId", user._id))
+                    .withIndex("by_user_status", (q) => q.eq("userId", user._id))
                     .collect();
 
                 for (const sub of userSubscriptions) {
@@ -553,7 +553,7 @@ export const permanentlyDeleteUsers = internalMutation({
                 // 3b. Delete user presence (ephemeral real-time data)
                 const userPresence = await ctx.db
                     .query("userPresence")
-                    .withIndex("by_user", (q) => q.eq("userId", user._id))
+                    .withIndex("by_user_active", (q) => q.eq("userId", user._id))
                     .first();
 
                 if (userPresence) {

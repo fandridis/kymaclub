@@ -19,12 +19,12 @@ export const getConsumerDetails = query({
         const [bookings, transactions] = await Promise.all([
             ctx.db
                 .query("bookings")
-                .withIndex("by_user", (q) => q.eq("userId", args.userId))
+                .withIndex("by_user_class", (q) => q.eq("userId", args.userId))
                 .order("desc")
                 .take(100), // Limit to last 100 bookings for performance
             ctx.db
                 .query("creditTransactions")
-                .withIndex("by_user", (q) => q.eq("userId", args.userId))
+                .withIndex("by_user_type", (q) => q.eq("userId", args.userId))
                 .filter((q) => q.eq(q.field("deleted"), undefined))
                 .order("desc")
                 .take(100), // Limit to last 100 transactions

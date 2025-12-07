@@ -590,7 +590,7 @@ export const classInstanceService = {
         for (const classInstanceId of classInstanceIds) {
             const bookings = await ctx.db
                 .query("bookings")
-                .withIndex("by_class_instance", q => q.eq("classInstanceId", classInstanceId))
+                .withIndex("by_class_instance_status", q => q.eq("classInstanceId", classInstanceId))
                 .filter(q => q.and(
                     q.neq(q.field("deleted"), true),
                     q.eq(q.field("businessId"), businessId),
@@ -665,7 +665,7 @@ export const classInstanceService = {
         for (const classInstanceId of classInstanceIds) {
             const bookings = await ctx.db
                 .query("bookings")
-                .withIndex("by_class_instance", q => q.eq("classInstanceId", classInstanceId))
+                .withIndex("by_class_instance_status", q => q.eq("classInstanceId", classInstanceId))
                 .filter(q => q.and(
                     q.neq(q.field("deleted"), true),
                     q.eq(q.field("businessId"), businessId),

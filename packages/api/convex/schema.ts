@@ -1558,7 +1558,6 @@ export default defineSchema({
    * Venues/Locations where classes are held
    */
   venues: defineTable(venuesFields)
-    .index("by_business", ["businessId"])
     .index("by_city_slug", ["citySlug"])
     .index("by_deleted", ["deleted"])
     // 🆕 PERFORMANCE INDEXES FOR DELETED ITEM FILTERING
@@ -1573,8 +1572,6 @@ export default defineSchema({
    * No scheduling logic, just the "what" not the "when"
    */
   classTemplates: defineTable(classTemplatesFields)
-    .index("by_business", ["businessId"])
-    .index("by_venue", ["venueId"])
     .index("by_venue_deleted", ["venueId", "deleted"])
     .index("by_business_deleted", ["businessId", "deleted"])
     .index("by_business_deleted_active", ["businessId", "deleted", "isActive"])
@@ -1590,9 +1587,6 @@ export default defineSchema({
    * Each instance references a template but can override any field
    */
   classInstances: defineTable(classInstancesFields)
-    .index("by_business", ["businessId"])
-    .index("by_venue", ["venueId"])
-    .index("by_template", ["templateId"])
     .index("by_start_time", ["startTime"])
     .index("by_business_start_time", ["businessId", "startTime"])
     .index("by_template_and_start_time", ["templateId", "startTime"])
@@ -1600,7 +1594,6 @@ export default defineSchema({
     // 🆕 CRITICAL PERFORMANCE INDEXES FOR EFFICIENT FILTERING
     .index("by_business_deleted_start_time", ["businessId", "deleted", "startTime"])
     .index("by_business_status_start_time", ["businessId", "status", "startTime"])
-    .index("by_template_deleted", ["templateId", "deleted"])
     .index("by_template_deleted_status_start_time", ["templateId", "deleted", "status", "startTime"])
     .index("by_venue_deleted_start_time", ["venueId", "deleted", "startTime"])
     // 🚀 GLOBAL CONSUMER QUERY OPTIMIZATION - eliminates expensive filters
@@ -1626,9 +1619,6 @@ export default defineSchema({
    * Bookings - customer reservations for class instances (simplified)
    */
   bookings: defineTable(bookingsFields)
-    .index("by_business", ["businessId"])
-    .index("by_user", ["userId"])
-    .index("by_class_instance", ["classInstanceId"])
     .index("by_user_class", ["userId", "classInstanceId"])
     .index("by_credit_transaction", ["creditTransactionId"])
     .index("by_discount_source", ["appliedDiscount.source"])
@@ -1650,15 +1640,11 @@ export default defineSchema({
    * Enhanced Credit Transactions - One record per credit operation (includes purchases)
    */
   creditTransactions: defineTable(creditTransactionsFields)
-    .index("by_user", ["userId"])
-    .index("by_business", ["businessId"])
     .index("by_type", ["type"])
     .index("by_venue", ["venueId"])
     .index("by_class_template", ["classTemplateId"])
     .index("by_class_instance", ["classInstanceId"])
     .index("by_booking", ["bookingId"])
-    .index("by_user_type", ["userId", "type"])
-    .index("by_business_type", ["businessId", "type"])
     .index("by_stripe_payment_intent", ["stripePaymentIntentId"])
     .index("by_stripe_checkout_session", ["stripeCheckoutSessionId"])
     .index("by_status", ["status"])
@@ -1673,7 +1659,6 @@ export default defineSchema({
    * Notifications - Messages sent to businesses and consumers
    */
   notifications: defineTable(notificationsFields)
-    .index("by_business", ["businessId"])
     .index("by_recipient_user", ["recipientUserId"])
     .index("by_recipient_type", ["recipientType"])
     .index("by_business_type", ["businessId", "type"])
@@ -1697,7 +1682,6 @@ export default defineSchema({
    * User subscriptions - Monthly credit subscriptions via Stripe
    */
   subscriptions: defineTable(subscriptionsFields)
-    .index("by_user", ["userId"])
     .index("by_stripe_subscription", ["stripeSubscriptionId"])
     .index("by_stripe_customer", ["stripeCustomerId"])
     .index("by_status", ["status"])
@@ -1716,10 +1700,6 @@ export default defineSchema({
    * Venue Reviews - User reviews and ratings for venues
    */
   venueReviews: defineTable(venueReviewsFields)
-    .index("by_venue", ["venueId"])
-    .index("by_user", ["userId"])
-    .index("by_business", ["businessId"])
-    .index("by_venue_visible", ["venueId", "isVisible"])
     .index("by_venue_created", ["venueId", "createdAt"])
     .index("by_user_venue", ["userId", "venueId"])
     .index("by_venue_visible_created", ["venueId", "isVisible", "createdAt"])
@@ -1730,9 +1710,6 @@ export default defineSchema({
    * Message Threads - One thread per user-venue relationship
    */
   chatMessageThreads: defineTable(chatMessageThreadsFields)
-    .index("by_business", ["businessId"])
-    .index("by_venue", ["venueId"])
-    .index("by_user", ["userId"])
     .index("by_user_venue", ["userId", "venueId"]) // Unique constraint enforced at business logic level
     .index("by_venue_last_message", ["venueId", "lastMessageAt"])
     .index("by_business_last_message", ["businessId", "lastMessageAt"])
@@ -1745,10 +1722,7 @@ export default defineSchema({
    * Messages - Individual messages within threads
    */
   chatMessages: defineTable(chatMessagesFields)
-    .index("by_thread", ["threadId"])
     .index("by_thread_created", ["threadId", "createdAt"])
-    .index("by_business", ["businessId"])
-    .index("by_venue", ["venueId"])
     .index("by_sender", ["senderId"])
     .index("by_sender_type", ["senderType"])
     .index("by_message_type", ["messageType"])
@@ -1765,8 +1739,6 @@ export default defineSchema({
    * ADR-020: Prevents notification spam by detecting active users in conversations
    */
   userPresence: defineTable(userPresenceFields)
-    .index("by_user", ["userId"])
-    .index("by_thread", ["activeThreadId"])
     .index("by_user_active", ["userId", "isActive"])
     .index("by_user_last_seen", ["userId", "lastSeen"])
     .index("by_last_seen", ["lastSeen"]) // For cleanup queries
@@ -1779,8 +1751,6 @@ export default defineSchema({
    * Supports tournaments, brackets, and other add-on functionality
    */
   classInstanceWidgets: defineTable(classInstanceWidgetsFields)
-    .index("by_class_instance", ["classInstanceId"])
-    .index("by_business", ["businessId"])
     .index("by_widget_config_type", ["widgetConfig.type"])
     .index("by_status", ["status"])
     .index("by_class_instance_deleted", ["classInstanceId", "deleted"])

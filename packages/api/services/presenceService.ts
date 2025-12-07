@@ -40,7 +40,7 @@ export const presenceService = {
             // Check if user already has a presence record
             const existingPresence = await ctx.db
                 .query("userPresence")
-                .withIndex("by_user", q => q.eq("userId", userId))
+                .withIndex("by_user_active", q => q.eq("userId", userId))
                 .first();
 
             let presenceId: Id<"userPresence">;
@@ -106,7 +106,7 @@ export const presenceService = {
         try {
             const presence = await ctx.db
                 .query("userPresence")
-                .withIndex("by_user", q => q.eq("userId", userId))
+                .withIndex("by_user_active", q => q.eq("userId", userId))
                 .first();
 
             if (!presence) {
@@ -280,7 +280,7 @@ export const presenceService = {
         try {
             const presence = await ctx.db
                 .query("userPresence")
-                .withIndex("by_user", q => q.eq("userId", userId))
+                .withIndex("by_user_active", q => q.eq("userId", userId))
                 .first();
 
             if (presence) {

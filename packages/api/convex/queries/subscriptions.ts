@@ -43,14 +43,14 @@ export const getSubscriptionPlans = query({
       },
       {
         id: "standard" as const,
-        name: "Standard Plan", 
+        name: "Standard Plan",
         credits: 50,
         priceInCents: 4500,
         currency: "eur",
         description: "Great value for regular gym-goers",
         features: [
           "50 credits per month",
-          "Access to all classes", 
+          "Access to all classes",
           "Credits expire in 90 days",
           "10% discount vs individual credits",
           "Cancel anytime"
@@ -62,12 +62,12 @@ export const getSubscriptionPlans = query({
         name: "Premium Plan",
         credits: 100,
         priceInCents: 8000,
-        currency: "eur", 
+        currency: "eur",
         description: "Best value for fitness enthusiasts",
         features: [
           "100 credits per month",
           "Access to all classes",
-          "Credits expire in 90 days", 
+          "Credits expire in 90 days",
           "20% discount vs individual credits",
           "Priority booking support",
           "Cancel anytime"
@@ -88,7 +88,7 @@ export const getSubscriptionHistory = query({
 
     return await ctx.db
       .query("subscriptions")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .withIndex("by_user_status", (q) => q.eq("userId", userId))
       .order("desc")
       .collect();
   },

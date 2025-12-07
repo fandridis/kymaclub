@@ -80,7 +80,7 @@ export const venueService = {
 
         const activeVenues = await ctx.db
             .query("venues")
-            .withIndex("by_business", q => q.eq("businessId", existingVenue.businessId))
+            .withIndex("by_business_deleted", q => q.eq("businessId", existingVenue.businessId))
             .filter(q => q.neq(q.field("deleted"), true))
             .take(2);
 
@@ -135,7 +135,7 @@ export const venueService = {
         }
 
         // Check if the venue has any class instances
-        const classInstances = await ctx.db.query("classInstances").withIndex("by_venue", q => q.eq("venueId", args.venueId)).collect();
+        const classInstances = await ctx.db.query("classInstances").withIndex("by_venue_deleted_start_time", q => q.eq("venueId", args.venueId)).collect();
         if (classInstances.length > 0) {
             throw new ConvexError({
                 message: "Venue has class instances. Cannot permanently delete.",
@@ -161,7 +161,7 @@ export const venueService = {
 
         const venues = await ctx.db
             .query("venues")
-            .withIndex("by_business", q => q.eq("businessId", user.businessId!))
+            .withIndex("by_business_deleted", q => q.eq("businessId", user.businessId!))
             .filter(q => q.neq(q.field("deleted"), true))
             .collect();
 

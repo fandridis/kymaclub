@@ -510,7 +510,7 @@ export const widgetService = {
     }): Promise<ClassInstanceWidget[]> => {
         let query = ctx.db
             .query("classInstanceWidgets")
-            .withIndex("by_business", q => q.eq("businessId", args.businessId));
+            .withIndex("by_business_status", q => q.eq("businessId", args.businessId));
 
         const widgets = await query.collect();
 

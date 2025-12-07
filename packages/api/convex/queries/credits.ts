@@ -42,11 +42,11 @@ export const getUserTransactions = query({
     if (args.type) {
       query = ctx.db
         .query("creditTransactions")
-        .withIndex("by_user_type", q => q.eq("userId", args.userId).eq("type", args.type!));
+        .withIndex("by_user_type_created", q => q.eq("userId", args.userId).eq("type", args.type!));
     } else {
       query = ctx.db
         .query("creditTransactions")
-        .withIndex("by_user", q => q.eq("userId", args.userId));
+        .withIndex("by_user_type", q => q.eq("userId", args.userId));
     }
 
     return query
@@ -88,13 +88,13 @@ export const getBusinessEarnings = query({
     } else {
       bookingsQuery = ctx.db
         .query("creditTransactions")
-        .withIndex("by_business_type", q =>
+        .withIndex("by_business_type_created", q =>
           q.eq("businessId", args.businessId).eq("type", "spend")
         );
 
       refundsQuery = ctx.db
         .query("creditTransactions")
-        .withIndex("by_business_type", q =>
+        .withIndex("by_business_type_created", q =>
           q.eq("businessId", args.businessId).eq("type", "refund")
         );
     }

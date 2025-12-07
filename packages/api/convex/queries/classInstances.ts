@@ -240,14 +240,14 @@ export const getTemplateInstancesOptimized = query({
             // 🔥 OPTIMIZED: Use compound index for template + deleted
             query = ctx.db
                 .query("classInstances")
-                .withIndex("by_template_deleted", (q) =>
+                .withIndex("by_template_deleted_status_start_time", (q) =>
                     q.eq("templateId", args.templateId)
                         .eq("deleted", false)
                 );
         } else {
             query = ctx.db
                 .query("classInstances")
-                .withIndex("by_template", (q) => q.eq("templateId", args.templateId));
+                .withIndex("by_template_deleted_status_start_time", (q) => q.eq("templateId", args.templateId));
         }
 
         const instances = await query
@@ -520,7 +520,7 @@ export const getConsumerClassInstancesWithBookingStatus = query({
         // Get user's active bookings (efficient - typically small dataset per user)
         const userBookings = await ctx.db
             .query("bookings")
-            .withIndex("by_user", q => q.eq("userId", user._id))
+            .withIndex("by_user_class", q => q.eq("userId", user._id))
             .filter(q =>
                 q.and(
                     q.neq(q.field("deleted"), true),
@@ -586,7 +586,7 @@ export const getVenueClassInstancesOptimized = query({
             const instanceIds = filteredInstances.map(i => i._id);
             const userBookings = await ctx.db
                 .query("bookings")
-                .withIndex("by_user", q => q.eq("userId", user._id))
+                .withIndex("by_user_class", q => q.eq("userId", user._id))
                 .filter(q =>
                     q.and(
                         q.neq(q.field("deleted"), true),
@@ -738,7 +738,7 @@ export const getVenueClassInstancesGroupedByTemplate = query({
         const instanceIds = filteredInstances.map(i => i._id);
         const userBookings = instanceIds.length > 0 ? await ctx.db
             .query("bookings")
-            .withIndex("by_user", q => q.eq("userId", user._id))
+            .withIndex("by_user_class", q => q.eq("userId", user._id))
             .filter(q =>
                 q.and(
                     q.neq(q.field("deleted"), true),
@@ -850,7 +850,7 @@ export const getUpcomingClassInstancesByTemplate = query({
         const instanceIds = limitedInstances.map(i => i._id);
         const userBookings = instanceIds.length > 0 ? await ctx.db
             .query("bookings")
-            .withIndex("by_user", q => q.eq("userId", user._id))
+            .withIndex("by_user_class", q => q.eq("userId", user._id))
             .filter(q =>
                 q.and(
                     q.neq(q.field("deleted"), true),

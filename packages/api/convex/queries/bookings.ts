@@ -100,7 +100,7 @@ export const getBookingsForClassInstance = query({
     // For now, we'll use a simple query - in the future this could be moved to a service
     return await ctx.db
       .query("bookings")
-      .withIndex("by_class_instance", (q) => q.eq("classInstanceId", args.classInstanceId))
+      .withIndex("by_class_instance_status", (q) => q.eq("classInstanceId", args.classInstanceId))
       .collect();
   },
 });
@@ -152,7 +152,7 @@ export const getUserBookingsOptimized = query({
     } else {
       query = ctx.db
         .query("bookings")
-        .withIndex("by_user", (q) => q.eq("userId", args.userId));
+        .withIndex("by_user_class", (q) => q.eq("userId", args.userId));
 
       if (!args.includeDeleted) {
         query = query.filter(q => q.neq(q.field("deleted"), true));
@@ -198,7 +198,7 @@ export const getBusinessBookingsOptimized = query({
     } else {
       query = ctx.db
         .query("bookings")
-        .withIndex("by_business", (q) => q.eq("businessId", args.businessId));
+        .withIndex("by_business_created", (q) => q.eq("businessId", args.businessId));
     }
 
     // Apply additional filters

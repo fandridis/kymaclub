@@ -69,7 +69,7 @@ export const getVenueRatingSummary = query({
     // Get all visible reviews for this venue
     const reviews = await ctx.db
       .query("venueReviews")
-      .withIndex("by_venue_visible", (q) =>
+      .withIndex("by_venue_visible_created", (q) =>
         q.eq("venueId", args.venueId).eq("isVisible", true)
       )
       .filter((q) => q.eq(q.field("deleted"), false))

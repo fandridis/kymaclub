@@ -131,7 +131,7 @@ export const chatService = {
         // Sum up unread counts from all active threads
         const threads = await ctx.db
             .query("chatMessageThreads")
-            .withIndex("by_user", q => q.eq("userId", user._id))
+            .withIndex("by_user_venue", q => q.eq("userId", user._id))
             .filter(q => q.and(
                 q.neq(q.field("deleted"), true),
                 q.eq(q.field("status"), "active")
@@ -363,7 +363,7 @@ export const chatService = {
             // Mark all unread messages in thread as read
             messagesToUpdate = await ctx.db
                 .query("chatMessages")
-                .withIndex("by_thread", q => q.eq("threadId", threadId))
+                .withIndex("by_thread_created", q => q.eq("threadId", threadId))
                 .filter(q => q.and(
                     q.neq(q.field("deleted"), true),
                     isConsumer ?
@@ -948,7 +948,7 @@ export const chatService = {
         // Delete all messages in the thread
         const messages = await ctx.db
             .query("chatMessages")
-            .withIndex("by_thread", q => q.eq("threadId", threadId))
+            .withIndex("by_thread_created", q => q.eq("threadId", threadId))
             .collect();
 
         for (const message of messages) {

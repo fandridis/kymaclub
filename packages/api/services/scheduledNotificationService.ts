@@ -159,7 +159,7 @@ export const scheduledNotificationService = {
         // First, get all bookings for this class instance
         const bookings = await ctx.db
             .query("bookings")
-            .withIndex("by_class_instance", q => q.eq("classInstanceId", classInstanceId))
+            .withIndex("by_class_instance_status", q => q.eq("classInstanceId", classInstanceId))
             .filter(q => q.neq(q.field("deleted"), true))
             .collect();
 

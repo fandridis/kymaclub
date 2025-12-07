@@ -101,7 +101,7 @@ export const classTemplateService = {
         // Check if template has active class instances
         const activeInstances = await ctx.db
             .query("classInstances")
-            .withIndex("by_template", q => q.eq("templateId", args.templateId))
+            .withIndex("by_template_deleted_status_start_time", q => q.eq("templateId", args.templateId))
             .filter(q => q.and(
                 q.neq(q.field("deleted"), true),
                 q.eq(q.field("status"), "scheduled"),
@@ -138,7 +138,7 @@ export const classTemplateService = {
         // Check if template has ANY class instances
         const allInstances = await ctx.db
             .query("classInstances")
-            .withIndex("by_template", q => q.eq("templateId", args.templateId))
+            .withIndex("by_template_deleted_status_start_time", q => q.eq("templateId", args.templateId))
             .collect();
 
         if (allInstances.length > 0) {
@@ -163,7 +163,7 @@ export const classTemplateService = {
 
         const templates = await ctx.db
             .query("classTemplates")
-            .withIndex("by_business", q => q.eq("businessId", user.businessId!))
+            .withIndex("by_business_deleted", q => q.eq("businessId", user.businessId!))
             .filter(q => q.neq(q.field("deleted"), true))
             .collect();
 
@@ -180,7 +180,7 @@ export const classTemplateService = {
 
         const result = await ctx.db
             .query("classTemplates")
-            .withIndex("by_business", q => q.eq("businessId", user.businessId!))
+            .withIndex("by_business_deleted", q => q.eq("businessId", user.businessId!))
             .filter(q => q.neq(q.field("deleted"), true))
             .paginate(args.paginationOpts);
 
@@ -216,7 +216,7 @@ export const classTemplateService = {
 
         const templates = await ctx.db
             .query("classTemplates")
-            .withIndex("by_business", q => q.eq("businessId", user.businessId!))
+            .withIndex("by_business_deleted", q => q.eq("businessId", user.businessId!))
             .filter(q => q.and(
                 q.neq(q.field("deleted"), true),
                 q.eq(q.field("isActive"), true)
@@ -239,7 +239,7 @@ export const classTemplateService = {
 
         const allTemplates = await ctx.db
             .query("classTemplates")
-            .withIndex("by_business", q => q.eq("businessId", user.businessId!))
+            .withIndex("by_business_deleted", q => q.eq("businessId", user.businessId!))
             .filter(q => q.neq(q.field("deleted"), true))
             .collect();
 
@@ -265,7 +265,7 @@ export const classTemplateService = {
 
         const templates = await ctx.db
             .query("classTemplates")
-            .withIndex("by_venue", q => q.eq("venueId", args.venueId))
+            .withIndex("by_venue_deleted", q => q.eq("venueId", args.venueId))
             .filter(q => q.and(
                 q.neq(q.field("deleted"), true),
                 q.eq(q.field("businessId"), user.businessId!)
@@ -311,7 +311,7 @@ export const classTemplateService = {
         // Get instances and calculate stats
         const instances = await ctx.db
             .query("classInstances")
-            .withIndex("by_template", (q) => q.eq("templateId", args.templateId))
+            .withIndex("by_template_deleted_status_start_time", (q) => q.eq("templateId", args.templateId))
             .filter((q) => q.neq(q.field("deleted"), true))
             .collect();
 
