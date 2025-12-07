@@ -222,15 +222,19 @@ export function BookingTicketModalScreen({ navigation, route }: BookingTicketMod
     const parts: string[] = [];
 
     if (days > 0) {
+      // More than 24 hours: show days and hours only, skip minutes
       parts.push(t('ticket.days', { count: days }));
-    }
-
-    if (hours > 0) {
-      parts.push(t('ticket.hours', { count: hours }));
-    }
-
-    if (minutes > 0 || parts.length === 0) {
-      parts.push(t('ticket.minutes', { count: minutes }));
+      if (hours > 0) {
+        parts.push(t('ticket.hours', { count: hours }));
+      }
+    } else {
+      // Less than 24 hours: show hours and minutes
+      if (hours > 0) {
+        parts.push(t('ticket.hours', { count: hours }));
+      }
+      if (minutes > 0 || parts.length === 0) {
+        parts.push(t('ticket.minutes', { count: minutes }));
+      }
     }
 
     return parts.join(', ');

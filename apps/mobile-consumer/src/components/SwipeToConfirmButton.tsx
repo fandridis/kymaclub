@@ -160,8 +160,8 @@ const styles = StyleSheet.create({
   },
   labelContainer: {
     position: 'absolute',
-    left: 0,
-    right: 0,
+    left: KNOB_WIDTH,
+    right: 8,
     alignItems: 'center',
   },
   label: {
