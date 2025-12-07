@@ -738,11 +738,10 @@ export const chatService = {
         // Get all active threads for this business
         const threads = await ctx.db
             .query("chatMessageThreads")
-            .withIndex("by_business", q => q.eq("businessId", user.businessId!))
-            .filter(q => q.and(
-                q.neq(q.field("deleted"), true),
-                q.neq(q.field("status"), "blocked")
-            ))
+            .withIndex("by_business_deleted_status", q =>
+                q.eq("businessId", user.businessId!).eq("deleted", false)
+            )
+            .filter(q => q.neq(q.field("status"), "blocked"))
             .collect();
 
         // Sum up unread counts for venue side
