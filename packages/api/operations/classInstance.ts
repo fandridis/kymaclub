@@ -261,11 +261,11 @@ export const prepareInstanceUpdatesFromTemplateChanges = (
             //  hasDiscountRules: hasDiscountRules(templateChanges.discountRules)
             // }),
             // Historical snapshot preservation with selective updates
+            // Note: Only shortDescription is propagated, not full description
             templateSnapshot: {
                 ...instance.templateSnapshot, // Preserve existing snapshot data
                 ...updateIfExists({
                     name: templateChanges.name,
-                    description: templateChanges.description,
                     shortDescription: templateChanges.shortDescription,
                     instructor: templateChanges.instructor,
                     duration: templateChanges.duration,
@@ -486,9 +486,9 @@ export const createInstanceFromTemplate = (
         // Alternative considered: Live references, rejected due to customer confusion
 
         // Template snapshot - captures template state at instance creation
+        // Note: Only shortDescription is stored, not full description (to save space)
         templateSnapshot: {
             name: template.name,
-            description: template.description,
             shortDescription: template.shortDescription,
             instructor: template.instructor,
             duration: template.duration,

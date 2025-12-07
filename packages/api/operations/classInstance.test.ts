@@ -279,7 +279,7 @@ describe('Class Instance Operations - Safety Tests', () => {
 
       expect(instance.templateSnapshot).toEqual({
         name: mockTemplate.name,
-        description: mockTemplate.description,
+        shortDescription: mockTemplate.shortDescription,
         instructor: mockTemplate.instructor,
         duration: mockTemplate.duration,
         imageStorageIds: mockTemplate.imageStorageIds,
@@ -535,7 +535,7 @@ describe('Class Instance Operations - Safety Tests', () => {
         primaryCategory: 'yoga' as any,
         templateSnapshot: {
           name: "Old Name",
-          description: "Old description",
+          shortDescription: "Old short description",
           instructor: "Old instructor",
           imageStorageIds: ["old_img"],
           primaryCategory: 'yoga' as any,
@@ -544,7 +544,7 @@ describe('Class Instance Operations - Safety Tests', () => {
 
       const templateChanges = {
         name: "New Yoga Class",
-        description: "Updated description",
+        shortDescription: "Updated short description",
         instructor: "New Instructor",
         imageStorageIds: ["new_img_1", "new_img_2"] as any,
         primaryCategory: 'workshop' as any,
@@ -555,13 +555,13 @@ describe('Class Instance Operations - Safety Tests', () => {
       expect(updates).toHaveLength(1);
       expect(updates[0].instanceId).toBe("instance_1");
       expect(updates[0].changes.name).toBe("New Yoga Class");
-      expect(updates[0].changes.description).toBe("Updated description");
+      expect(updates[0].changes.shortDescription).toBe("Updated short description");
       expect(updates[0].changes.instructor).toBe("New Instructor");
       expect(updates[0].changes.primaryCategory).toBe('workshop');
 
       expect(updates[0].changes.templateSnapshot).toEqual({
         name: "New Yoga Class",
-        description: "Updated description",
+        shortDescription: "Updated short description",
         instructor: "New Instructor",
         imageStorageIds: ["new_img_1", "new_img_2"],
         primaryCategory: 'workshop',
@@ -575,7 +575,7 @@ describe('Class Instance Operations - Safety Tests', () => {
         primaryCategory: 'yoga' as any,
         templateSnapshot: {
           name: "Current Name",
-          description: "Current description",
+          shortDescription: "Current short description",
           instructor: "Current instructor",
           primaryCategory: 'yoga' as any,
         }
@@ -591,7 +591,7 @@ describe('Class Instance Operations - Safety Tests', () => {
       expect(updates[0].changes.name).toBe("Updated Name");
       expect(updates[0].changes.templateSnapshot?.name).toBe("Updated Name");
       // Other fields should be preserved from original template snapshot
-      expect(updates[0].changes.templateSnapshot?.description).toBe("Current description");
+      expect(updates[0].changes.templateSnapshot?.shortDescription).toBe("Current short description");
       expect(updates[0].changes.templateSnapshot?.primaryCategory).toBe('yoga');
     });
   });

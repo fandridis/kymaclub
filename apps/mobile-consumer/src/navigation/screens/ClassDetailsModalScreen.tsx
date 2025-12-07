@@ -569,8 +569,9 @@ export function ClassDetailsModalScreen() {
     }
 
     // Calculate derived values
+    // Note: templateSnapshot only stores shortDescription, not full description
     const className = finalClassInstance.name ?? templateSnapshot?.name ?? t('classes.title');
-    const description = finalClassInstance.description ?? templateSnapshot?.description ?? '';
+    const description = finalClassInstance.description ?? '';
     const shortDescription = finalClassInstance.shortDescription ?? templateSnapshot?.shortDescription ?? '';
     const instructor = finalClassInstance.instructor ?? templateSnapshot?.instructor ?? 'TBD';
     const capacity = finalClassInstance.capacity ?? 0;

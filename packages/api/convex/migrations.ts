@@ -88,3 +88,42 @@ export const migrateClassInstancePrimaryCategory = migrations.define({
     },
 });
 
+/**
+ * Migration: Update templateSnapshot to remove description and add duration/shortDescription
+ * 
+ * This migration updates all class instances to:
+ * - Remove the deprecated `description` field from templateSnapshot
+ * - Add `duration` from the corresponding template
+ * - Add `shortDescription` from the corresponding template
+ * 
+ * Run with:
+ *   npx convex run migrations:run '{"fn": "migrations:migrateTemplateSnapshotFields"}'
+ * 
+ * To run with a batch limit (e.g., first 800 documents):
+ *   npx convex run migrations:run '{"fn": "migrations:migrateTemplateSnapshotFields", "batchSize": 800}'
+ * 
+ * Check status with:
+ *   npx convex run --component migrations lib:getStatus --watch
+ */
+export const migrateTemplateSnapshotFields = migrations.define({
+    table: "classInstances",
+    migrateOne: async (ctx, doc) => {
+        // Fetch the corresponding template to get duration and shortDescription
+        const template = await ctx.db.get(doc.templateId);
+
+        // Build the new templateSnapshot without description, with duration and shortDescription
+        const { description, ...restOfSnapshot } = doc.templateSnapshot as typeof doc.templateSnapshot & { description?: string };
+
+        const updatedTemplateSnapshot = {
+            ...restOfSnapshot,
+            // Add duration and shortDescription from template (if available)
+            duration: template?.duration,
+            shortDescription: template?.shortDescription ?? restOfSnapshot.shortDescription,
+        };
+
+        await ctx.db.patch(doc._id, {
+            templateSnapshot: updatedTemplateSnapshot,
+        });
+    },
+});
+

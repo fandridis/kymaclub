@@ -133,7 +133,7 @@ export const classInstance = {
     templateSnapshot: {
         name: "Yoga Class",
         instructor: "John Doe",
-        description: "A test description",
+        shortDescription: "A test short description",
         duration: 60,
         imageStorageIds: [],
         primaryCategory: 'yoga',

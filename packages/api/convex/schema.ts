@@ -780,10 +780,11 @@ export const classInstancesFields = {
   bookedCount: v.number(),
   waitlistCount: v.optional(v.number()),
 
-  // Template Snapshot
+  // Template Snapshot (only essential fields - use shortDescription instead of full description)
+  // NOTE: `description` is deprecated and will be removed after migration runs
   templateSnapshot: v.object({
     name: v.string(),
-    description: v.optional(v.string()),
+    description: v.optional(v.string()), // DEPRECATED - run migrateTemplateSnapshotFields migration then remove
     shortDescription: v.optional(v.string()),
     instructor: v.string(),
     duration: v.optional(v.number()), // Duration in minutes

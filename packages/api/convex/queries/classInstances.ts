@@ -691,7 +691,6 @@ export const getVenueClassInstancesOptimized = query({
 const groupedClassInstanceValidator = v.object({
     templateId: v.id("classTemplates"),
     name: v.string(),
-    description: v.optional(v.string()),
     shortDescription: v.optional(v.string()),
     price: v.number(),
     duration: v.number(),
@@ -779,7 +778,6 @@ export const getVenueClassInstancesGroupedByTemplate = query({
             return {
                 templateId: templateId as Id<"classTemplates">,
                 name: data.snapshot.name,
-                description: data.snapshot.description,
                 shortDescription: data.snapshot.shortDescription,
                 price: firstInstance?.price ?? 0,
                 duration: data.snapshot.duration ?? 0,
