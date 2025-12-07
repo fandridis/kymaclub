@@ -402,6 +402,7 @@
         "cancelUntil": "Ακύρωση μέχρι: {{time}}",
         "amenities": "Παροχές",
         "bookingHistory": "Ιστορικό Κρατήσεων",
+        "sameClassOtherDates": "Εναλλακτικές ώρες",
         "currentBooking": "✓ Τρέχουσα Κράτηση",
         "completed": "✓ Ολοκληρώθηκε",
         "youCancelled": "✗ Ακυρώσατε",

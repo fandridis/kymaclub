@@ -402,6 +402,7 @@
         "cancelUntil": "Cancel until: {{time}}",
         "amenities": "Amenities",
         "bookingHistory": "Booking History",
+        "sameClassOtherDates": "Alternative Times",
         "currentBooking": "✓ Current Booking",
         "completed": "✓ Completed",
         "youCancelled": "✗ You cancelled",

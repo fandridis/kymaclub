@@ -3,7 +3,7 @@ import { api } from "@repo/api/convex/_generated/api";
 import type { Id } from "@repo/api/convex/_generated/dataModel";
 
 interface UseVenueClassOfferingsProps {
-    venueId: Id<"venues">;
+    venueId: Id<"venues"> | undefined;
     limit?: number;
 }
 
@@ -13,10 +13,7 @@ export function useVenueClassOfferings({
 }: UseVenueClassOfferingsProps) {
     const offerings = useQuery(
         api.queries.classTemplates.getVenueClassOfferings,
-        {
-            venueId,
-            limit,
-        }
+        venueId ? { venueId, limit } : "skip"
     );
 
     return {

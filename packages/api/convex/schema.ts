@@ -1601,6 +1601,7 @@ export default defineSchema({
     .index("by_business_deleted_start_time", ["businessId", "deleted", "startTime"])
     .index("by_business_status_start_time", ["businessId", "status", "startTime"])
     .index("by_template_deleted", ["templateId", "deleted"])
+    .index("by_template_deleted_status_start_time", ["templateId", "deleted", "status", "startTime"])
     .index("by_venue_deleted_start_time", ["venueId", "deleted", "startTime"])
     // 🚀 GLOBAL CONSUMER QUERY OPTIMIZATION - eliminates expensive filters
     .index("by_status_deleted_start_time", ["status", "deleted", "startTime"])

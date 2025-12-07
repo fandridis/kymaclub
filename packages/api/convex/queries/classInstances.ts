@@ -798,3 +798,85 @@ export const getVenueClassInstancesGroupedByTemplate = query({
         return results;
     }
 });
+
+/***************************************************************
+ * Get Upcoming Class Instances By Template
+ * 
+ * Returns upcoming class instances from the same template,
+ * useful for showing "same class" options on class details.
+ * Uses the by_template_deleted_status_start_time compound index
+ * for efficient lookups without expensive filter operations.
+ ***************************************************************/
+
+export const getUpcomingClassInstancesByTemplateArgs = v.object({
+    templateId: v.id("classTemplates"),
+    excludeInstanceId: v.id("classInstances"),
+    startDate: v.number(), // Current time
+    limit: v.optional(v.number()), // Default 10
+});
+
+export const getUpcomingClassInstancesByTemplate = query({
+    args: getUpcomingClassInstancesByTemplateArgs,
+    returns: v.array(v.object({
+        _id: v.id("classInstances"),
+        startTime: v.number(),
+        endTime: v.number(),
+        spotsAvailable: v.number(),
+        isBookedByUser: v.boolean(),
+    })),
+    handler: async (ctx, args) => {
+        const user = await getAuthenticatedUserOrThrow(ctx);
+        const limit = args.limit ?? 10;
+
+        // Use compound index for efficient lookup without filter operations
+        // Index: by_template_deleted_status_start_time [templateId, deleted, status, startTime]
+        const instances = await ctx.db
+            .query("classInstances")
+            .withIndex("by_template_deleted_status_start_time", (q) =>
+                q.eq("templateId", args.templateId)
+                    .eq("deleted", undefined)
+                    .eq("status", "scheduled")
+                    .gte("startTime", args.startDate)
+            )
+            .filter(q => q.neq(q.field("_id"), args.excludeInstanceId))
+            .order("asc")
+            .take(limit + 1); // Take one extra to account for potential exclusion
+
+        // Filter test instances based on user tester status
+        const filteredInstances = filterTestClassInstances(instances, user);
+        const limitedInstances = filteredInstances.slice(0, limit);
+
+        // Get user's active bookings for these instances (efficient batch lookup)
+        const instanceIds = limitedInstances.map(i => i._id);
+        const userBookings = instanceIds.length > 0 ? await ctx.db
+            .query("bookings")
+            .withIndex("by_user", q => q.eq("userId", user._id))
+            .filter(q =>
+                q.and(
+                    q.neq(q.field("deleted"), true),
+                    q.or(
+                        q.eq(q.field("status"), "pending"),
+                        q.eq(q.field("status"), "completed"),
+                        q.eq(q.field("status"), "awaiting_approval")
+                    )
+                )
+            )
+            .collect() : [];
+
+        // Create set of booked instance IDs for efficient lookup
+        const bookedInstanceIds = new Set(
+            userBookings
+                .filter(b => instanceIds.includes(b.classInstanceId))
+                .map(b => b.classInstanceId)
+        );
+
+        // Return minimal data needed for the cards
+        return limitedInstances.map(instance => ({
+            _id: instance._id,
+            startTime: instance.startTime,
+            endTime: instance.endTime,
+            spotsAvailable: Math.max(0, (instance.capacity ?? 0) - (instance.bookedCount ?? 0)),
+            isBookedByUser: bookedInstanceIds.has(instance._id),
+        }));
+    }
+});

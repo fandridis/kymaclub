@@ -17,6 +17,7 @@ import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { centsToCredits } from '@repo/utils/credits';
 import { useVenueClassOfferings } from '../../hooks/use-venue-class-offerings';
 import { Divider } from '../../components/Divider';
+import { SameClassCard } from '../../components/SameClassCard';
 import { theme } from '../../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCancellationInfo, getCancellationMessage, getCancellationTranslations } from '../../utils/cancellationUtils';
@@ -245,6 +246,7 @@ export function ClassDetailsModalScreen() {
     const [isHeaderWhite, setIsHeaderWhite] = useState(false);
     const [headerOpacity, setHeaderOpacity] = useState(0);
     const { bottom: bottomInset } = useSafeAreaInsets();
+    const [now, setNow] = useState(new Date());
 
     // Fetch classInstance if not provided directly
     const fetchedClassInstance = useQuery(
@@ -273,7 +275,7 @@ export function ClassDetailsModalScreen() {
 
     // Fetch class offerings (unique class types) for this venue
     const { offerings: classOfferings, loading: offeringsLoading } = useVenueClassOfferings({
-        venueId: finalClassInstance?.venueId ?? ('' as any),
+        venueId: finalClassInstance?.venueId,
     });
 
     // Fetch template to get questionnaire (use public query for consumer access)
@@ -296,6 +298,17 @@ export function ClassDetailsModalScreen() {
         finalClassInstance ? { classInstanceId: finalClassInstance._id } : "skip"
     );
     const hasTournament = widget && widget.status !== 'cancelled';
+
+    // Fetch upcoming instances of the same class (same template)
+    const sameClassInstances = useQuery(
+        api.queries.classInstances.getUpcomingClassInstancesByTemplate,
+        finalClassInstance?.templateId ? {
+            templateId: finalClassInstance.templateId,
+            excludeInstanceId: finalClassInstance._id,
+            startDate: now.getTime(),
+            limit: 10,
+        } : "skip"
+    );
 
     // Get image IDs with null-safe access
     const templateSnapshot = finalClassInstance?.templateSnapshot;
@@ -951,6 +964,37 @@ export function ClassDetailsModalScreen() {
                                         ))}
                                     </View>
                                 </View>
+                            )}
+
+                            {/* Same Class Section - Other instances from same template */}
+                            {sameClassInstances && sameClassInstances.length > 0 && (
+                                <>
+                                    <Divider />
+                                    <View style={styles.sameClassSection}>
+                                        <Text style={styles.sameClassSectionTitle}>
+                                            {t('classes.sameClassOtherDates')}
+                                        </Text>
+                                        <ScrollView
+                                            horizontal
+                                            showsHorizontalScrollIndicator={false}
+                                            contentContainerStyle={styles.sameClassScrollContent}
+                                        >
+                                            {sameClassInstances.map((instance) => (
+                                                <SameClassCard
+                                                    key={instance._id}
+                                                    startTime={instance.startTime}
+                                                    spotsAvailable={instance.spotsAvailable}
+                                                    isBookedByUser={instance.isBookedByUser}
+                                                    onPress={() => {
+                                                        navigation.navigate('ClassDetailsModal', {
+                                                            classInstanceId: instance._id
+                                                        });
+                                                    }}
+                                                />
+                                            ))}
+                                        </ScrollView>
+                                    </View>
+                                </>
                             )}
 
                             {/* Other Classes from Venue Section */}
@@ -1876,6 +1920,23 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 2,
+    },
+    // Same Class Section styles
+    sameClassSection: {
+        paddingTop: 12,
+        paddingBottom: 0,
+    },
+    sameClassSectionTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#111827',
+        marginBottom: 10,
+        paddingHorizontal: 20,
+    },
+    sameClassScrollContent: {
+        paddingHorizontal: 20,
+        paddingTop: 8,
+        paddingBottom: 20,
     },
     // Other Classes Section styles
     otherClassesSection: {
