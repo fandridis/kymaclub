@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { StyleSheet, View, Text, Dimensions, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, Dimensions, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MapPinIcon, StarIcon, UserIcon, DiamondIcon, ClockIcon } from 'lucide-react-native';
@@ -22,6 +22,9 @@ import { ProfileIconButton } from '../../components/ProfileIconButton';
 import { MessagesIconButton } from '../../components/MessagesIconButton';
 import { FloatingNavButtons } from '../../components/FloatingNavButtons';
 import { StartsInBadge } from '../../components/news/StartsInBadge';
+import { CreditsBadgeSkeleton } from '../../components/skeletons/CreditsBadgeSkeleton';
+import { SectionSkeleton } from '../../components/skeletons/SectionSkeleton';
+import { ScheduleCardSkeleton } from '../../components/skeletons/ScheduleCardSkeleton';
 
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -70,26 +73,6 @@ const WelcomeBanner = ({
             activeOpacity={0.8}
         >
             <Text style={styles.bannerActionText}>{exploreButtonText}</Text>
-        </TouchableOpacity>
-    </View>
-);
-
-const NoUpcomingClassesMessage = ({
-    onExplorePress,
-    titleText,
-    exploreButtonText
-}: {
-    onExplorePress: () => void;
-    titleText: string;
-    exploreButtonText: string;
-}) => (
-    <View style={styles.noClassesContainer}>
-        <View style={styles.noClassesIcon}>
-            <Text style={styles.noClassesIconText}>📅</Text>
-        </View>
-        <Text style={styles.noClassesTitle}>{titleText}</Text>
-        <TouchableOpacity onPress={onExplorePress} style={styles.exploreButton}>
-            <Text style={styles.exploreButtonText}>{exploreButtonText}</Text>
         </TouchableOpacity>
     </View>
 );
@@ -450,43 +433,22 @@ export function NewsScreen() {
         !userSettings?.banners?.welcomeBannerDismissed
     );
 
-    // Loading state
-    const isInitialLoading = user && (
-        userBookings === undefined &&
-        happeningTodayInstances === undefined &&
-        happeningTomorrowInstances === undefined &&
-        (allVenues === undefined || venuesLoading)
-    );
-
-    if (isInitialLoading) {
-        return (
-            <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-                <TabScreenHeader
-                    renderLeftSide={() => <ProfileIconButton />}
-                    renderRightSide={() => (
-                        <>
-                            {creditBalance !== undefined && (
-                                <CreditsBadge creditBalance={creditBalance.balance} />
-                            )}
-                        </>
-                    )}
-                />
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#ff4747" />
-                    <Text style={styles.loadingText}>{t('news.loading')}</Text>
-                </View>
-            </SafeAreaView>
-        );
-    }
+    // Loading states for individual sections
+    const isYourScheduleLoading = userBookings === undefined;
+    const isHappeningTodayLoading = happeningTodayInstances === undefined;
+    const isHappeningTomorrowLoading = happeningTomorrowInstances === undefined;
+    const isNewStudiosLoading = allVenues === undefined || venuesLoading;
 
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'bottom', 'right',]}>
+        <SafeAreaView style={styles.container} edges={['top', 'left', 'bottom', 'right']}>
             <TabScreenHeader
                 renderLeftSide={() => <ProfileIconButton />}
                 renderRightSide={() => (
                     <>
                         <MessagesIconButton />
-                        {creditBalance !== undefined && (
+                        {creditBalance === undefined ? (
+                            <CreditsBadgeSkeleton />
+                        ) : (
                             <CreditsBadge creditBalance={creditBalance.balance} />
                         )}
                     </>
@@ -514,7 +476,12 @@ export function NewsScreen() {
                 )}
 
                 {/* Your Schedule Section */}
-                {upcomingClasses.length > 0 ? (
+                {isYourScheduleLoading ? (
+                    <SectionSkeleton
+                        title={t('news.yourSchedule')}
+                        renderCard={() => <ScheduleCardSkeleton />}
+                    />
+                ) : upcomingClasses.length > 0 ? (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>{t('news.yourSchedule')}</Text>
                         <ScrollView
@@ -565,7 +532,9 @@ export function NewsScreen() {
                 ) : null}
 
                 {/* Happening Today Section */}
-                {happeningTodayClasses.length > 0 && (
+                {isHappeningTodayLoading ? (
+                    <SectionSkeleton title={t('news.happeningToday')} cardHeight={DEFAULT_CAROUSEL_HEIGHT} />
+                ) : happeningTodayClasses.length > 0 ? (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>{t('news.happeningToday')}</Text>
                         <ScrollView
@@ -666,10 +635,12 @@ export function NewsScreen() {
                             })}
                         </ScrollView>
                     </View>
-                )}
+                ) : null}
 
                 {/* Happening Tomorrow Section */}
-                {happeningTomorrowClasses.length > 0 && (
+                {isHappeningTomorrowLoading ? (
+                    <SectionSkeleton title={t('news.happeningTomorrow')} cardHeight={DEFAULT_CAROUSEL_HEIGHT} />
+                ) : happeningTomorrowClasses.length > 0 ? (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>{t('news.happeningTomorrow')}</Text>
                         <ScrollView
@@ -757,10 +728,12 @@ export function NewsScreen() {
                             })}
                         </ScrollView>
                     </View>
-                )}
+                ) : null}
 
                 {/* New Studios Section */}
-                {newVenuesForCards.length > 0 && (
+                {isNewStudiosLoading ? (
+                    <SectionSkeleton title={t('news.newStudios')} cardHeight={NEW_STUDIOS_CAROUSEL_HEIGHT} />
+                ) : newVenuesForCards.length > 0 ? (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>{t('news.newStudios')}</Text>
                         <ScrollView
@@ -798,7 +771,7 @@ export function NewsScreen() {
                             })}
                         </ScrollView>
                     </View>
-                )}
+                ) : null}
             </ScrollView>
             <FloatingNavButtons />
         </SafeAreaView>
@@ -1154,19 +1127,6 @@ const styles = StyleSheet.create({
     exploreButtonText: {
         fontSize: 14,
         color: theme.colors.zinc[50],
-        fontWeight: '500',
-    },
-
-    // Loading styles
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 12,
-    },
-    loadingText: {
-        fontSize: 16,
-        color: '#6b7280',
         fontWeight: '500',
     },
 

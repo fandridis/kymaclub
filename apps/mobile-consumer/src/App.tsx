@@ -314,7 +314,6 @@ export function InnerApp({ theme, onReady }: InnerAppProps) {
       </View>
     );
   }
-
   // Keep splash screen visible while determining auth state
   if (isLoading) {
     return null;
@@ -398,7 +397,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fffffe',
     padding: 24,
   },
   loadingText: {
