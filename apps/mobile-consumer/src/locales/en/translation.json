@@ -657,11 +657,21 @@
     },
     "onboarding": {
         "welcome": "Welcome to KymaClub!",
+        "welcomeTitle": "Welcome to KymaClub! 👋",
+        "welcomeDescription": "You are just a step away from exploring hundreds of different classes.",
         "letsSetup": "Let's set up your profile",
+        "howShouldWeCallYou": "How should we call you?",
         "yourName": "Your Name",
         "namePlaceholder": "Enter your name",
+        "selectCity": "Which city do you want to explore classes in?",
+        "selectCityError": "Please select a city",
+        "completionError": "Failed to complete onboarding. Please try again.",
+        "completing": "Completing...",
         "skip": "Skip",
         "finish": "Finish",
+        "next": "Next",
+        "back": "Back",
+        "backToSignIn": "Back to sign in",
         "getStarted": "Get Started"
     },
     "ticket": {

@@ -1,7 +1,7 @@
 import { Email } from "@convex-dev/auth/providers/Email";
 import { Resend as ResendAPI } from "resend";
 import { generateOTP6 } from "@repo/utils/crypto-utils";
-import { createOTPEmail } from "../emails/templates";
+import { createOTPEmail } from "../emails/consumer";
 import { getOTPEmailTranslations, interpolateText, DEFAULT_LANGUAGE } from "../utils/translations";
 import { internal } from "./_generated/api";
 import type { GenericActionCtx } from "convex/server";
@@ -60,13 +60,7 @@ export const ResendOTP = Email({
 
         const htmlContent = createOTPEmail({
             token,
-            translations: {
-                title: t.title,
-                body: t.body,
-                code_label: t.code_label,
-                warning: t.warning,
-                ignore_notice: t.ignore_notice,
-            }
+            translations: t,
         });
 
         const { error } = await resend.emails.send({

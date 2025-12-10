@@ -6,6 +6,7 @@ import { emailService } from "../../services/emailService";
 
 /***************************************************************
  * Email Notification Actions - Production-ready with Resend
+ * All actions support i18n through the language parameter
  ***************************************************************/
 
 /**
@@ -21,7 +22,15 @@ export const sendBookingNotificationEmail = internalAction({
         venueName: v.string(),
         classTime: v.string(),
         bookingAmount: v.number(),
-        notificationType: v.union(v.literal("booking_created"), v.literal("booking_cancelled_by_consumer"), v.literal("booking_cancelled_by_business"), v.literal("booking_awaiting_approval"), v.literal("booking_approved"), v.literal("booking_rejected")),
+        notificationType: v.union(
+            v.literal("booking_created"),
+            v.literal("booking_cancelled_by_consumer"),
+            v.literal("booking_cancelled_by_business"),
+            v.literal("booking_awaiting_approval"),
+            v.literal("booking_approved"),
+            v.literal("booking_rejected")
+        ),
+        language: v.optional(v.string()),
     }),
     handler: async (ctx, args) => {
         try {
@@ -37,6 +46,7 @@ export const sendBookingNotificationEmail = internalAction({
                     classTime: args.classTime,
                     bookingAmount: args.bookingAmount,
                     notificationType: args.notificationType,
+                    language: args.language,
                 }
             });
 
@@ -70,6 +80,7 @@ export const sendBookingConfirmationEmail = internalAction({
         instructorName: v.string(),
         startTime: v.number(),
         bookingAmount: v.number(),
+        language: v.optional(v.string()),
     }),
     handler: async (ctx, args) => {
         try {
@@ -84,6 +95,7 @@ export const sendBookingConfirmationEmail = internalAction({
                     instructorName: args.instructorName,
                     startTime: args.startTime,
                     bookingAmount: args.bookingAmount,
+                    language: args.language,
                 }
             });
 
@@ -153,7 +165,7 @@ export const sendCreditsGiftEmail = internalAction({
         creditsGifted: v.number(),
         totalCredits: v.number(),
         giftMessage: v.optional(v.string()),
-        language: v.optional(v.string()), // User's language preference for localized email
+        language: v.optional(v.string()),
     }),
     handler: async (ctx, args) => {
         try {
@@ -195,6 +207,7 @@ export const sendWelcomeEmail = internalAction({
         customerEmail: v.string(),
         customerName: v.string(),
         welcomeCredits: v.number(),
+        language: v.optional(v.string()),
     }),
     handler: async (ctx, args) => {
         try {
@@ -204,6 +217,7 @@ export const sendWelcomeEmail = internalAction({
                     customerEmail: args.customerEmail,
                     customerName: args.customerName,
                     welcomeCredits: args.welcomeCredits,
+                    language: args.language,
                 }
             });
 
@@ -226,7 +240,7 @@ export const sendWelcomeEmail = internalAction({
 });
 
 /**
- * Send credits received email to customer
+ * Send credits received email to customer (subscription)
  */
 export const sendCreditsReceivedEmail = internalAction({
     args: v.object({
@@ -236,6 +250,7 @@ export const sendCreditsReceivedEmail = internalAction({
         planName: v.string(),
         isRenewal: v.boolean(),
         totalCredits: v.number(),
+        language: v.optional(v.string()),
     }),
     handler: async (ctx, args) => {
         try {
@@ -248,6 +263,7 @@ export const sendCreditsReceivedEmail = internalAction({
                     planName: args.planName,
                     isRenewal: args.isRenewal,
                     totalCredits: args.totalCredits,
+                    language: args.language,
                 }
             });
 
@@ -280,6 +296,7 @@ export const sendReviewNotificationEmail = internalAction({
         reviewerName: v.optional(v.string()),
         rating: v.number(),
         comment: v.optional(v.string()),
+        language: v.optional(v.string()),
     }),
     handler: async (ctx, args) => {
         try {
@@ -292,6 +309,7 @@ export const sendReviewNotificationEmail = internalAction({
                     reviewerName: args.reviewerName,
                     rating: args.rating,
                     comment: args.comment,
+                    language: args.language,
                 }
             });
 
@@ -322,6 +340,7 @@ export const sendClassCancellationEmail = internalAction({
         venueName: v.string(),
         startTime: v.number(),
         refundAmount: v.number(),
+        language: v.optional(v.string()),
     }),
     handler: async (ctx, args) => {
         try {
@@ -334,6 +353,7 @@ export const sendClassCancellationEmail = internalAction({
                     venueName: args.venueName,
                     startTime: args.startTime,
                     refundAmount: args.refundAmount,
+                    language: args.language,
                 }
             });
 

@@ -3,13 +3,35 @@ import { ConvexError } from "convex/values";
 import { ERROR_CODES } from "../utils/errorCodes";
 import { components } from "../convex/_generated/api";
 import { Resend } from "@convex-dev/resend";
-import { createBusinessNotificationEmail } from "../emails/templates";
-import { createBookingConfirmationEmail } from "../emails/templates";
 import { formatCentsAsEuros } from "@repo/utils/credits";
-import { createClassCancellationEmail } from "../emails/templates";
-import { createEmailTemplate } from "../emails/templates";
-import { createReviewNotificationEmail } from "../emails/templates";
-import { getEmailTranslations, interpolateText } from "../utils/translations";
+import {
+    getConsumerEmailTranslations,
+    getBusinessEmailTranslations,
+    interpolateText,
+} from "../utils/translations";
+
+// Consumer email templates
+import {
+    createBookingConfirmationEmail,
+    createClassCancellationEmail,
+    createCreditsGiftEmail,
+    createWelcomeEmail,
+    createCreditsReceivedEmail,
+} from "../emails/consumer";
+
+// Business email templates
+import {
+    createBusinessNewBookingEmail,
+    createBusinessBookingCancelledByConsumerEmail,
+    createBusinessBookingCancelledByBusinessEmail,
+    createBusinessBookingAwaitingApprovalEmail,
+    createBusinessBookingApprovedEmail,
+    createBusinessBookingRejectedEmail,
+    createReviewNotificationEmail,
+} from "../emails/business";
+
+// Base template for test emails
+import { createEmailTemplate } from "../emails/base-template";
 
 /***************************************************************
  * Email Service - Production-ready email operations with Resend
@@ -24,6 +46,7 @@ export const resend = new Resend(components.resend, {
 export const emailService = {
     /**
      * Send booking notification email to business
+     * Uses specific templates based on notification type
      */
     sendBookingNotificationEmail: async ({
         ctx,
@@ -40,19 +63,14 @@ export const emailService = {
             classTime: string;
             bookingAmount: number;
             notificationType: "booking_created" | "booking_cancelled_by_consumer" | "booking_cancelled_by_business" | "booking_awaiting_approval" | "booking_approved" | "booking_rejected";
+            language?: string;
         };
     }): Promise<{ emailId: string; success: boolean }> => {
         try {
-            const subject = args.notificationType === "booking_created"
-                ? `New Booking: ${args.className}`
-                : args.notificationType === "booking_cancelled_by_consumer"
-                    ? `Booking Cancelled: ${args.className}`
-                    : `Your Booking Cancelled: ${args.className}`;
-
             // Format booking amount in cents to euros for business display
             const formattedAmount = formatCentsAsEuros(args.bookingAmount);
 
-            const htmlContent = createBusinessNotificationEmail({
+            const data = {
                 businessName: args.businessName,
                 customerName: args.customerName,
                 customerEmail: args.customerEmail,
@@ -60,13 +78,55 @@ export const emailService = {
                 venueName: args.venueName,
                 classTime: args.classTime,
                 bookingAmount: formattedAmount,
-                notificationType: args.notificationType,
-            });
+            };
+
+            let htmlContent: string;
+            let subject: string;
+
+            // Use specific template based on notification type
+            switch (args.notificationType) {
+                case "booking_created": {
+                    const t = getBusinessEmailTranslations(args.language, 'new_booking');
+                    htmlContent = createBusinessNewBookingEmail({ data, translations: t });
+                    subject = interpolateText(t.subject, { className: args.className });
+                    break;
+                }
+                case "booking_cancelled_by_consumer": {
+                    const t = getBusinessEmailTranslations(args.language, 'booking_cancelled_by_consumer');
+                    htmlContent = createBusinessBookingCancelledByConsumerEmail({ data, translations: t });
+                    subject = interpolateText(t.subject, { className: args.className });
+                    break;
+                }
+                case "booking_cancelled_by_business": {
+                    const t = getBusinessEmailTranslations(args.language, 'booking_cancelled_by_business');
+                    htmlContent = createBusinessBookingCancelledByBusinessEmail({ data, translations: t });
+                    subject = interpolateText(t.subject, { className: args.className });
+                    break;
+                }
+                case "booking_awaiting_approval": {
+                    const t = getBusinessEmailTranslations(args.language, 'booking_awaiting_approval');
+                    htmlContent = createBusinessBookingAwaitingApprovalEmail({ data, translations: t });
+                    subject = interpolateText(t.subject, { className: args.className });
+                    break;
+                }
+                case "booking_approved": {
+                    const t = getBusinessEmailTranslations(args.language, 'booking_approved');
+                    htmlContent = createBusinessBookingApprovedEmail({ data, translations: t });
+                    subject = interpolateText(t.subject, { className: args.className });
+                    break;
+                }
+                case "booking_rejected": {
+                    const t = getBusinessEmailTranslations(args.language, 'booking_rejected');
+                    htmlContent = createBusinessBookingRejectedEmail({ data, translations: t });
+                    subject = interpolateText(t.subject, { className: args.className });
+                    break;
+                }
+            }
 
             const emailId = await resend.sendEmail(ctx, {
                 from: "KymaClub <notifications@app.orcavo.com>",
                 to: args.businessEmail,
-                subject: subject,
+                subject,
                 html: htmlContent,
                 replyTo: ["support@orcavo.com"],
             });
@@ -95,10 +155,11 @@ export const emailService = {
             reviewerName?: string;
             rating: number;
             comment?: string;
+            language?: string;
         };
     }): Promise<{ emailId: string; success: boolean }> => {
         try {
-            const subject = "New user review!";
+            const t = getBusinessEmailTranslations(args.language, 'review');
 
             const htmlContent = createReviewNotificationEmail({
                 businessName: args.businessName,
@@ -106,7 +167,10 @@ export const emailService = {
                 reviewerName: args.reviewerName,
                 rating: args.rating,
                 comment: args.comment,
+                translations: t,
             });
+
+            const subject = interpolateText(t.subject, { venueName: args.venueName });
 
             const emailId = await resend.sendEmail(ctx, {
                 from: "KymaClub <notifications@app.orcavo.com>",
@@ -142,21 +206,27 @@ export const emailService = {
             instructorName: string;
             startTime: number;
             bookingAmount: number;
+            language?: string;
         };
     }): Promise<{ emailId: string; success: boolean }> => {
         try {
+            const t = getConsumerEmailTranslations(args.language, 'booking_confirmation');
+
             const htmlContent = createBookingConfirmationEmail({
                 className: args.className,
                 venueName: args.venueName,
                 venueLocation: args.venueAddress,
                 startTime: new Date(args.startTime).toISOString(),
                 instructorName: args.instructorName,
+                translations: t,
             });
+
+            const subject = interpolateText(t.subject, { className: args.className });
 
             const emailId = await resend.sendEmail(ctx, {
                 from: "KymaClub <bookings@app.orcavo.com>",
                 to: args.customerEmail,
-                subject: `Booking Confirmed: ${args.className}`,
+                subject,
                 html: htmlContent,
                 replyTo: ["support@orcavo.com"],
             });
@@ -186,20 +256,26 @@ export const emailService = {
             venueName: string;
             startTime: number;
             refundAmount: number;
+            language?: string;
         };
     }): Promise<{ emailId: string; success: boolean }> => {
         try {
+            const t = getConsumerEmailTranslations(args.language, 'class_cancellation');
+
             const htmlContent = createClassCancellationEmail({
                 className: args.className,
                 venueName: args.venueName,
                 startTime: new Date(args.startTime).toISOString(),
                 refundAmount: args.refundAmount,
+                translations: t,
             });
+
+            const subject = interpolateText(t.subject, { className: args.className });
 
             const emailId = await resend.sendEmail(ctx, {
                 from: "KymaClub <notifications@app.orcavo.com>",
                 to: args.customerEmail,
-                subject: `Class Cancelled: ${args.className}`,
+                subject,
                 html: htmlContent,
                 replyTo: ["support@orcavo.com"],
             });
@@ -311,60 +387,26 @@ export const emailService = {
             creditsGifted: number;
             totalCredits: number;
             giftMessage?: string;
-            language?: string; // User's language preference for localized email
+            language?: string;
         };
     }): Promise<{ emailId: string; success: boolean }> => {
         try {
-            // Get translations for user's language
-            const t = getEmailTranslations(args.language, 'credits_gift');
+            const t = getConsumerEmailTranslations(args.language, 'credits_gift');
+
+            const htmlContent = createCreditsGiftEmail({
+                customerName: args.customerName,
+                creditsGifted: args.creditsGifted,
+                totalCredits: args.totalCredits,
+                giftMessage: args.giftMessage,
+                translations: t,
+            });
 
             const subject = interpolateText(t.subject, { credits: args.creditsGifted });
-            const greeting = interpolateText(t.greeting, { name: args.customerName });
-            const creditsText = interpolateText(t.credits_text, { credits: args.creditsGifted });
-
-            const htmlContent = createEmailTemplate({
-                title: subject,
-                content: `
-                    <div style="text-align: center; margin-bottom: 32px;">
-                        <p style="font-size: 18px; color: #1e293b; margin: 0;">
-                            ${greeting} <strong style="color: #059669;">${creditsText}</strong>!
-                        </p>
-                    </div>
-
-                    ${args.giftMessage ? `
-                    <div style="margin: 0 0 24px 0;">
-                        <p style="color: #6B7280; font-size: 14px; margin: 0 0 4px 0; font-weight: 500;">${t.note_label}</p>
-                        <p style="color: #374151; margin: 0; font-size: 14px;">${args.giftMessage}</p>
-                    </div>
-                    ` : ''}
-
-                    <div style="background: #F9FAFB; border-radius: 12px; padding: 24px; margin-bottom: 32px;">
-                        <h3 style="color: #059669; font-size: 18px; margin: 0 0 16px 0;">${t.balance_title}</h3>
-                        <table width="100%" cellpadding="0" cellspacing="0" style="background: white; border-radius: 8px;">
-                            <tr>
-                                <td style="padding: 16px; color: #4B5563; font-size: 16px;">${t.balance_label}</td>
-                                <td style="padding: 16px; color: #059669; font-size: 20px; font-weight: bold; text-align: right;">${args.totalCredits}</td>
-                            </tr>
-                        </table>
-                    </div>
-
-                    <div style="text-align: center; margin: 32px 0;">
-                        <a href="https://app.orcavo.com" style="background: #059669; color: white; padding: 16px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; display: inline-block;">${t.cta_button}</a>
-                    </div>
-
-                    <div style="text-align: center; margin-top: 40px; padding-top: 24px; border-top: 1px solid #E5E7EB;">
-                        <p style="color: #6B7280; font-size: 14px; margin: 0;">
-                            ${t.footer} 
-                            <a href="mailto:support@orcavo.com" style="color: #059669; text-decoration: none;">support@orcavo.com</a>
-                        </p>
-                    </div>
-                `
-            });
 
             const emailId = await resend.sendEmail(ctx, {
                 from: "KymaClub <credits@app.orcavo.com>",
                 to: args.customerEmail,
-                subject: subject,
+                subject,
                 html: htmlContent,
                 replyTo: ["support@orcavo.com"],
             });
@@ -392,61 +434,24 @@ export const emailService = {
             customerEmail: string;
             customerName: string;
             welcomeCredits: number;
+            language?: string;
         };
     }): Promise<{ emailId: string; success: boolean }> => {
         try {
-            const subject = `🚀 Welcome to KymaClub! Your ${args.welcomeCredits} bonus credits are ready`;
+            const t = getConsumerEmailTranslations(args.language, 'welcome');
 
-            const htmlContent = createEmailTemplate({
-                title: subject,
-                content: `
-                    <div style="text-align: center; margin-bottom: 32px;">
-                        <h1 style="color: #059669; font-size: 28px; margin-bottom: 16px;">🚀 Welcome to KymaClub!</h1>
-                        <p style="font-size: 18px; color: #4B5563; margin: 0;">Hi ${args.customerName}!</p>
-                    </div>
-
-                    <div style="background: linear-gradient(135deg, #059669, #10B981); border-radius: 16px; padding: 32px; text-align: center; margin-bottom: 32px;">
-                        <div style="background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-                            <h2 style="color: #059669; font-size: 48px; font-weight: bold; margin: 0 0 8px 0;">${args.welcomeCredits}</h2>
-                            <p style="color: #4B5563; font-size: 18px; margin: 0; font-weight: 500;">Welcome Bonus Credits</p>
-                        </div>
-                        <p style="color: white; font-size: 16px; margin: 0; opacity: 0.95;">Ready to use right now!</p>
-                    </div>
-
-                    <div style="background: #EFF6FF; border-left: 4px solid #3B82F6; padding: 20px; margin: 24px 0; border-radius: 4px;">
-                        <h4 style="color: #1E40AF; margin: 0 0 8px 0; font-size: 16px;">🎯 What can you do with credits?</h4>
-                        <p style="color: #1E40AF; margin: 0; font-size: 14px;">
-                            Use your credits to book amazing fitness classes across the city - from yoga and pilates to HIIT and dance classes!
-                        </p>
-                    </div>
-
-                    <div style="text-align: center; margin: 32px 0;">
-                        <a href="https://app.orcavo.com" style="background: #059669; color: white; padding: 16px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; display: inline-block;">Explore Classes</a>
-                    </div>
-
-                    <div style="background: #F9FAFB; border-radius: 12px; padding: 24px; margin-bottom: 32px;">
-                        <h3 style="color: #059669; font-size: 18px; margin: 0 0 16px 0;">Here's how to get started:</h3>
-                        <ol style="color: #4B5563; font-size: 14px; margin: 0; padding-left: 20px; line-height: 1.8;">
-                            <li>Browse classes by location, type, or time</li>
-                            <li>Find a class that fits your schedule</li>
-                            <li>Book instantly with your credits</li>
-                            <li>Show up and enjoy your workout!</li>
-                        </ol>
-                    </div>
-
-                    <div style="text-align: center; margin-top: 40px; padding-top: 24px; border-top: 1px solid #E5E7EB;">
-                        <p style="color: #6B7280; font-size: 14px; margin: 0;">
-                            Need help? We're here for you! Contact us at 
-                            <a href="mailto:support@orcavo.com" style="color: #059669; text-decoration: none;">support@orcavo.com</a>
-                        </p>
-                    </div>
-                `
+            const htmlContent = createWelcomeEmail({
+                customerName: args.customerName,
+                welcomeCredits: args.welcomeCredits,
+                translations: t,
             });
+
+            const subject = interpolateText(t.subject, { credits: args.welcomeCredits });
 
             const emailId = await resend.sendEmail(ctx, {
                 from: "KymaClub <welcome@app.orcavo.com>",
                 to: args.customerEmail,
-                subject: subject,
+                subject,
                 html: htmlContent,
                 replyTo: ["support@orcavo.com"],
             });
@@ -463,7 +468,7 @@ export const emailService = {
     },
 
     /**
-     * Send credits received email to customer
+     * Send credits received email to customer (subscription)
      */
     sendCreditsReceivedEmail: async ({
         ctx,
@@ -477,64 +482,27 @@ export const emailService = {
             planName: string;
             isRenewal: boolean;
             totalCredits: number;
+            language?: string;
         };
     }): Promise<{ emailId: string; success: boolean }> => {
         try {
-            const subject = args.isRenewal
-                ? `Your monthly credits have arrived! 🎉`
-                : `Welcome! Your subscription credits are ready 🚀`;
+            const t = getConsumerEmailTranslations(args.language, 'credits_received');
 
-            const htmlContent = createEmailTemplate({
-                title: subject,
-                content: `
-                    <div style="text-align: center; margin-bottom: 32px;">
-                        <h1 style="color: #059669; font-size: 28px; margin-bottom: 16px;">${args.isRenewal ? '🎉 Monthly Credits Renewed!' : '🚀 Welcome Credits!'}</h1>
-                        <p style="font-size: 18px; color: #4B5563; margin: 0;">Hi ${args.customerName}!</p>
-                    </div>
-
-                    <div style="background: linear-gradient(135deg, #059669, #10B981); border-radius: 16px; padding: 32px; text-align: center; margin-bottom: 32px;">
-                        <div style="background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-                            <h2 style="color: #059669; font-size: 48px; font-weight: bold; margin: 0 0 8px 0;">${args.creditsReceived}</h2>
-                            <p style="color: #4B5563; font-size: 18px; margin: 0; font-weight: 500;">Credits Added</p>
-                        </div>
-                        <p style="color: white; font-size: 16px; margin: 0; opacity: 0.95;">From your ${args.planName}</p>
-                    </div>
-
-                    <div style="background: #F9FAFB; border-radius: 12px; padding: 24px; margin-bottom: 32px;">
-                        <h3 style="color: #059669; font-size: 20px; margin: 0 0 16px 0;">📊 Your Credit Balance</h3>
-                        <div style="display: flex; justify-content: space-between; align-items: center; background: white; border-radius: 8px; padding: 16px;">
-                            <span style="color: #4B5563; font-size: 16px;">Total Credits Available</span>
-                            <span style="color: #059669; font-size: 20px; font-weight: bold;">${args.totalCredits}</span>
-                        </div>
-                    </div>
-
-                    <div style="text-align: center; margin: 32px 0;">
-                        <a href="https://app.orcavo.com" style="background: #059669; color: white; padding: 16px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; display: inline-block;">Book Your Next Class</a>
-                    </div>
-
-                    <div style="background: #EFF6FF; border-left: 4px solid #3B82F6; padding: 20px; margin: 24px 0; border-radius: 4px;">
-                        <h4 style="color: #1E40AF; margin: 0 0 8px 0; font-size: 16px;">💡 Pro Tip</h4>
-                        <p style="color: #1E40AF; margin: 0; font-size: 14px;">
-                            ${args.isRenewal
-                        ? 'Your credits renew monthly, so make sure to use them before your next billing cycle!'
-                        : 'Welcome to KymaClub! Use your credits to book amazing fitness classes across the city.'
-                    }
-                        </p>
-                    </div>
-
-                    <div style="text-align: center; margin-top: 40px; padding-top: 24px; border-top: 1px solid #E5E7EB;">
-                        <p style="color: #6B7280; font-size: 14px; margin: 0;">
-                            Questions? We're here to help! Contact us at 
-                            <a href="mailto:support@orcavo.com" style="color: #059669; text-decoration: none;">support@orcavo.com</a>
-                        </p>
-                    </div>
-                `
+            const htmlContent = createCreditsReceivedEmail({
+                customerName: args.customerName,
+                creditsReceived: args.creditsReceived,
+                planName: args.planName,
+                isRenewal: args.isRenewal,
+                totalCredits: args.totalCredits,
+                translations: t,
             });
+
+            const subject = args.isRenewal ? t.subject_renewal : t.subject_initial;
 
             const emailId = await resend.sendEmail(ctx, {
                 from: "KymaClub <credits@app.orcavo.com>",
                 to: args.customerEmail,
-                subject: subject,
+                subject,
                 html: htmlContent,
                 replyTo: ["support@orcavo.com"],
             });

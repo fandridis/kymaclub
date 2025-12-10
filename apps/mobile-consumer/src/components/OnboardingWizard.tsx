@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StatusBar, TextInput, Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMutation } from 'convex/react';
+import { useTranslation } from 'react-i18next';
 import { api } from '@repo/api/convex/_generated/api';
 import { useLogout } from '../hooks/useLogout';
 import { getCityOptions } from '@repo/utils/constants';
@@ -13,14 +14,6 @@ interface OnboardingData {
 }
 
 const CITY_OPTIONS = getCityOptions();
-
-
-const stepConfig = [
-  {
-    title: "Welcome to KymaClub! 👋",
-    description: "You are just a step away from exploring hundreds of different classes."
-  }
-];
 
 const THEME = {
   background: '#f8fafc',
@@ -37,6 +30,7 @@ const THEME = {
 };
 
 export default function OnboardingWizard() {
+  const { t } = useTranslation();
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     city: CITY_OPTIONS[0]?.value
   });
@@ -57,7 +51,7 @@ export default function OnboardingWizard() {
 
     // Validate city is selected
     if (!onboardingData.city) {
-      Alert.alert('Error', 'Please select a city');
+      Alert.alert(t('common.error'), t('onboarding.selectCityError'));
       return;
     }
 
@@ -75,9 +69,9 @@ export default function OnboardingWizard() {
     } catch (error) {
       console.error('Failed to complete onboarding:', error);
       Alert.alert(
-        'Error',
-        'Failed to complete onboarding. Please try again.',
-        [{ text: 'OK' }]
+        t('common.error'),
+        t('onboarding.completionError'),
+        [{ text: t('common.ok') }]
       );
     } finally {
       setIsSubmitting(false);
@@ -94,7 +88,7 @@ export default function OnboardingWizard() {
         textAlign: 'center',
         lineHeight: 24
       }}>
-        How should we call you?
+        {t('onboarding.howShouldWeCallYou')}
       </Text>
       <TextInput
         style={{
@@ -114,7 +108,7 @@ export default function OnboardingWizard() {
           shadowRadius: 8,
           elevation: 3
         }}
-        placeholder="Enter your name"
+        placeholder={t('onboarding.namePlaceholder')}
         placeholderTextColor={THEME.textLight}
         value={onboardingData.userName || ''}
         onChangeText={(text) => setOnboardingData(prev => ({ ...prev, userName: text }))}
@@ -131,7 +125,7 @@ export default function OnboardingWizard() {
         textAlign: 'center',
         lineHeight: 24
       }}>
-        Which city do you want to explore classes in?
+        {t('onboarding.selectCity')}
       </Text>
       <View style={{ width: '100%', maxWidth: 320, gap: 12 }}>
         {CITY_OPTIONS.map((city) => (
@@ -184,7 +178,7 @@ export default function OnboardingWizard() {
               marginBottom: 12,
               lineHeight: 34
             }}>
-              {stepConfig[0].title}
+              {t('onboarding.welcomeTitle')}
             </Text>
             <Text style={{
               fontSize: 16,
@@ -192,7 +186,7 @@ export default function OnboardingWizard() {
               textAlign: 'center',
               lineHeight: 24
             }}>
-              {stepConfig[0].description}
+              {t('onboarding.welcomeDescription')}
             </Text>
           </View>
 
@@ -239,7 +233,7 @@ export default function OnboardingWizard() {
               fontWeight: '700',
               textAlign: 'center'
             }}>
-              {isSubmitting ? 'Completing...' : currentStep === 'name' ? 'Next' : 'Get Started'}
+              {isSubmitting ? t('onboarding.completing') : currentStep === 'name' ? t('onboarding.next') : t('onboarding.getStarted')}
             </Text>
           </TouchableOpacity>
 
@@ -257,7 +251,7 @@ export default function OnboardingWizard() {
                 fontSize: 16,
                 fontWeight: '500',
               }}>
-                Back
+                {t('onboarding.back')}
               </Text>
             </TouchableOpacity>
           )}
@@ -281,7 +275,7 @@ export default function OnboardingWizard() {
               fontWeight: '500',
               textDecorationLine: 'underline'
             }}>
-              Back to sign in
+              {t('onboarding.backToSignIn')}
             </Text>
           </TouchableOpacity>
         </View>
