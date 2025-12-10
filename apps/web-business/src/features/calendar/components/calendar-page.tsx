@@ -233,7 +233,7 @@ export function CalendarPage({ startDate, classInstances, user, loading }: Calen
             {viewBookingsDialog && (
                 <ClassBookingsDialog
                     open={viewBookingsDialog.open}
-                    onOpenChange={(open) => setViewBookingsDialog(open ? viewBookingsDialog : null)}
+                    onOpenChange={(open) => setViewBookingsDialog(prev => prev ? { ...prev, open } : null)}
                     classInstance={viewBookingsDialog.classInstance!}
                 >
                     <div />

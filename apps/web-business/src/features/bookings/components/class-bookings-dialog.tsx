@@ -9,7 +9,7 @@ import {
     DialogOrDrawerTrigger,
 } from "@/components/ui/dialog-or-drawer"
 import { Button } from "@/components/ui/button"
-import { CalendarDays, Clock, Users, Trophy } from "lucide-react"
+import { CalendarDays, Clock, Users, Trophy, X } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -94,13 +94,22 @@ export function ClassBookingsDialog({
     return (
         <DialogOrDrawer open={open} onOpenChange={onOpenChange}>
             <DialogOrDrawerTrigger asChild>{children}</DialogOrDrawerTrigger>
-            <DialogOrDrawerContent className="px-2 md:px-6 w-full sm:max-w-2xl">
+            <DialogOrDrawerContent className="px-2 md:px-6 w-full sm:max-w-2xl" showCloseButton={false}>
                 <div className="flex flex-col max-h-[75vh]">
                     <DialogOrDrawerHeader>
-                        <DialogOrDrawerTitle className="flex items-center gap-2">
-                            <Users className="h-5 w-5" />
-                            {t('routes.bookings.viewDialog.title', { className })}
-                        </DialogOrDrawerTitle>
+                        <div className="flex items-center justify-between">
+                            <DialogOrDrawerTitle className="flex items-center gap-2">
+                                <Users className="h-5 w-5" />
+                                {t('routes.bookings.viewDialog.title', { className })}
+                            </DialogOrDrawerTitle>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => onOpenChange(false)}
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </DialogOrDrawerHeader>
                     <div className="h-full grid gap-4 py-4 overflow-y-auto">
                         {/* Class Information */}

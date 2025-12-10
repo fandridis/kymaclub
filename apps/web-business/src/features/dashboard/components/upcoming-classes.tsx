@@ -146,7 +146,7 @@ export function UpcomingClasses({ className }: UpcomingClassesProps) {
             {bookingsDialog && (
                 <ClassBookingsDialog
                     open={bookingsDialog.open}
-                    onOpenChange={(open: boolean) => setBookingsDialog(open ? bookingsDialog : null)}
+                    onOpenChange={(open: boolean) => setBookingsDialog(prev => prev ? { ...prev, open } : null)}
                     classInstance={bookingsDialog.classInstance!}
                 >
                     <div />

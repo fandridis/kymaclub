@@ -69,6 +69,15 @@ export function TournamentScreen() {
         });
     };
 
+    // Switch away from players tab when tournament starts
+    // Moved before early returns to comply with Rules of Hooks
+    const isSetupMode = widget?.status === 'setup';
+    useEffect(() => {
+        if (widget && !isSetupMode && activeTab === 'players') {
+            setActiveTab('schedule');
+        }
+    }, [isSetupMode, activeTab, widget]);
+
     if (!tournamentState || !widget) {
         return (
             <View style={[styles.container, { paddingTop: topInset }]}>
@@ -102,12 +111,6 @@ export function TournamentScreen() {
     const isSetupOrReady = status === 'setup' || status === 'ready';
     const showPlayersTab = isSetup; // Only show players tab during setup
 
-    // Switch away from players tab when tournament starts
-    useEffect(() => {
-        if (!showPlayersTab && activeTab === 'players') {
-            setActiveTab('schedule');
-        }
-    }, [showPlayersTab, activeTab]);
     const config = tournamentState.config;
     const state = tournamentState.state;
     const classInfo = tournamentState.classInstanceInfo;

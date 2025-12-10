@@ -206,7 +206,7 @@ export default function DashboardPage() {
             {bookingsDialog && fullClassInstance && (
                 <ClassBookingsDialog
                     open={bookingsDialog.open}
-                    onOpenChange={(open: boolean) => setBookingsDialog(open ? bookingsDialog : null)}
+                    onOpenChange={(open: boolean) => setBookingsDialog(prev => prev ? { ...prev, open } : null)}
                     classInstance={fullClassInstance}
                 >
                     <div />
