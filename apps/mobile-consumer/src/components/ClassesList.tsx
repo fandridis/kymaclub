@@ -10,7 +10,7 @@ import type { RootStackParamList } from '../navigation';
 import { theme } from '../theme';
 import { ExploreCategoryId } from '@repo/utils/exploreFilters';
 import * as Location from 'expo-location';
-import { calculateDistance, sortByDistance } from '../utils/location';
+import { calculateDistance } from '../utils/location';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 
 interface ClassesListProps {
@@ -88,8 +88,8 @@ export function ClassesList({ selectedDate, searchFilters, userLocation }: Class
     });
 
     // Calculate distances if user location is available
-    if (userLocation) {
-      const withDistances: ClassWithDistance[] = filtered.map((instance) => {
+    const withDistances: ClassWithDistance[] = filtered.map((instance) => {
+      if (userLocation) {
         const venueAddress = instance.venueSnapshot?.address;
         const lat = typeof venueAddress?.latitude === 'number' ? venueAddress.latitude : null;
         const lng = typeof venueAddress?.longitude === 'number' ? venueAddress.longitude : null;
@@ -103,19 +103,12 @@ export function ClassesList({ selectedDate, searchFilters, userLocation }: Class
           );
           return { ...instance, distance };
         }
-        return { ...instance, distance: Infinity };
-      });
+      }
+      return { ...instance, distance: Infinity };
+    });
 
-      // Sort by distance (closest first)
-      return sortByDistance(withDistances);
-    }
-
-    return sortByDistance(
-      filtered.map((instance) => ({
-        ...instance,
-        distance: Infinity,
-      })),
-    );
+    // Sort by start time (earliest first)
+    return withDistances.sort((a, b) => a.startTime - b.startTime);
   }, [classInstances, searchFilters, userLocation]);
 
   if (classInstancesLoading) {

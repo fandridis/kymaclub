@@ -1,4 +1,5 @@
 import type { Route } from "./+types/createNotionPageToPartnerDB";
+import { Resend } from "resend";
 
 interface FormData {
   email: string;
@@ -6,53 +7,6 @@ interface FormData {
   phone: string;
   area: string;
   website: string;
-}
-
-interface NotionPageProperties {
-  Name: {
-    title: Array<{
-      text: {
-        content: string;
-      };
-    }>;
-  };
-  Email: {
-    email: string;
-  };
-  Phone: {
-    number: number;
-  };
-  Location: {
-    rich_text: Array<{
-      text: {
-        content: string;
-      };
-    }>;
-  };
-  Website: {
-    rich_text: Array<{
-      text: {
-        content: string;
-      };
-    }>;
-  };
-  "Signup Date": {
-    date: {
-      start: Date;
-    };
-  };
-}
-
-interface NotionPageRequest {
-  parent: {
-    database_id: string;
-  };
-  properties: NotionPageProperties;
-}
-
-interface NotionPageResponse {
-  id: string;
-  [key: string]: any;
 }
 
 // Security constants
@@ -63,7 +17,7 @@ const MAX_PHONE_LENGTH = 15;
 const MAX_AREA_LENGTH = 100;
 const MAX_WEBSITE_LENGTH = 200;
 
-// TODO: Rate limiting storage (in production, use Redis or similar)
+// Rate limiting storage (in production, use Redis or similar)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
 function sanitizeInput(input: string): string {
@@ -101,12 +55,12 @@ function isRateLimited(clientIP: string): boolean {
   const rateLimit = rateLimitMap.get(clientIP);
 
   if (!rateLimit || now > rateLimit.resetTime) {
-    rateLimitMap.set(clientIP, { count: 1, resetTime: now + 60000 }); // 1 minute
+    rateLimitMap.set(clientIP, { count: 1, resetTime: now + 300000 }); // 5 minutes
     return false;
   }
 
   if (rateLimit.count >= 1) {
-    // 1 request per minute
+    // 1 request per 5 minutes
     return true;
   }
 
@@ -114,48 +68,72 @@ function isRateLimited(clientIP: string): boolean {
   return false;
 }
 
-async function checkEmailExists(
-  email: string,
-  databaseId: string,
-  apiKey: string
-): Promise<boolean> {
-  try {
-    const response = await fetch(
-      `https://api.notion.com/v1/databases/${databaseId}/query`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Notion-Version": "2022-06-28",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          filter: {
-            property: "Email",
-            email: {
-              equals: email,
-            },
-          },
-        }),
-      }
-    );
-
-    if (response.ok) {
-      const data = (await response.json()) as { results: any[] };
-      return data.results.length > 0;
-    }
-    return false;
-  } catch (error) {
-    console.error("Error checking email existence:", error);
-    return false;
-  }
+function createPartnerWaitlistEmailHtml(data: {
+  name: string;
+  email: string;
+  phone: string;
+  area: string;
+  website: string;
+}): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>New Business Partner Signup</title>
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; padding: 20px;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <h2 style="color: #7c3aed; margin-bottom: 24px; font-size: 24px;">🏢 New Business Partner Signup</h2>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #475569; width: 120px;">Business Name:</td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #1e293b;">${data.name}</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #475569;">Email:</td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #1e293b;">
+              <a href="mailto:${data.email}" style="color: #7c3aed;">${data.email}</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #475569;">Phone:</td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #1e293b;">
+              <a href="tel:${data.phone}" style="color: #7c3aed;">${data.phone}</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #475569;">Location:</td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #1e293b;">${data.area}</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #475569;">Website:</td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #1e293b;">
+              <a href="${data.website.startsWith("http") ? data.website : `https://${data.website}`}" style="color: #7c3aed;" target="_blank">${data.website}</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; font-weight: 600; color: #475569;">Date:</td>
+            <td style="padding: 12px 0; color: #1e293b;">${new Date().toLocaleString("el-GR", { timeZone: "Europe/Athens" })}</td>
+          </tr>
+        </table>
+        
+        <div style="margin-top: 24px; padding: 16px; background-color: #f5f3ff; border-radius: 8px; border-left: 4px solid #7c3aed;">
+          <p style="margin: 0; color: #5b21b6; font-size: 14px;">
+            A new business partner has signed up from the KymaClub landing page. Reach out to schedule a meeting!
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
 }
 
 export async function action({ request, context }: Route.ActionArgs) {
   try {
     // Only handle POST requests
     if (request.method !== "POST") {
-
       return new Response(
         JSON.stringify({
           success: false,
@@ -231,6 +209,9 @@ export async function action({ request, context }: Route.ActionArgs) {
     // Sanitize and validate inputs
     const sanitizedEmail = sanitizeInput(email);
     const sanitizedName = sanitizeInput(name);
+    const sanitizedPhone = sanitizeInput(phone);
+    const sanitizedArea = sanitizeInput(area);
+    const sanitizedWebsite = sanitizeInput(website);
 
     if (!validateEmail(sanitizedEmail)) {
       return new Response(
@@ -258,7 +239,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       );
     }
 
-    if (!validatePhone(phone)) {
+    if (!validatePhone(sanitizedPhone)) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -271,7 +252,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       );
     }
 
-    if (!validateArea(area)) {
+    if (!validateArea(sanitizedArea)) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -284,7 +265,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       );
     }
 
-    if (!validateWebsite(website)) {
+    if (!validateWebsite(sanitizedWebsite)) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -297,12 +278,11 @@ export async function action({ request, context }: Route.ActionArgs) {
       );
     }
 
-    // Get database ID and API key from environment variables
-    const databaseId = context.cloudflare.env.NOTION_PAGE_BUSINESS_WL_ID;
-    const apiKey = context.cloudflare.env.NOTION_API_KEY;
+    // Get Resend API key from environment
+    const resendApiKey = context.cloudflare.env.RESEND_API_KEY;
 
-
-    if (!databaseId || !apiKey) {
+    if (!resendApiKey) {
+      console.error("Missing RESEND_API_KEY environment variable");
       return new Response(
         JSON.stringify({
           success: false,
@@ -315,73 +295,24 @@ export async function action({ request, context }: Route.ActionArgs) {
       );
     }
 
-    // Check if email already exists      
-    const emailExists = await checkEmailExists(
-      sanitizedEmail,
-      databaseId,
-      apiKey
-    );
-
-    if (emailExists) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: "Email already registered",
-        }),
-        {
-          status: 409,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Prepare page properties for Notion
-    const pageProperties: NotionPageProperties = {
-      Name: {
-        title: [{ text: { content: sanitizedName } }],
-      },
-      Email: {
+    // Send email notification
+    const resend = new Resend(resendApiKey);
+    const { error } = await resend.emails.send({
+      from: "KymaClub Partners <waitlist@app.orcavo.com>",
+      to: "hello@orcavo.com",
+      subject: `🏢 New Business Partner Signup: ${sanitizedName}`,
+      html: createPartnerWaitlistEmailHtml({
+        name: sanitizedName,
         email: sanitizedEmail,
-      },
-      "Signup Date": {
-        date: {
-          start: new Date(),
-        },
-      },
-      Phone: {
-        number: parseInt(phone),
-      },
-      Location: {
-        rich_text: [{ text: { content: area } }],
-      },
-      Website: {
-        rich_text: [{ text: { content: website } }],
-      },
-    };
-
-
-    // Create the page in Notion database using the Notion API
-    const notionRequest: NotionPageRequest = {
-      parent: {
-        database_id: databaseId,
-      },
-      properties: pageProperties,
-    };
-
-
-    const response = await fetch("https://api.notion.com/v1/pages", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Notion-Version": "2022-06-28",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(notionRequest),
+        phone: sanitizedPhone,
+        area: sanitizedArea,
+        website: sanitizedWebsite,
+      }),
+      replyTo: sanitizedEmail,
     });
 
-
-    if (!response.ok) {
-      const errorText = await response.text();
+    if (error) {
+      console.error("Failed to send email:", error);
       return new Response(
         JSON.stringify({
           success: false,
@@ -394,13 +325,10 @@ export async function action({ request, context }: Route.ActionArgs) {
       );
     }
 
-    const newPage = (await response.json()) as NotionPageResponse;
-
     return new Response(
       JSON.stringify({
         success: true,
         message: "Successfully added to waitlist",
-        pageId: newPage.id,
       }),
       {
         status: 200,
@@ -408,7 +336,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       }
     );
   } catch (error) {
-    console.error("Caught error in partner API:", error);
+    console.error("Error processing partner signup:", error);
 
     return new Response(
       JSON.stringify({
@@ -420,7 +348,6 @@ export async function action({ request, context }: Route.ActionArgs) {
         headers: { "Content-Type": "application/json" },
       }
     );
-  } finally {
   }
 }
 

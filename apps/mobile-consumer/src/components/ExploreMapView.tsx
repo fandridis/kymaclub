@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps';
+import MapView, { PROVIDER_GOOGLE, PROVIDER_DEFAULT, Marker } from 'react-native-maps';
+import { Platform } from 'react-native';
 import { StyleSheet, View, Text, ActivityIndicator, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
 import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -12,6 +13,8 @@ import { Doc } from '@repo/api/convex/_generated/dataModel';
 import { calculateDistance } from '../utils/location';
 import { getVenueCategoryTranslationKey } from '@repo/utils/constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import Constants from 'expo-constants';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -44,6 +47,8 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const sheetSnapPoints = useMemo(() => ['45%', '85%'], []);
   const insets = useSafeAreaInsets();
+
+  console.log('Google Maps key present:', !!Constants.expoConfig?.android?.config?.googleMaps?.apiKey);
 
   // Transform venues to include coordinates and other needed properties
   // NOTE: All hooks must be called before any conditional returns
@@ -175,9 +180,19 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
+        <Text style={{
+          position: 'absolute',
+          top: 100,
+          left: 10,
+          backgroundColor: 'yellow',
+          padding: 10,
+          zIndex: 9999
+        }}>
+          API Key: {Constants.expoConfig?.android?.config?.googleMaps?.apiKey ? 'PRESENT' : 'MISSING'}
+        </Text>
         <MapView
           style={styles.map}
-          provider={PROVIDER_GOOGLE}
+          provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
           initialRegion={mapRegion}
           showsUserLocation={true}
           showsMyLocationButton={true}

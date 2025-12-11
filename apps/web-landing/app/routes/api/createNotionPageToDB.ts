@@ -1,43 +1,9 @@
 import type { Route } from "./+types/createNotionPageToDB";
+import { Resend } from "resend";
 
 interface FormData {
   email: string;
   name: string;
-}
-
-interface NotionPageProperties {
-  Name: {
-    title: Array<{
-      text: {
-        content: string;
-      };
-    }>;
-  };
-  Email: {
-    email: string;
-  };
-  Source: {
-    select: {
-      name: string;
-    };
-  };
-  "Signup Date": {
-    date: {
-      start: Date;
-    };
-  };
-}
-
-interface NotionPageRequest {
-  parent: {
-    database_id: string;
-  };
-  properties: NotionPageProperties;
-}
-
-interface NotionPageResponse {
-  id: string;
-  [key: string]: any;
 }
 
 // Security constants
@@ -71,12 +37,12 @@ function isRateLimited(clientIP: string): boolean {
   const rateLimit = rateLimitMap.get(clientIP);
 
   if (!rateLimit || now > rateLimit.resetTime) {
-    rateLimitMap.set(clientIP, { count: 1, resetTime: now + 60000 }); // 1 minute
+    rateLimitMap.set(clientIP, { count: 1, resetTime: now + 300000 }); // 5 minutes
     return false;
   }
 
   if (rateLimit.count >= 1) {
-    // 1 request per minute
+    // 1 request per 5 minutes
     return true;
   }
 
@@ -84,41 +50,48 @@ function isRateLimited(clientIP: string): boolean {
   return false;
 }
 
-async function checkEmailExists(
-  email: string,
-  databaseId: string,
-  apiKey: string
-): Promise<boolean> {
-  try {
-    const response = await fetch(
-      `https://api.notion.com/v1/databases/${databaseId}/query`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Notion-Version": "2022-06-28",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          filter: {
-            property: "Email",
-            email: {
-              equals: email,
-            },
-          },
-        }),
-      }
-    );
-
-    if (response.ok) {
-      const data = (await response.json()) as { results: any[] };
-      return data.results.length > 0;
-    }
-    return false;
-  } catch (error) {
-    console.error("Error checking email existence:", error);
-    return false;
-  }
+function createWaitlistEmailHtml(data: { name: string; email: string }): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>New Consumer Waitlist Signup</title>
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; padding: 20px;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <h2 style="color: #16a34a; margin-bottom: 24px; font-size: 24px;">🎉 New Consumer Waitlist Signup</h2>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #475569; width: 120px;">Name:</td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #1e293b;">${data.name}</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #475569;">Email:</td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #1e293b;">
+              <a href="mailto:${data.email}" style="color: #16a34a;">${data.email}</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #475569;">Source:</td>
+            <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; color: #1e293b;">Landing Page</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 0; font-weight: 600; color: #475569;">Date:</td>
+            <td style="padding: 12px 0; color: #1e293b;">${new Date().toLocaleString("el-GR", { timeZone: "Europe/Athens" })}</td>
+          </tr>
+        </table>
+        
+        <div style="margin-top: 24px; padding: 16px; background-color: #f0fdf4; border-radius: 8px; border-left: 4px solid #16a34a;">
+          <p style="margin: 0; color: #166534; font-size: 14px;">
+            A new user has signed up for the consumer waitlist from the KymaClub landing page.
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
 }
 
 export async function action({ request, context }: Route.ActionArgs) {
@@ -228,12 +201,11 @@ export async function action({ request, context }: Route.ActionArgs) {
       );
     }
 
-    // Get database ID and API key from environment variables
-    const databaseId = context.cloudflare.env.NOTION_PAGE_CONSUMER_WL_ID;
-    const apiKey = context.cloudflare.env.NOTION_API_KEY;
+    // Get Resend API key from environment
+    const resendApiKey = context.cloudflare.env.RESEND_API_KEY;
 
-    if (!databaseId || !apiKey) {
-      console.error("Missing required environment variables");
+    if (!resendApiKey) {
+      console.error("Missing RESEND_API_KEY environment variable");
       return new Response(
         JSON.stringify({
           success: false,
@@ -246,65 +218,21 @@ export async function action({ request, context }: Route.ActionArgs) {
       );
     }
 
-    // Check if email already exists
-    const emailExists = await checkEmailExists(
-      sanitizedEmail,
-      databaseId,
-      apiKey
-    );
-    if (emailExists) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: "Email already registered",
-        }),
-        {
-          status: 409,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Prepare page properties for Notion
-    const pageProperties: NotionPageProperties = {
-      Name: {
-        title: [{ text: { content: sanitizedName } }],
-      },
-      Email: {
+    // Send email notification
+    const resend = new Resend(resendApiKey);
+    const { error } = await resend.emails.send({
+      from: "KymaClub Waitlist <waitlist@app.orcavo.com>",
+      to: "hello@orcavo.com",
+      subject: `🎉 New Consumer Waitlist Signup: ${sanitizedName}`,
+      html: createWaitlistEmailHtml({
+        name: sanitizedName,
         email: sanitizedEmail,
-      },
-      Source: {
-        select: {
-          name: "Landing page",
-        },
-      },
-      "Signup Date": {
-        date: {
-          start: new Date(),
-        },
-      },
-    };
-
-    // Create the page in Notion database using the Notion API
-    const notionRequest: NotionPageRequest = {
-      parent: {
-        database_id: databaseId,
-      },
-      properties: pageProperties,
-    };
-
-    const response = await fetch("https://api.notion.com/v1/pages", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Notion-Version": "2022-06-28",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(notionRequest),
+      }),
+      replyTo: sanitizedEmail,
     });
 
-    if (!response.ok) {
-      console.error("Notion API error:", response.status);
+    if (error) {
+      console.error("Failed to send email:", error);
       return new Response(
         JSON.stringify({
           success: false,
@@ -317,13 +245,10 @@ export async function action({ request, context }: Route.ActionArgs) {
       );
     }
 
-    const newPage = (await response.json()) as NotionPageResponse;
-
     return new Response(
       JSON.stringify({
         success: true,
         message: "Successfully added to waitlist",
-        pageId: newPage.id,
       }),
       {
         status: 200,
@@ -331,7 +256,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       }
     );
   } catch (error) {
-    console.error("Error creating Notion page:", error);
+    console.error("Error processing waitlist signup:", error);
 
     return new Response(
       JSON.stringify({
