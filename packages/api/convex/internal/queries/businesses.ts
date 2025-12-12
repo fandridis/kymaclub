@@ -2,6 +2,7 @@ import { query } from "../../_generated/server";
 import { v } from "convex/values";
 import { requireInternalUserOrThrow } from "../../utils";
 import { startOfMonth, endOfMonth } from "date-fns";
+import { systemAuditService } from "../../../services/systemAuditService";
 
 export const getBusinessDetails = query({
     args: {
@@ -118,6 +119,14 @@ export const getBusinessDetails = query({
                 .then(res => res.reduce((acc, curr) => acc + curr.amount, 0))
         ]);
 
+        // Fetch fee rate change history from audit logs
+        const feeChangeHistory = await systemAuditService.getLogsForEntity(
+            ctx,
+            "business",
+            args.businessId,
+            10 // Last 10 fee changes
+        ).then(logs => logs.filter(log => log.action === "update_fee_rate"));
+
         return {
             business,
             owner,
@@ -126,6 +135,7 @@ export const getBusinessDetails = query({
             classInstances,
             bookings,
             earnings,
+            feeChangeHistory,
             metrics: {
                 totalScheduledClasses,
                 completedClassesThisMonth,

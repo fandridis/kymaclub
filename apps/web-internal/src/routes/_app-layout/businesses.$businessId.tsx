@@ -22,10 +22,13 @@ import {
   UserX,
   ArrowLeft,
   RefreshCw,
+  Settings,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { Doc } from '@repo/api/convex/_generated/dataModel';
+import { Doc, Id } from '@repo/api/convex/_generated/dataModel';
 import { cn } from '@/lib/utils';
+import { FeeRateEditor } from '@/components/business/FeeRateEditor';
+import { FeeChangeHistory } from '@/components/business/FeeChangeHistory';
 
 export const Route = createFileRoute('/_app-layout/businesses/$businessId')({
   component: BusinessDetailPage,
@@ -34,7 +37,7 @@ export const Route = createFileRoute('/_app-layout/businesses/$businessId')({
 function BusinessDetailPage() {
   const { businessId } = Route.useParams();
   const { data, isLoading } = useBusinessDetail(businessId);
-  const [activeTab, setActiveTab] = useState<'venues' | 'templates' | 'instances' | 'bookings' | 'earnings'>('venues');
+  const [activeTab, setActiveTab] = useState<'venues' | 'templates' | 'instances' | 'bookings' | 'earnings' | 'settings'>('venues');
 
   if (isLoading) {
     return (
@@ -211,6 +214,12 @@ function BusinessDetailPage() {
               >
                 Earnings
               </TabsTrigger>
+              <TabsTrigger
+                value="settings"
+                className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-slate-400"
+              >
+                Settings
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="venues">
@@ -227,6 +236,14 @@ function BusinessDetailPage() {
             </TabsContent>
             <TabsContent value="earnings">
               <EarningsList earnings={data.earnings} />
+            </TabsContent>
+            <TabsContent value="settings">
+              <SettingsPanel
+                businessId={data.business._id}
+                businessName={data.business.name}
+                currentFeeRate={data.business.feeStructure?.baseFeeRate}
+                feeChangeHistory={data.feeChangeHistory}
+              />
             </TabsContent>
           </Tabs>
         </CardContent>
@@ -468,6 +485,35 @@ function EarningsList({ earnings }: { earnings?: Array<Doc<"creditTransactions">
           </div>
         );
       })}
+    </div>
+  );
+}
+
+interface FeeChangeLog {
+  _id: string;
+  adminEmail: string;
+  previousValue?: string;
+  newValue: string;
+  reason: string;
+  createdAt: number;
+}
+
+interface SettingsPanelProps {
+  businessId: Id<"businesses">;
+  businessName: string;
+  currentFeeRate: number | undefined;
+  feeChangeHistory?: FeeChangeLog[];
+}
+
+function SettingsPanel({ businessId, businessName, currentFeeRate, feeChangeHistory }: SettingsPanelProps) {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <FeeRateEditor
+        businessId={businessId}
+        currentFeeRate={currentFeeRate}
+        businessName={businessName}
+      />
+      <FeeChangeHistory logs={feeChangeHistory ?? []} />
     </div>
   );
 }

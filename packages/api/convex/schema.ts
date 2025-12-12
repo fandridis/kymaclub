@@ -898,9 +898,6 @@ export const bookingsFields = {
   rejectedAt: v.optional(v.number()),
   rejectedBy: v.optional(v.id("users")),
 
-  // Searchable ID for partial ID search (e.g. "F4D...")
-  searchableId: v.optional(v.string()),
-
   // Simple pricing tracking (links to credit ledger)
   originalPrice: v.number(),           // Template price in cents (before any discount)  
   finalPrice: v.number(),             // What they actually paid in cents (creditsUsed = finalPrice / 100)
@@ -1631,10 +1628,7 @@ export default defineSchema({
     .index("by_user_status_start_time", ["userId", "status", "classInstanceSnapshot.startTime"])
     .index("by_status_deleted_start_time", ["status", "deleted", "classInstanceSnapshot.startTime"])
     // 🔍 DASHBOARD METRICS INDEX - for efficient booking queries by status, deleted, and bookedAt
-    .index("by_status_deleted_bookedAt", ["status", "deleted", "bookedAt"])
-    .searchIndex("search_id", {
-      searchField: "searchableId",
-    }),
+    .index("by_status_deleted_bookedAt", ["status", "deleted", "bookedAt"]),
 
   /**
    * Enhanced Credit Transactions - One record per credit operation (includes purchases)
@@ -1775,5 +1769,33 @@ export default defineSchema({
     .index("by_recipient", ["recipientUserId"])
     .index("by_scheduled_for", ["scheduledFor"])
     .index("by_entity", ["relatedEntity.entityType", "relatedEntity.entityId"]),
+
+  /**
+   * System Audit Logs - Track admin actions for compliance and accountability
+   * Used to record sensitive changes like fee rate updates, business suspensions, etc.
+   */
+  systemAuditLogs: defineTable({
+    // Who made the change
+    adminUserId: v.id("users"),
+    adminEmail: v.string(), // Denormalized for display
+
+    // What was changed
+    entityType: v.string(), // "business", "user", "venue", etc.
+    entityId: v.string(),
+    entityName: v.optional(v.string()), // Denormalized for display
+
+    // Action details
+    action: v.string(), // "update_fee_rate", "suspend_business", etc.
+    previousValue: v.optional(v.string()), // JSON stringified
+    newValue: v.string(), // JSON stringified
+    reason: v.string(), // Required reason for the change
+
+    // Timestamp
+    createdAt: v.number(),
+  })
+    .index("by_entity", ["entityType", "entityId", "createdAt"])
+    .index("by_admin", ["adminUserId", "createdAt"])
+    .index("by_action", ["action", "createdAt"])
+    .index("by_created", ["createdAt"]),
 
 });
