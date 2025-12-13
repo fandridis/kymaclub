@@ -61,6 +61,7 @@ import type * as queries_uploads from "../queries/uploads.js";
 import type * as queries_venues from "../queries/venues.js";
 import type * as queries_widgets from "../queries/widgets.js";
 import type * as resendOTP from "../resendOTP.js";
+import type * as testEmailOTP from "../testEmailOTP.js";
 import type * as testFunctions from "../testFunctions.js";
 import type * as testResources from "../testResources.js";
 import type * as triggers_index from "../triggers/index.js";
@@ -136,6 +137,7 @@ declare const fullApi: ApiFromModules<{
   "queries/venues": typeof queries_venues;
   "queries/widgets": typeof queries_widgets;
   resendOTP: typeof resendOTP;
+  testEmailOTP: typeof testEmailOTP;
   testFunctions: typeof testFunctions;
   testResources: typeof testResources;
   "triggers/index": typeof triggers_index;

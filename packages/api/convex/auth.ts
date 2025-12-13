@@ -3,6 +3,7 @@ import { Password } from "@convex-dev/auth/providers/Password";
 import GitHub from "@auth/core/providers/github";
 import { ResendOTPPasswordReset } from "./ResendOTPPasswordReset";
 import { ResendOTP } from "./resendOTP";
+import { TestEmailOTP } from "./testEmailOTP";
 import { ConvexError } from "convex/values";
 import { ERROR_CODES } from "../utils/errorCodes";
 import type { MutationCtx } from "./_generated/server";
@@ -29,7 +30,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
     GitHub,
     ResendOTP,
     ...(process.env.NODE_ENV === "test" || process.env.ENABLE_TEST_AUTH === "true"
-      ? [TestEmailProvider]
+      ? [TestEmailProvider, TestEmailOTP]
       : []),
   ],
   callbacks: {

@@ -20,6 +20,11 @@ import { checkRateLimit, clearRateLimit, formatTimeRemaining } from '../../../ut
 import { useTypedTranslation } from '../../../i18n/typed';
 import i18n from '../../../i18n';
 
+// Test email for app store review - uses fixed OTP code "123456"
+const TEST_EMAIL = "kymaclub@tester.com";
+const getAuthProvider = (email: string) =>
+    email.toLowerCase().trim() === TEST_EMAIL ? "test-email-otp" : "resend-otp";
+
 interface SimpleRegisterFormProps {
     onSuccess?: () => void;
     onBack: () => void;
@@ -100,7 +105,7 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
             const formData = new FormData();
             formData.append('email', email);
 
-            await signIn("resend-otp", formData);
+            await signIn(getAuthProvider(email), formData);
             setStep({ email });
         } catch (error) {
             Alert.alert(t('auth.register.error'), t('auth.register.errorSendCode'));
@@ -125,7 +130,7 @@ export function RegisterForm({ onSuccess, onBack }: SimpleRegisterFormProps) {
             formData.append('email', emailValue);
             formData.append('code', code);
 
-            await signIn("resend-otp", formData);
+            await signIn(getAuthProvider(emailValue), formData);
 
             // Registration successful! Clear rate limit for this email
             const deviceId = getDeviceId();

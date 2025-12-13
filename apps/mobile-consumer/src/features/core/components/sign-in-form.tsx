@@ -20,6 +20,11 @@ import { checkRateLimit, clearRateLimit, formatTimeRemaining } from '../../../ut
 import { useTypedTranslation } from '../../../i18n/typed';
 import i18n from '../../../i18n';
 
+// Test email for app store review - uses fixed OTP code "123456"
+const TEST_EMAIL = "kymaclub@tester.com";
+const getAuthProvider = (email: string) =>
+    email.toLowerCase().trim() === TEST_EMAIL ? "test-email-otp" : "resend-otp";
+
 interface SignInFormProps {
     onBack?: () => void;
 }
@@ -98,7 +103,7 @@ export function SignInForm({ onBack }: SignInFormProps = {}) {
             const formData = new FormData();
             formData.append('email', email);
 
-            await signIn("resend-otp", formData);
+            await signIn(getAuthProvider(email), formData);
             setStep({ email });
         } catch (error) {
             console.error(error);
@@ -120,10 +125,11 @@ export function SignInForm({ onBack }: SignInFormProps = {}) {
         try {
             // Create FormData with email and code
             const formData = new FormData();
-            formData.append('email', step === 'signIn' ? email : step.email);
+            const currentEmail = step === 'signIn' ? email : step.email;
+            formData.append('email', currentEmail);
             formData.append('code', code);
 
-            await signIn("resend-otp", formData);
+            await signIn(getAuthProvider(currentEmail), formData);
 
             // Sign in successful! Clear rate limit for this email
             const deviceId = getDeviceId();
