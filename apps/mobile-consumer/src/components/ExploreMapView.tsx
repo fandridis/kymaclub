@@ -180,16 +180,6 @@ export function ExploreMapView({ venues, storageIdToUrl, userLocation, onCloseSh
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
-        <Text style={{
-          position: 'absolute',
-          top: 100,
-          left: 10,
-          backgroundColor: 'yellow',
-          padding: 10,
-          zIndex: 9999
-        }}>
-          API Key: {Constants.expoConfig?.android?.config?.googleMaps?.apiKey ? 'PRESENT' : 'MISSING'}
-        </Text>
         <MapView
           style={styles.map}
           provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
