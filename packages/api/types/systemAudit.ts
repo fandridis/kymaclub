@@ -14,57 +14,60 @@ import { Doc, Id } from "../convex/_generated/dataModel";
 export type SystemAuditLog = Doc<"systemAuditLogs">;
 
 /**
- * Supported entity types for audit logging
+ * Supported audit event types (typed enum)
+ *
+ * Start small and extend as new audit-worthy actions are added.
  */
-export type SystemAuditEntityType = "business" | "user" | "venue";
+export type SystemAuditType = "business_fee_change";
 
 /**
- * Supported audit actions
- * Add new actions here as needed for new admin features
+ * Polymorphic entity reference for audit logs
+ * Mirrors scheduledNotificationFields.relatedEntity pattern.
  */
-export type SystemAuditAction =
-  | "update_fee_rate"
-  | "suspend_business"
-  | "activate_business"
-  | "update_payout_settings";
+export type SystemAuditRelatedEntity =
+  | {
+    entityType: "businesses";
+    entityId: Id<"businesses">;
+  };
 
 /**
- * Parameters for creating a new audit log entry
+ * Actor snapshot for audit logs
  */
-export interface CreateAuditLogParams {
-  /** The admin user making the change */
-  adminUserId: Id<"users">;
-  /** Admin email (denormalized for display) */
-  adminEmail: string;
-
-  /** Type of entity being changed */
-  entityType: SystemAuditEntityType;
-  /** ID of the entity (as string for flexibility) */
-  entityId: string;
-  /** Name of the entity for display (optional) */
-  entityName?: string;
-
-  /** The action being performed */
-  action: SystemAuditAction;
-  /** Previous value (JSON stringified) */
-  previousValue?: string;
-  /** New value (JSON stringified) */
-  newValue: string;
-  /** Required reason for the change */
-  reason: string;
+export interface SystemAuditActor {
+  userId: Id<"users">;
+  email?: string;
 }
 
 /**
- * Audit log entry formatted for frontend display
+ * Structured changes payload for business fee changes
  */
-export interface AuditLogDisplay {
+export interface BusinessFeeChangeAuditChanges {
+  feeRate: {
+    before: number;
+    after: number;
+  };
+}
+
+/**
+ * Display shape for business fee change audit log entries
+ */
+export interface BusinessFeeChangeAuditLogDisplay {
   _id: Id<"systemAuditLogs">;
-  adminEmail: string;
-  entityType: SystemAuditEntityType;
-  entityName?: string;
-  action: SystemAuditAction;
-  previousValue?: string;
-  newValue: string;
+  auditType: "business_fee_change";
+  relatedEntity: SystemAuditRelatedEntity;
+  actor: SystemAuditActor;
   reason: string;
+  changes: BusinessFeeChangeAuditChanges;
   createdAt: number;
+}
+
+/**
+ * Input params for creating a business fee change audit log entry
+ */
+export interface LogBusinessFeeChangeParams {
+  actor: SystemAuditActor;
+  businessId: Id<"businesses">;
+  reason: string;
+  beforeFeeRate: number;
+  afterFeeRate: number;
 }

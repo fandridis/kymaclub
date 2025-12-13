@@ -1,4 +1,3 @@
-import { mutation } from "../_generated/server";
 import { Infer, v } from "convex/values";
 import { getAuthenticatedUserOrThrow } from "../utils";
 import { bookingService } from "../../services/bookingService";

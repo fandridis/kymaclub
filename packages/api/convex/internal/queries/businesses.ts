@@ -119,13 +119,12 @@ export const getBusinessDetails = query({
                 .then(res => res.reduce((acc, curr) => acc + curr.amount, 0))
         ]);
 
-        // Fetch fee rate change history from audit logs
-        const feeChangeHistory = await systemAuditService.getLogsForEntity(
+        // Fetch fee rate change history from audit logs (typed auditType, no post-filtering)
+        const feeChangeHistory = await systemAuditService.getBusinessFeeChangeLogs(
             ctx,
-            "business",
             args.businessId,
-            10 // Last 10 fee changes
-        ).then(logs => logs.filter(log => log.action === "update_fee_rate"));
+            10
+        );
 
         return {
             business,

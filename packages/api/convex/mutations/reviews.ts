@@ -1,4 +1,4 @@
-import { mutation, internalMutation } from "../_generated/server";
+import { internalMutation } from "../_generated/server";
 import { Infer, v } from "convex/values";
 import { getAuthenticatedUserOrThrow } from "../utils";
 import { reviewsService } from "../../services/reviewsService";

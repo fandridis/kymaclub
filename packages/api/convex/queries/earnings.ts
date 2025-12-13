@@ -2,7 +2,7 @@ import { query } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthenticatedUserOrThrow } from "../utils";
 import { ConvexError } from "convex/values";
-import type { ComparisonMetric, EarningsComparisonData, MonthlyEarningsWithComparison, EarningsSummary, YearlyEarnings } from "../../types/earnings";
+import type { ComparisonMetric } from "../../types/earnings";
 
 /**
  * Helper function to calculate percentage change between two values
@@ -406,7 +406,14 @@ export const getEarningsSummary = query({
     }
 
     // Get earnings for each month by implementing the logic directly
-    const monthlyEarnings = [];
+    const monthlyEarnings: Array<{
+      month: string;
+      totalGrossEarnings: number;
+      totalNetEarnings: number;
+      totalSystemCut: number;
+      totalBookings: number;
+      bookings: undefined;
+    }> = [];
 
     for (const month of args.months) {
       try {

@@ -8,35 +8,20 @@ import type { Doc } from "../convex/_generated/dataModel";
 describe('Class Template Rules', () => {
     const mockUser = createTestUser();
     const mockBusinessId = createTestBusiness()._id;
-    
+
     const createMockTemplate = (overrides: Partial<Doc<"classTemplates">> = {}): Doc<"classTemplates"> => ({
         _id: "template123" as any,
         _creationTime: Date.now(),
         businessId: mockBusinessId,
         name: "Test Class",
         description: "Test Description",
+        instructor: "Test Instructor",
         duration: 60,
         capacity: 20,
-        price: 25,
         venueId: "venue123" as any,
-        instructorId: "instructor123" as any,
-        classTypeId: "classType123" as any,
-        color: "#3B82F6",
+        price: 2500,
+        cancellationWindowHours: 24,
         isActive: true,
-        equipment: ["mat"],
-        level: "beginner",
-        tags: ["yoga"],
-        bookingWindow: {
-            openDays: 7,
-            closeDays: 0
-        },
-        cancellationPolicy: {
-            allowCancellation: true,
-            cancelBeforeHours: 24,
-            refundPercentage: 100
-        },
-        waitlistEnabled: true,
-        recurrenceRule: undefined,
         imageStorageIds: [],
         createdAt: Date.now(),
         createdBy: mockUser._id,

@@ -1,6 +1,6 @@
-import { internalMutation, mutation } from "../_generated/server";
+import { internalMutation } from "../_generated/server";
 import { Infer, v } from "convex/values";
-import { getAuthenticatedUserAndBusinessOrThrow, getAuthenticatedUserOrThrow } from "../utils";
+import { getAuthenticatedUserAndBusinessOrThrow } from "../utils";
 import { venueService } from "../../services/venueService";
 import { venuesFields } from "../schema";
 import { omit } from "convex-helpers";

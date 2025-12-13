@@ -5,7 +5,7 @@ import { action, internalAction } from "../_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "../_generated/api";
 import { paymentsService } from "../../services/paymentsService";
-import { Id, Doc } from "../_generated/dataModel";
+import { Doc } from "../_generated/dataModel";
 
 /**
  * Create dynamic subscription checkout for 5-500 credits

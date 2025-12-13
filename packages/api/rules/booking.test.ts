@@ -621,7 +621,7 @@ const createMockClassInstance = (overrides: Partial<Doc<"classInstances">> = {})
   templateSnapshot: {
     name: "Test Template",
     instructor: "Test Instructor",
-    primaryCategory: "yoga_studio",
+    primaryCategory: "yoga",
     imageStorageIds: [],
     questionnaire: undefined,
     discountRules: [],

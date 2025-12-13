@@ -29,6 +29,7 @@ import { Doc, Id } from '@repo/api/convex/_generated/dataModel';
 import { cn } from '@/lib/utils';
 import { FeeRateEditor } from '@/components/business/FeeRateEditor';
 import { FeeChangeHistory } from '@/components/business/FeeChangeHistory';
+import { getBookingFinalPrice, getBookingEarnings } from '@repo/utils/bookings';
 
 export const Route = createFileRoute('/_app-layout/businesses/$businessId')({
   component: BusinessDetailPage,
@@ -235,7 +236,7 @@ function BusinessDetailPage() {
               <BookingsList bookings={data.bookings} />
             </TabsContent>
             <TabsContent value="earnings">
-              <EarningsList earnings={data.earnings} />
+              <EarningsList bookings={data.bookings} />
             </TabsContent>
             <TabsContent value="settings">
               <SettingsPanel
@@ -451,8 +452,18 @@ function BookingsList({ bookings }: { bookings?: Array<Doc<"bookings">> }) {
   );
 }
 
-function EarningsList({ earnings }: { earnings?: Array<Doc<"creditTransactions">> }) {
-  if (!earnings || earnings.length === 0) {
+function EarningsList({ bookings }: { bookings?: Array<Doc<"bookings">> }) {
+  // Filter to only show bookings with revenue (completed, no_show, or cancelled with partial refund)
+  const earningsBookings = bookings?.filter((booking) => {
+    const hasRevenue = getBookingFinalPrice({
+      finalPrice: booking.finalPrice,
+      refundAmount: booking.refundAmount,
+      platformFeeRate: booking.platformFeeRate ?? 0.2,
+    }) > 0;
+    return hasRevenue;
+  }) ?? [];
+
+  if (earningsBookings.length === 0) {
     return (
       <div className="text-center py-8">
         <Euro className="h-12 w-12 text-slate-600 mx-auto mb-4" />
@@ -461,39 +472,117 @@ function EarningsList({ earnings }: { earnings?: Array<Doc<"creditTransactions">
     );
   }
 
+  // Calculate totals
+  const totalGross = earningsBookings.reduce((sum, b) => sum + getBookingFinalPrice({
+    finalPrice: b.finalPrice,
+    refundAmount: b.refundAmount,
+    platformFeeRate: b.platformFeeRate ?? 0.2,
+  }), 0);
+  const totalNet = earningsBookings.reduce((sum, b) => sum + getBookingEarnings({
+    finalPrice: b.finalPrice,
+    refundAmount: b.refundAmount,
+    platformFeeRate: b.platformFeeRate ?? 0.2,
+  }), 0);
+
   return (
-    <div className="space-y-2">
-      {earnings.map((earning) => {
-        const createdAt = new Date(earning.createdAt);
-        return (
-          <div key={earning._id} className="flex items-center gap-4 p-4 bg-slate-800/30 rounded-lg border border-slate-700/50">
-            <div className="p-2 rounded-lg bg-green-500/10 border border-green-500/30">
-              <Euro className="w-4 h-4 text-green-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-slate-200 font-medium truncate">{earning.description}</span>
-                <Badge variant="outline" className="text-xs text-green-400 border-green-500/30">
-                  €{(earning.amount / 100).toFixed(2)}
+    <div className="space-y-4">
+      {/* Summary */}
+      <div className="grid grid-cols-3 gap-4 p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
+        <div className="text-center">
+          <div className="text-xs text-slate-500 mb-1">Gross Revenue</div>
+          <div className="text-lg font-semibold text-slate-200">€{(totalGross / 100).toFixed(2)}</div>
+        </div>
+        <div className="text-center">
+          <div className="text-xs text-slate-500 mb-1">Platform Fees</div>
+          <div className="text-lg font-semibold text-amber-400">€{((totalGross - totalNet) / 100).toFixed(2)}</div>
+        </div>
+        <div className="text-center">
+          <div className="text-xs text-slate-500 mb-1">Net Earnings</div>
+          <div className="text-lg font-semibold text-green-400">€{(totalNet / 100).toFixed(2)}</div>
+        </div>
+      </div>
+
+      {/* Table header */}
+      <div className="grid grid-cols-12 gap-2 px-4 py-2 text-xs text-slate-500 border-b border-slate-700/50">
+        <div className="col-span-3">Class</div>
+        <div className="col-span-2">Consumer</div>
+        <div className="col-span-2">Date</div>
+        <div className="col-span-1 text-right">Gross</div>
+        <div className="col-span-1 text-right">Fee</div>
+        <div className="col-span-2 text-right">Net</div>
+        <div className="col-span-1 text-center">Status</div>
+      </div>
+
+      {/* Earnings rows */}
+      <div className="space-y-2">
+        {earningsBookings.map((booking) => {
+          const bookingCalc = {
+            finalPrice: booking.finalPrice,
+            refundAmount: booking.refundAmount,
+            platformFeeRate: booking.platformFeeRate ?? 0.2,
+          };
+          const gross = getBookingFinalPrice(bookingCalc) / 100;
+          const net = getBookingEarnings(bookingCalc) / 100;
+          const feePercent = (booking.platformFeeRate ?? 0.2) * 100;
+          const classTime = booking.classInstanceSnapshot?.startTime
+            ? new Date(booking.classInstanceSnapshot.startTime)
+            : null;
+
+          return (
+            <div key={booking._id} className="grid grid-cols-12 gap-2 items-center p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
+              <div className="col-span-3 truncate text-sm text-slate-200">
+                {booking.classInstanceSnapshot?.name || 'Unknown Class'}
+              </div>
+              <div className="col-span-2 truncate text-sm text-slate-400">
+                {booking.userSnapshot?.name || booking.userSnapshot?.email || 'Unknown'}
+              </div>
+              <div className="col-span-2 text-xs text-slate-500">
+                {classTime ? format(classTime, 'MMM dd HH:mm') : 'N/A'}
+              </div>
+              <div className="col-span-1 text-right text-sm text-slate-300">
+                €{gross.toFixed(2)}
+              </div>
+              <div className="col-span-1 text-right text-xs text-amber-400">
+                {feePercent.toFixed(0)}%
+              </div>
+              <div className="col-span-2 text-right text-sm font-medium text-green-400">
+                €{net.toFixed(2)}
+              </div>
+              <div className="col-span-1 text-center">
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "text-xs",
+                    booking.status === 'completed' ? 'text-green-400 border-green-500/30' :
+                      booking.status === 'no_show' ? 'text-red-400 border-red-500/30' :
+                        'text-amber-400 border-amber-500/30'
+                  )}
+                >
+                  {booking.status === 'completed' ? 'Done' :
+                    booking.status === 'no_show' ? 'NS' :
+                      'Part'}
                 </Badge>
               </div>
-              <div className="text-sm text-slate-400">
-                {format(createdAt, 'MMM dd, yyyy HH:mm')}
-              </div>
             </div>
-            <div className="text-xs text-slate-500 font-mono">{earning._id.slice(-8)}</div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
 
 interface FeeChangeLog {
   _id: string;
-  adminEmail: string;
-  previousValue?: string;
-  newValue: string;
+  actor: {
+    userId: string;
+    email?: string;
+  };
+  changes: {
+    feeRate: {
+      before: number;
+      after: number;
+    };
+  };
   reason: string;
   createdAt: number;
 }

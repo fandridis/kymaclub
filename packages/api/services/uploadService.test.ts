@@ -14,7 +14,7 @@ describe('Profile Image Moderation', () => {
         });
 
         // Set user with rejected image
-        await asUser.mutation(api.mutations.users.updateUserForModeration, {
+        await asUser.mutation(internal.mutations.users.updateUserForModeration, {
             userId,
             updateData: {
                 consumerProfileImageStorageId: storageId,
@@ -39,7 +39,7 @@ describe('Profile Image Moderation', () => {
         });
 
         // Set user with approved image
-        await asUser.mutation(api.mutations.users.updateUserForModeration, {
+        await asUser.mutation(internal.mutations.users.updateUserForModeration, {
             userId,
             updateData: {
                 consumerProfileImageStorageId: storageId,
@@ -58,7 +58,7 @@ describe('Profile Image Moderation', () => {
         const asUser = testT.withIdentity({ subject: userId });
 
         // Set user with moderation status
-        await asUser.mutation(api.mutations.users.updateUserForModeration, {
+        await asUser.mutation(internal.mutations.users.updateUserForModeration, {
             userId,
             updateData: {
                 profileImageModerationStatus: "flagged",

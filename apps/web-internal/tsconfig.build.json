@@ -6,7 +6,7 @@
         "verbatimModuleSyntax": false,
         "skipLibCheck": true,
         "noImplicitAny": false,
-        "strictNullChecks": false,
+        "strictNullChecks": true,
         "strictFunctionTypes": false,
         "noImplicitReturns": false,
         "noFallthroughCasesInSwitch": false,

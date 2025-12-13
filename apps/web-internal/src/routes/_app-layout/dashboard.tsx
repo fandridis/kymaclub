@@ -55,9 +55,7 @@ function Dashboard() {
         return redirect({
             to: '/sign-in-tester',
             replace: true,
-            search: {
-                redirect: window.location.href
-            }
+            search: (prev) => ({ ...prev, redirect: window.location.href })
         });
     }
 

@@ -6,9 +6,16 @@ import { cn } from "@/lib/utils";
 
 interface FeeChangeLog {
   _id: string;
-  adminEmail: string;
-  previousValue?: string;
-  newValue: string;
+  actor: {
+    userId: string;
+    email?: string;
+  };
+  changes: {
+    feeRate: {
+      before: number;
+      after: number;
+    };
+  };
   reason: string;
   createdAt: number;
 }
@@ -17,19 +24,8 @@ interface FeeChangeHistoryProps {
   logs: FeeChangeLog[];
 }
 
-/**
- * Parse fee rate from JSON string
- * Returns percentage as string (e.g., "20%")
- */
-function parseFeeRate(jsonString: string | undefined): string {
-  if (!jsonString) return "N/A";
-  try {
-    const parsed = JSON.parse(jsonString);
-    const rate = parsed.baseFeeRate ?? 0;
-    return `${Math.round(rate * 100)}%`;
-  } catch {
-    return "N/A";
-  }
+function formatRate(rate: number): string {
+  return `${Math.round(rate * 100)}%`;
 }
 
 export function FeeChangeHistory({ logs }: FeeChangeHistoryProps) {
@@ -66,9 +62,12 @@ export function FeeChangeHistory({ logs }: FeeChangeHistoryProps) {
       <CardContent>
         <div className="space-y-3">
           {logs.map((log) => {
-            const previousRate = parseFeeRate(log.previousValue);
-            const newRate = parseFeeRate(log.newValue);
+            const previousRate = formatRate(log.changes.feeRate.before);
+            const newRate = formatRate(log.changes.feeRate.after);
             const date = new Date(log.createdAt);
+            const actorLabel =
+              log.actor.email ??
+              (log.actor.userId ? `user:${log.actor.userId.slice(-8)}` : "unknown");
 
             return (
               <div
@@ -82,7 +81,7 @@ export function FeeChangeHistory({ logs }: FeeChangeHistoryProps) {
                   </span>
                   <div className="flex items-center gap-1 text-xs text-slate-500">
                     <User className="h-3 w-3" />
-                    <span className="truncate max-w-[150px]">{log.adminEmail}</span>
+                    <span className="truncate max-w-[150px]">{actorLabel}</span>
                   </div>
                 </div>
 

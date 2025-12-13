@@ -73,17 +73,16 @@ export const updateBusinessFeeRate = mutation({
       };
     }
 
-    // Log the change to audit log
-    await systemAuditService.logAction(ctx, {
-      adminUserId: adminUser._id,
-      adminEmail: adminUser.email ?? "unknown",
-      entityType: "business",
-      entityId: args.businessId,
-      entityName: business.name,
-      action: "update_fee_rate",
-      previousValue: JSON.stringify({ baseFeeRate: previousFeeRate }),
-      newValue: JSON.stringify({ baseFeeRate: args.newFeeRate }),
+    // Log the change to audit log (typed auditType + polymorphic entity reference)
+    await systemAuditService.logBusinessFeeChange(ctx, {
+      actor: {
+        userId: adminUser._id,
+        ...(adminUser.email ? { email: adminUser.email } : {}),
+      },
+      businessId: args.businessId,
       reason: args.reason.trim(),
+      beforeFeeRate: previousFeeRate,
+      afterFeeRate: args.newFeeRate,
     });
 
     // Update business fee structure

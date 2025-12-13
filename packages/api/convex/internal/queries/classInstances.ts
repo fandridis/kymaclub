@@ -2,7 +2,7 @@ import { query } from "../../_generated/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { requireInternalUserOrThrow } from "../../utils";
-import { startOfMonth, endOfMonth, subYears, subMonths, format } from "date-fns";
+import { startOfMonth, endOfMonth, subMonths, format } from "date-fns";
 
 type SortBy = "latest" | "most_expensive" | "capacity";
 
@@ -119,7 +119,10 @@ export const getClassInstancesMetric = query({
 
 
         // 4. Calculate Trends (Last 12 months)
-        const trendData = [];
+        const trendData: Array<{
+            month: string;
+            classes: number;
+        }> = [];
         for (let i = 11; i >= 0; i--) {
             const date = subMonths(now, i);
             const monthStart = startOfMonth(date).getTime();

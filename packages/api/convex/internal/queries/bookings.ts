@@ -41,45 +41,14 @@ export const getAllBookings = query({
         };
 
         if (status === "latest") {
-            // For "latest", query the most recent bookings across all statuses
-            // We'll query pending and completed (most common statuses) and combine them
-            // Get a larger sample from each to ensure we have enough for proper sorting
-            const sampleSize = args.paginationOpts.numItems * 3; // Get 3x to ensure we have enough after sorting
-
-            const pending = await ctx.db
+            // Latest across all statuses (single indexed query + Convex pagination)
+            return await ctx.db
                 .query("bookings")
-                .withIndex("by_status_deleted_bookedAt", (q) =>
-                    q.eq("status", "pending").eq("deleted", undefined)
+                .withIndex("by_deleted_bookedAt", (q) =>
+                    q.eq("deleted", undefined)
                 )
                 .order("desc")
-                .take(sampleSize);
-
-            const completed = await ctx.db
-                .query("bookings")
-                .withIndex("by_status_deleted_bookedAt", (q) =>
-                    q.eq("status", "completed").eq("deleted", undefined)
-                )
-                .order("desc")
-                .take(sampleSize);
-
-            // Combine and sort by bookedAt descending
-            const allBookings = [...pending, ...completed]
-                .sort((a, b) => b.bookedAt - a.bookedAt);
-
-            // Simple pagination: use cursor as offset index
-            const cursor = args.paginationOpts.cursor ? parseInt(args.paginationOpts.cursor, 10) : 0;
-            const numItems = args.paginationOpts.numItems;
-            const startIndex = cursor;
-            const endIndex = startIndex + numItems;
-            const page = allBookings.slice(startIndex, endIndex);
-            const isDone = endIndex >= allBookings.length || page.length < numItems;
-            const continueCursor = isDone ? null : endIndex.toString();
-
-            return {
-                page,
-                isDone,
-                continueCursor,
-            };
+                .paginate(args.paginationOpts);
         }
 
         // For specific status filters, use the index directly
@@ -168,7 +137,12 @@ export const getBookingsMetric = query({
             : 0;
 
         // 4. Calculate Trends (Last 12 months)
-        const trendData = [];
+        const trendData: Array<{
+            month: string;
+            completed: number;
+            cancelled: number;
+            noShows: number;
+        }> = [];
         for (let i = 11; i >= 0; i--) {
             const date = subMonths(now, i);
             const monthStart = startOfMonth(date).getTime();

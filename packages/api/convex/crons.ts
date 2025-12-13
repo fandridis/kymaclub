@@ -2,6 +2,7 @@ import { cronJobs } from "convex/server";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 
 const crons = cronJobs();
 
@@ -330,7 +331,13 @@ export const getNoShowStats = internalQuery({
 
         // Group by day
         const noShowsByDay = new Map<string, number>();
-        const recentNoShows = [];
+        const recentNoShows: Array<{
+            bookingId: Id<"bookings">;
+            className: string;
+            userName: string;
+            classStartTime: number;
+            markedAt: number;
+        }> = [];
 
         for (const booking of noShowBookings) {
             const date = new Date(booking.updatedAt ?? booking.createdAt ?? Date.now()).toISOString().split('T')[0];

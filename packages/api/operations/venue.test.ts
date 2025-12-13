@@ -19,8 +19,8 @@ describe('Venue Operations', () => {
                 description: 'Premium yoga studio in Athens',
                 capacity: 25,
                 equipment: ['yoga mats', 'blocks', 'straps'],
-                amenities: ['changing room', 'showers'],
-                services: ['hot yoga', 'meditation'],
+                amenities: { showers: true },
+                services: { yoga: true, meditation: true },
                 primaryCategory: 'yoga_studio',
                 address: {
                     street: '123 Yoga Street',
@@ -38,7 +38,7 @@ describe('Venue Operations', () => {
 
         it('should prepare valid venue data', () => {
             const result = venueOperations.prepareCreateVenue(validVenueArgs);
-            
+
             expect(result.name).toBe('Kyma Yoga Studio');
             expect(result.email).toBe('contact@kymayoga.com');
             expect(result.phone).toBe('+30 123 456 7890');
@@ -58,7 +58,7 @@ describe('Venue Operations', () => {
                     name: '  Kyma Studio  '
                 }
             };
-            
+
             const result = venueOperations.prepareCreateVenue(args);
             expect(result.name).toBe('Kyma Studio');
         });
@@ -71,7 +71,7 @@ describe('Venue Operations', () => {
                     email: 'invalid-email'
                 }
             };
-            
+
             expect(() => venueOperations.prepareCreateVenue(args))
                 .toThrow(ConvexError);
         });
@@ -84,7 +84,7 @@ describe('Venue Operations', () => {
                     name: ''
                 }
             };
-            
+
             expect(() => venueOperations.prepareCreateVenue(args))
                 .toThrow(ConvexError);
         });
@@ -97,7 +97,7 @@ describe('Venue Operations', () => {
                     capacity: -5
                 }
             };
-            
+
             expect(() => venueOperations.prepareCreateVenue(args))
                 .toThrow(ConvexError);
         });
@@ -116,9 +116,9 @@ describe('Venue Operations', () => {
                     }
                 }
             };
-            
+
             const result = venueOperations.prepareCreateVenue(minimalArgs);
-            
+
             expect(result.name).toBe('Simple Studio');
             expect(result.email).toBe('simple@studio.com');
             expect(result.description).toBeUndefined();
@@ -139,9 +139,9 @@ describe('Venue Operations', () => {
                     }
                 }
             };
-            
+
             const result = venueOperations.prepareCreateVenue(args);
-            
+
             expect(result.address.state).toBeUndefined();
             expect(result.address.street).toBe('123 Main St');
         });
@@ -154,7 +154,7 @@ describe('Venue Operations', () => {
                     equipment: ['mats', '', 'blocks'] // Empty string should cause error
                 }
             };
-            
+
             expect(() => venueOperations.prepareCreateVenue(args))
                 .toThrow(ConvexError);
         });
@@ -163,7 +163,7 @@ describe('Venue Operations', () => {
     describe('createDefaultVenue', () => {
         it('should create default venue with correct properties', () => {
             const result = venueOperations.createDefaultVenue(mockBusinessId, mockUserId);
-            
+
             expect(result.businessId).toBe(mockBusinessId);
             expect(result.isActive).toBe(true);
             expect(result.createdBy).toBe(mockUserId);
@@ -175,7 +175,7 @@ describe('Venue Operations', () => {
             const before = Date.now();
             const result = venueOperations.createDefaultVenue(mockBusinessId, mockUserId);
             const after = Date.now();
-            
+
             expect(result.createdAt).toBeGreaterThanOrEqual(before);
             expect(result.createdAt).toBeLessThanOrEqual(after);
         });
@@ -199,11 +199,11 @@ describe('Venue Operations', () => {
                 country: 'Greece'
             },
             citySlug: 'athens',
-            coordinates: { latitude: 37.9838, longitude: 23.7275 },
-            primaryCategory: 'yoga_studio' as any,
-            socialMediaLinks: {},
-            amenities: [],
-            services: [],
+            primaryCategory: 'yoga_studio',
+            socialMedia: {},
+            amenities: {},
+            services: {},
+            isActive: true,
             imageStorageIds: [],
             createdAt: Date.now(),
             createdBy: mockUserId,
@@ -213,14 +213,15 @@ describe('Venue Operations', () => {
 
         it('should update only provided fields', () => {
             const updates: UpdateVenueArgs = {
+                venueId: existingVenue._id,
                 venue: {
                     name: 'Updated Studio',
                     capacity: 30
                 }
             };
-            
+
             const result = venueOperations.prepareUpdateVenue(updates, existingVenue);
-            
+
             expect(result.name).toBe('Updated Studio');
             expect(result.capacity).toBe(30);
             expect(result.description).toBeUndefined(); // Not included in update
@@ -228,121 +229,141 @@ describe('Venue Operations', () => {
 
         it('should update address fields selectively', () => {
             const updates: UpdateVenueArgs = {
+                venueId: existingVenue._id,
                 venue: {
                     address: {
                         street: '456 New Street',
                         city: 'Athens',
-                        area: 'Nea Smyrni'
+                        area: 'Nea Smyrni',
+                        zipCode: '10001',
+                        country: 'Greece',
                     }
                 }
             };
-            
+
             const result = venueOperations.prepareUpdateVenue(updates, existingVenue);
-            
-            expect(result.address.street).toBe('456 New Street');
-            expect(result.address.city).toBe('Athens');
-            expect(result.address.area).toBe('Nea Smyrni');
-            expect(result.address.zipCode).toBe('10001'); // Preserved from existing
-            expect(result.address.country).toBe('Greece'); // Preserved from existing
+
+            expect(result.address!.street).toBe('456 New Street');
+            expect(result.address!.city).toBe('Athens');
+            expect(result.address!.area).toBe('Nea Smyrni');
+            expect(result.address!.zipCode).toBe('10001'); // Preserved from existing
+            expect(result.address!.country).toBe('Greece'); // Preserved from existing
             expect(result.citySlug).toBe('athens');
         });
 
         it('should validate updated fields', () => {
             const updates: UpdateVenueArgs = {
+                venueId: existingVenue._id,
                 venue: {
                     name: '', // Invalid empty name
                     capacity: 25
                 }
             };
-            
+
             expect(() => venueOperations.prepareUpdateVenue(updates, existingVenue))
                 .toThrow(ConvexError);
         });
 
         it('should validate updated address fields', () => {
             const updates: UpdateVenueArgs = {
+                venueId: existingVenue._id,
                 venue: {
                     address: {
                         street: '', // Invalid empty street
-                        city: 'Athens'
+                        city: 'Athens',
+                        zipCode: '10001',
+                        country: 'Greece',
                     }
                 }
             };
-            
+
             expect(() => venueOperations.prepareUpdateVenue(updates, existingVenue))
                 .toThrow(ConvexError);
         });
 
         it('should handle coordinates update', () => {
             const updates: UpdateVenueArgs = {
+                venueId: existingVenue._id,
                 venue: {
                     address: {
+                        street: existingVenue.address.street,
+                        city: existingVenue.address.city,
+                        zipCode: existingVenue.address.zipCode,
+                        country: existingVenue.address.country,
                         latitude: 40.7128,
-                        longitude: -74.0060
+                        longitude: -74.0060,
                     }
                 }
             };
-            
+
             const result = venueOperations.prepareUpdateVenue(updates, existingVenue);
-            
-            expect(result.address.latitude).toBe(40.7128);
-            expect(result.address.longitude).toBe(-74.0060);
+
+            expect(result.address!.latitude).toBe(40.7128);
+            expect(result.address!.longitude).toBe(-74.0060);
         });
 
         it('should reject invalid coordinates', () => {
             const updates: UpdateVenueArgs = {
+                venueId: existingVenue._id,
                 venue: {
                     address: {
+                        street: existingVenue.address.street,
+                        city: existingVenue.address.city,
+                        zipCode: existingVenue.address.zipCode,
+                        country: existingVenue.address.country,
                         latitude: 95, // Invalid latitude > 90
-                        longitude: 23.7275
+                        longitude: 23.7275,
                     }
                 }
             };
-            
+
             expect(() => venueOperations.prepareUpdateVenue(updates, existingVenue))
                 .toThrow(ConvexError);
         });
 
         it('should handle equipment update', () => {
             const updates: UpdateVenueArgs = {
+                venueId: existingVenue._id,
                 venue: {
                     equipment: ['mats', 'blocks', 'straps']
                 }
             };
-            
+
             const result = venueOperations.prepareUpdateVenue(updates, existingVenue);
-            
+
             expect(result.equipment).toEqual(['mats', 'blocks', 'straps']);
         });
 
         it('should handle empty update', () => {
             const updates: UpdateVenueArgs = {
+                venueId: existingVenue._id,
                 venue: {}
             };
-            
+
             const result = venueOperations.prepareUpdateVenue(updates, existingVenue);
-            
+
             // Should preserve existing address
-            expect(result.address.street).toBe('123 Old Street');
-            expect(result.address.city).toBe('Athens');
+            expect(result.address!.street).toBe('123 Old Street');
+            expect(result.address!.city).toBe('Athens');
             expect(result.name).toBeUndefined(); // Not in update
         });
 
         it('should handle optional fields update', () => {
             const updates: UpdateVenueArgs = {
+                venueId: existingVenue._id,
                 venue: {
-                    amenities: ['wifi', 'parking'],
-                    services: ['personal training'],
+                    amenities: { accessible: true },
+                    services: { personalTraining: true },
                     socialMedia: {
                         instagram: '@newstudio'
                     }
                 }
             };
-            
+
             const result = venueOperations.prepareUpdateVenue(updates, existingVenue);
-            
-            expect(result.amenities).toEqual(['wifi', 'parking']);
-            expect(result.services).toEqual(['personal training']);
+
+            expect(result.amenities).toEqual({ accessible: true });
+            expect(result.services).toEqual({ personalTraining: true });
             expect(result.socialMedia).toEqual({ instagram: '@newstudio' });
         });
     });

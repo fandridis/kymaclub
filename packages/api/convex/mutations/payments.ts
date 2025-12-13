@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, internalMutation, MutationCtx } from "../_generated/server";
+import { internalMutation, MutationCtx } from "../_generated/server";
 import { Id, Doc } from "../_generated/dataModel";
 
 /***************************************************************

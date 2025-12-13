@@ -9,14 +9,15 @@
 
 import { describe, test, expect, beforeEach } from "vitest";
 import { api } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
 import { testT, initAuth, setupCompleteBookingScenario } from "./helpers";
 import { ConvexError } from "convex/values";
 import { BOOKING_LIMITS } from "../utils/constants";
 import { ERROR_CODES } from "../utils/errorCodes";
 
 describe("Booking Limits Integration Tests", () => {
-  let userId: string;
-  let businessId: string;
+  let userId: Id<"users">;
+  let businessId: Id<"businesses">;
   let asUser: any;
   let asBusiness: any;
 
@@ -41,7 +42,7 @@ describe("Booking Limits Integration Tests", () => {
       });
 
       expect(result.bookingId).toBeDefined();
-      
+
       // Verify active bookings count
       const activeCount = await asUser.query(api.queries.bookings.getActiveBookingsCount);
       expect(activeCount.count).toBe(1);
@@ -80,7 +81,7 @@ describe("Booking Limits Integration Tests", () => {
           hoursFromNow: 24 + (i * 2),
           credits: 1000
         });
-        
+
         await asUser.mutation(api.mutations.bookings.bookClass, {
           classInstanceId: instanceId,
         });
@@ -106,7 +107,7 @@ describe("Booking Limits Integration Tests", () => {
       } catch (error: any) {
         // Parse the error data if it's a string
         const errorData = typeof error.data === 'string' ? JSON.parse(error.data) : error.data;
-        
+
         expect(errorData.code).toBe(ERROR_CODES.MAX_ACTIVE_BOOKINGS_EXCEEDED);
         expect(errorData.message).toContain("You can only have 5 active bookings");
         expect(errorData.field).toBe("activeBookingsLimit");
@@ -121,7 +122,7 @@ describe("Booking Limits Integration Tests", () => {
           hoursFromNow: 24 + (i * 2),
           credits: 1000
         });
-        
+
         const result = await asUser.mutation(api.mutations.bookings.bookClass, {
           classInstanceId: instanceId,
         });
@@ -167,7 +168,7 @@ describe("Booking Limits Integration Tests", () => {
       // This test verifies that bookings for past classes don't count as active
       // We'll skip the actual booking of past classes since that's not allowed by business rules
       // Instead, we'll just verify that we can book the maximum number of future classes
-      
+
       // Should be able to book maximum number of future classes (past bookings don't interfere)
       const { instanceId: futureInstanceId } = await setupCompleteBookingScenario(asBusiness, businessId, userId, {
         hoursFromNow: 24,
@@ -179,7 +180,7 @@ describe("Booking Limits Integration Tests", () => {
       });
 
       expect(result.bookingId).toBeDefined();
-      
+
       // Verify active count is 1 (only future bookings count)
       const activeCount = await asUser.query(api.queries.bookings.getActiveBookingsCount);
       expect(activeCount.count).toBe(1);
@@ -203,7 +204,7 @@ describe("Booking Limits Integration Tests", () => {
           credits: 1000
         });
         classInstances.push({ id: instanceId });
-        
+
         await asUser.mutation(api.mutations.bookings.bookClass, {
           classInstanceId: instanceId,
         });
@@ -213,11 +214,11 @@ describe("Booking Limits Integration Tests", () => {
       const activeDetails = await asUser.query(api.queries.bookings.getActiveBookingsDetails);
 
       expect(activeDetails).toHaveLength(3);
-      
+
       // Should be sorted by start time (earliest first)
       expect(activeDetails[0].startTime).toBeLessThan(activeDetails[1].startTime);
       expect(activeDetails[1].startTime).toBeLessThan(activeDetails[2].startTime);
-      
+
       // Check structure
       for (const booking of activeDetails) {
         expect(booking.bookingId).toBeDefined();
@@ -241,7 +242,7 @@ describe("Booking Limits Integration Tests", () => {
           hoursFromNow: 24 + (i * 2),
           credits: 1000
         });
-        
+
         await asUser.mutation(api.mutations.bookings.bookClass, {
           classInstanceId: instanceId,
         });
@@ -288,7 +289,7 @@ describe("Booking Limits Integration Tests", () => {
           hoursFromNow: 24 + (i * 2),
           credits: 1000
         });
-        
+
         await asUser.mutation(api.mutations.bookings.bookClass, {
           classInstanceId: instanceId,
         });
@@ -339,7 +340,7 @@ describe("Booking Limits Integration Tests", () => {
           hoursFromNow: 24 + (i * 2),
           credits: 1000
         });
-        
+
         await asUser.mutation(api.mutations.bookings.bookClass, {
           classInstanceId: instanceId,
         });

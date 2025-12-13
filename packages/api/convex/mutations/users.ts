@@ -1,4 +1,4 @@
-import { internalMutation, mutation } from "../_generated/server";
+import { mutation } from "../_generated/server";
 import { getAuthenticatedUserOrThrow } from "../utils";
 import { ConvexError, v } from "convex/values";
 import { internalMutationWithTriggers } from "../triggers";

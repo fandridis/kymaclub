@@ -8,12 +8,13 @@ import type { Doc } from "../convex/_generated/dataModel";
 describe('Venue Rules', () => {
     const mockUser = createTestUser();
     const mockBusinessId = createTestBusiness()._id;
-    
+
     const createMockVenue = (overrides: Partial<Doc<"venues">> = {}): Doc<"venues"> => ({
         _id: "venue123" as any,
         _creationTime: Date.now(),
         businessId: mockBusinessId,
         name: "Test Venue",
+        email: "venue@test.com",
         description: "Test Description",
         capacity: 50,
         equipment: ["mat", "blocks"],
@@ -23,11 +24,11 @@ describe('Venue Rules', () => {
             zipCode: "12345",
             country: "Greece"
         },
-        coordinates: { latitude: 37.9838, longitude: 23.7275 },
-        primaryCategory: "yoga_studio" as any,
-        socialMediaLinks: {},
-        amenities: [],
-        services: [],
+        primaryCategory: "yoga_studio",
+        socialMedia: {},
+        amenities: {},
+        services: {},
+        isActive: true,
         imageStorageIds: [],
         createdAt: Date.now(),
         createdBy: mockUser._id,
@@ -108,9 +109,9 @@ describe('Venue Rules', () => {
         it('should return false when address is not provided', () => {
             const newVenue = { name: "Updated Name" };
 
-            const result = venueRules.coordinatesNeedRecalculation({ 
-                oldVenue, 
-                newVenue 
+            const result = venueRules.coordinatesNeedRecalculation({
+                oldVenue,
+                newVenue
             });
 
             expect(result).toBe(false);
@@ -126,9 +127,9 @@ describe('Venue Rules', () => {
                 }
             };
 
-            const result = venueRules.coordinatesNeedRecalculation({ 
-                oldVenue, 
-                newVenue 
+            const result = venueRules.coordinatesNeedRecalculation({
+                oldVenue,
+                newVenue
             });
 
             expect(result).toBe(false);
@@ -144,9 +145,9 @@ describe('Venue Rules', () => {
                 }
             };
 
-            const result = venueRules.coordinatesNeedRecalculation({ 
-                oldVenue, 
-                newVenue 
+            const result = venueRules.coordinatesNeedRecalculation({
+                oldVenue,
+                newVenue
             });
 
             expect(result).toBe(true);
@@ -162,9 +163,9 @@ describe('Venue Rules', () => {
                 }
             };
 
-            const result = venueRules.coordinatesNeedRecalculation({ 
-                oldVenue, 
-                newVenue 
+            const result = venueRules.coordinatesNeedRecalculation({
+                oldVenue,
+                newVenue
             });
 
             expect(result).toBe(true);
@@ -180,9 +181,9 @@ describe('Venue Rules', () => {
                 }
             };
 
-            const result = venueRules.coordinatesNeedRecalculation({ 
-                oldVenue, 
-                newVenue 
+            const result = venueRules.coordinatesNeedRecalculation({
+                oldVenue,
+                newVenue
             });
 
             expect(result).toBe(true);
@@ -198,9 +199,9 @@ describe('Venue Rules', () => {
                 }
             };
 
-            const result = venueRules.coordinatesNeedRecalculation({ 
-                oldVenue, 
-                newVenue 
+            const result = venueRules.coordinatesNeedRecalculation({
+                oldVenue,
+                newVenue
             });
 
             expect(result).toBe(true);
@@ -227,9 +228,9 @@ describe('Venue Rules', () => {
                 }
             };
 
-            const result = venueRules.coordinatesNeedRecalculation({ 
-                oldVenue: oldVenueWithState, 
-                newVenue 
+            const result = venueRules.coordinatesNeedRecalculation({
+                oldVenue: oldVenueWithState,
+                newVenue
             });
 
             expect(result).toBe(true);

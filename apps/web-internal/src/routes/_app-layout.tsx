@@ -95,7 +95,7 @@ function RouteComponent() {
                         ) : (
                             <Link
                                 to="/sign-in-tester"
-                                search={{ redirect: window.location.href }}
+                                search={(prev) => ({ ...prev, redirect: window.location.href })}
                                 className="inline-block px-8 py-4 bg-cyan-500/10 border border-cyan-500/50 font-mono text-cyan-400 tracking-wider uppercase transition-all duration-300 hover:bg-cyan-500/20 hover:border-cyan-400 hover:shadow-[0_0_30px_rgba(6,182,212,0.3)] rounded-lg"
                             >
                                 [ AUTHENTICATE ]

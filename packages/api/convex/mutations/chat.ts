@@ -3,7 +3,6 @@ import { Infer, v } from "convex/values";
 import { getAuthenticatedUserOrThrow } from "../utils";
 import { chatService } from "../../services/chatService";
 import { mutationWithTriggers } from "../triggers";
-import { rateLimiter } from "../utils/rateLimiter";
 
 // Mutation args validation
 export const sendMessageArgs = v.object({

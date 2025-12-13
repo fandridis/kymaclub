@@ -1,6 +1,5 @@
 import { v } from "convex/values";
 import { query, internalQuery } from "../_generated/server";
-import { Id } from "../_generated/dataModel";
 
 /**
  * Get user's active subscription (internal query for service layer)

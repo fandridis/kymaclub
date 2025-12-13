@@ -1,6 +1,5 @@
 
 import type { Doc, Id } from "../convex/_generated/dataModel";
-import type { QueryCtx } from "../convex/_generated/server";
 import type { CreateClassTemplateArgs, UpdateClassTemplateArgs } from "../convex/mutations/classTemplates";
 import { classValidations } from "../validations/class";
 import { throwIfError } from "../utils/core";

@@ -331,7 +331,12 @@ describe('Tournament Americano Operations', () => {
 
     describe('applyMatchResult', () => {
         it('should update match with score', () => {
-            const state = initializeTournamentState(validConfig, ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']);
+            const participantIds = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'];
+            const state = {
+                ...initializeTournamentState(validConfig, participantIds),
+                // TournamentAmericanoState requires participant snapshots
+                participants: participantIds.map(id => ({ id, displayName: id })),
+            };
             const matchId = state.matches[0].id;
 
             const newState = applyMatchResult(state, {
@@ -347,7 +352,11 @@ describe('Tournament Americano Operations', () => {
         });
 
         it('should recalculate standings after result', () => {
-            const state = initializeTournamentState(validConfig, ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']);
+            const participantIds = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'];
+            const state = {
+                ...initializeTournamentState(validConfig, participantIds),
+                participants: participantIds.map(id => ({ id, displayName: id })),
+            };
             const matchId = state.matches[0].id;
 
             const newState = applyMatchResult(state, {
@@ -384,7 +393,11 @@ describe('Tournament Americano Operations', () => {
 
     describe('getTournamentSummary', () => {
         it('should return correct summary', () => {
-            const state = initializeTournamentState(validConfig, ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']);
+            const participantIds = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'];
+            const state = {
+                ...initializeTournamentState(validConfig, participantIds),
+                participants: participantIds.map(id => ({ id, displayName: id })),
+            };
             const summary = getTournamentSummary(state);
 
             expect(summary.currentRound).toBe(1);

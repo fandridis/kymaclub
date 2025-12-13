@@ -199,7 +199,7 @@ const calculateDiscount = async (
 
   // Evaluate each rule and find the best valid discount
   let bestDiscountAmount = 0;
-  let bestRuleName = null;
+  let bestRuleName: string | null = null;
 
   for (const rule of discountRules) {
     // Use shared doesRuleApply from utils/classDiscount.ts
@@ -365,7 +365,7 @@ const calculateDiscountFromInstance = async (
 
   // Evaluate each rule and find the best valid discount
   let bestDiscountAmount = 0;
-  let bestRuleName = null;
+  let bestRuleName: string | null = null;
 
   for (const rule of discountRules) {
     // Use shared doesRuleApply from utils/classDiscount.ts
