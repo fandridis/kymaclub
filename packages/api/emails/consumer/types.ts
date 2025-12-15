@@ -73,8 +73,9 @@ export interface WelcomeEmailTranslations {
   readonly subject: string;
   readonly title: string;
   readonly greeting: string;
-  readonly credits_label: string;
-  readonly credits_ready: string;
+  readonly coupon_label: string;
+  readonly coupon_value: string;
+  readonly coupon_ready: string;
   readonly what_can_you_do_title: string;
   readonly what_can_you_do_body: string;
   readonly cta_button: string;

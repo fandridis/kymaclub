@@ -479,8 +479,11 @@ export const usersFields = {
     v.literal("web-business")
   )),
 
-  // Simple credit balance for booking classes
+  // Simple credit balance for booking classes (DEPRECATED - migrating to direct payments)
   credits: v.optional(v.number()),
+
+  // Loyalty points balance (earned from bookings, not purchasable)
+  points: v.optional(v.number()),
 
   // Consumer profile image
   consumerProfileImageStorageId: v.optional(v.id("_storage")),
@@ -934,6 +937,13 @@ export const bookingsFields = {
 
   // Pre-booking questionnaire answers (snapshot of questions + user's answers)
   questionnaireAnswers: v.optional(v.object(questionnaireAnswersFields)),
+
+  // Stripe direct payment fields (new payment flow - no credits)
+  stripePaymentIntentId: v.optional(v.string()), // Stripe PaymentIntent ID for direct class payment
+  paidAmount: v.optional(v.number()), // Amount paid in cents via Stripe
+  pointsAwarded: v.optional(v.number()), // Loyalty points awarded (3% of paidAmount)
+  stripeRefundId: v.optional(v.string()), // Stripe Refund ID when cancellation refund is processed
+  refundedAmount: v.optional(v.number()), // Amount actually refunded in cents (may differ from paidAmount based on policy)
 
   ...auditFields,
   ...softDeleteFields,
@@ -1479,6 +1489,140 @@ export const subscriptionEventsFields = {
   ...auditFields,
 };
 
+/***************************************************************
+ * Points System - Loyalty points (earned, never purchased)
+ * Users earn 3% of class payment in points, redeemable for perks
+ ***************************************************************/
+export const pointTransactionsFields = {
+  userId: v.id("users"),
+
+  // Signed amount (positive for earn, negative for redeem)
+  amount: v.number(),
+
+  // Transaction type
+  type: v.union(
+    v.literal("earn"),    // Points earned from booking payment
+    v.literal("redeem"),  // Points redeemed for perks
+    v.literal("gift"),    // Points gifted by admin
+    v.literal("expire"),  // Points expired (future feature)
+  ),
+
+  // Reason for the transaction
+  reason: v.union(
+    // Earn reasons
+    v.literal("booking_cashback"),    // 3% cashback from class payment
+    v.literal("referral_bonus"),      // Referral program
+    v.literal("welcome_bonus"),       // Welcome bonus points
+
+    // Redeem reasons
+    v.literal("free_class"),          // Redeemed for a free class
+    v.literal("merchandise"),         // Redeemed for merchandise
+    v.literal("other_perk"),          // Other perks
+
+    // Gift reasons
+    v.literal("admin_gift"),          // Manual gift from admin
+    v.literal("campaign_bonus"),      // Marketing campaign
+  ),
+
+  // Related entities
+  bookingId: v.optional(v.id("bookings")),
+  classInstanceId: v.optional(v.id("classInstances")),
+
+  // Description for display
+  description: v.string(),
+
+  createdAt: v.number(),
+  createdBy: v.id("users"),
+};
+
+/***************************************************************
+ * User Coupons - Free class and promotional coupons
+ * Given as welcome bonus, referrals, or admin gifts
+ ***************************************************************/
+export const userCouponsFields = {
+  userId: v.id("users"),
+
+  // Coupon type
+  type: v.union(
+    v.literal("free_class"),          // One free class booking
+    v.literal("discount_percent"),    // Percentage discount (future)
+    v.literal("discount_fixed"),      // Fixed amount discount (future)
+  ),
+
+  // Source of the coupon
+  source: v.union(
+    v.literal("welcome_bonus"),       // New user welcome
+    v.literal("referral"),            // Referral program
+    v.literal("admin_gift"),          // Manual gift from admin
+    v.literal("campaign"),            // Marketing campaign
+  ),
+
+  // Usage limits
+  maxRedemptions: v.number(),         // How many times this can be used (usually 1)
+  timesUsed: v.number(),              // How many times it has been used
+
+  // Validity
+  expiresAt: v.optional(v.number()),  // Expiration timestamp (optional)
+  isActive: v.boolean(),              // Whether coupon is still active
+
+  // Discount details (for discount coupons, future use)
+  discountValue: v.optional(v.number()), // Percentage or fixed amount
+
+  // Redemption tracking
+  redemptions: v.optional(v.array(v.object({
+    bookingId: v.id("bookings"),
+    classInstanceId: v.id("classInstances"),
+    redeemedAt: v.number(),
+  }))),
+
+  createdAt: v.number(),
+  createdBy: v.id("users"),
+  ...softDeleteFields,
+};
+
+/***************************************************************
+ * Pending Bookings - Temporary seat reservations during payment
+ * Holds a spot for 10 minutes while user completes Stripe payment
+ ***************************************************************/
+export const pendingBookingsFields = {
+  userId: v.id("users"),
+  classInstanceId: v.id("classInstances"),
+  businessId: v.id("businesses"),
+
+  // Stripe payment tracking
+  stripePaymentIntentId: v.string(),
+
+  // Reservation status
+  status: v.union(
+    v.literal("pending"),     // Awaiting payment confirmation
+    v.literal("confirmed"),   // Payment succeeded, booking created
+    v.literal("expired"),     // Reservation timed out
+    v.literal("cancelled"),   // User cancelled payment
+    v.literal("failed"),      // Payment failed
+  ),
+
+  // Price snapshot at reservation time
+  priceInCents: v.number(),
+  originalPriceInCents: v.number(),
+  appliedDiscount: v.optional(v.object({
+    source: v.union(v.literal("template_rule"), v.literal("instance_rule")),
+    discountType: v.union(v.literal("percentage"), v.literal("fixed_amount")),
+    discountValue: v.number(),
+    ruleName: v.string(),
+  })),
+
+  // Questionnaire answers (captured at reservation time)
+  questionnaireAnswers: v.optional(v.object(questionnaireAnswersFields)),
+
+  // Timing
+  expiresAt: v.number(),              // When reservation expires (10 min from creation)
+  confirmedAt: v.optional(v.number()), // When payment was confirmed
+  bookingId: v.optional(v.id("bookings")), // Created booking after confirmation
+
+  createdAt: v.number(),
+  createdBy: v.id("users"),
+};
+
 /**
  * Pending Auth Languages - Temporary storage for language preference during OTP auth flow
  * Used to pass language context from client to sendVerificationRequest callback
@@ -1825,5 +1969,40 @@ export default defineSchema({
     .index("by_actor", ["actor.userId", "createdAt"])
     .index("by_auditType", ["auditType", "createdAt"])
     .index("by_created", ["createdAt"]),
+
+  /**
+   * Point Transactions - Loyalty points ledger (earn/redeem only, never purchase)
+   * Users earn 3% of class payment in points
+   */
+  pointTransactions: defineTable(pointTransactionsFields)
+    .index("by_user", ["userId"])
+    .index("by_user_type", ["userId", "type"])
+    .index("by_user_created", ["userId", "createdAt"])
+    .index("by_type", ["type"])
+    .index("by_reason", ["reason"])
+    .index("by_booking", ["bookingId"]),
+
+  /**
+   * User Coupons - Free class and promotional coupons
+   * Given as welcome bonus, referrals, or admin gifts
+   */
+  userCoupons: defineTable(userCouponsFields)
+    .index("by_user", ["userId"])
+    .index("by_user_active", ["userId", "isActive"])
+    .index("by_user_type_active", ["userId", "type", "isActive"])
+    .index("by_source", ["source"])
+    .index("by_expires", ["expiresAt"]),
+
+  /**
+   * Pending Bookings - Temporary seat reservations during payment
+   * Holds a spot for 10 minutes while user completes Stripe payment
+   */
+  pendingBookings: defineTable(pendingBookingsFields)
+    .index("by_user", ["userId"])
+    .index("by_class_instance", ["classInstanceId"])
+    .index("by_class_instance_status", ["classInstanceId", "status"])
+    .index("by_stripe_payment_intent", ["stripePaymentIntentId"])
+    .index("by_status", ["status"])
+    .index("by_expires", ["expiresAt"]),
 
 });

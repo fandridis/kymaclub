@@ -18,7 +18,7 @@ import {
     Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useMutation } from "convex/react";
+import { useMutation, useAction } from "convex/react";
 import { api } from "@repo/api/convex/_generated/api";
 import { toast } from "sonner";
 import { CancelBookingDialog } from "./cancel-booking-dialog";
@@ -26,6 +26,11 @@ import { RejectBookingDialog } from "./reject-booking-dialog";
 import { Badge } from "@/components/ui/badge";
 import type { Doc } from "@repo/api/convex/_generated/dataModel";
 import { formatEuros } from "@repo/utils/credits";
+
+// Format cents to EUR display
+function formatEuro(cents: number): string {
+    return `€${(cents / 100).toFixed(2)}`;
+}
 import { QuestionnaireAnswersDisplay } from "@/components/questionnaire-answers-display";
 import type { QuestionnaireAnswers } from "@repo/api/types/questionnaire";
 
@@ -47,10 +52,11 @@ export function ClassBookingsItem({
     const [isAllowingRebook, setIsAllowingRebook] = useState(false);
     const [isApproving, setIsApproving] = useState(false);
     const [isRejecting, setIsRejecting] = useState(false);
-    const cancelBooking = useMutation(api.mutations.bookings.cancelBooking);
+    // Use actions for Stripe refund processing
+    const cancelBookingWithRefund = useAction(api.actions.payments.cancelBookingWithRefund);
+    const rejectBookingWithRefund = useAction(api.actions.payments.rejectBookingWithRefund);
     const allowRebooking = useMutation(api.mutations.bookings.allowRebooking);
     const approveBooking = useMutation(api.mutations.bookings.approveBooking);
-    const rejectBooking = useMutation(api.mutations.bookings.rejectBooking);
 
     const customerName = booking.userSnapshot?.name;
 
@@ -60,13 +66,20 @@ export function ClassBookingsItem({
         try {
             setIsCancelling(true);
 
-            await cancelBooking({
+            const result = await cancelBookingWithRefund({
                 bookingId: booking._id,
                 reason: reason || "Cancelled by business",
                 cancelledBy: "business"
             });
 
-            toast.success(`Cancelled booking for ${customerName}`);
+            // Show refund info in toast
+            if (result.refundedAmount > 0) {
+                toast.success(
+                    `Cancelled booking for ${customerName}. ${formatEuro(result.refundedAmount)} refunded.`
+                );
+            } else {
+                toast.success(`Cancelled booking for ${customerName}`);
+            }
 
             // Call parent callback if provided
             if (onCancelBooking) {
@@ -127,12 +140,19 @@ export function ClassBookingsItem({
         try {
             setIsRejecting(true);
 
-            await rejectBooking({
+            const result = await rejectBookingWithRefund({
                 bookingId: booking._id,
                 reason: reason || undefined,
             });
 
-            toast.success(`Rejected booking for ${customerName}`);
+            // Show refund info in toast
+            if (result.refundedAmount > 0) {
+                toast.success(
+                    `Rejected booking for ${customerName}. ${formatEuro(result.refundedAmount)} refunded.`
+                );
+            } else {
+                toast.success(`Rejected booking for ${customerName}`);
+            }
             setShowRejectDialog(false);
         } catch (error) {
             console.error('Failed to reject booking:', error);

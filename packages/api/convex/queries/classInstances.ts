@@ -1,4 +1,4 @@
-import { query } from "../_generated/server";
+import { query, internalQuery } from "../_generated/server";
 import { ConvexError, v } from "convex/values";
 import { classInstanceService } from "../../services/classInstanceService";
 import { getAuthenticatedUserOrThrow } from "../utils";
@@ -6,6 +6,7 @@ import { ERROR_CODES } from "../../utils/errorCodes";
 import { filterTestClassInstances, isClassInstanceVisible, isUserTester } from "../../utils/testDataFilter";
 import { normalizeCityInput } from "@repo/utils/constants";
 import type { Id } from "../_generated/dataModel";
+import { calculateBestDiscount } from "../../utils/classDiscount";
 
 /***************************************************************
  * Shared Validators
@@ -877,4 +878,70 @@ export const getUpcomingClassInstancesByTemplate = query({
             isBookedByUser: bookedInstanceIds.has(instance._id),
         }));
     }
+});
+
+/***************************************************************
+ * Internal Query: Get Class Instance for Payment
+ * Returns pricing info needed for Stripe PaymentIntent creation
+ ***************************************************************/
+export const getClassInstanceForPayment = internalQuery({
+    args: {
+        classInstanceId: v.id("classInstances"),
+    },
+    returns: v.union(
+        v.null(),
+        v.object({
+            originalPrice: v.number(),
+            finalPrice: v.number(),
+            hasDiscount: v.boolean(),
+            discountSource: v.optional(v.string()),
+            discountRuleName: v.optional(v.string()),
+            questionnaire: v.optional(v.any()),
+            className: v.string(),
+            startTime: v.number(),
+        })
+    ),
+    handler: async (ctx, { classInstanceId }) => {
+        const instance = await ctx.db.get(classInstanceId);
+        if (!instance || instance.deleted) {
+            return null;
+        }
+
+        // Get template for default pricing
+        const template = await ctx.db.get(instance.templateId);
+        if (!template) {
+            return null;
+        }
+
+        // Calculate discount if applicable
+        const discountResult = calculateBestDiscount(instance, template, {
+            bookingTime: Date.now(),
+        });
+
+        const className = instance.name ?? instance.templateSnapshot?.name ?? template.name ?? "Class";
+
+        return {
+            originalPrice: discountResult.originalPrice,
+            finalPrice: discountResult.finalPrice,
+            hasDiscount: !!discountResult.appliedDiscount,
+            discountSource: discountResult.appliedDiscount?.source,
+            discountRuleName: discountResult.appliedDiscount?.ruleName,
+            questionnaire: instance.questionnaire ?? template.questionnaire,
+            className,
+            startTime: instance.startTime,
+        };
+    },
+});
+
+/**
+ * Get class instance by ID (internal - no auth check)
+ * Used by actions that have already verified authorization
+ */
+export const getClassInstanceByIdInternal = internalQuery({
+    args: {
+        classInstanceId: v.id("classInstances"),
+    },
+    handler: async (ctx, { classInstanceId }) => {
+        return ctx.db.get(classInstanceId);
+    },
 });

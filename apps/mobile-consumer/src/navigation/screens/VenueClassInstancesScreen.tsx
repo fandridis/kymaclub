@@ -3,7 +3,7 @@ import { View, StyleSheet, ActivityIndicator, Text, ScrollView, TouchableOpacity
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
-import { XIcon, DiamondIcon, ClockIcon } from 'lucide-react-native';
+import { XIcon, EuroIcon, ClockIcon } from 'lucide-react-native';
 import { useQuery } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { Image } from 'expo-image';
@@ -12,7 +12,8 @@ import type { RootStackParamListWithNestedTabs } from '..';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
 import { theme } from '../../theme';
 import { DateFilterBar } from '../../components/DateFilterBar';
-import { centsToCredits } from '@repo/utils/credits';
+// Format cents to EUR display (e.g., 1200 -> "€12.00")
+const formatEuro = (cents: number) => `€${(cents / 100).toFixed(2)}`;
 import { useTypedTranslation } from '../../i18n/typed';
 
 type VenueClassInstancesRoute = RouteProp<RootStackParamListWithNestedTabs, 'VenueClassInstancesModal'>;
@@ -230,8 +231,8 @@ export function VenueClassInstancesScreen() {
                                             <View style={styles.classInfo}>
                                                 <Text style={styles.className}>{classGroup.name}</Text>
                                                 <View style={styles.classMetaRow}>
-                                                    <DiamondIcon size={14} color={theme.colors.zinc[500]} />
-                                                    <Text style={styles.classPrice}>{centsToCredits(classGroup.price)}</Text>
+                                                    <EuroIcon size={14} color={theme.colors.zinc[500]} />
+                                                    <Text style={styles.classPrice}>{formatEuro(classGroup.price)}</Text>
 
                                                     <View style={styles.dotSeparator} />
 

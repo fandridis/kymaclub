@@ -6,7 +6,7 @@ import { internal } from "../_generated/api";
 import { classInstanceRules } from "../../rules/classInstance";
 import { classInstanceOperations } from "../../operations/classInstance";
 import { venueRules } from "../../rules/venue";
-import { creditService } from "../../services/creditService";
+import { couponService } from "../../services/couponService";
 import { reviewsService } from "../../services/reviewsService";
 
 const triggers = new Triggers<DataModel>();
@@ -94,19 +94,16 @@ triggers.register("users", async (ctx, change) => {
     }
 
     if (operation === "update" && !oldDoc.hasConsumerOnboarded && newDoc.hasConsumerOnboarded) {
-        await creditService.addCredits(ctx, {
+        // Create a free class welcome coupon
+        const { couponId } = await couponService.createWelcomeCoupon(ctx, {
             userId: id,
-            amount: 10,
-            type: "gift",
-            reason: "welcome_bonus",
-            description: "Welcome bonus for new consumer",
         });
 
         // Send welcome email notification
         await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleWelcomeBonusEvent, {
             payload: {
                 userId: id,
-                welcomeCredits: 10,
+                welcomeCouponId: couponId,
             },
         });
     }
@@ -355,32 +352,3 @@ triggers.register("venueReviews", async (ctx, change) => {
     }
 });
 
-/***************************************************************
- * SUBSCRIPTION EVENTS TRIGGERS
- ***************************************************************/
-triggers.register("subscriptionEvents", async (ctx, change) => {
-    const { id, oldDoc, newDoc, operation } = change;
-
-    if (operation === 'insert' && newDoc && newDoc.creditsAllocated && newDoc.creditsAllocated > 0) {
-        // Get subscription details to find user ID
-        if (newDoc.subscriptionId) {
-            const subscription = await ctx.db.get(newDoc.subscriptionId);
-            if (subscription) {
-                await ctx.scheduler.runAfter(100, internal.mutations.notifications.handleSubscriptionCreditsReceivedEvent, {
-                    payload: {
-                        subscriptionEventId: id,
-                        subscriptionId: newDoc.subscriptionId,
-                        userId: subscription.userId,
-                        creditsAllocated: newDoc.creditsAllocated,
-                        eventType: newDoc.eventType,
-                        planName: subscription.planName
-                    },
-                });
-            } else {
-                console.warn('Subscription not found for subscription event', { subscriptionId: newDoc.subscriptionId });
-            }
-        } else {
-            console.warn('No subscriptionId in subscription event', { subscriptionEventId: id });
-        }
-    }
-});

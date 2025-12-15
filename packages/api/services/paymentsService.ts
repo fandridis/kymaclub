@@ -779,6 +779,11 @@ export const paymentsService = {
           await this.handleOneTimePaymentFailed(ctx, event);
           break;
 
+        // NEW: Direct class booking payment events
+        case "payment_intent.succeeded":
+          await this.handleClassPaymentSucceeded(ctx, event);
+          break;
+
         // Charge events (can be from both subscriptions and one-time payments)
         case "charge.succeeded":
         case "charge.updated":
@@ -1260,10 +1265,108 @@ export const paymentsService = {
   async handleOneTimePaymentFailed(ctx: ActionCtx, event: Stripe.Event) {
     const paymentIntent = event.data.object as Stripe.PaymentIntent;
 
+    // Check if this is a class booking payment
+    if (paymentIntent.metadata?.type === "class_booking") {
+      await ctx.runMutation(internal.mutations.reservations.failReservation, {
+        stripePaymentIntentId: paymentIntent.id,
+      });
+      return;
+    }
+
     // Mark the pending transaction as failed
     // This is handled by the creditService.completePurchase method
     // which will update the status based on the payment intent status
+  },
 
+  /**
+   * Handle direct class payment succeeded (NEW FLOW)
+   * Creates the booking and awards loyalty points
+   */
+  async handleClassPaymentSucceeded(ctx: ActionCtx, event: Stripe.Event) {
+    const paymentIntent = event.data.object as Stripe.PaymentIntent;
+
+    // Only handle class_booking payment intents
+    if (paymentIntent.metadata?.type !== "class_booking") {
+      return;
+    }
+
+    const classInstanceId = paymentIntent.metadata.classInstanceId;
+    const userId = paymentIntent.metadata.userId;
+    const paidAmountInCents = paymentIntent.amount;
+
+    if (!classInstanceId || !userId) {
+      console.error("[Webhook] Missing metadata in class payment", {
+        paymentIntentId: paymentIntent.id,
+        metadata: paymentIntent.metadata,
+      });
+      return;
+    }
+
+    // Confirm the reservation
+    const confirmResult = await ctx.runMutation(
+      internal.mutations.reservations.confirmReservation,
+      { stripePaymentIntentId: paymentIntent.id }
+    );
+
+    if (!confirmResult.success) {
+      console.error("[Webhook] Failed to confirm reservation", {
+        paymentIntentId: paymentIntent.id,
+      });
+      return;
+    }
+
+    // Check if already processed (idempotency)
+    if (confirmResult.alreadyConfirmed) {
+      return;
+    }
+
+    // Get the pending booking to create the actual booking
+    const pendingBooking = await ctx.runQuery(
+      internal.queries.reservations.getPendingBookingByPaymentIntent,
+      { stripePaymentIntentId: paymentIntent.id }
+    );
+
+    if (!pendingBooking) {
+      console.error("[Webhook] Pending booking not found", {
+        paymentIntentId: paymentIntent.id,
+      });
+      return;
+    }
+
+    // Create the actual booking
+    const bookingResult = await ctx.runMutation(
+      internal.mutations.bookings.createPaidBooking,
+      {
+        userId: userId as Id<"users">,
+        classInstanceId: classInstanceId as Id<"classInstances">,
+        pendingBookingId: pendingBooking._id,
+        stripePaymentIntentId: paymentIntent.id,
+        paidAmount: paidAmountInCents,
+        originalPrice: pendingBooking.originalPriceInCents,
+        finalPrice: pendingBooking.priceInCents,
+        appliedDiscount: pendingBooking.appliedDiscount ? {
+          source: pendingBooking.appliedDiscount.source,
+          discountType: pendingBooking.appliedDiscount.discountType,
+          creditsSaved: Math.floor(pendingBooking.appliedDiscount.discountValue / 100),
+          ruleName: pendingBooking.appliedDiscount.ruleName,
+        } : undefined,
+        questionnaireAnswers: pendingBooking.questionnaireAnswers,
+      }
+    );
+
+    // Link booking to pending booking
+    await ctx.runMutation(internal.mutations.reservations.linkBooking, {
+      pendingBookingId: pendingBooking._id,
+      bookingId: bookingResult.bookingId,
+    });
+
+    // Award loyalty points (3% cashback)
+    await ctx.runMutation(internal.mutations.points.awardBookingCashback, {
+      userId: userId as Id<"users">,
+      bookingId: bookingResult.bookingId,
+      classInstanceId: classInstanceId as Id<"classInstances">,
+      paidAmountInCents,
+    });
   },
 
   /**

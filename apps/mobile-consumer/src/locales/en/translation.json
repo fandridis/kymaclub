@@ -225,9 +225,9 @@
                     "title": "Bookings & Changes",
                     "description": "Notifications about booking cancellations, changes and rebookable classes."
                 },
-                "subscriptions": {
-                    "title": "Subscriptions & Credits",
-                    "description": "Payment receipts, subscription updates, and credit notifications."
+                "payments": {
+                    "title": "Payments & Rewards",
+                    "description": "Payment receipts, points earned, and coupon notifications."
                 }
             },
             "status": {
@@ -446,6 +446,8 @@
         "earlyBirdDiscount": "Early bird discount: {{time}}",
         "lastMinuteDiscount": "Last minute discount: {{time}}",
         "discountActive": "Discount active: {{time}}",
+        "save": "Save",
+        "payWithStripe": "Pay {{price}} with Stripe",
         "cancellation": {
             "freeCancelWithTime": "Due to {{reason}}, you can cancel this class free of charge for the next {{time}}. You will receive a full refund of your credits.",
             "freeCancelWithoutTime": "Due to {{reason}}, you can cancel this class and receive a full refund of your credits.",
@@ -605,11 +607,16 @@
     "payment": {
         "success": "Payment Successful!",
         "successMessage": "Your payment has been processed successfully.",
+        "bookingConfirmed": "Your booking has been confirmed. You can view it in your bookings.",
         "cancelled": "Payment Cancelled",
-        "cancelledMessage": "Your payment was cancelled.",
+        "cancelledMessage": "Your payment was cancelled. No charges were made.",
         "returnToApp": "Return to App",
-        "viewCredits": "View Credits",
-        "viewSubscription": "View Subscription"
+        "viewBookings": "View Bookings",
+        "processingPayment": "Processing payment...",
+        "paymentFailed": "Payment Failed",
+        "paymentFailedMessage": "We couldn't process your payment. Please try again.",
+        "securePayment": "Secure payment",
+        "poweredByStripe": "Powered by Stripe"
     },
     "news": {
         "title": "News",
@@ -619,7 +626,7 @@
         "loading": "Loading news...",
         "welcomeBanner": {
             "title": "Welcome aboard! 🎉",
-            "subtitle": "We are excited to have you! We've added 10 credits to your account to get you started. Look around, browse the different businesses and book any class you like!",
+            "subtitle": "We are excited to have you! You've received a free class coupon to get you started. Look around, browse the different businesses and book your first class for free!",
             "exploreButton": "Explore"
         },
         "noUpcomingClasses": {
@@ -800,8 +807,43 @@
         "pleaseAnswerQuestions": "Please answer the following questions before booking.",
         "classPrice": "Class price",
         "total": "Total",
-        "confirmBooking": "Confirm Booking · {{credits}} credits",
+        "confirmBooking": "Confirm Booking · €{{price}}",
         "booking": "Booking...",
         "answerRequired": "Please answer all required questions"
+    },
+    "coupons": {
+        "title": "Coupons",
+        "myCoupons": "My Coupons",
+        "available": "Available Coupons",
+        "noCoupons": "No coupons available",
+        "freeClass": "Free Class",
+        "freeClassDescription": "Book any class for free",
+        "expiresIn": "Expires in {{days}} days",
+        "expired": "Expired",
+        "used": "Used",
+        "useCoupon": "Use Coupon",
+        "applyCoupon": "Apply Coupon",
+        "couponApplied": "Coupon Applied",
+        "couponRemoved": "Coupon Removed",
+        "welcomeBonus": "Welcome Bonus",
+        "referralBonus": "Referral Bonus",
+        "validUntil": "Valid until {{date}}"
+    },
+    "points": {
+        "title": "Points",
+        "myPoints": "My Points",
+        "balance": "Points Balance",
+        "earn": "Earn Points",
+        "redeem": "Redeem Points",
+        "history": "Points History",
+        "noHistory": "No points history",
+        "earnedFromBooking": "Earned from booking",
+        "redeemedForClass": "Redeemed for free class",
+        "cashback": "{{percent}}% cashback",
+        "pointsEarned": "+{{points}} points",
+        "pointsRedeemed": "-{{points}} points",
+        "redeemForFreeClass": "Redeem for free class",
+        "notEnoughPoints": "Not enough points",
+        "pointsRequired": "{{points}} points required"
     }
 }

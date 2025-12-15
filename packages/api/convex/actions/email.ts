@@ -200,13 +200,13 @@ export const sendCreditsGiftEmail = internalAction({
 });
 
 /**
- * Send welcome email to new consumer
+ * Send welcome email to new consumer with free class coupon
  */
 export const sendWelcomeEmail = internalAction({
     args: v.object({
         customerEmail: v.string(),
         customerName: v.string(),
-        welcomeCredits: v.number(),
+        welcomeCouponId: v.id("userCoupons"),
         language: v.optional(v.string()),
     }),
     handler: async (ctx, args) => {
@@ -216,7 +216,7 @@ export const sendWelcomeEmail = internalAction({
                 args: {
                     customerEmail: args.customerEmail,
                     customerName: args.customerName,
-                    welcomeCredits: args.welcomeCredits,
+                    welcomeCouponId: args.welcomeCouponId,
                     language: args.language,
                 }
             });

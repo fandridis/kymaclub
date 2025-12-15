@@ -23,7 +23,7 @@ const MOCK_DATA: FeaturedItem[] = [
     {
         id: '2',
         title: 'Welcome Bonus',
-        subtitle: 'Get 50 credits on your first top-up',
+        subtitle: 'Get a free class coupon when you sign up',
         backgroundColor: theme.colors.sky[500],
     },
     {

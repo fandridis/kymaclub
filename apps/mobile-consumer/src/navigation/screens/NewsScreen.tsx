@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Dimensions, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { MapPinIcon, StarIcon, UserIcon, DiamondIcon, ClockIcon } from 'lucide-react-native';
+import { MapPinIcon, StarIcon, UserIcon, EuroIcon, ClockIcon } from 'lucide-react-native';
 import { useQuery, useMutation, useConvexAuth } from 'convex/react';
 import { useNavigation, NavigationProp, useFocusEffect } from '@react-navigation/native';
 import { api } from '@repo/api/convex/_generated/api';
@@ -13,16 +13,19 @@ import { useCurrentUser } from '../../hooks/useCurrentUser';
 import type { Id } from '@repo/api/convex/_generated/dataModel';
 import { useAllVenues } from '../../features/explore/hooks/useAllVenues';
 import type { RootStackParamListWithNestedTabs } from '../index';
-import { centsToCredits } from '@repo/utils/credits';
+// Format cents to EUR display (e.g., 1200 -> "€12.00")
+const formatEuro = (cents: number) => {
+    return `€${(cents / 100).toFixed(2)}`;
+};
 import { NewsClassCard } from '../../components/news/NewsCard';
 import { FeaturedCarousel } from '../../components/news/FeaturedCarousel';
 import { XIcon } from 'lucide-react-native';
-import { CreditsBadge } from '../../components/CreditsBadge';
+import { PointsBadge } from '../../components/PointsBadge';
 import { ProfileIconButton } from '../../components/ProfileIconButton';
 import { MessagesIconButton } from '../../components/MessagesIconButton';
 import { FloatingNavButtons } from '../../components/FloatingNavButtons';
 import { StartsInBadge } from '../../components/news/StartsInBadge';
-import { CreditsBadgeSkeleton } from '../../components/skeletons/CreditsBadgeSkeleton';
+import { PointsBadgeSkeleton } from '../../components/skeletons/PointsBadgeSkeleton';
 import { SectionSkeleton } from '../../components/skeletons/SectionSkeleton';
 import { ScheduleCardSkeleton } from '../../components/skeletons/ScheduleCardSkeleton';
 
@@ -131,8 +134,8 @@ export function NewsScreen() {
         user ? { daysAhead: 7 } : "skip"
     );
 
-    // Get user credit balance
-    const creditBalance = useQuery(api.queries.credits.getUserBalance, { userId: user?._id! });
+    // Get user points balance
+    const pointsBalance = user?.points ?? 0;
 
     // Query for happening today classes (until midnight)
     const happeningTodayInstances = useQuery(
@@ -307,7 +310,7 @@ export function NewsScreen() {
                     instructor: booking.classInstanceSnapshot?.instructor || t('news.instructor'),
                     venue: booking.venueSnapshot?.name || t('news.venue'),
                     venueAddress: addressText,
-                    price: booking.finalPrice ? `${centsToCredits(booking.finalPrice)} credits` : t('news.free'),
+                    price: booking.finalPrice ? formatEuro(booking.finalPrice) : t('news.free'),
                     imageUrl,
                     startTime: booking.classInstanceSnapshot?.startTime,
                     classInstanceId: booking.classInstanceId
@@ -337,8 +340,8 @@ export function NewsScreen() {
                     subtitle: instance.instructor
                         ? t('news.withInstructor', { instructor: instance.instructor })
                         : instance.venueName || undefined,
-                    originalPrice: `${centsToCredits(instance.pricing.originalPrice)}`,
-                    discountedPrice: `${centsToCredits(instance.pricing.finalPrice)}`,
+                    originalPrice: formatEuro(instance.pricing.originalPrice),
+                    discountedPrice: formatEuro(instance.pricing.finalPrice),
                     discountPercentage: instance.pricing.discountPercentage > 0 ? `${Math.round(instance.pricing.discountPercentage * 100)}%` : null,
                     venueName: instance.venueName,
                     venueCity: instance.venueCity,
@@ -369,8 +372,8 @@ export function NewsScreen() {
                     subtitle: instance.instructor
                         ? t('news.withInstructor', { instructor: instance.instructor })
                         : instance.venueName || undefined,
-                    originalPrice: `${centsToCredits(instance.pricing.originalPrice)}`,
-                    discountedPrice: `${centsToCredits(instance.pricing.finalPrice)}`,
+                    originalPrice: formatEuro(instance.pricing.originalPrice),
+                    discountedPrice: formatEuro(instance.pricing.finalPrice),
                     discountPercentage: instance.pricing.discountPercentage > 0
                         ? `${Math.round(instance.pricing.discountPercentage * 100)}%`
                         : null,
@@ -446,11 +449,7 @@ export function NewsScreen() {
                 renderRightSide={() => (
                     <>
                         <MessagesIconButton />
-                        {creditBalance === undefined ? (
-                            <CreditsBadgeSkeleton />
-                        ) : (
-                            <CreditsBadge creditBalance={creditBalance.balance} />
-                        )}
+                        <PointsBadge pointsBalance={pointsBalance} />
                     </>
                 )}
             />
@@ -571,7 +570,7 @@ export function NewsScreen() {
                                             <View style={styles.newsClassCardFooterRow}>
                                                 <View style={styles.newsClassCardFooterMetric}>
                                                     <View style={styles.newsClassCardFooterIcon}>
-                                                        <DiamondIcon
+                                                        <EuroIcon
                                                             size={14}
                                                             color={theme.colors.zinc[700]}
                                                             strokeWidth={2}
@@ -683,7 +682,7 @@ export function NewsScreen() {
                                             <View style={styles.newsClassCardFooterRow}>
                                                 <View style={styles.newsClassCardFooterMetric}>
                                                     <View style={styles.newsClassCardFooterIcon}>
-                                                        <DiamondIcon
+                                                        <EuroIcon
                                                             size={14}
                                                             color={theme.colors.zinc[700]}
                                                             strokeWidth={2}

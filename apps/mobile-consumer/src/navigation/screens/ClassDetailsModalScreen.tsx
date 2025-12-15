@@ -1,11 +1,12 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, Alert, Platform, InteractionManager } from 'react-native';
 import { Image } from 'expo-image';
-import { Calendar1Icon, ClockIcon, CalendarOffIcon, DiamondIcon, ChevronLeftIcon, CheckCircleIcon, ArrowLeftIcon, Trophy } from 'lucide-react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { Calendar1Icon, ClockIcon, CalendarOffIcon, ChevronLeftIcon, CheckCircleIcon, Trophy, EuroIcon } from 'lucide-react-native';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Carousel from 'react-native-reanimated-carousel';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useAction } from 'convex/react';
+import { useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale/en-US';
@@ -14,7 +15,6 @@ import { tz } from '@date-fns/tz';
 import type { RootStackParamList } from '..';
 import { useActionSheet } from '@expo/react-native-action-sheet';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
-import { centsToCredits } from '@repo/utils/credits';
 import { useVenueClassOfferings } from '../../hooks/use-venue-class-offerings';
 import { Divider } from '../../components/Divider';
 import { SameClassCard } from '../../components/SameClassCard';
@@ -24,8 +24,16 @@ import { getCancellationInfo, getCancellationMessage, getCancellationTranslation
 import type { Id } from '@repo/api/convex/_generated/dataModel';
 import { useTypedTranslation } from '../../i18n/typed';
 import i18n from '../../i18n';
-import type { Question } from '@repo/api/types/questionnaire';
+import type { Question, QuestionAnswer } from '@repo/api/types/questionnaire';
 import { getEffectiveQuestionnaire } from '@repo/api/operations/questionnaire';
+import { useStripe } from '@stripe/stripe-react-native';
+import Constants from 'expo-constants';
+import { consumePendingQuestionnaireBooking } from '../../utils/pendingQuestionnaireBooking';
+
+// Format cents to EUR display
+function formatEuro(cents: number): string {
+    return `€${(cents / 100).toFixed(2)}`;
+}
 
 type ClassDetailsRoute = RouteProp<RootStackParamList, 'ClassDetailsModal'>;
 
@@ -43,13 +51,13 @@ type ClassDiscountRule = {
     };
 };
 
-// Discount calculation result
+// Discount calculation result (prices in cents)
 type DiscountCalculationResult = {
-    originalPrice: number;
-    finalPrice: number;
+    originalPriceCents: number;
+    finalPriceCents: number;
     appliedDiscount: {
-        discountValue: number;
-        creditsSaved: number;
+        discountValueCents: number;
+        savedCents: number;
         ruleName: string;
     } | null;
 };
@@ -127,13 +135,14 @@ function getDiscountTimingText(
     const hoursUntilClass = Math.max(0, (classInstance.startTime - now) / (1000 * 60 * 60));
     const ruleName = discountResult.appliedDiscount.ruleName;
     const formattedTime = formatTimeRemaining(hoursUntilClass, timeUnitDays, timeUnitHours, timeUnitMinutes);
+    const savedAmount = formatEuro(discountResult.appliedDiscount.savedCents);
 
     if (ruleName.toLowerCase().includes('early')) {
-        return t('classes.earlyBirdDiscount', { time: formattedTime });
+        return t('classes.earlyBirdDiscount', { time: formattedTime }) + ` (${t('classes.save')} ${savedAmount})`;
     } else if (ruleName.toLowerCase().includes('last') || ruleName.toLowerCase().includes('minute')) {
-        return t('classes.lastMinuteDiscount', { time: formattedTime });
+        return t('classes.lastMinuteDiscount', { time: formattedTime }) + ` (${t('classes.save')} ${savedAmount})`;
     } else {
-        return t('classes.discountActive', { time: formattedTime });
+        return t('classes.discountActive', { time: formattedTime }) + ` (${t('classes.save')} ${savedAmount})`;
     }
 }
 
@@ -165,12 +174,11 @@ function getBookingWindowText(
 
 function calculateClassDiscount(classInstance: any, templateData: any): DiscountCalculationResult {
     const priceInCents = classInstance?.price ?? templateData?.price ?? 1000;
-    const originalPrice = centsToCredits(priceInCents);
 
     if (!classInstance) {
         return {
-            originalPrice,
-            finalPrice: originalPrice,
+            originalPriceCents: priceInCents,
+            finalPriceCents: priceInCents,
             appliedDiscount: null,
         };
     }
@@ -186,8 +194,8 @@ function calculateClassDiscount(classInstance: any, templateData: any): Discount
 
     if (discountRules.length === 0) {
         return {
-            originalPrice,
-            finalPrice: originalPrice,
+            originalPriceCents: priceInCents,
+            finalPriceCents: priceInCents,
             appliedDiscount: null,
         };
     }
@@ -196,22 +204,22 @@ function calculateClassDiscount(classInstance: any, templateData: any): Discount
 
     if (!bestRule) {
         return {
-            originalPrice,
-            finalPrice: originalPrice,
+            originalPriceCents: priceInCents,
+            finalPriceCents: priceInCents,
             appliedDiscount: null,
         };
     }
 
-    const discountValueInCredits = centsToCredits(bestRule.rule.discount.value);
-    const finalPrice = Math.max(0, originalPrice - discountValueInCredits);
-    const creditsSaved = originalPrice - finalPrice;
+    const discountValueCents = bestRule.rule.discount.value;
+    const finalPriceCents = Math.max(0, priceInCents - discountValueCents);
+    const savedCents = priceInCents - finalPriceCents;
 
     return {
-        originalPrice,
-        finalPrice,
+        originalPriceCents: priceInCents,
+        finalPriceCents,
         appliedDiscount: {
-            discountValue: discountValueInCredits,
-            creditsSaved,
+            discountValueCents,
+            savedCents,
             ruleName: bestRule.ruleName,
         },
     };
@@ -239,8 +247,10 @@ export function ClassDetailsModalScreen() {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const { showActionSheetWithOptions } = useActionSheet();
     const { user } = useCurrentUser();
-    const bookClass = useMutation(api.mutations.bookings.bookClass);
-    const cancelBookingMutation = useMutation(api.mutations.bookings.cancelBooking);
+    const cancelBookingWithRefund = useAction(api.actions.payments.cancelBookingWithRefund);
+    const createClassPaymentIntent = useAction(api.actions.payments.createClassPaymentIntent);
+    const cancelClassPaymentIntent = useAction(api.actions.payments.cancelClassPaymentIntent);
+    const { initPaymentSheet, presentPaymentSheet } = useStripe();
     const [isBooking, setIsBooking] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
     const [isHeaderWhite, setIsHeaderWhite] = useState(false);
@@ -398,21 +408,53 @@ export function ClassDetailsModalScreen() {
         }
 
         const classLabel = existingBooking.classInstanceSnapshot?.name ?? 'this class';
+        const paidAmount = existingBooking.paidAmount ?? 0;
 
-        // Always calculate cancellation info to show accurate refund message
-        let message = t('classes.cancelBookingMessage');
+        // Calculate cancellation fee based on paid amount (tiered)
+        const getCancellationFee = (amountCents: number): number => {
+            const euros = amountCents / 100;
+            if (euros < 10) return 50; // €0.50
+            if (euros <= 20) return 100; // €1.00
+            return 200; // €2.00
+        };
 
-        if (existingBooking.classInstanceSnapshot?.startTime) {
-            const cancellationInfo = getCancellationInfo(
-                existingBooking.classInstanceSnapshot.startTime,
-                existingBooking.classInstanceSnapshot.cancellationWindowHours ?? null,
-                existingBooking.hasFreeCancel,
-                existingBooking.freeCancelExpiresAt,
-                existingBooking.freeCancelReason
-            );
+        // Check for free cancellation privilege (e.g., class was rescheduled)
+        const now = Date.now();
+        const hasFreeCancel = existingBooking.hasFreeCancel
+            && existingBooking.freeCancelExpiresAt
+            && now <= existingBooking.freeCancelExpiresAt;
 
-            const cancellationTranslations = getCancellationTranslations(t);
-            message = getCancellationMessage(classLabel, cancellationInfo, cancellationTranslations);
+        // Calculate expected refund based on time until class
+        const startTime = existingBooking.classInstanceSnapshot?.startTime ?? 0;
+        const hoursUntilClass = (startTime - now) / (1000 * 60 * 60);
+        const isLateCancel = hoursUntilClass < 12;
+
+        // If hasFreeCancel, user gets 100% refund with no fee
+        const refundPercentage = hasFreeCancel ? 100 : (isLateCancel ? 50 : 100);
+        const cancellationFee = hasFreeCancel ? 0 : getCancellationFee(paidAmount);
+        const grossRefund = Math.round((paidAmount * refundPercentage) / 100);
+        const expectedRefund = Math.max(0, grossRefund - cancellationFee);
+
+        // Build informative message about the cancellation policy
+        let message = '';
+        if (paidAmount > 0) {
+            if (hasFreeCancel) {
+                // Free cancellation privilege active (class was rescheduled)
+                message = `The class was rescheduled. You are eligible for a full refund.\n\n`;
+                message += `• Total refund: ${formatEuro(paidAmount)}`;
+            } else if (isLateCancel) {
+                message = `Late cancellation (less than 12 hours before class).\n\n`;
+                message += `• Refund: ${refundPercentage}% of ${formatEuro(paidAmount)} = ${formatEuro(grossRefund)}\n`;
+                message += `• Cancellation fee: ${formatEuro(cancellationFee)}\n`;
+                message += `• Total refund: ${formatEuro(expectedRefund)}`;
+            } else {
+                message = `You will receive a refund for this booking.\n\n`;
+                message += `• Refund: ${refundPercentage}% of ${formatEuro(paidAmount)} = ${formatEuro(grossRefund)}\n`;
+                message += `• Cancellation fee: ${formatEuro(cancellationFee)}\n`;
+                message += `• Total refund: ${formatEuro(expectedRefund)}`;
+            }
+        } else {
+            message = t('classes.cancelBookingMessage');
         }
 
         const options = [t('classes.cancelBooking'), t('classes.keepBooking')];
@@ -434,15 +476,26 @@ export function ClassDetailsModalScreen() {
 
                 try {
                     setIsCancelling(true);
-                    await cancelBookingMutation({
+                    const result = await cancelBookingWithRefund({
                         bookingId: existingBooking._id as Id<'bookings'>,
                         reason: 'Cancelled by user via class modal',
                         cancelledBy: 'consumer',
                     });
 
+                    // Show refund confirmation
+                    let refundMessage: string;
+                    if (result.refundedAmount > 0) {
+                        refundMessage = `${formatEuro(result.refundedAmount)} will be refunded to your payment method.`;
+                        if (result.cancellationFee > 0) {
+                            refundMessage += `\n\nCancellation fee: ${formatEuro(result.cancellationFee)}`;
+                        }
+                    } else {
+                        refundMessage = 'No refund applicable based on the cancellation policy.';
+                    }
+
                     Alert.alert(
                         t('classes.bookingCancelled'),
-                        t('classes.bookingCancelledMessage')
+                        refundMessage
                     );
                 } catch (error: any) {
                     const errorMessage =
@@ -484,54 +537,145 @@ export function ClassDetailsModalScreen() {
         }
     };
 
-    // Book class without questionnaire (direct booking)
+    // Book class using Stripe Payment Sheet (direct EUR payment)
     // NOTE: This useCallback must be called before any conditional returns
-    const handleDirectBooking = useCallback(async () => {
+    const startStripePayment = useCallback(async (opts?: { questionnaireAnswers?: QuestionAnswer[]; overridePriceCents?: number }) => {
         if (!finalClassInstance || !user) return;
 
-        const finalPrice = discountResult.appliedDiscount ? discountResult.finalPrice : centsToCredits(finalClassInstance.price ?? 0);
-        const classNameForBooking = finalClassInstance.name ?? finalClassInstance.templateSnapshot?.name ?? 'Class';
-        const options = [t('classes.spendCredits', { credits: finalPrice }), t('common.cancel')];
+        let pendingBookingId: Id<"pendingBookings"> | null = null;
+        let stripePaymentIntentId: string | null = null;
+
+        try {
+            setIsBooking(true);
+
+            // DEBUG: Log Stripe publishable key (same source as StripeProvider in App.tsx)
+            const stripeKey =
+                Constants.expoConfig?.extra?.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ??
+                (__DEV__ ? "pk_test_D6Fdm4YCR6FZApgnZuJo8M2a" : undefined);
+            console.log('🔑 Stripe Publishable Key:', stripeKey);
+            console.log('🔑 Key length:', stripeKey?.length);
+            console.log('🔑 Key starts with pk_test_:', stripeKey?.startsWith('pk_test_'));
+
+            // Step 1: Create PaymentIntent and reserve seat
+            const paymentData = await createClassPaymentIntent({
+                classInstanceId: finalClassInstance._id,
+                questionnaireAnswers: opts?.questionnaireAnswers?.length ? opts.questionnaireAnswers : undefined,
+            });
+
+            pendingBookingId = paymentData.pendingBookingId;
+            stripePaymentIntentId = paymentData.paymentIntentClientSecret.split('_secret_')[0];
+
+            // Step 2: Initialize Payment Sheet
+            const { error: initError } = await initPaymentSheet({
+                merchantDisplayName: 'Kyma Club',
+                customerId: paymentData.customerId,
+                customerEphemeralKeySecret: paymentData.ephemeralKey,
+                paymentIntentClientSecret: paymentData.paymentIntentClientSecret,
+                allowsDelayedPaymentMethods: false,
+                applePay: Platform.OS === 'ios'
+                    ? { merchantCountryCode: 'GR' }
+                    : undefined,
+                defaultBillingDetails: {
+                    email: user.email ?? undefined,
+                    name: user.name ?? undefined,
+                },
+                // Required for iOS redirect payment methods
+                returnURL: 'kymaclub://stripe-redirect',
+            });
+
+            if (initError) {
+                console.error('Payment Sheet init error:', initError);
+                throw new Error(initError.message);
+            }
+
+            // Step 3: Present Payment Sheet
+            const { error: presentError } = await presentPaymentSheet();
+
+            if (presentError) {
+                // User cancelled or payment failed
+                if (presentError.code === 'Canceled') {
+                    // User cancelled - cancel the reservation
+                    if (pendingBookingId && stripePaymentIntentId) {
+                        await cancelClassPaymentIntent({
+                            pendingBookingId,
+                            stripePaymentIntentId,
+                        });
+                    }
+                    return;
+                }
+                throw new Error(presentError.message);
+            }
+
+            // Payment succeeded! Booking will be created by webhook
+            const requiresConfirmation = finalClassInstance.requiresConfirmation;
+            if (requiresConfirmation) {
+                Alert.alert(
+                    t('payment.success'),
+                    t('classes.requestSentMessage')
+                );
+            } else {
+                Alert.alert(
+                    t('payment.success'),
+                    t('classes.bookedSuccess')
+                );
+            }
+        } catch (err: any) {
+            const message =
+                (err?.data && (err.data.message || err.data.code)) ||
+                err?.message ||
+                t('payment.paymentFailedMessage');
+            Alert.alert(t('payment.paymentFailed'), String(message));
+
+            // Cancel reservation if it was created
+            if (pendingBookingId && stripePaymentIntentId) {
+                try {
+                    await cancelClassPaymentIntent({
+                        pendingBookingId,
+                        stripePaymentIntentId,
+                    });
+                } catch (cancelErr) {
+                    console.error('Failed to cancel reservation:', cancelErr);
+                }
+            }
+        } finally {
+            setIsBooking(false);
+        }
+    }, [finalClassInstance, user, createClassPaymentIntent, cancelClassPaymentIntent, initPaymentSheet, presentPaymentSheet, t]);
+
+    const handleDirectBooking = useCallback(async (opts?: { questionnaireAnswers?: QuestionAnswer[]; overridePriceCents?: number }) => {
+        if (!finalClassInstance || !user) return;
+
+        const finalPriceCents = opts?.overridePriceCents ?? discountResult.finalPriceCents;
+        const priceDisplay = formatEuro(finalPriceCents);
+
+        const options = [t('classes.payWithStripe', { price: priceDisplay }), t('common.cancel')];
         const cancelButtonIndex = 1;
 
         showActionSheetWithOptions({
             options,
             cancelButtonIndex,
         }, async (selectedIndex?: number) => {
-            if (selectedIndex === undefined) return;
-
-            switch (selectedIndex) {
-                case 0: {
-                    try {
-                        setIsBooking(true);
-                        await bookClass({
-                            classInstanceId: finalClassInstance._id,
-                            description: `Booking for ${classNameForBooking}`,
-                        });
-                        // Show different message based on whether class requires confirmation
-                        const requiresConfirmation = finalClassInstance.requiresConfirmation;
-                        if (requiresConfirmation) {
-                            Alert.alert(t('classes.requestSent'), t('classes.requestSentMessage'));
-                        } else {
-                            Alert.alert(t('classes.booked'), t('classes.bookedSuccess'));
-                        }
-                    } catch (err: any) {
-                        const message =
-                            (err?.data && (err.data.message || err.data.code)) ||
-                            err?.message ||
-                            t('classes.bookingFailedMessage');
-                        Alert.alert(t('classes.bookingFailed'), String(message));
-                    } finally {
-                        setIsBooking(false);
-                    }
-                    break;
-                }
-
-                case cancelButtonIndex:
-                    break;
+            if (selectedIndex === 0) {
+                await startStripePayment(opts);
             }
         });
-    }, [finalClassInstance, user, discountResult, bookClass, showActionSheetWithOptions, t]);
+    }, [finalClassInstance, user, discountResult.finalPriceCents, showActionSheetWithOptions, startStripePayment, t]);
+
+    // If the user completed the questionnaire modal, start the exact same Stripe flow from here.
+    useFocusEffect(
+        useCallback(() => {
+            if (!finalClassInstance) return;
+            const pending = consumePendingQuestionnaireBooking(String(finalClassInstance._id));
+            if (!pending) return;
+            // Wait for the navigation transition to complete; otherwise ActionSheet/PaymentSheet can flash-dismiss.
+            InteractionManager.runAfterInteractions(() => {
+                void startStripePayment({
+                    questionnaireAnswers: pending.answers,
+                    overridePriceCents: pending.totalPriceInCents,
+                });
+            });
+        }, [finalClassInstance, startStripePayment])
+    );
 
     // NOW we can do conditional returns, after ALL hooks have been called
     if (!finalClassInstance && !classInstanceId) {
@@ -623,7 +767,7 @@ export function ClassDetailsModalScreen() {
         })()
         : null;
     const duration = Math.round((finalClassInstance.endTime - finalClassInstance.startTime) / (1000 * 60));
-    const priceCredits = centsToCredits(price);
+    const priceEur = formatEuro(price);
     const spotsLeft = Math.max(0, capacity - (finalClassInstance.bookedCount ?? 0));
     const isLoading = (allImageIds.length > 0 && !imageUrlsQuery) || existingBooking === undefined;
 
@@ -642,10 +786,10 @@ export function ClassDetailsModalScreen() {
 
         // If there's a questionnaire, navigate to questionnaire modal
         if (effectiveQuestionnaire.length > 0) {
-            const basePrice = discountResult.appliedDiscount ? discountResult.finalPrice : priceCredits;
+            const basePriceCents = discountResult.finalPriceCents;
             (navigation as NativeStackNavigationProp<RootStackParamList>).navigate('QuestionnaireModal', {
                 questions: effectiveQuestionnaire,
-                basePrice,
+                basePrice: basePriceCents, // Pass cents, questionnaire will handle display
                 className,
                 classInstanceId: finalClassInstance._id,
             });
@@ -751,15 +895,14 @@ export function ClassDetailsModalScreen() {
                                     {discountResult.appliedDiscount ? (
                                         <View style={styles.priceComparisonRow}>
                                             <Text style={styles.originalPriceModal}>
-                                                {discountResult.originalPrice}
+                                                {formatEuro(discountResult.originalPriceCents)}
                                             </Text>
                                             <Text style={styles.discountedPriceModal}>
-                                                {discountResult.finalPrice}
+                                                {formatEuro(discountResult.finalPriceCents)}
                                             </Text>
-                                            <Text style={styles.creditsText}>{t('classes.credits')}</Text>
                                         </View>
                                     ) : (
-                                        <Text style={styles.priceValue}>{priceCredits} {t('classes.credits')}</Text>
+                                        <Text style={styles.priceValue}>{priceEur}</Text>
                                     )}
                                 </View>
                                 <View style={styles.spotsContainer}>
@@ -957,8 +1100,8 @@ export function ClassDetailsModalScreen() {
                                                         </Text>
                                                     )}
                                                 </View>
-                                                <Text style={styles.bookingHistoryCredits}>
-                                                    {booking.finalPrice / 100} credits
+                                                <Text style={styles.bookingHistoryPrice}>
+                                                    {formatEuro(booking.finalPrice)}
                                                 </Text>
                                             </View>
                                         ))}
@@ -1031,8 +1174,8 @@ export function ClassDetailsModalScreen() {
                                                     <View style={styles.offeringInfo}>
                                                         <Text style={styles.offeringName}>{offering.name}</Text>
                                                         <View style={styles.offeringDetailsRow}>
-                                                            <DiamondIcon size={14} color={theme.colors.zinc[500]} />
-                                                            <Text style={styles.offeringPrice}>{centsToCredits(offering.price)}</Text>
+                                                            <EuroIcon size={14} color={theme.colors.zinc[500]} />
+                                                            <Text style={styles.offeringPrice}>{formatEuro(offering.price)}</Text>
                                                             <View style={styles.offeringDotSeparator} />
                                                             <ClockIcon size={14} color={theme.colors.zinc[500]} />
                                                             <Text style={styles.offeringDuration}>{offering.duration} min</Text>
@@ -1162,19 +1305,14 @@ export function ClassDetailsModalScreen() {
                                         {discountResult.appliedDiscount ? (
                                             <View style={styles.bookButtonDiscountPriceRow}>
                                                 <View style={styles.bookButtonOriginalPrice}>
-                                                    <DiamondIcon size={14} color="rgba(255, 255, 255, 0.7)" />
-                                                    <Text style={styles.bookButtonOriginalText}>{discountResult.originalPrice}</Text>
+                                                    <Text style={styles.bookButtonOriginalText}>{formatEuro(discountResult.originalPriceCents)}</Text>
                                                 </View>
                                                 <View style={styles.bookButtonFinalPrice}>
-                                                    <DiamondIcon size={18} color="rgba(255, 255, 255, 0.9)" />
-                                                    <Text style={styles.bookButtonSubtext}>{discountResult.finalPrice}</Text>
+                                                    <Text style={styles.bookButtonSubtext}>{formatEuro(discountResult.finalPriceCents)}</Text>
                                                 </View>
                                             </View>
                                         ) : (
-                                            <>
-                                                <DiamondIcon size={18} color="rgba(255, 255, 255, 0.9)" />
-                                                <Text style={styles.bookButtonSubtext}>{priceCredits}</Text>
-                                            </>
+                                            <Text style={styles.bookButtonSubtext}>{priceEur}</Text>
                                         )}
                                     </View>
                                 )}
@@ -1868,7 +2006,7 @@ const styles = StyleSheet.create({
         color: '#9ca3af',
         marginTop: 2,
     },
-    bookingHistoryCredits: {
+    bookingHistoryPrice: {
         fontSize: 12,
         fontWeight: '600',
         color: '#374151',
@@ -1895,7 +2033,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: theme.colors.zinc[950],
     },
-    creditsText: {
+    priceText: {
         fontSize: 18,
         fontWeight: '700',
         color: theme.colors.zinc[950],

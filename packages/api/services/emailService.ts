@@ -1,4 +1,5 @@
 import type { ActionCtx } from "../convex/_generated/server";
+import { Id } from "../convex/_generated/dataModel";
 import { ConvexError } from "convex/values";
 import { ERROR_CODES } from "../utils/errorCodes";
 import { components } from "../convex/_generated/api";
@@ -423,7 +424,7 @@ export const emailService = {
     },
 
     /**
-     * Send welcome email to new consumer
+     * Send welcome email to new consumer with free class coupon
      */
     sendWelcomeEmail: async ({
         ctx,
@@ -433,7 +434,7 @@ export const emailService = {
         args: {
             customerEmail: string;
             customerName: string;
-            welcomeCredits: number;
+            welcomeCouponId: Id<"userCoupons">;
             language?: string;
         };
     }): Promise<{ emailId: string; success: boolean }> => {
@@ -442,11 +443,11 @@ export const emailService = {
 
             const htmlContent = createWelcomeEmail({
                 customerName: args.customerName,
-                welcomeCredits: args.welcomeCredits,
+                hasFreeClassCoupon: true,
                 translations: t,
             });
 
-            const subject = interpolateText(t.subject, { credits: args.welcomeCredits });
+            const subject = t.subject;
 
             const emailId = await resend.sendEmail(ctx, {
                 from: "KymaClub <welcome@app.orcavo.com>",

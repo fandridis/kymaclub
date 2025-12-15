@@ -25,6 +25,7 @@
     "@repo/api": "workspace:*",
     "@repo/utils": "workspace:*",
     "@shopify/flash-list": "^2.0.2",
+    "@stripe/stripe-react-native": "^0.57.1",
     "convex": "^1.27.3",
     "convex-helpers": "^0.1.99",
     "date-fns": "^4.1.0",

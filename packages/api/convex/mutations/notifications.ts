@@ -187,7 +187,7 @@ export const handleWelcomeBonusEvent = internalMutation({
     args: v.object({
         payload: v.object({
             userId: v.id("users"),
-            welcomeCredits: v.number(),
+            welcomeCouponId: v.id("userCoupons"),
         }),
     }),
     returns: v.object({

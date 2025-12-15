@@ -1,11 +1,9 @@
-import React, { useCallback, useMemo, useRef } from 'react';
+import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Image, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { format } from 'date-fns';
-import { tz } from '@date-fns/tz';
-import { BellIcon, ShieldIcon, CameraIcon, LogOutIcon, MapPinIcon, LanguagesIcon, TicketIcon } from 'lucide-react-native';
+import { BellIcon, ShieldIcon, CameraIcon, LogOutIcon, MapPinIcon, LanguagesIcon, TicketIcon, GiftIcon, StarIcon } from 'lucide-react-native';
 import { theme } from '../../theme';
 import { SettingsHeader, SettingsRow } from '../../components/Settings';
 import { SettingsGroup } from '../../components/Settings';
@@ -17,9 +15,6 @@ import type { CitySlug } from '@repo/utils/constants';
 import { useCompressedImageUpload } from '../../hooks/useCompressedImageUpload';
 import { useProfileImageModeration } from '../../hooks/useProfileImageModeration';
 import { StackScreenHeader } from '../../components/StackScreenHeader';
-import { MembershipCard } from '../../components/MembershipCard';
-import { QuickBuyCreditsSheet } from '../../components/QuickBuyCreditsSheet';
-import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { RootStackParamList } from '../index';
 import { useLogout } from '../../hooks/useLogout';
 import { useTypedTranslation } from '../../i18n/typed';
@@ -40,15 +35,8 @@ export function SettingsScreen() {
     return `${lang.flag} ${lang.name}`;
   };
 
-
-  const creditBalance = useQuery(api.queries.credits.getUserBalance, { userId: user?._id! });
-  const expiringCredits = useQuery(api.queries.credits.getUserExpiringCredits, { userId: user?._id! });
-
   // Get user profile image URL
   const profileImageUrl = useQuery(api.queries.uploads.getUserProfileImageUrl, { userId: user?._id! });
-
-  // Get user subscription status
-  const subscription = useQuery(api.queries.subscriptions.getCurrentUserSubscription);
 
   // Profile image moderation status
   const { moderationStatus, isPending, isRejected, statusMessage } = useProfileImageModeration();
@@ -66,8 +54,8 @@ export function SettingsScreen() {
   const updateProfileImage = useMutation(api.mutations.uploads.updateUserProfileImage);
   const removeProfileImage = useMutation(api.mutations.uploads.removeUserProfileImage);
 
-  // Get user booking statistics
-  const bookingStats = useQuery(api.queries.bookings.getUserBookingStats);
+  // Get user points balance
+  const pointsBalance = user?.points ?? 0;
 
   const handleAvatarPress = () => {
     if (status !== "idle") return;
@@ -166,118 +154,6 @@ export function SettingsScreen() {
     );
   };
 
-  const subscriptionCopy = useMemo(() => {
-    const defaultCopy = {
-      isActive: false,
-      buyCardSubtitle: 'Start recurring buy',
-      membershipCardStatus: {
-        isActive: false,
-        label: 'No subscription yet',
-        detail: 'Save up to 20% with monthly credits',
-      } as const,
-    };
-
-    if (!subscription) {
-      return defaultCopy;
-    }
-
-    const ATHENS_TZ = 'Europe/Athens';
-    const safeDateLabel = (timestamp?: number | null) => {
-      if (!timestamp) return null;
-      const date = new Date(timestamp);
-      if (Number.isNaN(date.getTime())) return null;
-      try {
-        return format(date, "d MMM", { in: tz(ATHENS_TZ) });
-      } catch {
-        return null;
-      }
-    };
-
-    const cycleEndLabel = safeDateLabel(subscription.currentPeriodEnd);
-    const planLabel = subscription.planName ?? `${subscription.creditAmount} credits monthly`;
-    const commonCopy = {
-      buyCardSubtitle: t('subscription.creditsPerMonth', { credits: subscription.creditAmount }),
-    } as const;
-
-    switch (subscription.status) {
-      case 'active': {
-        const isCanceling = Boolean(subscription.cancelAtPeriodEnd);
-        const detail = isCanceling
-          ? (cycleEndLabel ? `Ends ${cycleEndLabel}` : planLabel)
-          : cycleEndLabel
-            ? `Renews ${cycleEndLabel}`
-            : planLabel;
-
-        return {
-          isActive: true,
-          ...commonCopy,
-          membershipCardStatus: {
-            isActive: true,
-            label: isCanceling ? 'Cancelling soon' : 'Subscription active',
-            detail,
-          },
-        };
-      }
-      case 'trialing': {
-        return {
-          isActive: true,
-          ...commonCopy,
-          membershipCardStatus: {
-            isActive: true,
-            label: 'Trial active',
-            detail: cycleEndLabel ? `Renews ${cycleEndLabel}` : planLabel,
-          },
-        };
-      }
-      case 'past_due': {
-        return {
-          isActive: false,
-          buyCardSubtitle: 'Fix payment to continue',
-          membershipCardStatus: {
-            isActive: false,
-            label: 'Payment past due',
-            detail: 'Update your payment method to keep credits flowing',
-          },
-        };
-      }
-      case 'incomplete': {
-        return {
-          isActive: false,
-          buyCardSubtitle: 'Finish checkout to activate',
-          membershipCardStatus: {
-            isActive: false,
-            label: 'Action needed',
-            detail: 'Complete checkout to activate your plan',
-          },
-        };
-      }
-      case 'unpaid': {
-        return {
-          isActive: false,
-          buyCardSubtitle: 'Reactivate subscription',
-          membershipCardStatus: {
-            isActive: false,
-            label: 'Subscription paused',
-            detail: 'Reactivate to resume monthly credits',
-          },
-        };
-      }
-      default:
-        return defaultCopy;
-    }
-  }, [subscription, t]);
-
-  const creditsSheetRef = useRef<BottomSheetModal>(null);
-  const creditsSnapPoints = useMemo(() => ['70%'], []);
-
-  const handleOpenCreditsSheet = useCallback(() => {
-    creditsSheetRef.current?.present();
-  }, []);
-
-  const handleSheetChange = useCallback((index: number) => {
-    // Placeholder for analytics when hooking real data
-  }, []);
-
   return (
     <SafeAreaView style={styles.container}>
       <StackScreenHeader title={t('settings.title')} />
@@ -337,102 +213,16 @@ export function SettingsScreen() {
           </View>
         )}
 
-        {/* Membership Card */}
-        <MembershipCard
-          creditBalance={creditBalance?.balance ?? 0}
-          expiringCredits={expiringCredits?.expiringCredits}
-          daysUntilExpiry={expiringCredits?.daysUntilExpiry}
-          subscriptionStatus={subscriptionCopy.membershipCardStatus}
-          subscription={subscription}
-        />
-
-        {/* Manage Credits Section */}
-        <SettingsHeader title={t('credits.manageCredits')} />
-        <SettingsGroup>
-          <SettingsRow
-            title={t('subscription.title')}
-            renderSubtitle={() => {
-              const isActive = subscription?.status === 'active';
-              const isCanceling = Boolean(subscription?.cancelAtPeriodEnd);
-              const isPaused = subscription?.status === 'unpaid' || subscription?.status === 'past_due';
-
-              if (isActive && !isCanceling) {
-                return (
-                  <View style={styles.subtitleRow}>
-                    <View style={[styles.statusDot, styles.statusDotActive]} />
-                    <Text style={styles.subtitleText}>
-                      {t('subscription.creditsPerMonth', { credits: subscription.creditAmount })}
-                    </Text>
-                  </View>
-                );
-              } else if (isPaused || isCanceling) {
-                return (
-                  <View style={styles.subtitleRow}>
-                    <View style={[styles.statusDot, styles.statusDotInactive]} />
-                    <Text style={styles.subtitleText}>{t('subscription.paused')}</Text>
-                  </View>
-                );
-              } else {
-                return (
-                  <View style={styles.subtitleRow}>
-                    <View style={[styles.statusDot, styles.statusDotInactive]} />
-                    <Text style={styles.subtitleText}>{t('subscription.inactive')}</Text>
-                  </View>
-                );
-              }
-            }}
-            renderRightSide={() => {
-              const isActive = subscription?.status === 'active';
-              const isCanceling = Boolean(subscription?.cancelAtPeriodEnd);
-              const isPaused = subscription?.status === 'unpaid' || subscription?.status === 'past_due';
-
-              let buttonText = t('settings.subscription.startSubscription');
-              if (isActive && !isCanceling) {
-                buttonText = t('common.update');
-              } else if (isPaused || isCanceling) {
-                buttonText = t('subscription.resume');
-              }
-
-              return (
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => navigation.navigate('Subscription' as never)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.actionButtonText}>{buttonText}</Text>
-                </TouchableOpacity>
-              );
-            }}
-          />
-          <SettingsRow
-            title={t('credits.quickBuy')}
-            subtitle={t('credits.quickBuySubtitle')}
-            renderRightSide={() => (
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={handleOpenCreditsSheet}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.actionButtonText}>{t('credits.buyCreditsButton')}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        </SettingsGroup>
-
-        {/* Statistics
-          <View style={styles.statsCard}>
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{bookingStats?.thisMonth || 0}</Text>
-                <Text style={styles.statLabel}>Classes this month</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{bookingStats?.allTime || 0}</Text>
-                <Text style={styles.statLabel}>Classes all-time</Text>
-              </View>
+        {/* Points & Coupons Card */}
+        <View style={styles.pointsCard}>
+          <View style={styles.pointsRow}>
+            <View style={styles.pointsItem}>
+              <StarIcon size={24} color={theme.colors.amber[500]} />
+              <Text style={styles.pointsAmount}>{pointsBalance}</Text>
+              <Text style={styles.pointsLabel}>{t('points.title')}</Text>
             </View>
-          </View> */}
+          </View>
+        </View>
 
         {/* Settings Navigation */}
         <SettingsHeader title={t('settings.title')} />
@@ -488,12 +278,6 @@ export function SettingsScreen() {
           </TouchableOpacity>
         </SettingsGroup>
       </ScrollView>
-
-      <QuickBuyCreditsSheet
-        ref={creditsSheetRef}
-        snapPoints={creditsSnapPoints}
-        onChange={handleSheetChange}
-      />
     </SafeAreaView>
   );
 }
@@ -543,95 +327,34 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.zinc[300],
   },
 
-  // Statistics card
-  statsCard: {
+  // Points card
+  pointsCard: {
     marginHorizontal: 20,
     marginBottom: 16,
-    borderRadius: 12,
-    backgroundColor: theme.colors.emerald[50],
+    padding: 20,
+    borderRadius: 16,
+    backgroundColor: theme.colors.amber[50],
     borderWidth: 1,
-    borderColor: theme.colors.emerald[100],
+    borderColor: theme.colors.amber[200],
   },
-  statsRow: {
+  pointsRow: {
     flexDirection: 'row',
-    paddingVertical: 20,
-    paddingHorizontal: 16,
+    justifyContent: 'center',
   },
-  statItem: {
-    flex: 1,
+  pointsItem: {
     alignItems: 'center',
   },
-  statDivider: {
-    width: 1,
-    backgroundColor: theme.colors.emerald[200],
-    marginHorizontal: 20,
-  },
-  statNumber: {
+  pointsAmount: {
     fontSize: theme.fontSize['2xl'],
     fontWeight: theme.fontWeight.bold,
-    color: theme.colors.emerald[950],
-    marginBottom: 4,
+    color: theme.colors.amber[700],
+    marginTop: 8,
   },
-  statLabel: {
+  pointsLabel: {
     fontSize: theme.fontSize.sm,
-    color: theme.colors.emerald[700],
-    textAlign: 'center',
+    color: theme.colors.amber[600],
+    marginTop: 4,
     fontWeight: theme.fontWeight.medium,
-  },
-
-  buyCreditsSection: {
-    marginHorizontal: 20,
-    marginBottom: 24,
-  },
-  sectionHeading: {
-    fontSize: theme.fontSize.lg,
-    fontWeight: theme.fontWeight.semibold,
-    color: theme.colors.zinc[900],
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  buyCreditsCard: {
-    backgroundColor: '#fff',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: theme.colors.zinc[200],
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  cardIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.colors.zinc[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  cardIcon: {
-    fontSize: 20,
-  },
-  cardContent: {
-    flex: 1,
-  },
-  cardTitle: {
-    fontSize: theme.fontSize.base,
-    fontWeight: theme.fontWeight.semibold,
-    color: theme.colors.zinc[900],
-    marginBottom: 2,
-  },
-  cardSubtitle: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.zinc[500],
-    lineHeight: 18,
   },
 
   logoutRow: {
@@ -657,62 +380,6 @@ const styles = StyleSheet.create({
     color: theme.colors.rose[500],
     fontWeight: theme.fontWeight.medium,
     flex: 1,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  statusBadgeText: {
-    fontSize: theme.fontSize.xs,
-    fontWeight: theme.fontWeight.bold,
-  },
-  countBadge: {
-    backgroundColor: theme.colors.sky[100],
-    borderRadius: 12,
-    minWidth: 24,
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  countBadgeText: {
-    fontSize: theme.fontSize.xs,
-    fontWeight: theme.fontWeight.bold,
-    color: theme.colors.sky[950],
-  },
-
-  // New styles for Manage Credits section
-  actionButton: {
-    backgroundColor: theme.colors.emerald[600],
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  actionButtonText: {
-    fontSize: theme.fontSize.sm,
-    fontWeight: theme.fontWeight.medium,
-    color: 'white',
-  },
-  subtitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-  },
-  statusDotActive: {
-    backgroundColor: theme.colors.emerald[500],
-  },
-  statusDotInactive: {
-    backgroundColor: theme.colors.rose[500],
-  },
-  subtitleText: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.zinc[600],
-    fontWeight: theme.fontWeight.medium,
   },
 
   // Profile image moderation styles

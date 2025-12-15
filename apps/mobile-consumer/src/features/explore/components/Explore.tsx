@@ -18,7 +18,7 @@ import { theme } from '../../../theme';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../../navigation';
 import { countActiveFilters, useExploreFiltersStore } from '../../../stores/explore-filters-store';
-import { CreditsBadge } from '../../../components/CreditsBadge';
+import { PointsBadge } from '../../../components/PointsBadge';
 import { ChevronLeftIcon, SearchIcon } from 'lucide-react-native';
 import { TouchableOpacity } from 'react-native';
 
@@ -47,11 +47,8 @@ export function Explore() {
         skip: !userCity || userLoading,
     });
 
-    // Get user credit balance
-    const creditBalance = useQuery(
-        api.queries.credits.getUserBalance,
-        user?._id ? { userId: user._id } : 'skip'
-    );
+    // Get user points balance
+    const pointsBalance = user?.points ?? 0;
 
     const [loadingLocation, setLoadingLocation] = useState(true);
 
@@ -151,9 +148,7 @@ export function Explore() {
                     )}
                     renderRightSide={() => (
                         <>
-                            {creditBalance !== undefined && (
-                                <CreditsBadge creditBalance={creditBalance.balance} />
-                            )}
+                            <PointsBadge pointsBalance={pointsBalance} />
                         </>
                     )}
                 />
@@ -203,9 +198,7 @@ export function Explore() {
                 )}
                 renderRightSide={() => (
                     <>
-                        {creditBalance !== undefined && (
-                            <CreditsBadge creditBalance={creditBalance.balance} />
-                        )}
+                        <PointsBadge pointsBalance={pointsBalance} />
                     </>
                 )}
             />

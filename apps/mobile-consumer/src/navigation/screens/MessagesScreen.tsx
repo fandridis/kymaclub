@@ -10,7 +10,7 @@ import { TabScreenHeader } from '../../components/TabScreenHeader';
 import { theme } from '../../theme';
 import type { RootStackParamList } from '../index';
 import type { Doc } from '@repo/api/convex/_generated/dataModel';
-import { CreditsBadge } from '../../components/CreditsBadge';
+import { PointsBadge } from '../../components/PointsBadge';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { ProfileIconButton } from '../../components/ProfileIconButton';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -242,8 +242,8 @@ export function MessagesScreen() {
   const unreadCountQuery = useQuery(api.queries.chat.getUnreadMessageCount, {});
   const totalUnreadCount = unreadCountQuery || 0;
 
-  // Get user credit balance
-  const creditBalance = useQuery(api.queries.credits.getUserBalance, user ? { userId: user._id } : "skip");
+  // Get user points balance
+  const pointsBalance = user?.points ?? 0;
 
   // Delete thread mutation
   const deleteThreadMutation = useMutation(api.mutations.chat.deleteThread);
@@ -307,9 +307,7 @@ export function MessagesScreen() {
           )}
           renderRightSide={() => (
             <>
-              {creditBalance !== undefined && (
-                <CreditsBadge creditBalance={creditBalance.balance} />
-              )}
+              <PointsBadge pointsBalance={pointsBalance} />
               <ProfileIconButton />
             </>
           )}
@@ -341,9 +339,7 @@ export function MessagesScreen() {
         )}
         renderRightSide={() => (
           <>
-            {creditBalance !== undefined && (
-              <CreditsBadge creditBalance={creditBalance.balance} />
-            )}
+            <PointsBadge pointsBalance={pointsBalance} />
             <ProfileIconButton />
           </>
         )}

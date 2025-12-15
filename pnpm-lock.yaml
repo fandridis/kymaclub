@@ -69,6 +69,9 @@ importers:
       '@shopify/flash-list':
         specifier: ^2.0.2
         version: 2.0.2(@babel/runtime@7.28.4)(react-native@0.81.5(@babel/core@7.28.0)(@react-native-community/cli@19.1.1(typescript@5.9.2))(@types/react@19.1.13)(react@19.1.0))(react@19.1.0)
+      '@stripe/stripe-react-native':
+        specifier: ^0.57.1
+        version: 0.57.1(expo@54.0.25(@babel/core@7.28.0)(@expo/metro-runtime@6.1.2)(react-native-webview@13.16.0(react-native@0.81.5(@babel/core@7.28.0)(@react-native-community/cli@19.1.1(typescript@5.9.2))(@types/react@19.1.13)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.0)(@react-native-community/cli@19.1.1(typescript@5.9.2))(@types/react@19.1.13)(react@19.1.0))(react@19.1.0))(react-native-webview@13.16.0(react-native@0.81.5(@babel/core@7.28.0)(@react-native-community/cli@19.1.1(typescript@5.9.2))(@types/react@19.1.13)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.0)(@react-native-community/cli@19.1.1(typescript@5.9.2))(@types/react@19.1.13)(react@19.1.0))(react@19.1.0)
       convex:
         specifier: ^1.27.3
         version: 1.27.3(react@19.1.0)
@@ -3971,6 +3974,19 @@ packages:
 
   '@standard-schema/utils@0.3.0':
     resolution: {integrity: sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==}
+
+  '@stripe/stripe-react-native@0.57.1':
+    resolution: {integrity: sha512-zcprrEwLMWnppiRAWHh50Cci2Vp0o7xU07q425+Tq0QYGdY/KsBN/ofUhGnrYOpH45OpjDpezv3wdA69sngKOA==}
+    peerDependencies:
+      expo: '>=46.0.9'
+      react: 19.1.0
+      react-native: '*'
+      react-native-webview: '*'
+    peerDependenciesMeta:
+      expo:
+        optional: true
+      react-native-webview:
+        optional: true
 
   '@swc/core-darwin-arm64@1.13.5':
     resolution: {integrity: sha512-lKNv7SujeXvKn16gvQqUQI5DdyY8v7xcoO3k06/FJbHJS90zEwZdQiMNRiqpYw/orU543tPaWgz7cIYWhbopiQ==}
@@ -13871,6 +13887,14 @@ snapshots:
   '@standard-schema/spec@1.0.0': {}
 
   '@standard-schema/utils@0.3.0': {}
+
+  '@stripe/stripe-react-native@0.57.1(expo@54.0.25(@babel/core@7.28.0)(@expo/metro-runtime@6.1.2)(react-native-webview@13.16.0(react-native@0.81.5(@babel/core@7.28.0)(@react-native-community/cli@19.1.1(typescript@5.9.2))(@types/react@19.1.13)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.0)(@react-native-community/cli@19.1.1(typescript@5.9.2))(@types/react@19.1.13)(react@19.1.0))(react@19.1.0))(react-native-webview@13.16.0(react-native@0.81.5(@babel/core@7.28.0)(@react-native-community/cli@19.1.1(typescript@5.9.2))(@types/react@19.1.13)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.0)(@react-native-community/cli@19.1.1(typescript@5.9.2))(@types/react@19.1.13)(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      react: 19.1.0
+      react-native: 0.81.5(@babel/core@7.28.0)(@react-native-community/cli@19.1.1(typescript@5.9.2))(@types/react@19.1.13)(react@19.1.0)
+    optionalDependencies:
+      expo: 54.0.25(@babel/core@7.28.0)(@expo/metro-runtime@6.1.2)(react-native-webview@13.16.0(react-native@0.81.5(@babel/core@7.28.0)(@react-native-community/cli@19.1.1(typescript@5.9.2))(@types/react@19.1.13)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.0)(@react-native-community/cli@19.1.1(typescript@5.9.2))(@types/react@19.1.13)(react@19.1.0))(react@19.1.0)
+      react-native-webview: 13.16.0(react-native@0.81.5(@babel/core@7.28.0)(@react-native-community/cli@19.1.1(typescript@5.9.2))(@types/react@19.1.13)(react@19.1.0))(react@19.1.0)
 
   '@swc/core-darwin-arm64@1.13.5':
     optional: true

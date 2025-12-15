@@ -13,13 +13,10 @@ import { VenueClassInstancesScreen } from './screens/VenueClassInstancesScreen';
 import { ExploreFiltersModalScreen } from './screens/ExploreFiltersModalScreen';
 import { SettingsNotificationsPreferenceScreen } from './screens/SettingsNotificationsPreferenceScreen';
 import { SettingsNotificationsScreen } from './screens/SettingsNotificationsScreen';
-import { SettingsSubscriptionScreen } from './screens/SettingsSubscriptionScreen';
 import { SettingsAccountScreen } from './screens/SettingsAccountScreen';
 import { LanguageSelectionScreen } from './screens/LanguageSelectionScreen';
 import { CitySelectionScreen } from './screens/CitySelectionScreen';
-import { SubscriptionScreen } from './screens/SubscriptionScreen';
 import { SuperpowersScreen } from './screens/SuperpowersScreen';
-import { BuyCreditsScreen } from './screens/BuyCreditsScreen';
 import { LandingScreen } from '../features/core/screens/landing-screen';
 import { CreateAccountModalScreen } from '../features/core/screens/create-account-modal-screen';
 import { LocationObject } from 'expo-location';
@@ -169,15 +166,6 @@ export function RootNavigator() {
             }}
           />
           <RootStack.Screen
-            name="SettingsSubscription"
-            component={SettingsSubscriptionScreen}
-            options={{
-              title: 'Subscription Settings',
-              animation: 'slide_from_right',
-              headerShown: false,
-            }}
-          />
-          <RootStack.Screen
             name="SettingsAccount"
             component={SettingsAccountScreen}
             options={{
@@ -202,26 +190,10 @@ export function RootNavigator() {
             }}
           />
           <RootStack.Screen
-            name="Subscription"
-            component={SubscriptionScreen}
-            options={{
-              animation: 'slide_from_right',
-              headerShown: false,
-            }}
-          />
-          <RootStack.Screen
             name="Superpowers"
             component={SuperpowersScreen}
             options={{
               title: 'Superpowers',
-              animation: 'slide_from_right',
-              headerShown: false,
-            }}
-          />
-          <RootStack.Screen
-            name="BuyCredits"
-            component={BuyCreditsScreen}
-            options={{
               animation: 'slide_from_right',
               headerShown: false,
             }}
@@ -343,14 +315,10 @@ export type RootStackParamList = {
     classInstanceId?: import('@repo/api/convex/_generated/dataModel').Id<"classInstances">;
   };
   SettingsNotifications: undefined;
-  SettingsSubscription: undefined;
   SettingsAccount: undefined;
   LanguageSelection: undefined;
   CitySelection: undefined;
-  SettingsCredits: undefined;
-  Subscription: undefined;
   Superpowers: undefined;
-  BuyCredits: undefined;
   SettingsNotificationsPreference: {
     notificationType: {
       keys: readonly string[];
@@ -359,14 +327,11 @@ export type RootStackParamList = {
     };
   };
   NotFound: undefined;
-  // Payment result screens
+  // Payment result screens (legacy - payments now use in-app Stripe Payment Sheet)
   PaymentSuccess: {
-    session_id: string;
-    type: 'subscription' | 'purchase';
+    session_id?: string;
   };
-  PaymentCancel: {
-    type: 'subscription' | 'purchase';
-  };
+  PaymentCancel: undefined;
   Conversation: {
     threadId: string;
     venueName: string;
@@ -411,14 +376,10 @@ export type RootStackParamListWithNestedTabs = {
     classInstanceId?: import('@repo/api/convex/_generated/dataModel').Id<"classInstances">;
   };
   SettingsNotifications: undefined;
-  SettingsSubscription: undefined;
   SettingsAccount: undefined;
   LanguageSelection: undefined;
   CitySelection: undefined;
-  SettingsCredits: undefined;
-  Subscription: undefined;
   Superpowers: undefined;
-  BuyCredits: undefined;
   SettingsNotificationsPreference: {
     notificationType: {
       keys: readonly string[];

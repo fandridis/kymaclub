@@ -76,6 +76,13 @@ export default ({ config }) => ({
       },
     ],
     "expo-audio",
+    [
+      "@stripe/stripe-react-native",
+      {
+        merchantIdentifier: "merchant.com.kymaclub.app",
+        enableGooglePay: true,
+      },
+    ],
   ],
   androidStatusBar: {
     backgroundColor: "#8B5CF6",
@@ -88,5 +95,7 @@ export default ({ config }) => ({
     // 👇 Convex + site env vars injected here
     EXPO_PUBLIC_CONVEX_URL: process.env.EXPO_PUBLIC_CONVEX_URL,
     EXPO_PUBLIC_CONVEX_SITE_URL: process.env.EXPO_PUBLIC_CONVEX_SITE_URL,
+    // Stripe publishable key for in-app payments
+    EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY,
   },
 });

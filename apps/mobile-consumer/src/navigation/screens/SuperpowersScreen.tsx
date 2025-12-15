@@ -18,10 +18,10 @@ type Superpower = {
 const superpowers: Superpower[] = [
     {
         id: 'hoarder',
-        name: 'The Hoarder',
-        description: 'Credits purchased while this superpower is active, expire in +2 months than usually',
+        name: 'Point Collector',
+        description: 'Earn double points on all bookings while this superpower is active',
         price: 5,
-        icon: '💎'
+        icon: '⭐'
     },
     {
         id: 'early-bird',

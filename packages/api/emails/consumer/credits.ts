@@ -19,18 +19,19 @@ const DEFAULT_CREDITS_GIFT: CreditsGiftTranslations = {
 
 // Default English translations for welcome email
 const DEFAULT_WELCOME: WelcomeEmailTranslations = {
-  subject: "Welcome to KymaClub! Your {{credits}} bonus credits are ready",
+  subject: "Welcome to KymaClub! Your free class coupon is ready",
   title: "Welcome to KymaClub!",
   greeting: "Hi {{name}}!",
-  credits_label: "Welcome Bonus Credits",
-  credits_ready: "Ready to use right now!",
-  what_can_you_do_title: "What can you do with credits?",
-  what_can_you_do_body: "Use your credits to book amazing fitness classes across the city - from yoga and pilates to HIIT and dance classes!",
+  coupon_label: "Welcome Gift",
+  coupon_value: "1 Free Class",
+  coupon_ready: "Ready to use right now!",
+  what_can_you_do_title: "What can you do with your free class?",
+  what_can_you_do_body: "Use your free class coupon to book any fitness class across the city - from yoga and pilates to HIIT and dance classes!",
   cta_button: "Explore Classes",
   how_to_start_title: "Here's how to get started:",
   step_1: "Browse classes by location, type, or time",
   step_2: "Find a class that fits your schedule",
-  step_3: "Book instantly with your credits",
+  step_3: "Book your first class for free",
   step_4: "Show up and enjoy your workout!",
   help_text: "Need help? We're here for you! Contact us at",
 };
@@ -119,38 +120,39 @@ export function createCreditsGiftEmail({
 
 export interface CreateWelcomeEmailOptions {
   customerName: string;
-  welcomeCredits: number;
+  hasFreeClassCoupon?: boolean;
   translations?: WelcomeEmailTranslations;
 }
 
 /**
- * Creates a welcome email for new consumers
+ * Creates a welcome email for new consumers with free class coupon
  */
 export function createWelcomeEmail({
   customerName,
-  welcomeCredits,
+  hasFreeClassCoupon = true,
   translations,
 }: CreateWelcomeEmailOptions): string {
   const t = translations ?? DEFAULT_WELCOME;
 
-  const subject = t.subject.replace("{{credits}}", String(welcomeCredits));
   const greeting = t.greeting.replace("{{name}}", customerName);
 
   return createEmailTemplate({
-    title: subject,
+    title: t.subject,
     content: `
       <div style="text-align: center; margin-bottom: 32px;">
         <h1 style="color: #059669; font-size: 28px; margin-bottom: 16px;">${t.title}</h1>
         <p style="font-size: 18px; color: #4B5563; margin: 0;">${greeting}</p>
       </div>
 
+      ${hasFreeClassCoupon ? `
       <div style="background: linear-gradient(135deg, #059669, #10B981); border-radius: 16px; padding: 32px; text-align: center; margin-bottom: 32px;">
         <div style="background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-          <h2 style="color: #059669; font-size: 48px; font-weight: bold; margin: 0 0 8px 0;">${welcomeCredits}</h2>
-          <p style="color: #4B5563; font-size: 18px; margin: 0; font-weight: 500;">${t.credits_label}</p>
+          <p style="color: #4B5563; font-size: 14px; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 1px;">${t.coupon_label}</p>
+          <h2 style="color: #059669; font-size: 32px; font-weight: bold; margin: 0;">${t.coupon_value}</h2>
         </div>
-        <p style="color: white; font-size: 16px; margin: 0; opacity: 0.95;">${t.credits_ready}</p>
+        <p style="color: white; font-size: 16px; margin: 0; opacity: 0.95;">${t.coupon_ready}</p>
       </div>
+      ` : ''}
 
       <div style="background: #EFF6FF; border-left: 4px solid #3B82F6; padding: 20px; margin: 24px 0; border-radius: 4px;">
         <h4 style="color: #1E40AF; margin: 0 0 8px 0; font-size: 16px;">${t.what_can_you_do_title}</h4>

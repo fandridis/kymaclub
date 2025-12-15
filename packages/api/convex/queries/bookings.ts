@@ -1,4 +1,4 @@
-import { query } from "../_generated/server";
+import { query, internalQuery } from "../_generated/server";
 import { v } from "convex/values";
 import { getAuthenticatedUserOrThrow } from "../utils";
 import { bookingService } from "../../services/bookingService";
@@ -303,6 +303,23 @@ export const getUserBookingStats = query({
       thisMonth: thisMonthBookings.length,
       allTime: allTimeBookings.length
     };
+  },
+});
+
+/***************************************************************
+ * INTERNAL QUERIES (for use by actions/other internal functions)
+ ***************************************************************/
+
+/**
+ * Get booking by ID (internal - no auth check)
+ * Used by actions that have already verified authorization
+ */
+export const getBookingById = internalQuery({
+  args: {
+    bookingId: v.id("bookings"),
+  },
+  handler: async (ctx, args) => {
+    return ctx.db.get(args.bookingId);
   },
 });
 

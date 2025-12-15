@@ -13,8 +13,7 @@ import type { RootStackParamList } from '../index';
 import { theme } from '../../theme';
 import { api } from '@repo/api/convex/_generated/api';
 import type { Doc } from '@repo/api/convex/_generated/dataModel';
-import { CreditsBadge } from '../../components/CreditsBadge';
-import { useQuery } from 'convex/react';
+import { PointsBadge } from '../../components/PointsBadge';
 import { ProfileIconButton } from '../../components/ProfileIconButton';
 import { useTypedTranslation } from '../../i18n/typed';
 import { ChevronLeftIcon } from 'lucide-react-native';
@@ -135,8 +134,8 @@ export function BookingsScreen() {
         { initialNumItems: INITIAL_BOOKINGS_COUNT }
     );
 
-    // Get user credit balance
-    const creditBalance = useQuery(api.queries.credits.getUserBalance, user ? { userId: user._id } : "skip");
+    // Get user points balance
+    const pointsBalance = user?.points ?? 0;
 
     const sections = useMemo(() => {
         if (!allBookings?.length) {
@@ -197,9 +196,7 @@ export function BookingsScreen() {
                 <TabScreenHeader
                     renderRightSide={() => (
                         <>
-                            {creditBalance !== undefined && (
-                                <CreditsBadge creditBalance={creditBalance.balance} />
-                            )}
+                            <PointsBadge pointsBalance={0} />
                             <ProfileIconButton />
                         </>
                     )}
@@ -230,9 +227,7 @@ export function BookingsScreen() {
                 )}
                 renderRightSide={() => (
                     <>
-                        {creditBalance !== undefined && (
-                            <CreditsBadge creditBalance={creditBalance.balance} />
-                        )}
+                        <PointsBadge pointsBalance={pointsBalance} />
                         <ProfileIconButton />
                     </>
                 )}

@@ -1,80 +1,52 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
-import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
-import { CheckCircle, CreditCard, Zap } from 'lucide-react-native';
-import { Button } from 'react-native';
-import { RootStackParamList } from '../index';
+import { useNavigation, CommonActions } from '@react-navigation/native';
+import { CheckCircle } from 'lucide-react-native';
+import { theme } from '../../theme';
+import { useTypedTranslation } from '../../i18n/typed';
 
-type PaymentSuccessRouteProp = RouteProp<RootStackParamList, 'PaymentSuccess'>;
-
+/**
+ * PaymentSuccessScreen - Legacy screen for web redirect flows
+ * 
+ * Note: Most payments now use the in-app Stripe Payment Sheet,
+ * which handles success/failure directly. This screen is kept
+ * for backwards compatibility with any existing deep links.
+ */
 export function PaymentSuccessScreen() {
   const navigation = useNavigation();
-  const route = useRoute<PaymentSuccessRouteProp>();
-  const { session_id, type } = route.params;
+  const { t } = useTypedTranslation();
 
   useEffect(() => {
-    // TODO: You might want to verify the payment status with your backend here
-    // For now, we'll just show the success screen
-
-    // Show success alert
+    // Show success alert and navigate to bookings
     setTimeout(() => {
-      const message = type === 'subscription'
-        ? 'Your subscription has been activated successfully!'
-        : 'Your credits have been added successfully!';
-
       Alert.alert(
-        'Payment Successful!',
-        message,
+        t('payment.success'),
+        t('payment.bookingConfirmed'),
         [
           {
-            text: 'Great!',
+            text: t('common.ok'),
             onPress: () => {
-              // Clear navigation stack and go to Settings
+              // Navigate to Bookings to see the new booking
               navigation.dispatch(
                 CommonActions.reset({
                   index: 0,
-                  routes: [{ name: 'Settings' }],
+                  routes: [{ name: 'Bookings' }],
                 })
               );
             },
           },
         ]
       );
-    }, 1000);
-  }, [session_id, type, navigation]);
-
-  const getIcon = () => {
-    return type === 'subscription' ? (
-      <Zap size={64} color="#22C55E" strokeWidth={1.5} />
-    ) : (
-      <CreditCard size={64} color="#22C55E" strokeWidth={1.5} />
-    );
-  };
-
-  const getTitle = () => {
-    return type === 'subscription' ? 'Subscription Activated!' : 'Credits Added!';
-  };
-
-  const getMessage = () => {
-    return type === 'subscription'
-      ? 'Your monthly subscription is now active. Credits will be added to your account.'
-      : 'Your credits have been successfully added to your account.';
-  };
+    }, 500);
+  }, [navigation, t]);
 
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <CheckCircle size={80} color="#22C55E" strokeWidth={1.5} />
-        <View style={styles.iconContainer}>
-          {getIcon()}
-        </View>
+        <CheckCircle size={80} color={theme.colors.emerald[500]} strokeWidth={1.5} />
 
-        <Text style={styles.title}>{getTitle()}</Text>
-        <Text style={styles.message}>{getMessage()}</Text>
-
-        <View style={styles.details}>
-          <Text style={styles.sessionId}>Session: {session_id}</Text>
-        </View>
+        <Text style={styles.title}>{t('payment.success')}</Text>
+        <Text style={styles.message}>{t('payment.bookingConfirmed')}</Text>
       </View>
     </View>
   );
@@ -83,7 +55,7 @@ export function PaymentSuccessScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.zinc[50],
   },
   content: {
     flex: 1,
@@ -91,34 +63,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 32,
   },
-  iconContainer: {
-    marginTop: 16,
-    marginBottom: 24,
-  },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#1f2937',
+    color: theme.colors.zinc[900],
     textAlign: 'center',
+    marginTop: 24,
     marginBottom: 12,
   },
   message: {
     fontSize: 16,
-    color: '#6b7280',
+    color: theme.colors.zinc[600],
     textAlign: 'center',
     lineHeight: 24,
-    marginBottom: 32,
-  },
-  details: {
-    backgroundColor: '#f3f4f6',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginTop: 24,
-  },
-  sessionId: {
-    fontSize: 12,
-    color: '#9ca3af',
-    fontFamily: 'monospace',
   },
 });

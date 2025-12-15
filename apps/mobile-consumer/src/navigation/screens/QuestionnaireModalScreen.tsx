@@ -12,17 +12,14 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { useMutation, useQuery } from 'convex/react';
-import { DiamondIcon, X } from 'lucide-react-native';
+import { X } from 'lucide-react-native';
 import { theme } from '../../theme';
 import { QuestionnaireForm } from '../../components/QuestionnaireForm';
 import { useTypedTranslation } from '../../i18n/typed';
 import type { Question, QuestionAnswer } from '@repo/api/types/questionnaire';
-import { calculateTotalQuestionnaireFees, hasAnswerValue } from '@repo/api/operations/questionnaire';
-import { api } from '@repo/api/convex/_generated/api';
-import { centsToCredits } from '@repo/utils/credits';
-import type { Id } from '@repo/api/convex/_generated/dataModel';
+import { buildQuestionnaireAnswersWithFees, calculateTotalQuestionnaireFees, hasAnswerValue } from '@repo/api/operations/questionnaire';
 import type { RootStackParamList } from '..';
+import { setPendingQuestionnaireBooking } from '../../utils/pendingQuestionnaireBooking';
 
 type QuestionnaireModalRoute = RouteProp<RootStackParamList, 'QuestionnaireModal'>;
 
@@ -33,13 +30,6 @@ export function QuestionnaireModalScreen() {
   const insets = useSafeAreaInsets();
 
   const { questions, basePrice, className, classInstanceId } = route.params;
-
-  const bookClass = useMutation(api.mutations.bookings.bookClass);
-
-  // Fetch class instance to check requiresConfirmation
-  const classInstance = useQuery(api.queries.classInstances.getConsumerClassInstanceById, {
-    instanceId: classInstanceId,
-  });
 
   const [answers, setAnswers] = useState<Omit<QuestionAnswer, 'feeApplied'>[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,9 +43,16 @@ export function QuestionnaireModalScreen() {
     );
   }, [questions, answers]);
 
-  // Total price in credits (fees are in cents, basePrice is in credits)
-  const questionnaireFeesInCredits = questionnaireFees > 0 ? Math.ceil(centsToCredits(questionnaireFees)) : 0;
-  const totalPrice = basePrice + questionnaireFeesInCredits;
+  const questionnaireAnswersWithFees = useMemo(() => {
+    if (questions.length === 0) return null;
+    if (answers.length === 0) return null;
+    return buildQuestionnaireAnswersWithFees(questions, answers);
+  }, [questions, answers]);
+
+  const totalFeesInCents = questionnaireAnswersWithFees?.totalFees ?? 0;
+  const totalPriceInCents = basePrice + totalFeesInCents;
+
+  const formatEuro = (cents: number) => `€${(cents / 100).toFixed(2)}`;
 
   // Check if all required questions are answered
   const allRequiredAnswered = useMemo(() => {
@@ -74,29 +71,24 @@ export function QuestionnaireModalScreen() {
 
     setIsSubmitting(true);
     try {
-      await bookClass({
+      setPendingQuestionnaireBooking({
         classInstanceId,
-        description: `Booking for ${className}`,
-        questionnaireAnswers: answers.length > 0 ? answers : undefined,
+        // If there are no answers (e.g. only optional questions), we still proceed.
+        answers: questionnaireAnswersWithFees?.answers ?? [],
+        totalPriceInCents,
       });
-      // Show different message based on whether class requires confirmation
-      const requiresConfirmation = classInstance?.requiresConfirmation;
-      if (requiresConfirmation) {
-        Alert.alert(t('classes.requestSent'), t('classes.requestSentMessage'));
-      } else {
-        Alert.alert(t('classes.booked'), t('classes.bookedSuccess'));
-      }
+
       navigation.goBack();
     } catch (err: any) {
       const message =
         (err?.data && (err.data.message || err.data.code)) ||
         err?.message ||
-        t('classes.bookingFailedMessage');
-      Alert.alert(t('classes.bookingFailed'), String(message));
+        t('payment.paymentFailedMessage');
+      Alert.alert(t('payment.paymentFailed'), String(message));
     } finally {
       setIsSubmitting(false);
     }
-  }, [answers, bookClass, classInstanceId, className, classInstance, navigation, t, isSubmitting]);
+  }, [isSubmitting, classInstanceId, questionnaireAnswersWithFees, totalPriceInCents, navigation, t]);
 
   const handleClose = useCallback(() => {
     navigation.goBack();
@@ -151,17 +143,15 @@ export function QuestionnaireModalScreen() {
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>{t('questionnaire.classPrice')}</Text>
               <View style={styles.priceValueContainer}>
-                <DiamondIcon size={14} color={theme.colors.emerald[600]} />
-                <Text style={styles.priceValue}>{basePrice}</Text>
+                <Text style={styles.priceValue}>{formatEuro(basePrice)}</Text>
               </View>
             </View>
-            {questionnaireFeesInCredits > 0 && (
+            {totalFeesInCents > 0 && (
               <View style={styles.priceRow}>
                 <Text style={styles.priceLabel}>{t('questionnaire.additionalFees')}</Text>
                 <View style={styles.priceValueContainer}>
-                  <DiamondIcon size={14} color={theme.colors.amber[600]} />
                   <Text style={[styles.priceValue, styles.feeValue]}>
-                    +{questionnaireFeesInCredits}
+                    +{formatEuro(totalFeesInCents)}
                   </Text>
                 </View>
               </View>
@@ -169,8 +159,7 @@ export function QuestionnaireModalScreen() {
             <View style={[styles.priceRow, styles.totalRow]}>
               <Text style={styles.totalLabel}>{t('questionnaire.total')}</Text>
               <View style={styles.priceValueContainer}>
-                <DiamondIcon size={16} color={theme.colors.emerald[600]} />
-                <Text style={styles.totalValue}>{totalPrice}</Text>
+                <Text style={styles.totalValue}>{formatEuro(totalPriceInCents)}</Text>
               </View>
             </View>
           </View>
@@ -193,7 +182,7 @@ export function QuestionnaireModalScreen() {
               </View>
             ) : (
               <Text style={styles.confirmButtonText}>
-                {t('questionnaire.confirmBooking', { credits: totalPrice })}
+                {t('questionnaire.confirmBooking', { price: formatEuro(totalPriceInCents) })}
               </Text>
             )}
           </TouchableOpacity>

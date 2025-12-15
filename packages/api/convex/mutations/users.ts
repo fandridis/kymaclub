@@ -1,9 +1,25 @@
-import { mutation } from "../_generated/server";
+import { mutation, internalMutation } from "../_generated/server";
 import { getAuthenticatedUserOrThrow } from "../utils";
 import { ConvexError, v } from "convex/values";
 import { internalMutationWithTriggers } from "../triggers";
 import { ERROR_CODES } from "../../utils/errorCodes";
 import { hasRenewingSubscription } from "./payments";
+
+/***************************************************************
+ * Internal: Update Stripe Customer ID
+ * Called when a Stripe customer is created for a user
+ ***************************************************************/
+export const updateStripeCustomerId = internalMutation({
+    args: {
+        userId: v.id("users"),
+        stripeCustomerId: v.string(),
+    },
+    returns: v.null(),
+    handler: async (ctx, { userId, stripeCustomerId }) => {
+        await ctx.db.patch(userId, { stripeCustomerId });
+        return null;
+    },
+});
 
 export const updateUserForModerationArgs = v.object({
     userId: v.id("users"),

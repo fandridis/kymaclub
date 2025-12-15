@@ -6,12 +6,12 @@ import { useUserSettings } from '../../hooks/use-user-notification-settings';
 import { useNavigation } from '@react-navigation/native';
 import { theme } from '../../theme';
 import { SettingsGroup, SettingsRow } from '../../components/Settings';
-import { Clock, Calendar, CreditCard } from 'lucide-react-native';
+import { Clock, Calendar, Receipt } from 'lucide-react-native';
 import { StackScreenHeader } from '../../components/StackScreenHeader';
 import { LucideIcon } from 'lucide-react-native';
 import { useTypedTranslation } from '../../i18n/typed';
 
-type ConsumerNotificationType = 'booking_confirmation' | 'booking_reminder' | 'class_cancelled' | 'booking_cancelled_by_business' | 'payment_receipt' | 'class_rebookable' | 'credits_received_subscription' | 'credits_received_admin_gift';
+type ConsumerNotificationType = 'booking_confirmation' | 'booking_reminder' | 'class_cancelled' | 'booking_cancelled_by_business' | 'payment_receipt' | 'class_rebookable' | 'points_earned' | 'coupon_received';
 
 type NotificationGroup = {
     id: string;
@@ -30,8 +30,8 @@ const defaultPreferences: Record<ConsumerNotificationType, NotificationChannels>
     booking_cancelled_by_business: { email: false, web: false, push: false },
     payment_receipt: { email: false, web: false, push: false },
     class_rebookable: { email: false, web: false, push: false },
-    credits_received_subscription: { email: true, web: true, push: true },
-    credits_received_admin_gift: { email: true, web: true, push: true },
+    points_earned: { email: true, web: true, push: true },
+    coupon_received: { email: true, web: true, push: true },
 };
 
 export function SettingsNotificationsScreen() {
@@ -57,11 +57,11 @@ export function SettingsNotificationsScreen() {
             notificationKeys: ['class_cancelled', 'booking_cancelled_by_business', 'class_rebookable'] as const
         },
         {
-            id: 'subscriptions',
-            title: t('settings.notifications.groups.subscriptions.title'),
-            description: t('settings.notifications.groups.subscriptions.description'),
-            icon: CreditCard,
-            notificationKeys: ['payment_receipt', 'credits_received_subscription', 'credits_received_admin_gift'] as const
+            id: 'payments',
+            title: t('settings.notifications.groups.payments.title'),
+            description: t('settings.notifications.groups.payments.description'),
+            icon: Receipt,
+            notificationKeys: ['payment_receipt', 'points_earned', 'coupon_received'] as const
         }
     ], [t]);
 

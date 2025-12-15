@@ -24,6 +24,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useTypedTranslation } from './i18n/typed';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { StripeProvider } from '@stripe/stripe-react-native';
 
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
@@ -48,6 +49,24 @@ const convex = new ConvexReactClient(convexUrl || "https://MISSING_CONVEX_URL.co
   unsavedChangesWarning: false,
   // verbose: true,
 });
+
+// Stripe publishable key for in-app payments
+const stripePublishableKeyFromExtra: string | undefined =
+  Constants.expoConfig?.extra?.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+
+// Dev-only fallback so local builds work even if env vars weren't injected at bundle time.
+// IMPORTANT: Do not rely on this in production; rotate by setting EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY.
+const stripePublishableKeyFallback: string | undefined = __DEV__
+  ? "pk_test_D6Fdm4YCR6FZApgnZuJo8M2a"
+  : undefined;
+
+const stripePublishableKey: string | undefined =
+  stripePublishableKeyFromExtra ?? stripePublishableKeyFallback;
+
+if (!stripePublishableKey && !__DEV__) {
+  console.error("❌ CRITICAL: Missing EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY in app.config.js -> extra");
+  console.error("❌ Stripe payments will not work. Configure it in eas.json env or EAS secrets.");
+}
 // Create navigation reference for deep linking
 const navigationRef = createNavigationContainerRef();
 
@@ -80,18 +99,23 @@ export function App() {
 
   return (
     <ErrorBoundary>
-      <ConvexProvider client={convex}>
-        <ConvexAuthProvider client={convex} storage={convexAuthStorage}>
-          <SafeAreaProvider>
-            <ActionSheetProvider>
-              <InnerApp
-                theme={theme}
-                onReady={() => { SplashScreen.hideAsync() }}
-              />
-            </ActionSheetProvider>
-          </SafeAreaProvider>
-        </ConvexAuthProvider>
-      </ConvexProvider>
+      <StripeProvider
+        publishableKey={stripePublishableKey || ""}
+        merchantIdentifier="merchant.com.kymaclub.app"
+      >
+        <ConvexProvider client={convex}>
+          <ConvexAuthProvider client={convex} storage={convexAuthStorage}>
+            <SafeAreaProvider>
+              <ActionSheetProvider>
+                <InnerApp
+                  theme={theme}
+                  onReady={() => { SplashScreen.hideAsync() }}
+                />
+              </ActionSheetProvider>
+            </SafeAreaProvider>
+          </ConvexAuthProvider>
+        </ConvexProvider>
+      </StripeProvider>
     </ErrorBoundary>
   );
 }

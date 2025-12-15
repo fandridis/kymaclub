@@ -7,11 +7,12 @@ import {
     StyleSheet,
     ScrollView,
 } from 'react-native';
-import { Check, DiamondIcon } from 'lucide-react-native';
+import { Check, EuroIcon } from 'lucide-react-native';
 import { theme } from '../theme';
 import type { Question, QuestionAnswer } from '@repo/api/types/questionnaire';
 import { calculateQuestionFee } from '@repo/api/operations/questionnaire';
-import { centsToCredits } from '@repo/utils/credits';
+// Format cents to EUR display (e.g., 1200 -> "€12.00")
+const formatEuro = (cents: number) => `€${(cents / 100).toFixed(2)}`;
 import { useTypedTranslation } from '../i18n/typed';
 
 interface QuestionnaireFormProps {
@@ -46,20 +47,20 @@ export function QuestionnaireForm({
         onAnswersChange(newAnswers);
     }, [answers, onAnswersChange]);
 
-    const calculateFeeDisplay = useCallback((question: Question, answer: Omit<QuestionAnswer, 'feeApplied'> | undefined) => {
+    const calculateFeeDisplayCents = useCallback((question: Question, answer: Omit<QuestionAnswer, 'feeApplied'> | undefined) => {
         if (!answer) return 0;
-        const fee = calculateQuestionFee(question, { ...answer, feeApplied: 0 });
-        return Math.ceil(centsToCredits(fee));
+        return calculateQuestionFee(question, { ...answer, feeApplied: 0 });
     }, []);
 
-    const totalFees = useMemo(() => {
-        const totalCents = questions.reduce((total, question) => {
+    const totalFeesCents = useMemo(() => {
+        return questions.reduce((total, question) => {
             const answer = getAnswer(question.id);
             if (!answer) return total;
             return total + calculateQuestionFee(question, { ...answer, feeApplied: 0 });
         }, 0);
-        return Math.ceil(centsToCredits(totalCents));
     }, [questions, answers, getAnswer]);
+
+    const totalFees = formatEuro(totalFeesCents);
 
     const renderBooleanQuestion = (question: Question) => {
         const answer = getAnswer(question.id);
@@ -81,8 +82,8 @@ export function QuestionnaireForm({
                     <Text style={styles.optionLabel}>{t('questionnaire.yes')}</Text>
                     {fee !== undefined && fee > 0 && (
                         <View style={styles.feeBadge}>
-                            <DiamondIcon size={12} color={theme.colors.amber[600]} />
-                            <Text style={styles.feeBadgeText}>{Math.ceil(centsToCredits(fee))}</Text>
+                            <EuroIcon size={12} color={theme.colors.amber[600]} />
+                            <Text style={styles.feeBadgeText}>{formatEuro(fee)}</Text>
                         </View>
                     )}
                 </TouchableOpacity>
@@ -123,8 +124,8 @@ export function QuestionnaireForm({
                         <Text style={styles.optionLabel}>{option.label}</Text>
                         {option.fee !== undefined && option.fee > 0 && (
                             <View style={styles.feeBadge}>
-                                <DiamondIcon size={12} color={theme.colors.amber[600]} />
-                                <Text style={styles.feeBadgeText}>{Math.ceil(centsToCredits(option.fee))}</Text>
+                                <EuroIcon size={12} color={theme.colors.amber[600]} />
+                                <Text style={styles.feeBadgeText}>{formatEuro(option.fee)}</Text>
                             </View>
                         )}
                     </TouchableOpacity>
@@ -164,8 +165,8 @@ export function QuestionnaireForm({
                             {option.fee !== undefined && option.fee > 0 && (
                                 <View style={styles.feeBadge}>
                                     <Text style={styles.feeBadgeText}>+</Text>
-                                    <DiamondIcon size={12} color={theme.colors.amber[600]} />
-                                    <Text style={styles.feeBadgeText}>{Math.ceil(centsToCredits(option.fee))}</Text>
+                                    <EuroIcon size={12} color={theme.colors.amber[600]} />
+                                    <Text style={styles.feeBadgeText}>{formatEuro(option.fee)}</Text>
                                 </View>
                             )}
                         </TouchableOpacity>
@@ -203,8 +204,8 @@ export function QuestionnaireForm({
                 {config?.fee !== undefined && config.fee > 0 && (
                     <View style={styles.feeNoteContainer}>
                         <Text style={styles.feeNote}>{t('questionnaire.feeIfProvided')}</Text>
-                        <DiamondIcon size={12} color={theme.colors.amber[600]} />
-                        <Text style={styles.feeNote}>{Math.ceil(centsToCredits(config.fee))}</Text>
+                        <EuroIcon size={12} color={theme.colors.amber[600]} />
+                        <Text style={styles.feeNote}>{formatEuro(config.fee)}</Text>
                     </View>
                 )}
             </View>
@@ -234,8 +235,8 @@ export function QuestionnaireForm({
                 {config?.fee !== undefined && config.fee > 0 && (
                     <View style={styles.feeNoteContainer}>
                         <Text style={styles.feeNote}>{t('questionnaire.feeIfProvided')}</Text>
-                        <DiamondIcon size={12} color={theme.colors.amber[600]} />
-                        <Text style={styles.feeNote}>{Math.ceil(centsToCredits(config.fee))}</Text>
+                        <EuroIcon size={12} color={theme.colors.amber[600]} />
+                        <Text style={styles.feeNote}>{formatEuro(config.fee)}</Text>
                     </View>
                 )}
             </View>
@@ -273,9 +274,7 @@ export function QuestionnaireForm({
                 <View style={styles.totalFeesContainer}>
                     <Text style={styles.totalFeesLabel}>{t('questionnaire.additionalFees')}:</Text>
                     <View style={styles.totalFeesValueContainer}>
-                        <Text style={styles.totalFeesValue}>+</Text>
-                        <DiamondIcon size={16} color={theme.colors.amber[600]} />
-                        <Text style={styles.totalFeesValue}>{totalFees}</Text>
+                        <Text style={styles.totalFeesValue}>+{totalFees}</Text>
                     </View>
                 </View>
             )}

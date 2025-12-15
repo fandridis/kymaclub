@@ -2,14 +2,17 @@ import React, { memo, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { format } from 'date-fns';
 import { tz } from '@date-fns/tz';
-import { DiamondIcon, UserIcon, ClockIcon, LockIcon } from 'lucide-react-native';
+import { UserIcon, ClockIcon, LockIcon, MapPinIcon } from 'lucide-react-native';
 
 import { useTypedTranslation } from '../i18n/typed';
 import type { ClassInstance } from '../hooks/use-class-instances';
-import { centsToCredits } from '@repo/utils/credits';
 import { theme } from '../theme';
 import { formatDistance } from '../utils/location';
-import { MapPinIcon } from 'lucide-react-native';
+
+// Format cents to EUR display
+function formatEuro(cents: number): string {
+  return `€${(cents / 100).toFixed(2)}`;
+}
 
 // Discount rule type based on schema
 type ClassDiscountRule = {
@@ -25,13 +28,13 @@ type ClassDiscountRule = {
   };
 };
 
-// Discount calculation result
+// Discount calculation result (prices in cents)
 type DiscountCalculationResult = {
-  originalPrice: number;
-  finalPrice: number;
+  originalPriceCents: number;
+  finalPriceCents: number;
   appliedDiscount: {
-    discountValue: number;
-    creditsSaved: number;
+    discountValueCents: number;
+    savedCents: number;
     ruleName: string;
   } | null;
 };
@@ -191,7 +194,6 @@ function getBookingWindowStatus(
 
 function calculateClassDiscount(classInstance: ClassInstance): DiscountCalculationResult {
   const priceInCents = classInstance.price ?? 1000; // Default 10.00 in cents
-  const originalPrice = centsToCredits(priceInCents);
 
   const now = Date.now();
   const hoursUntilClass = (classInstance.startTime - now) / (1000 * 60 * 60);
@@ -201,8 +203,8 @@ function calculateClassDiscount(classInstance: ClassInstance): DiscountCalculati
 
   if (discountRules.length === 0) {
     return {
-      originalPrice,
-      finalPrice: originalPrice,
+      originalPriceCents: priceInCents,
+      finalPriceCents: priceInCents,
       appliedDiscount: null,
     };
   }
@@ -211,22 +213,22 @@ function calculateClassDiscount(classInstance: ClassInstance): DiscountCalculati
 
   if (!bestRule) {
     return {
-      originalPrice,
-      finalPrice: originalPrice,
+      originalPriceCents: priceInCents,
+      finalPriceCents: priceInCents,
       appliedDiscount: null,
     };
   }
 
-  const discountValueInCredits = centsToCredits(bestRule.rule.discount.value);
-  const finalPrice = Math.max(0, originalPrice - discountValueInCredits);
-  const creditsSaved = originalPrice - finalPrice;
+  const discountValueCents = bestRule.rule.discount.value;
+  const finalPriceCents = Math.max(0, priceInCents - discountValueCents);
+  const savedCents = priceInCents - finalPriceCents;
 
   return {
-    originalPrice,
-    finalPrice,
+    originalPriceCents: priceInCents,
+    finalPriceCents,
     appliedDiscount: {
-      discountValue: discountValueInCredits,
-      creditsSaved,
+      discountValueCents,
+      savedCents,
       ruleName: bestRule.ruleName,
     },
   };
@@ -331,18 +333,15 @@ export const ClassCard = memo<ClassCardProps>(({ classInstance, distance, onPres
             {discountResult.appliedDiscount ? (
               <View style={styles.priceRowWithDiscount}>
                 <View style={styles.priceRow}>
-                  <DiamondIcon size={12} color={theme.colors.zinc[400]} />
-                  <Text style={styles.originalPriceText}>{discountResult.originalPrice}</Text>
+                  <Text style={styles.originalPriceText}>{formatEuro(discountResult.originalPriceCents)}</Text>
                 </View>
                 <View style={styles.priceRow}>
-                  <DiamondIcon size={16} color={theme.colors.zinc[900]} />
-                  <Text style={styles.discountedPriceText}>{discountResult.finalPrice}</Text>
+                  <Text style={styles.discountedPriceText}>{formatEuro(discountResult.finalPriceCents)}</Text>
                 </View>
               </View>
             ) : (
               <View style={styles.priceRow}>
-                <DiamondIcon size={16} color={theme.colors.zinc[900]} />
-                <Text style={styles.priceText}>{centsToCredits(price ?? 0)}</Text>
+                <Text style={styles.priceText}>{formatEuro(price ?? 0)}</Text>
               </View>
             )}
           </View>

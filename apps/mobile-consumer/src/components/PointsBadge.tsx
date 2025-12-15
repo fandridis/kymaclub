@@ -1,17 +1,17 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { DiamondIcon } from 'lucide-react-native';
+import { StarIcon } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../theme';
 import { useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation';
 
-interface CreditsBadgeProps {
-    creditBalance: number;
+interface PointsBadgeProps {
+    pointsBalance: number;
 }
 
-export function CreditsBadge({ creditBalance }: CreditsBadgeProps) {
+export function PointsBadge({ pointsBalance }: PointsBadgeProps) {
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
     const handlePress = () => {
@@ -24,17 +24,17 @@ export function CreditsBadge({ creditBalance }: CreditsBadgeProps) {
             accessibilityRole="button"
             onPress={handlePress}
             activeOpacity={0.85}
-            style={styles.creditsBadgeContainer}
+            style={styles.container}
         >
             <LinearGradient
-                colors={['#10b981', '#8b5cf6', '#f97316']}
+                colors={[theme.colors.amber[400], theme.colors.amber[500], theme.colors.amber[600]]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.creditsBadgeGradient}
+                style={styles.gradient}
             >
-                <View style={styles.creditsBadgeContent}>
-                    <DiamondIcon size={20} color={theme.colors.zinc[50]} />
-                    <Text style={styles.creditsBadgeText}>{creditBalance || 0}</Text>
+                <View style={styles.content}>
+                    <StarIcon size={18} color={theme.colors.white} fill={theme.colors.white} />
+                    <Text style={styles.text}>{pointsBalance || 0}</Text>
                 </View>
             </LinearGradient>
         </TouchableOpacity>
@@ -42,24 +42,24 @@ export function CreditsBadge({ creditBalance }: CreditsBadgeProps) {
 }
 
 const styles = StyleSheet.create({
-    creditsBadgeContainer: {
+    container: {
         borderRadius: 22,
         overflow: 'hidden',
     },
-    creditsBadgeGradient: {
+    gradient: {
         borderRadius: 22,
         paddingVertical: 8,
-        paddingHorizontal: 10,
+        paddingHorizontal: 12,
     },
-    creditsBadgeContent: {
+    content: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 3,
+        gap: 4,
     },
-    creditsBadgeText: {
+    text: {
         fontSize: theme.fontSize.base,
         fontWeight: theme.fontWeight.semibold,
-        color: theme.colors.zinc[50],
+        color: theme.colors.white,
     },
 });
 

@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Image } from 'expo-image';
 import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
-import { StarIcon, ShowerHeadIcon, AccessibilityIcon, ClockIcon, MessageCircleIcon, PhoneIcon, MailIcon, GlobeIcon, MapPinIcon, ChevronLeftIcon, DiamondIcon } from 'lucide-react-native';
+import { StarIcon, ShowerHeadIcon, AccessibilityIcon, ClockIcon, MessageCircleIcon, PhoneIcon, MailIcon, GlobeIcon, MapPinIcon, ChevronLeftIcon, EuroIcon } from 'lucide-react-native';
 import Carousel from 'react-native-reanimated-carousel';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@repo/api/convex/_generated/api';
@@ -17,7 +17,8 @@ import * as Location from 'expo-location';
 import { formatDistance as formatDistanceMeters, calculateDistance } from '../../utils/location';
 import { useTypedTranslation } from '../../i18n/typed';
 import { theme } from '../../theme';
-import { centsToCredits } from '@repo/utils/credits';
+// Format cents to EUR display (e.g., 1200 -> "€12.00")
+const formatEuro = (cents: number) => `€${(cents / 100).toFixed(2)}`;
 
 type VenueDetailsRoute = RouteProp<RootStackParamListWithNestedTabs, 'VenueDetailsScreen'>;
 
@@ -492,8 +493,8 @@ export function VenueDetailsScreen() {
                                     <View style={styles.otherClassInfo}>
                                         <Text style={styles.otherClassName}>{offering.name}</Text>
                                         <View style={styles.otherClassDetailsRow}>
-                                            <DiamondIcon size={14} color={theme.colors.zinc[500]} />
-                                            <Text style={styles.otherClassPrice}>{centsToCredits(offering.price)}</Text>
+                                            <EuroIcon size={14} color={theme.colors.zinc[500]} />
+                                            <Text style={styles.otherClassPrice}>{formatEuro(offering.price)}</Text>
 
                                             <View style={styles.dotSeparator} />
 

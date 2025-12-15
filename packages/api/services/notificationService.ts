@@ -1137,7 +1137,7 @@ export const notificationService = {
     },
 
     /**
-     * Handle welcome bonus event (new user sign up)
+     * Handle welcome bonus event (new user sign up with free class coupon)
      */
     handleWelcomeBonusEvent: async ({
         ctx,
@@ -1146,10 +1146,10 @@ export const notificationService = {
         ctx: MutationCtx;
         payload: {
             userId: Id<"users">;
-            welcomeCredits: number;
+            welcomeCouponId: Id<"userCoupons">;
         };
     }): Promise<{ success: boolean }> => {
-        const { userId, welcomeCredits } = payload;
+        const { userId, welcomeCouponId } = payload;
 
         // Fetch user
         const user = await ctx.db.get(userId);
@@ -1166,7 +1166,7 @@ export const notificationService = {
         const userNotificationSettings = await coreService.getUserSettings({ ctx, userId });
 
         const title = "Welcome to KymaClub!";
-        const message = `You've received ${welcomeCredits} welcome bonus credits!`;
+        const message = "You've received a free class coupon! Use it to book your first class for free.";
 
         // Send email notification (default to true for new users)
         const shouldSendEmail = userNotificationSettings?.notifications?.preferences?.welcome_bonus?.email ?? true;
@@ -1176,7 +1176,7 @@ export const notificationService = {
                 await ctx.scheduler.runAfter(0, internal.actions.email.sendWelcomeEmail, {
                     customerEmail: user.email,
                     customerName: user.name || user.email || "Valued Customer",
-                    welcomeCredits: welcomeCredits,
+                    welcomeCouponId: welcomeCouponId,
                 });
             } catch (error) {
                 console.error('Error sending welcome email notification:', error);
@@ -1193,7 +1193,7 @@ export const notificationService = {
                 message,
                 {
                     additionalData: {
-                        welcomeCredits: welcomeCredits,
+                        welcomeCouponId: welcomeCouponId,
                     }
                 }
             );
