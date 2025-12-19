@@ -5,6 +5,7 @@ import { ERROR_CODES } from "../utils/errorCodes";
 import { coreRules } from "../rules/core";
 import { classInstanceRules } from "../rules/classInstance";
 import { classTemplateRules } from "../rules/classTemplate";
+import { canAcceptPayments } from "../rules/business";
 import { classInstanceOperations } from "../operations/classInstance";
 import { timeUtils } from "../utils/timeGeneration";
 import type { CreateClassInstanceArgs, CreateMultipleClassInstancesArgs, DeleteSimilarFutureInstancesArgs, DeleteSingleInstanceArgs, UpdateMultipleInstancesArgs, UpdateSingleInstanceArgs } from "../convex/mutations/classInstances";
@@ -94,13 +95,16 @@ export const classInstanceService = {
         classTemplateRules.userMustBeTemplateOwner(template, user);
         classInstanceRules.instanceMustHaveActiveTemplate(template);
 
+        const canAccept = canAcceptPayments(business);
+        const shouldDisableBookings = args.disableBookings || !canAccept;
+
         const instanceToCreate = classInstanceOperations.createInstanceFromTemplate(
             template,
             venue,
             business,
             user,
             args.startTime,
-            args.disableBookings
+            shouldDisableBookings
         );
 
         const createdInstanceId = await ctx.db.insert("classInstances", instanceToCreate);
@@ -159,6 +163,9 @@ export const classInstanceService = {
             cleanArgs.selectedDaysOfWeek
         );
 
+        const canAccept = canAcceptPayments(business);
+        const shouldDisableBookings = args.disableBookings || !canAccept;
+
         const createdInstanceIds: Array<Id<"classInstances">> = [];
         for (const { startTime } of instanceTimes) {
             const instanceToCreate = classInstanceOperations.createInstanceFromTemplate(
@@ -167,7 +174,7 @@ export const classInstanceService = {
                 business,
                 user,
                 startTime,
-                args.disableBookings
+                shouldDisableBookings
             );
 
             const classInstanceId = await ctx.db.insert("classInstances", instanceToCreate);

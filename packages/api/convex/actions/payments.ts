@@ -9,10 +9,13 @@ import { Doc, Id } from "../_generated/dataModel";
 import Stripe from "stripe";
 import { buildQuestionnaireAnswersWithFees } from "../../operations/questionnaire";
 
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-02-24.acacia",
-});
+// Lazy initialization of Stripe client to avoid crashes in test environment where key is missing
+const getStripe = () => {
+  const key = process.env.STRIPE_SECRET_KEY || "sk_test_dummy";
+  return new Stripe(key, {
+    apiVersion: "2025-02-24.acacia",
+  });
+};
 
 /**
  * Create dynamic subscription checkout for 5-500 credits
@@ -307,12 +310,27 @@ export const createClassPaymentIntent = action({
     const questionnaireFeesInCents = normalizedQuestionnaireAnswers?.totalFees ?? 0;
     const totalAmountInCents = priceInCents + questionnaireFeesInCents;
 
+    // Get business details for Stripe Connect
+    const business = await ctx.runQuery(internal.queries.businesses.getBusinessById, {
+      businessId: classDetails.businessId,
+    });
+
+    if (!business) throw new Error("Business not found");
+
+    if (!business.stripeConnectedAccountId || business.stripeConnectedAccountStatus !== "enabled") {
+      throw new Error("Business cannot receive payments - Stripe setup incomplete");
+    }
+
+    // Calculate application fee
+    const platformFeeRate = business.feeStructure.baseFeeRate ?? 0.20;
+    const applicationFeeAmount = Math.round(totalAmountInCents * platformFeeRate);
+
     // Get or create Stripe customer
     let stripeCustomerId = dbUser?.stripeCustomerId;
 
     if (!stripeCustomerId) {
       // Create a new Stripe customer
-      const customer = await stripe.customers.create({
+      const customer = await getStripe().customers.create({
         email: userEmail,
         name: dbUser?.name ?? undefined,
         metadata: {
@@ -329,13 +347,13 @@ export const createClassPaymentIntent = action({
     }
 
     // Create ephemeral key for the Payment Sheet
-    const ephemeralKey = await stripe.ephemeralKeys.create(
+    const ephemeralKey = await getStripe().ephemeralKeys.create(
       { customer: stripeCustomerId },
       { apiVersion: "2024-06-20" }
     );
 
     // Create PaymentIntent
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await getStripe().paymentIntents.create({
       amount: totalAmountInCents,
       currency: "eur",
       customer: stripeCustomerId,
@@ -351,6 +369,11 @@ export const createClassPaymentIntent = action({
         discountRuleName: classDetails.discountRuleName ?? "",
         questionnaireFeesInCents: String(questionnaireFeesInCents),
         totalAmountInCents: String(totalAmountInCents),
+        platformFeeRate: String(platformFeeRate),
+      },
+      application_fee_amount: applicationFeeAmount,
+      transfer_data: {
+        destination: business.stripeConnectedAccountId,
       },
     });
 
@@ -370,6 +393,8 @@ export const createClassPaymentIntent = action({
           ruleName: classDetails.discountRuleName ?? "Discount",
         } : undefined,
         questionnaireAnswers: normalizedQuestionnaireAnswers ?? undefined,
+        // Store fee rate for reconciliation
+        platformFeeRate,
       }
     );
 
@@ -402,7 +427,7 @@ export const cancelClassPaymentIntent = action({
 
     // Cancel the Stripe PaymentIntent
     try {
-      await stripe.paymentIntents.cancel(stripePaymentIntentId);
+      await getStripe().paymentIntents.cancel(stripePaymentIntentId);
     } catch (error) {
       // PaymentIntent might already be cancelled or completed, ignore
       console.log("Could not cancel PaymentIntent:", error);
@@ -542,7 +567,7 @@ export const cancelBookingWithRefund = action({
 
     if (booking.stripePaymentIntentId && paidAmount > 0 && refundedAmount > 0) {
       try {
-        const refund = await stripe.refunds.create({
+        const refund = await getStripe().refunds.create({
           payment_intent: booking.stripePaymentIntentId,
           amount: refundedAmount,
           reason: cancelledBy === "business" ? "requested_by_customer" : "requested_by_customer",
@@ -648,7 +673,7 @@ export const rejectBookingWithRefund = action({
 
     if (booking.stripePaymentIntentId && paidAmount > 0) {
       try {
-        const refund = await stripe.refunds.create({
+        const refund = await getStripe().refunds.create({
           payment_intent: booking.stripePaymentIntentId,
           amount: refundedAmount,
           reason: "requested_by_customer",

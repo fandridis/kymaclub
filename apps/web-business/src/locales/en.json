@@ -255,8 +255,7 @@
                 "tabs": {
                     "details": "Details",
                     "discounts": "Discounts",
-                    "questions": "Questions",
-                    "widgets": "Widgets"
+                    "questions": "Questions"
                 }
             },
             "templateCard": {
@@ -312,7 +311,32 @@
             "tablePrice": "Price",
             "tablePlatformFee": "Platform Fee",
             "tableEarnings": "Earnings",
-            "tableStatus": "Status"
+            "tableStatus": "Status",
+            "stripeConnect": {
+                "title": "Stripe Connect",
+                "active": "Active",
+                "pending": "Pending",
+                "actionRequired": "Action Required",
+                "dashboard": "Dashboard",
+                "setupDescription": "Set up payments to start receiving money from your classes.",
+                "activeDescription": "Your account is fully set up to receive payments.",
+                "statusTitle": "Payment Status",
+                "pendingDescription": "Your application is being processed or requires more details.",
+                "rejectedDescription": "Your account info needs attention. Please update your details.",
+                "connectDescription": "Connect your bank account to receive payouts directly.",
+                "continueSetup": "Continue Setup",
+                "updateInfo": "Update Information",
+                "setupPayments": "Set up Payments",
+                "verified": "Verified",
+                "payoutSchedule": "Payout Schedule",
+                "dailyWeekly": "Daily/Weekly"
+            },
+            "classCreation": {
+                "paymentsNotSetup": "Payments not set up",
+                "bookingsDisabledWarning": "Bookings will be disabled for this class until you",
+                "completeSetup": "complete payment setup",
+                "bookingsDisabledNote": "Note: Bookings are disabled until payment setup is complete."
+            }
         },
         "settings": {
             "title": "Settings",

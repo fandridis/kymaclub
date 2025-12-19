@@ -24,7 +24,6 @@ import { Route as AppLayoutDashboardRouteImport } from './routes/_app-layout/das
 import { Route as AppLayoutCalendarRouteImport } from './routes/_app-layout/calendar'
 import { Route as AppLayoutBookingsRouteImport } from './routes/_app-layout/bookings'
 import { Route as AppLayoutBetterCalendarRouteImport } from './routes/_app-layout/better-calendar'
-import { Route as AppLayoutTournamentsWidgetIdRouteImport } from './routes/_app-layout/tournaments/$widgetId'
 import { Route as AppLayoutMessagesConversationThreadIdRouteImport } from './routes/_app-layout/messages/conversation/$threadId'
 
 const SignInTesterRoute = SignInTesterRouteImport.update({
@@ -101,12 +100,6 @@ const AppLayoutBetterCalendarRoute = AppLayoutBetterCalendarRouteImport.update({
   path: '/better-calendar',
   getParentRoute: () => AppLayoutRoute,
 } as any)
-const AppLayoutTournamentsWidgetIdRoute =
-  AppLayoutTournamentsWidgetIdRouteImport.update({
-    id: '/tournaments/$widgetId',
-    path: '/tournaments/$widgetId',
-    getParentRoute: () => AppLayoutRoute,
-  } as any)
 const AppLayoutMessagesConversationThreadIdRoute =
   AppLayoutMessagesConversationThreadIdRouteImport.update({
     id: '/conversation/$threadId',
@@ -129,7 +122,6 @@ export interface FileRoutesByFullPath {
   '/messages': typeof AppLayoutMessagesRouteWithChildren
   '/settings': typeof AppLayoutSettingsRoute
   '/templates': typeof AppLayoutTemplatesRoute
-  '/tournaments/$widgetId': typeof AppLayoutTournamentsWidgetIdRoute
   '/messages/conversation/$threadId': typeof AppLayoutMessagesConversationThreadIdRoute
 }
 export interface FileRoutesByTo {
@@ -147,7 +139,6 @@ export interface FileRoutesByTo {
   '/messages': typeof AppLayoutMessagesRouteWithChildren
   '/settings': typeof AppLayoutSettingsRoute
   '/templates': typeof AppLayoutTemplatesRoute
-  '/tournaments/$widgetId': typeof AppLayoutTournamentsWidgetIdRoute
   '/messages/conversation/$threadId': typeof AppLayoutMessagesConversationThreadIdRoute
 }
 export interface FileRoutesById {
@@ -167,7 +158,6 @@ export interface FileRoutesById {
   '/_app-layout/messages': typeof AppLayoutMessagesRouteWithChildren
   '/_app-layout/settings': typeof AppLayoutSettingsRoute
   '/_app-layout/templates': typeof AppLayoutTemplatesRoute
-  '/_app-layout/tournaments/$widgetId': typeof AppLayoutTournamentsWidgetIdRoute
   '/_app-layout/messages/conversation/$threadId': typeof AppLayoutMessagesConversationThreadIdRoute
 }
 export interface FileRouteTypes {
@@ -187,7 +177,6 @@ export interface FileRouteTypes {
     | '/messages'
     | '/settings'
     | '/templates'
-    | '/tournaments/$widgetId'
     | '/messages/conversation/$threadId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -205,7 +194,6 @@ export interface FileRouteTypes {
     | '/messages'
     | '/settings'
     | '/templates'
-    | '/tournaments/$widgetId'
     | '/messages/conversation/$threadId'
   id:
     | '__root__'
@@ -224,7 +212,6 @@ export interface FileRouteTypes {
     | '/_app-layout/messages'
     | '/_app-layout/settings'
     | '/_app-layout/templates'
-    | '/_app-layout/tournaments/$widgetId'
     | '/_app-layout/messages/conversation/$threadId'
   fileRoutesById: FileRoutesById
 }
@@ -345,13 +332,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLayoutBetterCalendarRouteImport
       parentRoute: typeof AppLayoutRoute
     }
-    '/_app-layout/tournaments/$widgetId': {
-      id: '/_app-layout/tournaments/$widgetId'
-      path: '/tournaments/$widgetId'
-      fullPath: '/tournaments/$widgetId'
-      preLoaderRoute: typeof AppLayoutTournamentsWidgetIdRouteImport
-      parentRoute: typeof AppLayoutRoute
-    }
     '/_app-layout/messages/conversation/$threadId': {
       id: '/_app-layout/messages/conversation/$threadId'
       path: '/conversation/$threadId'
@@ -383,7 +363,6 @@ interface AppLayoutRouteChildren {
   AppLayoutMessagesRoute: typeof AppLayoutMessagesRouteWithChildren
   AppLayoutSettingsRoute: typeof AppLayoutSettingsRoute
   AppLayoutTemplatesRoute: typeof AppLayoutTemplatesRoute
-  AppLayoutTournamentsWidgetIdRoute: typeof AppLayoutTournamentsWidgetIdRoute
 }
 
 const AppLayoutRouteChildren: AppLayoutRouteChildren = {
@@ -395,7 +374,6 @@ const AppLayoutRouteChildren: AppLayoutRouteChildren = {
   AppLayoutMessagesRoute: AppLayoutMessagesRouteWithChildren,
   AppLayoutSettingsRoute: AppLayoutSettingsRoute,
   AppLayoutTemplatesRoute: AppLayoutTemplatesRoute,
-  AppLayoutTournamentsWidgetIdRoute: AppLayoutTournamentsWidgetIdRoute,
 }
 
 const AppLayoutRouteWithChildren = AppLayoutRoute._addFileChildren(

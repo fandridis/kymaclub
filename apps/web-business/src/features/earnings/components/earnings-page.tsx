@@ -8,11 +8,13 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { api } from '@repo/api/convex/_generated/api';
 import { Badge } from '@/components/ui/badge'
 import { Download, TrendingUp, TrendingDown, Users, DollarSign } from 'lucide-react'
 import { useEarnings } from '../hooks/use-earnings'
 import { useTypedTranslation } from '@/lib/typed'
 import { getBookingFinalPrice, getBookingEarnings } from '@repo/utils/bookings'
+import { StripeConnectCard } from './stripe-connect-card'
 
 export default function EarningsPage() {
     const { t } = useTypedTranslation();
@@ -136,6 +138,7 @@ export default function EarningsPage() {
 
     return (
         <div className="space-y-6">
+            <StripeConnectCard />
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -255,8 +255,7 @@
                 "tabs": {
                     "details": "Λεπτομέρειες",
                     "discounts": "Εκπτώσεις",
-                    "questions": "Ερωτήσεις",
-                    "widgets": "Widgets"
+                    "questions": "Ερωτήσεις"
                 }
             },
             "templateCard": {

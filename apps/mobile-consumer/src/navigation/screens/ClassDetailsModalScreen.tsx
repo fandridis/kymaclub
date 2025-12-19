@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, Alert, Platform, InteractionManager } from 'react-native';
 import { Image } from 'expo-image';
-import { Calendar1Icon, ClockIcon, CalendarOffIcon, ChevronLeftIcon, CheckCircleIcon, Trophy, EuroIcon } from 'lucide-react-native';
+import { Calendar1Icon, ClockIcon, CalendarOffIcon, ChevronLeftIcon, CheckCircleIcon, EuroIcon } from 'lucide-react-native';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Carousel from 'react-native-reanimated-carousel';
@@ -301,13 +301,6 @@ export function ClassDetailsModalScreen() {
             finalClassInstance?.questionnaire as Question[] | undefined
         ) || [];
     }, [template?.questionnaire, finalClassInstance?.questionnaire]);
-
-    // Check for tournament widget
-    const widget = useQuery(
-        api.queries.widgets.getByInstance,
-        finalClassInstance ? { classInstanceId: finalClassInstance._id } : "skip"
-    );
-    const hasTournament = widget && widget.status !== 'cancelled';
 
     // Fetch upcoming instances of the same class (same template)
     const sameClassInstances = useQuery(
@@ -975,42 +968,6 @@ export function ClassDetailsModalScreen() {
                                     </View>
                                 )}
 
-                            {/* Tournament Widget Banner */}
-                            {hasTournament && widget && (
-                                <TouchableOpacity
-                                    style={[
-                                        styles.widgetBanner,
-                                        !discountResult.appliedDiscount && !getBookingWindowText(
-                                            finalClassInstance,
-                                            closesInTemplate,
-                                            timeUnitDays,
-                                            timeUnitHours,
-                                            timeUnitMinutes
-                                        ) && styles.widgetBannerFirst
-                                    ]}
-                                    onPress={() => navigation.navigate('Tournament', { widgetId: widget._id })}
-                                    activeOpacity={0.8}
-                                >
-                                    <View style={styles.widgetBannerContent}>
-                                        <View style={styles.widgetBannerLeft}>
-                                            <Trophy size={28} color="#ffffff" />
-                                            <View>
-                                                <Text style={styles.widgetBannerTitle}>
-                                                    {widget.widgetConfig.type === 'tournament_americano' ? 'Americano Tournament' : 'Tournament'}
-                                                </Text>
-                                                <Text style={styles.widgetBannerSubtext}>
-                                                    {widget.status === 'setup' && 'Setting up • Tap to view'}
-                                                    {widget.status === 'ready' && 'Ready to start • Tap to view'}
-                                                    {widget.status === 'active' && 'In progress • Tap to view'}
-                                                    {widget.status === 'completed' && 'Completed • View results'}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                        <ChevronLeftIcon size={20} color="rgba(255, 255, 255, 0.7)" style={{ transform: [{ rotate: '180deg' }] }} />
-                                    </View>
-                                </TouchableOpacity>
-                            )}
-
                             {/* Key details */}
                             <View style={styles.detailsList}>
                                 <View style={styles.detailItem}>
@@ -1446,49 +1403,6 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: 'white',
         textAlign: 'center',
-    },
-    widgetBanner: {
-        backgroundColor: '#7c3aed', // violet-600
-        paddingVertical: 14,
-        paddingHorizontal: 20,
-        marginBottom: 8,
-        marginTop: 0,
-        width: screenWidth,
-    },
-    widgetBannerFirst: {
-        marginTop: -14,
-    },
-    widgetBannerContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    widgetBannerLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    widgetBannerIcon: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    widgetBannerIconText: {
-        fontSize: 18,
-    },
-    widgetBannerTitle: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: 'white',
-    },
-    widgetBannerSubtext: {
-        fontSize: 13,
-        fontWeight: '500',
-        color: 'rgba(255, 255, 255, 0.85)',
-        marginTop: 1,
     },
     carouselContainer: {
         marginBottom: 16,

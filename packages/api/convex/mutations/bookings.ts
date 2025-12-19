@@ -159,6 +159,7 @@ export const createPaidBooking = internalMutationWithTriggers({
       ruleName: v.string(),
     })),
     questionnaireAnswers: v.optional(v.object(questionnaireAnswersFields)),
+    platformFeeRate: v.optional(v.number()),
   },
   returns: v.object({
     bookingId: v.id("bookings"),
@@ -185,8 +186,8 @@ export const createPaidBooking = internalMutationWithTriggers({
     const requiresConfirmation = instance.requiresConfirmation ?? false;
     const initialStatus = requiresConfirmation ? "awaiting_approval" : "pending";
 
-    // Get platform fee rate from system settings or use default
-    const platformFeeRate = 0.20; // 20% default
+    // Get platform fee rate from args or default
+    const platformFeeRate = args.platformFeeRate ?? 0.20; // 20% default
 
     // Create the booking
     const bookingId = await ctx.db.insert("bookings", {

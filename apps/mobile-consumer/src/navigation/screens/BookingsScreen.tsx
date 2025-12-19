@@ -183,13 +183,6 @@ export function BookingsScreen() {
         [navigation]
     );
 
-    const handleViewTournament = useCallback(
-        (widgetId: string) => {
-            navigation.navigate('Tournament', { widgetId });
-        },
-        [navigation]
-    );
-
     if (!user) {
         return (
             <SafeAreaView style={styles.container}>
@@ -265,7 +258,6 @@ export function BookingsScreen() {
                                 booking={booking}
                                 onViewClass={handleViewClass}
                                 onViewTicket={handleViewTicket}
-                                onViewTournament={handleViewTournament}
                                 showFooterIcons={activeTab === 'upcoming'}
                             />
                         ))}

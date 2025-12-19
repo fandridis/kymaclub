@@ -2,19 +2,16 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { format } from 'date-fns';
 import { tz } from '@date-fns/tz';
-import { useQuery } from 'convex/react';
-import { api } from '@repo/api/convex/_generated/api';
 
 import type { Doc } from '@repo/api/convex/_generated/dataModel';
 import { theme } from '../theme';
-import { MapPinIcon, TicketIcon, Trophy } from 'lucide-react-native';
+import { MapPinIcon, TicketIcon } from 'lucide-react-native';
 import { useTypedTranslation } from '../i18n/typed';
 
 interface BookingCardProps {
   booking: Doc<'bookings'>;
   onViewClass?: (booking: Doc<'bookings'>) => void;
   onViewTicket?: (booking: Doc<'bookings'>) => void;
-  onViewTournament?: (widgetId: string) => void;
   showFooterIcons?: boolean;
 }
 
@@ -44,17 +41,9 @@ export const BookingCard: React.FC<BookingCardProps> = ({
   booking,
   onViewClass,
   onViewTicket,
-  onViewTournament,
   showFooterIcons = true,
 }) => {
   const { t } = useTypedTranslation();
-
-  // Check if there's a tournament widget for this class
-  const widget = useQuery(
-    api.queries.widgets.getByInstance,
-    booking.classInstanceId ? { classInstanceId: booking.classInstanceId } : "skip"
-  );
-  const hasTournament = widget && widget.status !== 'cancelled';
 
   const startTimeValue = booking.classInstanceSnapshot?.startTime;
   const startTime = startTimeValue ? new Date(startTimeValue) : null;
@@ -198,21 +187,6 @@ export const BookingCard: React.FC<BookingCardProps> = ({
               >
                 <TicketIcon size={19} color={theme.colors.zinc[500]} strokeWidth={1.9} />
               </TouchableOpacity>
-
-              {hasTournament && (
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={(event) => {
-                    event.stopPropagation?.();
-                    if (widget) {
-                      onViewTournament?.(widget._id);
-                    }
-                  }}
-                  style={[styles.footerIconButton, styles.tournamentIconButton]}
-                >
-                  <Trophy size={19} color={theme.colors.amber[600]} strokeWidth={1.9} />
-                </TouchableOpacity>
-              )}
             </View>
           )}
         </View>
@@ -299,10 +273,6 @@ const styles = StyleSheet.create({
   },
   footerIconButtonDisabled: {
     opacity: 0.5,
-  },
-  tournamentIconButton: {
-    backgroundColor: `${theme.colors.amber[500]}20`,
-    borderColor: theme.colors.amber[300],
   },
   statusContainer: {
     gap: 6,

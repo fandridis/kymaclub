@@ -71,6 +71,8 @@ export const createTestBusiness = internalMutation({
             isActive: args.business.isActive ?? true,
             createdAt: args.business.createdAt || Date.now(),
             onboardingCompleted: args.business.onboardingCompleted ?? false,
+            stripeConnectedAccountStatus: "enabled",
+            stripeConnectedAccountId: "acct_test_123",
             feeStructure: {
                 payoutFrequency: args.business.feeStructure?.payoutFrequency || "monthly",
                 minimumPayout: args.business.feeStructure?.minimumPayout || 50,

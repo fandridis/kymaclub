@@ -899,6 +899,7 @@ export const getClassInstanceForPayment = internalQuery({
             questionnaire: v.optional(v.any()),
             className: v.string(),
             startTime: v.number(),
+            businessId: v.id("businesses"),
         })
     ),
     handler: async (ctx, { classInstanceId }) => {
@@ -929,6 +930,7 @@ export const getClassInstanceForPayment = internalQuery({
             questionnaire: instance.questionnaire ?? template.questionnaire,
             className,
             startTime: instance.startTime,
+            businessId: instance.businessId,
         };
     },
 });

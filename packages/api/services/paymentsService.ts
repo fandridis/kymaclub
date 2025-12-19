@@ -4,6 +4,7 @@ import type { ActionCtx } from "../convex/_generated/server";
 import { internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import Stripe from "stripe";
+import { stripeConnectService } from "./stripeConnectService";
 import {
   calculateSubscriptionPricing,
   validateCreditAmount,
@@ -784,7 +785,11 @@ export const paymentsService = {
           await this.handleClassPaymentSucceeded(ctx, event);
           break;
 
-        // Charge events (can be from both subscriptions and one-time payments)
+        case "account.updated":
+          await stripeConnectService.handleAccountUpdated(ctx, event);
+          break;
+
+        // Charge events (can be both subscription and one-time)
         case "charge.succeeded":
         case "charge.updated":
           // No action needed for charge events
@@ -1351,6 +1356,7 @@ export const paymentsService = {
           ruleName: pendingBooking.appliedDiscount.ruleName,
         } : undefined,
         questionnaireAnswers: pendingBooking.questionnaireAnswers,
+        platformFeeRate: pendingBooking.platformFeeRate,
       }
     );
 

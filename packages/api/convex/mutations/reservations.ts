@@ -21,6 +21,7 @@ export const createReservation = internalMutation({
       ruleName: v.string(),
     })),
     questionnaireAnswers: v.optional(v.object(questionnaireAnswersFields)),
+    platformFeeRate: v.optional(v.number()),
   },
   returns: v.object({
     pendingBookingId: v.id("pendingBookings"),

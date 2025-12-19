@@ -17,3 +17,7 @@ export const canOnlyCreateBusinessOnce = (user: Doc<"users">) => {
         });
     }
 };
+
+export const canAcceptPayments = (business: Doc<"businesses">): boolean => {
+    return business.stripeConnectedAccountStatus === "enabled";
+};

@@ -46,13 +46,6 @@ import { cn } from '@/lib/utils';
 import { TEMPLATE_COLORS_MAP } from '@/utils/colors';
 import { ClassDiscountRulesForm } from '@/components/class-discount-rules-form';
 import { QuestionnaireBuilder } from '@/components/questionnaire-builder';
-import {
-    WidgetsSectionCard,
-    SelectWidgetTypeModal,
-    AmericanoWizard,
-    type WidgetType,
-    type WidgetSnapshot
-} from '@/components/widgets';
 import { useTypedTranslation } from '@/lib/typed';
 import type { Question } from '@repo/api/types/questionnaire';
 
@@ -142,12 +135,6 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
     const [discountRules, setDiscountRules] = useState<DiscountRule[]>([]);
     const [questionnaire, setQuestionnaire] = useState<Question[]>([]);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-
-    // Widget modals state
-    const [showWidgetTypeModal, setShowWidgetTypeModal] = useState(false);
-    const [showAmericanoWizard, setShowAmericanoWizard] = useState(false);
-    const [selectedWidgetType, setSelectedWidgetType] = useState<WidgetType | null>(null);
-    const [editingWidgetId, setEditingWidgetId] = useState<Id<"classInstanceWidgets"> | null>(null);
     const [pendingFormData, setPendingFormData] = useState<FormData | null>(null);
     const [applyToAll, setApplyToAll] = useState(false);
     const isMobile = useIsMobile();
@@ -468,12 +455,6 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                             <Badge className="">{questionnaire.length}</Badge>
                                         )}
                                     </TabsTrigger>
-                                    <TabsTrigger value="widgets" className="flex-1 gap-1">
-                                        {t('routes.templates.dialog.tabs.widgets')}
-                                        {instance?.widgetSnapshots && instance.widgetSnapshots.length > 0 && (
-                                            <Badge className="">{instance.widgetSnapshots.length}</Badge>
-                                        )}
-                                    </TabsTrigger>
                                 </TabsList>
                             </div>
 
@@ -739,23 +720,6 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                                             currency="EUR"
                                         />
                                     </TabsContent>
-
-                                    {/* Widgets Tab */}
-                                    <TabsContent value="widgets" className="mt-0 p-4">
-                                        {instance && (
-                                            <WidgetsSectionCard
-                                                widgetSnapshots={instance.widgetSnapshots as WidgetSnapshot[] | undefined}
-                                                classInstanceId={instance._id}
-                                                onAddWidget={() => setShowWidgetTypeModal(true)}
-                                                onEditWidget={(widgetId, type) => {
-                                                    setEditingWidgetId(widgetId);
-                                                    if (type === 'tournament_americano') {
-                                                        setShowAmericanoWizard(true);
-                                                    }
-                                                }}
-                                            />
-                                        )}
-                                    </TabsContent>
                                 </ScrollArea>
                             </div>
                         </Tabs>
@@ -806,38 +770,6 @@ export default function EditClassInstanceDialog({ open, instance, onClose, busin
                 similarInstances={similarInstances || []}
                 businessTimezone={businessTimezone}
             />
-
-            {/* Widget Selection Modal */}
-            <SelectWidgetTypeModal
-                open={showWidgetTypeModal}
-                onOpenChange={setShowWidgetTypeModal}
-                onSelectType={(type) => {
-                    setSelectedWidgetType(type);
-                    if (type === 'tournament_americano') {
-                        setShowAmericanoWizard(true);
-                    }
-                }}
-            />
-
-            {/* Americano Tournament Wizard */}
-            {instance && (
-                <AmericanoWizard
-                    open={showAmericanoWizard}
-                    onOpenChange={(open) => {
-                        setShowAmericanoWizard(open);
-                        if (!open) {
-                            setEditingWidgetId(null);
-                        }
-                    }}
-                    classInstanceId={instance._id}
-                    widgetId={editingWidgetId ?? undefined}
-                    onComplete={() => {
-                        // Widget was created/updated - the instance will be updated via Convex reactivity
-                        setSelectedWidgetType(null);
-                        setEditingWidgetId(null);
-                    }}
-                />
-            )}
         </>
     );
 } 

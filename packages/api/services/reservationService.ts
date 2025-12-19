@@ -44,6 +44,7 @@ export const reservationService = {
         ruleName: string;
       };
       questionnaireAnswers?: Doc<"bookings">["questionnaireAnswers"];
+      platformFeeRate?: number;
     }
   ): Promise<{ pendingBookingId: Id<"pendingBookings">; expiresAt: number }> => {
     const now = Date.now();
@@ -141,6 +142,7 @@ export const reservationService = {
       originalPriceInCents: args.originalPriceInCents,
       appliedDiscount: args.appliedDiscount,
       questionnaireAnswers: args.questionnaireAnswers,
+      platformFeeRate: args.platformFeeRate,
       expiresAt,
       createdAt: now,
       createdBy: args.userId,
