@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AuthorizeBusinessDialog } from './AuthorizeBusinessDialog';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -89,7 +90,17 @@ export function NexusRightSidebar() {
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-2 gap-3">
-                        <ActionButton icon={Shield} label="Health Check" />
+                        <AuthorizeBusinessDialog
+                            trigger={
+                                <Button
+                                    variant="outline"
+                                    className="h-auto py-3 px-3 border-slate-700 bg-slate-800/50 hover:bg-slate-700/50 flex flex-col items-center justify-center gap-1 w-full"
+                                >
+                                    <Shield className="h-5 w-5 text-cyan-500" />
+                                    <span className="text-xs">Authorize Business</span>
+                                </Button>
+                            }
+                        />
                         <ActionButton icon={RefreshCw} label="Sync Data" />
                         <ActionButton icon={Download} label="Export" />
                         <ActionButton icon={Terminal} label="Console" />

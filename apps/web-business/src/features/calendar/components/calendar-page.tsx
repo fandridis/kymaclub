@@ -29,6 +29,7 @@ import type { TemplateColorType } from '@repo/utils/colors';
 import { ClassBookingsDialog } from '../../bookings/components/class-bookings-dialog';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import { StripeRequiredDialog } from './stripe-required-dialog';
 import { useTypedTranslation } from '@/lib/typed';
 
 interface CalendarPageProps {
@@ -47,6 +48,7 @@ export function CalendarPage({ startDate, classInstances, user, loading }: Calen
     const [editDialog, setEditDialog] = useState<{ open: boolean; instance: ClassInstance | null } | null>(null);
     const [viewBookingsDialog, setViewBookingsDialog] = useState<{ open: boolean; classInstance: ClassInstance | null } | null>(null);
     const [deleteDialogInstance, setDeleteDialogInstance] = useState<ClassInstance | null>(null);
+    const [stripeRequiredDialog, setStripeRequiredDialog] = useState(false);
     const eventHandlers = useCalendarEventHandler(user.business.timezone);
     const calendarRef = useRef<FullCalendar>(null);
     const updateClassInstance = useMutation(api.mutations.classInstances.updateSingleInstance);
@@ -94,6 +96,16 @@ export function CalendarPage({ startDate, classInstances, user, loading }: Calen
 
     const handleToggleBookings = async (eventInfo: EventContentArg) => {
         const classInstance = eventInfo.event.extendedProps.classInstance as ClassInstance
+
+        // If trying to OPEN bookings (currently disabled)
+        if (classInstance.disableBookings) {
+            // Check if Stripe Connect is enabled
+            if (user.business.stripeConnectedAccountStatus !== 'enabled') {
+                setStripeRequiredDialog(true);
+                return;
+            }
+        }
+
         try {
             await updateClassInstance({
                 instanceId: classInstance._id,
@@ -239,6 +251,11 @@ export function CalendarPage({ startDate, classInstances, user, loading }: Calen
                     <div />
                 </ClassBookingsDialog>
             )}
+
+            <StripeRequiredDialog
+                open={stripeRequiredDialog}
+                onClose={() => setStripeRequiredDialog(false)}
+            />
         </div>
     );
 }

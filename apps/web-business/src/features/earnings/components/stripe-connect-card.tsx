@@ -20,7 +20,7 @@ export function StripeConnectCard() {
 
     // Auto-check status on mount if pending (e.g. returning from Stripe onboarding)
     useEffect(() => {
-        if (business?.stripeConnectedAccountStatus === 'pending') {
+        if (business?.stripeConnectedAccountStatus === 'pending' || business?.stripeConnectedAccountStatus === 'disabled') {
             checkStatus({}).catch(console.error);
         }
     }, [business?.stripeConnectedAccountStatus, checkStatus]);

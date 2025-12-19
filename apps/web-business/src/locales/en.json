@@ -152,6 +152,11 @@
                 "failedToUpdateClass": "Failed to update class.",
                 "failedToUpdateClasses": "Failed to update similar classes."
             },
+            "stripeRequired": {
+                "title": "Payment Setup Required",
+                "description": "You need to complete your Stripe Connect onboarding before you can open bookings for your classes.",
+                "goToEarnings": "Go to Earnings"
+            },
             "daysOfWeek": {
                 "monday": "Monday",
                 "tuesday": "Tuesday",

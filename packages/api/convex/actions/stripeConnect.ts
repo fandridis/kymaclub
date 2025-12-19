@@ -122,6 +122,8 @@ export const checkAccountStatus = action({
 
         const status = await stripeConnectService.getAccountStatus(business.stripeConnectedAccountId);
 
+        console.log('Stripe account status: ', status);
+
         // Calculate our status based on Stripe's status
         let derivedStatus: "not_started" | "pending" | "enabled" | "disabled" | "rejected" = "pending";
         if (status.chargesEnabled && status.detailsSubmitted) {

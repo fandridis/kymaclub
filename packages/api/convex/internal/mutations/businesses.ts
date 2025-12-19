@@ -106,3 +106,38 @@ export const updateBusinessFeeRate = mutation({
     };
   },
 });
+
+/**
+ * Authorize a business email manually.
+ * Protected by requireInternalUserOrThrow - only internal/admin users can call this
+ */
+export const authorizeEmail = mutation({
+  args: {
+    email: v.string(),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Require internal/admin user - throws if not authorized
+    const adminUser = await requireInternalUserOrThrow(ctx);
+
+    // Check if email already exists
+    const existing = await ctx.db
+      .query("authorizedBusinessEmails")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+
+    if (existing) {
+      throw new Error(`Email ${args.email} is already authorized`);
+    }
+
+    const id = await ctx.db.insert("authorizedBusinessEmails", {
+      email: args.email,
+      notes: args.notes,
+      authorizedBy: adminUser._id,
+      createdAt: Date.now(),
+      createdBy: adminUser._id,
+    });
+
+    return id;
+  },
+});
